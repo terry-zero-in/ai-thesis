@@ -1,18 +1,18 @@
-// THS-41 — Weekly Q-score compute job.
-// Loads the latest fundamentals + prices for the investable universe at the
-// requested `as_of` (default today), runs `computeQForCohort` per layer, and
-// upserts results into `scores_history`. Other Tier-A factors (G, V, AIQ)
-// come online with their own sub-issues; this writer touches only `q_score`,
-// `factor_breakdown.q`, and `factor_breakdown.q_metrics` for now.
+// THS-42 — Weekly G-score compute job.
+// Loads TTM fundamentals + latest consensus + ai_segment_overrides for the
+// investable universe at the requested `as_of`, runs `computeGForCohort`
+// per layer, and upserts results into `scores_history`. Only touches
+// `g_score` and `factor_breakdown.g`; other Tier-A factors are written by
+// their own jobs.
 
 import { HttpError, requireCronAuth } from "../_shared/auth.ts";
-import { computeQForCohort, type Layer } from "../_shared/factor-q.ts";
-import { loadQInputsByLayer, serviceClient } from "../_shared/supabase.ts";
+import { computeGForCohort, type Layer } from "../_shared/factor-g.ts";
+import { loadGInputsByLayer, serviceClient } from "../_shared/supabase.ts";
 
 declare const Deno: { serve: (h: (req: Request) => Promise<Response>) => void };
 
 interface RequestBody {
-  as_of?: string; // ISO YYYY-MM-DD
+  as_of?: string;
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -37,7 +37,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     const client = serviceClient();
-    const byLayer = await loadQInputsByLayer(client, asOf);
+    const byLayer = await loadGInputsByLayer(client, asOf);
 
     let tickersScored = 0;
     let rowsUpserted = 0;
@@ -45,23 +45,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     for (const [layer, inputs] of byLayer.entries()) {
       if (inputs.length === 0) continue;
-      const results = computeQForCohort(inputs);
+      const results = computeGForCohort(inputs);
       tickersScored += results.length;
       perLayer.push({ layer, count: results.length });
 
-      // Write each ticker via the merge-aware RPC so peer factors' JSONB
-      // slices (g, v, aiq, …) aren't trampled. Sequential is fine — one
-      // weekly run is at most 50 names per layer.
+      // Write via the merge-aware RPC so Q's factor_breakdown.q slice
+      // survives (THS-42, see migration 20260515001500_e22_upsert_factor_score_rpc).
       for (const r of results) {
         const { error } = await client.rpc("upsert_factor_score", {
           p_ticker: r.ticker,
           p_as_of: asOf,
-          p_factor: "q",
-          p_score: r.qScore,
+          p_factor: "g",
+          p_score: r.gScore,
           p_breakdown: {
             composite_z: r.compositeZ,
-            pillars: r.pillars,
-            metrics: r.metrics,
+            signals: r.signals,
           },
         });
         if (error) throw error;

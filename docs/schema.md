@@ -28,6 +28,8 @@ to apply / roll back.
 | 20260515001200   | THS-42 | `20260515001200_e22_ai_segment_overrides.sql`       | applied |
 | 20260515001300   | THS-42 | `20260515001300_e22_seed_ai_segment_overrides.sql`  | applied |
 | 20260515001400   | THS-42 | `20260515001400_e22_extend_fundamentals_rd.sql`     | applied |
+| 20260515001500   | THS-42 | `20260515001500_e22_upsert_factor_score_rpc.sql`    | applied |
+| 20260515001600   | THS-42 | `20260515001600_e22_g_scores_cron.sql`              | applied |
 
 ## Tables (current)
 

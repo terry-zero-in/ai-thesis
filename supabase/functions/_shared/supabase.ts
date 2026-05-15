@@ -6,6 +6,7 @@ import { requireEnv } from "./env.ts";
 import { dailyReturns } from "./metrics.ts";
 import type { Fundamentals } from "./metrics.ts";
 import type { Layer, QInputs } from "./factor-q.ts";
+import type { GInputs } from "./factor-g.ts";
 
 export function serviceClient(): SupabaseClient {
   return createClient(
@@ -257,4 +258,185 @@ function isoDateMinusDays(iso: string, days: number): string {
   const d = new Date(iso + "T00:00:00Z");
   d.setUTCDate(d.getUTCDate() - days);
   return d.toISOString().slice(0, 10);
+}
+
+// ---------------------------------------------------------------------------
+// G-score cohort loading (THS-42). Pulls 12 quarters of revenue/capex/
+// operating_income/r_and_d_expense for TTM-now and TTM-lag1y aggregates,
+// the latest consensus snapshot (for ntm_revenue), and the latest two
+// ai_segment_overrides rows per ticker (for AI revenue YoY where the
+// override carries it).
+// ---------------------------------------------------------------------------
+
+interface GFundsRow {
+  ticker: string;
+  period_end: string;
+  revenue: number | null;
+  capex: number | null;
+  operating_income: number | null;
+  r_and_d_expense: number | null;
+}
+
+interface ConsensusRow {
+  ticker: string;
+  as_of: string;
+  ntm_revenue: number | null;
+}
+
+interface OverrideRow {
+  ticker: string;
+  period_end: string;
+  ai_revenue: number | null;
+}
+
+const G_FUNDS_COLUMNS = "ticker, period_end, revenue, capex, operating_income, r_and_d_expense";
+
+export async function loadGInputsByLayer(
+  client: SupabaseClient,
+  asOf: string,
+  options: { quarterlyHistoryN?: number } = {},
+): Promise<Map<Layer, GInputs[]>> {
+  // 12 quarters by default — 4 for current TTM, 4 for lag1y TTM, plus 4
+  // safety quarters so a missed report doesn't drop the lag1y window.
+  const quartersN = options.quarterlyHistoryN ?? 12;
+
+  // Universe.
+  const univ = await client
+    .from("universe")
+    .select("ticker, layer")
+    .eq("is_active", true)
+    .eq("kind", "investable")
+    .order("ticker");
+  if (univ.error) throw univ.error;
+  const universe = (univ.data ?? []) as UniverseRow[];
+  const tickers = universe.map((u) => u.ticker);
+  if (tickers.length === 0) return new Map();
+
+  // Fundamentals (12 most recent quarters per ticker, ordered newest first).
+  const fundsRes = await client
+    .from("fundamentals_raw")
+    .select(G_FUNDS_COLUMNS)
+    .eq("period_type", "Q")
+    .lte("period_end", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("period_end", { ascending: false })
+    .limit(tickers.length * quartersN);
+  if (fundsRes.error) throw fundsRes.error;
+  const fundsByTicker = new Map<string, GFundsRow[]>();
+  for (const row of (fundsRes.data ?? []) as GFundsRow[]) {
+    const list = fundsByTicker.get(row.ticker) ?? [];
+    if (list.length < quartersN) list.push(row);
+    fundsByTicker.set(row.ticker, list);
+  }
+
+  // Latest consensus per ticker. Pull a wide window then collapse in code.
+  const consensusFrom = isoDateMinusDays(asOf, 35);
+  const consensusRes = await client
+    .from("consensus")
+    .select("ticker, as_of, ntm_revenue")
+    .gte("as_of", consensusFrom)
+    .lte("as_of", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("as_of", { ascending: false });
+  if (consensusRes.error) throw consensusRes.error;
+  const consensusLatest = new Map<string, ConsensusRow>();
+  for (const row of (consensusRes.data ?? []) as ConsensusRow[]) {
+    if (!consensusLatest.has(row.ticker)) consensusLatest.set(row.ticker, row);
+  }
+
+  // ai_segment_overrides — all rows for our tickers up to as_of, newest first.
+  const overridesRes = await client
+    .from("ai_segment_overrides")
+    .select("ticker, period_end, ai_revenue")
+    .lte("period_end", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("period_end", { ascending: false });
+  if (overridesRes.error) throw overridesRes.error;
+  const overridesByTicker = new Map<string, OverrideRow[]>();
+  for (const row of (overridesRes.data ?? []) as OverrideRow[]) {
+    const list = overridesByTicker.get(row.ticker) ?? [];
+    list.push(row);
+    overridesByTicker.set(row.ticker, list);
+  }
+
+  // Build GInputs per ticker.
+  const byLayer = new Map<Layer, GInputs[]>();
+  for (const u of universe) {
+    const layer = u.layer as Layer;
+    if (layer < 1 || layer > 5) continue;
+
+    const quarters = fundsByTicker.get(u.ticker) ?? []; // newest first
+    const ttmNow = aggregateTTM(quarters.slice(0, 4));
+    const ttmLag1y = aggregateTTM(quarters.slice(4, 8));
+
+    const consensus = consensusLatest.get(u.ticker) ?? null;
+
+    const overrides = overridesByTicker.get(u.ticker) ?? [];
+    const overrideLatest = overrides[0] ?? null;
+    // 1y-ago = the most recent override whose period_end is ≥ 270 days
+    // before the latest override's period_end. Loose because companies
+    // don't always report on the exact same calendar quarter.
+    let overrideLag1y: OverrideRow | null = null;
+    if (overrideLatest) {
+      const target = isoDateMinusDays(overrideLatest.period_end, 270);
+      for (const row of overrides) {
+        if (row.period_end <= target) {
+          overrideLag1y = row;
+          break;
+        }
+      }
+    }
+
+    const inputs: GInputs = {
+      ticker: u.ticker,
+      layer,
+      ttmRevenue: ttmNow.revenue,
+      ttmCapex: ttmNow.capex,
+      ttmOperatingIncome: ttmNow.operating_income,
+      ttmRdExpense: ttmNow.r_and_d_expense,
+      ttmRevenue_lag1y: ttmLag1y.revenue,
+      ttmCapex_lag1y: ttmLag1y.capex,
+      ntmRevenue: consensus?.ntm_revenue ?? null,
+      aiRevenue_current: overrideLatest?.ai_revenue ?? null,
+      aiRevenue_lag1y: overrideLag1y?.ai_revenue ?? null,
+    };
+
+    const list = byLayer.get(layer) ?? [];
+    list.push(inputs);
+    byLayer.set(layer, list);
+  }
+
+  return byLayer;
+}
+
+// Sum four quarterly rows into a TTM aggregate. Per-field policy: if all
+// four are non-null sum them; if any are null return null for that field
+// (rather than understate). Returns nulls when fewer than 4 rows provided.
+function aggregateTTM(rows: ReadonlyArray<GFundsRow>): {
+  revenue: number | null;
+  capex: number | null;
+  operating_income: number | null;
+  r_and_d_expense: number | null;
+} {
+  if (rows.length < 4) {
+    return { revenue: null, capex: null, operating_income: null, r_and_d_expense: null };
+  }
+  const sumOrNull = (key: keyof GFundsRow): number | null => {
+    let total = 0;
+    for (const r of rows) {
+      const v = r[key];
+      if (typeof v !== "number" || !Number.isFinite(v)) return null;
+      total += v;
+    }
+    return total;
+  };
+  return {
+    revenue: sumOrNull("revenue"),
+    capex: sumOrNull("capex"),
+    operating_income: sumOrNull("operating_income"),
+    r_and_d_expense: sumOrNull("r_and_d_expense"),
+  };
 }

@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.compute-q-scores]
 verify_jwt = false
+
+[functions.compute-g-scores]
+verify_jwt = false
