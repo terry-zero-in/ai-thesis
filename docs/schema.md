@@ -15,6 +15,7 @@ to apply / roll back.
 | ---------------- | ------ | --------------------------------------------------- | ------- |
 | 20260515000000   | THS-35 | `20260515000000_e11_init_core_tables.sql`           | applied |
 | 20260515000100   | THS-36 | `20260515000100_e12_overlay_tables.sql`             | applied |
+| 20260515000200   | THS-37 | `20260515000200_e13_seed_universe.sql`              | applied |
 
 ## Tables (current)
 
