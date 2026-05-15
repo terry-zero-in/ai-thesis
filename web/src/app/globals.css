@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   RETICLE — Stage 3 token system + global rules
+   Source of truth: Reticle Stage 3 - Standalone.html (style block)
+   Extracted verbatim 2026-05-11. DO NOT mutate values silently — pixel parity
+   with the standalone mockup is the contract.
+   ============================================================================ */
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  /* Surfaces — Plasma Cyan palette (was Apex Blue). Sidebar deeper than canvas. */
+  --canvas:#0B0C0F; --sidebar:#06070A; --surface:#15171C; --surface-2:#1B1E25; --elevated:#22262E;
+  --hover-lift:#232730;
+  --hover-tint:rgba(255,255,255,.035);
+  --hover-tint-strong:rgba(255,255,255,.06);
+  --press-tint:rgba(255,255,255,.085);
+  /* Text — 4-level scale (dropped the very-faint #56595f tier; text-4 lifted to #74787f for legibility). */
+  --text-1:#ECEDEF; --text-2:#CFD3DA; --text-3:#7A818D; --text-4:#5F6571;
+  /* Borders — primary + strong + subtle (line/div collapsed onto subtle). */
+  --border:#2A2F38; --border-strong:#34353a; --border-subtle:#1F2229;
+  /* Accent — cyan. accent-soft is the selection/tint bg; accent-border is the 1px outline / left-inset cue. */
+  --accent:#22D3EE; --accent-hover:#67E8F9; --accent-pressed:#0EA5C7;
+  --accent-soft:rgba(34,211,238,.10); --accent-border:rgba(34,211,238,.40); --accent-glow:rgba(34,211,238,.32);
+  /* --on-accent = text color when bg is solid accent (Btn primary, avatar, check-mark). Per-theme; defaulted for cyan. */
+  --on-accent:#0a1a1d;
+  --success:#34D399; --warning:#F59E0B; --danger:#EF4444; --info:#A78BFA;
+  /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
+  --status-pending: var(--text-3);
+  --status-active: var(--text-2);
+  --status-blocked: var(--warning);
+  --status-resolved: var(--text-3);
+  --status-critical: var(--danger);
+  /* Type families — bound to next/font Geist via the CSS vars next/font sets in <html>.
+     If next/font fails to load, the OS sans/mono fallback chain still renders. */
+  --f: var(--font-geist-sans), Geist, -apple-system, BlinkMacSystemFont, sans-serif;
+  --m: var(--font-geist-mono), 'Geist Mono', 'SFMono-Regular', ui-monospace, monospace;
+
+  /* MOTION SYSTEM
+     ─────────────────────────────────────────────────────────────────
+     Durations
+       --dur-instant 80ms  · hover bg swaps, link colors, microtransitions
+       --dur-fast    140ms · borders, foregrounds, tab underlines, chevrons
+       --dur-base    200ms · modals fade-in, panels, palette, ribbon
+       --dur-mid     240ms · sidebar collapse, content scale-up
+       --dur-slow    320ms · page transitions, big layout shifts
+
+     Easings
+       --ease        decel (gentle settle)            cubic-bezier(.16,1,.3,1)
+       --ease-std    standard accel/decel             cubic-bezier(.4,0,.2,1)
+       --ease-out    pure deceleration                cubic-bezier(0,0,.2,1)
+       --ease-in     pure acceleration                cubic-bezier(.4,0,1,1)
+       --spring      light overshoot (1.06 max)       cubic-bezier(.34,1.56,.64,1)
+       --spring-soft 0.5-bounce settle                cubic-bezier(.2,.9,.4,1.1)
+
+     Choreography
+       Modal       backdrop fade-in 140ms ease-out, content scaleUp 240ms spring at 40ms delay
+       Modal exit  backdrop fade-out 120ms ease-in, content scale-down 140ms ease-in
+       Palette     stage 140ms fade-in + 28ms staggered results (fadeUp)
+       Stagger     30ms between sibling rows for ≤8 items; 18ms for >8
+       Skeleton    1.4s shimmer; on real-data swap: skel fades-out 160ms then content fadeUp w/ 24ms stagger
+       Page swap   outgoing 120ms fade-out, incoming 220ms fadeUp + 8ms gap
+       Hover bg    80ms ease-out
+       Focus ring  140ms ease-out, never animates on click (uses :focus-visible)
+       Sidebar     240ms ease (width) coordinated with label opacity 180ms at 60ms delay
+       Bar fill    700ms ease (scaleX from left) — initial paint only
+
+     prefers-reduced-motion: animations collapse to ~0ms; transitions allowed at <60ms.
+  */
+  --dur-instant:80ms;
+  --dur-fast:140ms;
+  --dur-base:200ms;
+  --dur-mid:240ms;
+  --dur-slow:320ms;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --ease-std:cubic-bezier(.4,0,.2,1);
+  --ease-out:cubic-bezier(0,0,.2,1);
+  --ease-in:cubic-bezier(.4,0,1,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --spring-soft:cubic-bezier(.2,.9,.4,1.1);
+  --ring:0 0 0 2px var(--canvas),0 0 0 4px var(--accent);
+  --ring-soft:0 0 0 2px var(--canvas),0 0 0 3px color-mix(in oklab, var(--accent) 55%, transparent);
+}
+
+html,body{height:100%;background:var(--canvas);color:var(--text-1);font-family:var(--f);font-size:13px;line-height:1.5;letter-spacing:-.011em;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,textarea,select{font-family:var(--f);letter-spacing:-.011em;color:inherit;background:none;border:none;cursor:pointer;outline:none}
+::selection{background:color-mix(in oklab, var(--accent) 32%, transparent);color:#fff}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.16)}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.08) transparent}
+
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUpSm{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulseWarn{0%,100%{box-shadow:0 0 0 0 color-mix(in oklab, var(--warning) 0%, transparent)}50%{box-shadow:0 0 0 3px color-mix(in oklab, var(--warning) 18%, transparent)}}
+@keyframes onlinePulse{0%,100%{box-shadow:0 0 0 1.5px var(--sidebar), 0 0 0 0 color-mix(in oklab, var(--success) 60%, transparent)}50%{box-shadow:0 0 0 1.5px var(--sidebar), 0 0 0 4px color-mix(in oklab, var(--success) 0%, transparent)}}
+@keyframes barFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes scaleIn{0%{opacity:0;transform:scale(.4)}60%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
+@keyframes modalBackdrop{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(6px)}}
+@keyframes modalContent{0%{opacity:0;transform:translateY(8px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+@keyframes ringPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in oklab, var(--accent) 50%, transparent)}50%{box-shadow:0 0 0 6px color-mix(in oklab, var(--accent) 0%, transparent)}}
+@keyframes expand{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0}to{opacity:1;max-height:600px;padding-top:14px;padding-bottom:14px}}
+
+/* ── Focus rings (only on keyboard nav, never click) ─────── */
+/* Text inputs/textareas opt out: caret already signals focus — accent halo competes with content. */
+button:focus-visible,a:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:none;box-shadow:var(--ring-soft);border-radius:5px;transition:box-shadow var(--dur-fast) var(--ease-out)
+}
+input:focus,input:focus-visible,textarea:focus,textarea:focus-visible{outline:none;box-shadow:none}
+
+/* Cursor affordances */
+button:disabled,[aria-disabled="true"]{cursor:not-allowed}
+.cur-grab{cursor:grab}.cur-grab:active{cursor:grabbing}
+
+/* prefers-reduced-motion — collapse animations, keep micro-transitions */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:60ms !important;scroll-behavior:auto !important}
+}
+
+.caret{display:inline-block;width:8px;height:1em;background:var(--accent);vertical-align:text-bottom;margin-left:2px;border-radius:1px;animation:blink 1s steps(2,start) infinite}
+.skel{background:linear-gradient(90deg,var(--surface) 0,var(--elevated) 50%,var(--surface) 100%);background-size:200% 100%;animation:shimmer 1.6s linear infinite;border-radius:3px}
+.spinner{width:14px;height:14px;border:1.5px solid rgba(255,255,255,.12);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+
+svg.ic{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;display:block;flex-shrink:0}
+svg.ic.sm{width:12px;height:12px}
+svg.ic.lg{width:16px;height:16px}
+
+.k{font-family:var(--m);font-size:10px;letter-spacing:0;color:var(--text-3);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:1px 5px;border-radius:3px;display:inline-flex;align-items:center}
+.k.inv{background:rgba(255,255,255,.15);border-color:transparent;color:#fff}
+
+/* Hover-reveal shortcut chips — hidden by default, fade+collapse-in on parent hover/focus.
+   Tag a chip with class "hov" to opt in. Always-visible chips (cmd palette, shortcuts modal) stay as-is. */
+.k.hov{opacity:0;max-width:0;padding:0;margin:0;border-color:transparent;overflow:hidden;transition:opacity 120ms var(--ease-out),max-width 140ms var(--ease-out),padding 140ms var(--ease-out),margin 140ms var(--ease-out),border-color 140ms var(--ease-out)}
+button:hover .k.hov,button:focus-visible .k.hov,.hov-reveal:hover .k.hov,.hov-reveal:focus-within .k.hov{opacity:1;max-width:80px;padding:1px 5px;margin-left:4px;border-color:var(--border)}
+button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov.inv,.hov-reveal:focus-within .k.hov.inv{border-color:transparent}
+
+/* Row hover utility — shifts surface, raises text contrast, reveals .row-actions on hover. */
+.row-hov{transition:background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out),box-shadow var(--dur-instant) var(--ease-out);cursor:pointer}
+.row-hov:hover{background:var(--hover-tint)}
+.row-hov:active{background:var(--hover-tint-strong)}
+.row-hov .row-actions{opacity:0;transform:translateX(2px);transition:opacity 120ms var(--ease-out),transform 140ms var(--ease-out);pointer-events:none}
+.row-hov:hover .row-actions,.row-hov:focus-within .row-actions{opacity:1;transform:translateX(0);pointer-events:auto}
+
+/* Icon button — subtle rounded-square on hover, icon opacity bumps up, slight press. */
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px;border-radius:5px;color:var(--text-3);opacity:.7;cursor:pointer;transition:background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out),opacity var(--dur-instant) var(--ease-out),transform 60ms var(--ease-in)}
+.icon-btn:hover{background:var(--hover-tint-strong);color:var(--text-1);opacity:1}
+.icon-btn:active{background:var(--press-tint);transform:translateY(.5px)}
+
+/* Linear-style hover polish — global, scoped to opt-in classes only.
+   .lin-hov  : any clickable that should subtly tint on hover (used by misc divs/links).
+   .lin-lift : adds a 1px lift on hover, returns on press. Use for chip-like clickables only — never on row interiors.
+*/
+.lin-hov{cursor:pointer;transition:background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out),border-color var(--dur-instant) var(--ease-out)}
+.lin-hov:hover{background:var(--hover-tint);color:var(--text-1)}
+.lin-hov:active{background:var(--hover-tint-strong)}
+.lin-lift{transition:transform var(--dur-fast) var(--ease-out),background var(--dur-instant) var(--ease-out),border-color var(--dur-instant) var(--ease-out)}
+.lin-lift:hover{transform:translateY(-1px)}
+.lin-lift:active{transform:translateY(0)}
