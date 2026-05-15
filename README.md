@@ -8,10 +8,17 @@ Ranks ~70 public-equity names across 5 layers using Q / G / V / AIQ factors with
 
 ---
 
+## For Claude Code (and any AI agent working on this repo)
+
+**Read [`CLAUDE.md`](./CLAUDE.md) first.** It defines the operating posture (autonomous by default), when to ask, when not to, commit conventions, and the start-of-session checklist. Terry expects you to crank through tickets independently — don't ask permission to start the next one in build order.
+
+---
+
 ## What's in this repo
 
 ```
 ai-thesis/
+├── CLAUDE.md                          ← read this FIRST on any session
 ├── README.md                          ← you are here
 ├── DESIGN_REFERENCES.md               ← read this BEFORE touching the UI
 ├── docs/
