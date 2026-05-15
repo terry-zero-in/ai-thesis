@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scaffold mockup — Q21</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens — verbatim from src/styles/basis-linear.css (verified live S51, lines 91-148, 157-159). */
+  :root {
+    --canvas:#0A0B0E; --sidebar:#0A0B0E; --surface-1:#14161B;
+    --surface-inset:#0A0B0E; --card:#14161B; --surface-2:#1A1D24;
+    --elevated:#22262E; --elevated-hover:#1F232B;
+    --border-08:#1A1D24; --border-06:#1A1D24; --border-12:#232730; --border-04:rgba(255,255,255,0.04);
+    --text-primary:#F0F1F3; --text-secondary:#9298A3; --text-muted:#5F6571; --text-faint:#505153;
+    --accent:#4D5BFF; --accent-hover:#6573FF; --accent-soft:rgba(77,91,255,0.12); --accent-border:rgba(77,91,255,0.24);
+    --danger:#E5484D; --warning:#F5A524; --success:#30A46C;     /* severity palette — BANNED for categorical UI per drill-policy.md §5.1 */
+
+    /* Status tokens — PROPOSED, NOT LOCKED (Rule 25). Inherited from Q20 mockup, illustrative-only. */
+    --status-renewed: #14B8A6;
+    --status-mtm:     #6F6F77;
+    --status-ntv:     #EC4899;
+    --status-unknown: #8A8A93;
+
+    --glow-top: inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-ui: 'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--canvas);color:var(--text-primary);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .page-wrap{max-width:1440px;margin:0 auto;padding:48px 32px 80px;}
+
+  /* Folder convention: scaffold-mockups/ = title only, no eyebrow. Per drill-policy.md §5.2. */
+  .doc-header{margin-bottom:48px;padding-bottom:28px;border-bottom:1px solid var(--border-08);}
+  .doc-title{font-size:24px;font-weight:600;letter-spacing:-0.01em;margin-bottom:10px;}
+  .doc-sub{font-size:13px;color:var(--text-secondary);line-height:1.55;max-width:920px;}
+  .doc-sub code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:2px 6px;border-radius:4px;border:1px solid var(--border-08);font-size:12px;}
+  .doc-sub b{color:var(--text-primary);font-weight:500;}
+  .doc-sub i{color:var(--text-secondary);font-style:italic;}
+
+  /* Q-block */
+  .q-block{margin-bottom:48px;}
+  .q-header{display:flex;align-items:baseline;gap:14px;margin-bottom:10px;}
+  .q-num{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;font-weight:500;padding:3px 8px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:3px;}
+  .q-title{font-size:17px;font-weight:600;letter-spacing:-0.005em;color:var(--text-primary);}
+  .q-context{font-size:12px;color:var(--text-secondary);line-height:1.55;margin-bottom:6px;max-width:960px;}
+  .q-context code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:1px 5px;border-radius:3px;font-size:11px;}
+  .q-context i{color:var(--text-secondary);font-style:italic;}
+  .q-where{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.02em;margin-bottom:18px;}
+
+  /* Drill-inheritance callout — Rule 23. */
+  .drill-inherit{margin:14px 0 18px;padding:9px 14px;background:var(--surface-1);border:1px solid var(--border-08);border-left:2px solid var(--accent);border-radius:0 4px 4px 0;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);line-height:1.55;}
+  .drill-inherit b{color:var(--text-primary);font-weight:500;}
+  .drill-inherit code{font-family:var(--font-mono);color:var(--text-primary);background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:10px;}
+
+  /* Scale caption */
+  .scale-caption{margin:0 0 14px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.02em;line-height:1.5;}
+
+  /* Option panels — single .bl-card on canvas (Rule 26). */
+  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+  .opt{
+    background:var(--card);
+    border:1px solid var(--border-08);
+    border-radius:8px;
+    box-shadow:var(--glow-top);
+    display:flex;flex-direction:column;
+  }
+  .opt.locked{
+    border-color:var(--accent-border);
+    background:linear-gradient(180deg, var(--accent-soft) 0%, var(--card) 30%);
+  }
+  .opt-header{padding:12px 16px;border-bottom:1px solid var(--border-08);border-radius:8px 8px 0 0;}
+  .opt.locked .opt-header{background:var(--accent-soft);border-bottom-color:var(--accent-border);}
+  .opt-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;}
+  .opt-letter{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--elevated);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;font-weight:500;}
+  .opt-letter.rec{background:var(--accent);color:#fff;}
+  .opt-name{font-size:12px;color:var(--text-primary);font-weight:500;letter-spacing:0;text-transform:none;}
+  .opt-stage{padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .opt-note{padding:10px 16px 14px;font-size:11px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--border-06);border-radius:0 0 8px 8px;}
+  .opt.locked .opt-note{background:var(--accent-soft);border-top-color:var(--accent-border);color:var(--text-secondary);}
+  .opt-note b{color:var(--text-primary);}
+  .opt-note code{font-family:var(--font-mono);color:var(--text-primary);background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:10px;}
+
+  /* Frame title (above stage content) */
+  .bxn-frame-title{font-size:11px;font-weight:600;color:var(--text-primary);}
+  .bxn-frame-sub{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:2px;}
+
+  /* ============================================================
+     OPTION A — Horizontal scroll with sticky leftmost column + right-edge fade
+     ============================================================ */
+  .a-scrollwrap{position:relative;border:1px solid var(--border-08);border-radius:4px;overflow:hidden;background:var(--card);}
+  .a-scrollshell{overflow-x:hidden;}     /* clipped — fade indicates content past the edge */
+  .a-matrix{
+    display:grid;
+    grid-template-columns:46px repeat(5, 70px);   /* 46 + 350 = 396px > panel-stage ~310px → overflows right */
+    gap:1px;
+    background:var(--border-08);
+    min-width:396px;
+  }
+  .a-th, .a-row-label, .a-cell{
+    background:var(--card);
+    min-height:24px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);
+    font-size:10px;
+    color:var(--text-primary);
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+  }
+  .a-th{
+    background:var(--surface-inset);
+    color:var(--text-muted);
+    font-size:8.5px;letter-spacing:0.04em;text-transform:uppercase;font-weight:500;
+    padding:5px 2px;
+  }
+  .a-th.fp-label, .a-row-label{
+    justify-content:flex-start;padding-left:6px;padding-right:3px;
+    color:var(--text-secondary);font-size:9px;letter-spacing:0.04em;
+  }
+  .a-row-label{background:var(--surface-inset);}
+
+  /* Sticky leftmost column — visually anchors during conceptual scroll. */
+  .a-th.sticky, .a-row-label.sticky{
+    position:sticky;left:0;z-index:2;
+    box-shadow:1px 0 0 0 var(--border-08);
+  }
+  .a-cell.total-col{font-weight:600;background:var(--surface-2);}
+  .a-row-label.total-row{font-weight:600;color:var(--text-primary);background:var(--surface-2);}
+  .a-cell.total-row{font-weight:600;background:var(--surface-2);}
+
+  /* Status-colored cells (Q20=B inheritance — illustrative) */
+  .a-renewed-l3{background:rgba(20,184,166,0.32);}
+  .a-renewed-l4{background:rgba(20,184,166,0.48);}
+  .a-renewed-l5{background:rgba(20,184,166,0.65);}
+  .a-mtm-l1{background:rgba(139,92,246,0.10);}
+  .a-mtm-l3{background:rgba(139,92,246,0.40);}
+  .a-mtm-l4{background:rgba(139,92,246,0.58);}
+  .a-ntv-l1{background:rgba(236,72,153,0.10);}
+  .a-ntv-l2{background:rgba(236,72,153,0.24);}
+  .a-ntv-l3{background:rgba(236,72,153,0.42);}
+  .a-ntv-l4{background:rgba(236,72,153,0.60);}
+  .a-unk-l1{background:rgba(113,113,122,0.18);}
+  .a-unk-l2{background:rgba(113,113,122,0.30);}
+  .a-unk-l3{background:rgba(113,113,122,0.48);}
+  .a-unk-l4{background:rgba(113,113,122,0.65);}
+
+  /* Right-edge fade — standard horizontal-scroll fade affordance. No custom scrollbar. */
+  .a-scrollwrap::after{
+    content:"";
+    position:absolute;top:0;right:0;bottom:0;width:48px;
+    pointer-events:none;
+    background:linear-gradient(to right, rgba(21,22,25,0) 0%, var(--card) 75%);
+    z-index:3;
+  }
+
+  /* ============================================================
+     OPTION B — Per-floorplan row cards stacked, 2x2 chip grid + Total
+     ============================================================ */
+  .b-stack{display:flex;flex-direction:column;gap:6px;}
+  .b-row{
+    display:grid;
+    grid-template-columns:42px 1fr 52px;
+    align-items:center;
+    gap:10px;
+    padding:8px 10px;
+    background:transparent;
+    border:1px solid var(--border-06);
+    border-radius:6px;
+  }
+  .b-row-fp{
+    font-family:var(--font-mono);
+    font-size:10px;
+    font-weight:600;
+    color:var(--text-primary);
+    letter-spacing:0.04em;
+  }
+  .b-chip-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto auto;
+    gap:4px;
+  }
+  .b-chip{
+    display:flex;align-items:center;gap:5px;
+    padding:3px 6px;
+    background:var(--surface-inset);
+    border:1px solid var(--border-06);
+    border-radius:3px;
+    font-family:var(--font-mono);
+    font-size:9.5px;
+    color:var(--text-secondary);
+    line-height:1;
+  }
+  .b-chip .b-dot{width:7px;height:7px;border-radius:1px;flex:0 0 7px;}
+  .b-chip .b-dot.r{background:var(--status-renewed);}
+  .b-chip .b-dot.m{background:var(--status-mtm);}
+  .b-chip .b-dot.n{background:var(--status-ntv);}
+  .b-chip .b-dot.u{background:var(--status-unknown);}
+  .b-chip .b-lbl{color:var(--text-muted);font-size:8.5px;letter-spacing:0.04em;text-transform:uppercase;flex:0 0 auto;}
+  .b-chip .b-val{color:var(--text-primary);font-variant-numeric:tabular-nums;font-weight:500;margin-left:auto;}
+  .b-chip.empty{opacity:0.55;}
+  .b-chip.empty .b-val{color:var(--text-faint);}
+
+  .b-total-chip{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:6px 4px;
+    background:var(--surface-2);
+    border:1px solid var(--border-08);
+    border-radius:4px;
+    font-family:var(--font-mono);
+  }
+  .b-total-chip .b-total-lbl{font-size:8px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;line-height:1;margin-bottom:3px;}
+  .b-total-chip .b-total-val{font-size:13px;color:var(--text-primary);font-weight:600;font-variant-numeric:tabular-nums;line-height:1;}
+
+  /* Order-key strip (above row cards) — codifies 2x2 reading order matches Brixton column order */
+  .b-order-key{
+    display:flex;align-items:center;gap:8px;
+    padding:6px 10px;
+    background:var(--surface-1);
+    border:1px solid var(--border-06);
+    border-radius:4px;
+    font-family:var(--font-mono);
+    font-size:8.5px;
+    color:var(--text-muted);
+    letter-spacing:0.04em;
+  }
+  .b-order-key .b-order-key-grid{
+    display:grid;
+    grid-template-columns:auto auto;
+    gap:2px 8px;
+    flex:0 0 auto;
+  }
+  .b-order-key .ok-cell{display:flex;align-items:center;gap:4px;}
+  .b-order-key .ok-dot{width:6px;height:6px;border-radius:1px;}
+  .b-order-key .ok-dot.r{background:var(--status-renewed);}
+  .b-order-key .ok-dot.m{background:var(--status-mtm);}
+  .b-order-key .ok-dot.n{background:var(--status-ntv);}
+  .b-order-key .ok-dot.u{background:var(--status-unknown);}
+  .b-order-key .ok-note{color:var(--text-secondary);font-size:9px;letter-spacing:0;line-height:1.4;flex:1;}
+
+  /* "+ N more floorplans" pseudo-row */
+  .b-more-row{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    padding:8px;
+    border:1px dashed var(--border-08);
+    border-radius:6px;
+    color:var(--text-muted);
+    font-family:var(--font-mono);
+    font-size:9.5px;
+    letter-spacing:0.02em;
+  }
+
+  /* Recommendation row + decision bar */
+  .rec-row{margin-top:22px;padding:13px 16px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:6px;display:flex;gap:14px;align-items:flex-start;}
+  .rec-label{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:600;font-family:var(--font-mono);white-space:nowrap;flex:0 0 auto;padding-top:1px;}
+  .rec-text{font-size:12.5px;color:var(--text-secondary);line-height:1.55;}
+  .rec-text b{color:var(--text-primary);font-weight:500;}
+  .rec-text code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:1px 5px;border-radius:3px;font-size:11px;}
+  .rec-text i{color:var(--text-secondary);font-style:italic;}
+  .decision-bar{margin-top:10px;padding:10px 16px;background:var(--surface-inset);border:1px dashed var(--border-08);border-radius:6px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;}
+  .decision-bar strong{color:var(--text-primary);}
+
+  .footer-note{margin-top:48px;padding-top:24px;border-top:1px solid var(--border-08);font-size:11px;color:var(--text-muted);font-family:var(--font-mono);line-height:1.65;}
+  .footer-note code{background:var(--card);padding:1px 5px;border-radius:3px;border:1px solid var(--border-08);color:var(--text-primary);}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockup — Q21</div>
+    <div class="doc-sub">
+      <b>Brixton matrix at narrow canvas.</b> Blueprint is silent on responsive behavior; the matrix is structurally a wide table (floorplan rows × 4 status columns + Total). At narrow viewports — confirmed target <code>768px iPad portrait</code> (S51) — the matrix exceeds available horizontal space. Three treatment options below; decision is on <i>which surface adaptation preserves the rollover-distribution read</i>, not on the cell-level encoding (Q20=B inherited).
+    </div>
+  </div>
+
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q21</span><h2 class="q-title">Brixton matrix at narrow canvas — responsive behavior</h2></div>
+    <p class="q-context">
+      At <code>768px</code> iPad portrait the matrix card competes with sidebar + page chrome for ~640-700px content width. Six floorplans × 5 columns at usable cell widths ≥80px = ~480px minimum; with comfortable cells ≥100px = ~600px. The matrix fits at narrow widths only when cells compress past readable thresholds. Question: how does the surface adapt while preserving the <i>"how is rollover distributed by status across floorplans?"</i> read locked in Q20=B.
+    </p>
+    <p class="q-where">Appears on: Insights → Lease Rollover · target narrow canvas = <code>768px</code> · panels render at panel-scale, simulating the 768px treatment</p>
+
+    <div class="drill-inherit">
+      <b>Drill inheritance — SURFACE vs MECHANIC:</b> Q21 alters the matrix <b>surface</b> (how cells are laid out at narrow width); it does NOT alter the drill <b>mechanic</b>. Per-cell drill remains <code>arrow → slide-out</code> per Q17 / <code>drill-policy.md §1</code> (cell unit count is universally in the <code>&gt;15</code> regime). Sticky-column matrix (A) and row-card collapse (B) both expose the same per-cell affordance at smaller scale; C suspends the surface entirely and routes the user to a context where the mechanic is preserved.
+    </div>
+
+    <p class="scale-caption">Panels render at panel-scale, simulating <b style="color:var(--text-secondary)">768px iPad portrait</b> behavior. Decision is on <b style="color:var(--text-secondary)">surface adaptation</b>, not pixel-accurate fidelity.</p>
+
+    <div class="opts">
+
+      <!-- ============================================================
+           Q21.A — Horizontal scroll + sticky leftmost column + fade  (LOCKED S51)
+           ============================================================ -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Horizontal scroll · sticky FP column · right-edge fade</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease rollover composition</div>
+          <div class="bxn-frame-sub">180 units · status hue + intensity per cell</div>
+          <div class="a-scrollwrap" aria-label="Brixton matrix · horizontal scroll with sticky column">
+            <div class="a-scrollshell">
+              <div class="a-matrix">
+                <!-- header row -->
+                <div class="a-th fp-label sticky">FP</div>
+                <div class="a-th">RENEWED</div>
+                <div class="a-th">MTM</div>
+                <div class="a-th">NTV</div>
+                <div class="a-th">UNKNOWN</div>
+                <div class="a-th">TOTAL</div>
+                <!-- S1 -->
+                <div class="a-row-label sticky">S1</div>
+                <div class="a-cell a-renewed-l3">14</div>
+                <div class="a-cell a-mtm-l3">2</div>
+                <div class="a-cell a-ntv-l4">4</div>
+                <div class="a-cell a-unk-l1">5</div>
+                <div class="a-cell total-col">25</div>
+                <!-- A1 -->
+                <div class="a-row-label sticky">A1</div>
+                <div class="a-cell a-renewed-l4">22</div>
+                <div class="a-cell a-mtm-l1">1</div>
+                <div class="a-cell a-ntv-l3">3</div>
+                <div class="a-cell a-unk-l3">9</div>
+                <div class="a-cell total-col">35</div>
+                <!-- A2 -->
+                <div class="a-row-label sticky">A2</div>
+                <div class="a-cell a-renewed-l3">18</div>
+                <div class="a-cell">—</div>
+                <div class="a-cell a-ntv-l1">1</div>
+                <div class="a-cell a-unk-l2">6</div>
+                <div class="a-cell total-col">25</div>
+                <!-- B1 -->
+                <div class="a-row-label sticky">B1</div>
+                <div class="a-cell a-renewed-l5">28</div>
+                <div class="a-cell a-mtm-l3">2</div>
+                <div class="a-cell a-ntv-l3">3</div>
+                <div class="a-cell a-unk-l2">7</div>
+                <div class="a-cell total-col">40</div>
+                <!-- B2 -->
+                <div class="a-row-label sticky">B2</div>
+                <div class="a-cell a-renewed-l3">16</div>
+                <div class="a-cell a-mtm-l4">3</div>
+                <div class="a-cell a-ntv-l4">5</div>
+                <div class="a-cell a-unk-l2">6</div>
+                <div class="a-cell total-col">30</div>
+                <!-- C1 -->
+                <div class="a-row-label sticky">C1</div>
+                <div class="a-cell a-renewed-l3">10</div>
+                <div class="a-cell a-mtm-l1">1</div>
+                <div class="a-cell a-ntv-l2">2</div>
+                <div class="a-cell a-unk-l4">12</div>
+                <div class="a-cell total-col">25</div>
+                <!-- Total row -->
+                <div class="a-row-label total-row sticky">TOT</div>
+                <div class="a-cell total-row">108</div>
+                <div class="a-cell total-row">9</div>
+                <div class="a-cell total-row">18</div>
+                <div class="a-cell total-row">45</div>
+                <div class="a-cell total-row">180</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Matrix retains its full structure; user scrolls horizontally to reach clipped columns. Leftmost <b>FP</b> column stays sticky so rows remain identifiable during scroll. Right-edge <b>fade gradient</b> signals more content past the visible edge — standard horizontal-scroll fade pattern, no custom scrollbar UI. Native browser scrollbar persists at OS level. <b>Cost:</b> the at-a-glance rollover-distribution read (Q20=B's headline strength) requires interaction to fully consume; first-paint shows partial truth.
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Q21.B — Per-floorplan row cards, 2x2 chip grid + Total
+           ============================================================ -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Per-floorplan row cards · 2×2 chip grid + Total</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease rollover composition</div>
+          <div class="bxn-frame-sub">one card per floorplan · 2×2 chip order matches matrix column order</div>
+          <div class="b-order-key">
+            <div class="b-order-key-grid">
+              <div class="ok-cell"><span class="ok-dot r"></span>REN</div>
+              <div class="ok-cell"><span class="ok-dot m"></span>MTM</div>
+              <div class="ok-cell"><span class="ok-dot n"></span>NTV</div>
+              <div class="ok-cell"><span class="ok-dot u"></span>UNK</div>
+            </div>
+            <div class="ok-note">Reading order top-left → top-right → bottom-left → bottom-right preserves the Brixton column sequence. Eye does not remap between matrix and card views.</div>
+          </div>
+          <div class="b-stack" aria-label="Brixton matrix · row-card collapse">
+            <!-- B1: highest renewing -->
+            <div class="b-row">
+              <div class="b-row-fp">B1</div>
+              <div class="b-chip-grid">
+                <div class="b-chip"><span class="b-dot r"></span><span class="b-lbl">REN</span><span class="b-val">28</span></div>
+                <div class="b-chip"><span class="b-dot m"></span><span class="b-lbl">MTM</span><span class="b-val">2</span></div>
+                <div class="b-chip"><span class="b-dot n"></span><span class="b-lbl">NTV</span><span class="b-val">3</span></div>
+                <div class="b-chip"><span class="b-dot u"></span><span class="b-lbl">UNK</span><span class="b-val">7</span></div>
+              </div>
+              <div class="b-total-chip">
+                <div class="b-total-lbl">TOT</div>
+                <div class="b-total-val">40</div>
+              </div>
+            </div>
+            <!-- A1 -->
+            <div class="b-row">
+              <div class="b-row-fp">A1</div>
+              <div class="b-chip-grid">
+                <div class="b-chip"><span class="b-dot r"></span><span class="b-lbl">REN</span><span class="b-val">22</span></div>
+                <div class="b-chip"><span class="b-dot m"></span><span class="b-lbl">MTM</span><span class="b-val">1</span></div>
+                <div class="b-chip"><span class="b-dot n"></span><span class="b-lbl">NTV</span><span class="b-val">3</span></div>
+                <div class="b-chip"><span class="b-dot u"></span><span class="b-lbl">UNK</span><span class="b-val">9</span></div>
+              </div>
+              <div class="b-total-chip">
+                <div class="b-total-lbl">TOT</div>
+                <div class="b-total-val">35</div>
+              </div>
+            </div>
+            <!-- C1: anomaly — over-Unknown -->
+            <div class="b-row">
+              <div class="b-row-fp">C1</div>
+              <div class="b-chip-grid">
+                <div class="b-chip"><span class="b-dot r"></span><span class="b-lbl">REN</span><span class="b-val">10</span></div>
+                <div class="b-chip"><span class="b-dot m"></span><span class="b-lbl">MTM</span><span class="b-val">1</span></div>
+                <div class="b-chip"><span class="b-dot n"></span><span class="b-lbl">NTV</span><span class="b-val">2</span></div>
+                <div class="b-chip"><span class="b-dot u"></span><span class="b-lbl">UNK</span><span class="b-val">12</span></div>
+              </div>
+              <div class="b-total-chip">
+                <div class="b-total-lbl">TOT</div>
+                <div class="b-total-val">25</div>
+              </div>
+            </div>
+            <div class="b-more-row">+ 3 more floorplans · stacked vertically</div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Matrix collapses to one card per floorplan. Each card = floorplan label, 2×2 chip grid (<code>REN MTM / NTV UNK</code>, matching matrix column order), Total chip on the right. <b>Cost:</b> kills the cross-floorplan column-comparison story Q20=B was built for — "B1 has the strongest renewing" is no longer preattentive across rows because each card is its own visual unit. Row chips don't carry intensity encoding, so magnitude-within-status is read numerically only.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>A.</b> The Brixton's two-channel encoding (Q20=B status hue + intensity) is the surface's payload — A preserves it intact and accepts a small interaction cost (horizontal scroll). B preserves data but kills the cross-floorplan column-comparison story that's the matrix's <i>reason for existing</i>: each card becomes its own visual unit, so "B1 has the strongest renewing" is no longer preattentive across rows. Magnitude-within-status reads numerically only (chip values), not via intensity.
+        <br/><br/>
+        Honest read on audience: per <code>/basis</code>, primary users are desk-bound underwriters on ≥1600px monitors. Narrow-canvas is a secondary surface (tablet review during deal screening). A's "scroll right to see Total" cost is acceptable in that context; the headline rollover-distribution read still lands on first paint via the visible status columns. Sticky leftmost FP column is the cross-platform table pattern at narrow widths — anchors row identity during scroll.
+      </span>
+    </div>
+    <div class="decision-bar"><strong>Your pick for Q21:</strong> A / B</div>
+  </section>
+
+  <div class="footer-note">
+    Drill mechanic inherited per Q17 lock — per-cell click → arrow → slide-out (<code>drill-policy.md §1</code>, <code>§4</code>). Cell-level encoding inherited per Q20=B — color = status, intensity = count within column. Status tokens illustrative per Rule 25; canonical hex still deferred. Card depth ladder per Rule 26 — each option panel = single <code>.bl-card</code> on canvas, no nested surface. Tokens in <code>:root</code> copied verbatim from <code>src/styles/basis-linear.css</code> per Rule 24.
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Basis Scaffold Mockups — Q5–Q8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas:#0A0B0E; --sidebar:#0A0B0E; --surface-1:#14161B;
+    --surface-inset:#0A0B0E; --card:#14161B; --surface-2:#1A1D24;
+    --elevated:#22262E; --elevated-hover:#1F232B;
+    --border-card:#1A1D24; --border-08:#1A1D24; --border-06:#1A1D24; --border-12:#232730;
+    --text-primary:#F0F1F3; --text-secondary:#9298A3; --text-muted:#5F6571; --text-faint:#505153;
+    --accent:#4D5BFF; --accent-hover:#6573FF; --accent-soft:rgba(77,91,255,0.12); --accent-border:rgba(77,91,255,0.24);
+    --danger:#E5484D; --danger-soft:rgba(229,72,77,0.10);
+    --warning:#F5A524; --success:#30A46C;
+    --glow-top:inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-ui: 'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--canvas);color:var(--text-primary);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .page-wrap{max-width:1440px;margin:0 auto;padding:48px 32px 96px;}
+  .doc-header{margin-bottom:56px;padding-bottom:32px;border-bottom:1px solid var(--border-08);}
+  .doc-title{font-size:24px;font-weight:600;letter-spacing:-0.01em;margin-bottom:8px;}
+  .doc-sub{font-size:13px;color:var(--text-secondary);line-height:1.5;max-width:720px;}
+  .doc-sub code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:2px 6px;border-radius:4px;border:1px solid var(--border-card);font-size:12px;}
+  .q-block{margin-bottom:80px;}
+  .q-header{display:flex;align-items:baseline;gap:12px;margin-bottom:8px;}
+  .q-num{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);letter-spacing:0.02em;}
+  .q-title{font-size:20px;font-weight:600;letter-spacing:-0.01em;}
+  .q-context{font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:8px;max-width:760px;}
+  .q-where{font-size:12px;color:var(--text-muted);margin-bottom:24px;font-family:var(--font-mono);}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .opt{background:var(--surface-1);border:1px solid var(--border-08);border-radius:8px;position:relative;}
+  .opt-header{padding:12px 16px;border-bottom:1px solid var(--border-08);background:var(--surface-inset);border-radius:8px 8px 0 0;}
+  .opt-note{border-radius:0 0 8px 8px;}
+  .opt-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;}
+  .opt-letter{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--elevated);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;font-weight:500;}
+  .opt-letter.rec{background:var(--accent);color:#fff;}
+  .opt-name{font-size:12px;color:var(--text-primary);font-weight:500;letter-spacing:0;text-transform:none;}
+  .opt-stage{background:var(--canvas);padding:28px 20px;min-height:320px;display:flex;flex-direction:column;}
+  .opt-note{padding:10px 16px 14px;font-size:11px;color:var(--text-muted);line-height:1.45;border-top:1px solid var(--border-06);background:var(--surface-1);}
+  .stage-frame{width:100%;background:var(--card);border:1px solid var(--border-card);border-radius:6px;box-shadow:var(--glow-top);padding:16px;flex:1;display:flex;flex-direction:column;position:relative;}
+  .stage-frame-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+  .stage-frame-sub{font-size:11px;color:var(--text-muted);margin-bottom:16px;}
+  .rec-row{margin-top:20px;padding:14px 18px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:6px;display:flex;gap:14px;align-items:center;}
+  .rec-label{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:600;font-family:var(--font-mono);}
+  .rec-text{font-size:13px;color:var(--text-secondary);line-height:1.5;}
+  .rec-text b{color:var(--text-primary);font-weight:500;}
+  .decision-bar{margin-top:10px;padding:10px 18px;background:var(--surface-inset);border:1px dashed var(--border-08);border-radius:6px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;}
+  .decision-bar strong{color:var(--text-primary);}
+
+  /* ── Q5 tooltip mockups ── */
+  .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .kpi{background:var(--card);border:1px solid var(--border-card);border-radius:4px;padding:10px 12px;box-shadow:var(--glow-top);position:relative;}
+  .kpi .label{font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;font-weight:500;}
+  .kpi .value{font-family:var(--font-mono);font-size:16px;color:var(--text-primary);font-weight:500;}
+  .kpi .sub{font-size:10px;color:var(--text-muted);margin-top:2px;}
+  .kpi.hovered{border-color:var(--border-12);background:var(--surface-2);}
+
+  .tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--elevated);border:1px solid var(--border-08);border-radius:6px;padding:10px 12px;min-width:220px;max-width:300px;box-shadow:0 6px 16px rgba(0,0,0,0.45);font-size:12px;color:var(--text-primary);line-height:1.45;z-index:10;}
+  .tip .t-title{font-weight:600;margin-bottom:4px;font-size:12px;}
+  .tip .t-def{color:var(--text-secondary);}
+  .tip .t-formula{font-family:var(--font-mono);font-size:11px;color:var(--text-primary);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-06);}
+  .tip .t-formula .f-row{display:grid;grid-template-columns:14px 72px 1fr;gap:6px;align-items:baseline;padding:1px 0;}
+  .tip .t-formula .f-op{color:var(--text-muted);text-align:center;}
+  .tip .t-formula .f-label{color:var(--text-muted);}
+  .tip .t-formula .f-val{color:var(--text-primary);text-align:right;}
+  .tip .t-formula .f-rule{border-top:1px solid var(--border-12);margin:3px 0;}
+  .tip .t-formula .f-total .f-op,.tip .t-formula .f-total .f-val{color:var(--accent);font-weight:500;}
+  .tip .t-prov{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-06);line-height:1.5;}
+  .tip .t-prov .conf{color:var(--success);}
+
+  .stage-kicker{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.04em;text-transform:uppercase;}
+
+  /* ── Q6 chart annotations ── */
+  .chart-wrap{position:relative;background:var(--card);border:1px solid var(--border-card);border-radius:4px;padding:14px;flex:1;display:flex;flex-direction:column;box-shadow:var(--glow-top);min-height:220px;}
+  .chart-wrap .c-title{font-size:12px;font-weight:500;margin-bottom:2px;}
+  .chart-wrap .c-sub{font-size:10px;color:var(--text-muted);margin-bottom:12px;}
+  .bars{flex:1;display:flex;align-items:flex-end;gap:4px;position:relative;padding-top:18px;}
+  .bars .bar{flex:1;background:var(--text-faint);border-radius:2px 2px 0 0;min-height:6px;position:relative;}
+  .bars .bar.peak{background:var(--danger);opacity:0.7;}
+  .bars .bar.annot{background:var(--text-secondary);}
+  .bars .month{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);font-family:var(--font-mono);}
+  .annot-top{position:absolute;top:0;right:10px;font-size:10px;color:var(--text-faint);font-family:var(--font-mono);line-height:1.3;max-width:130px;text-align:right;}
+  .annot-top .leader{display:inline-block;width:14px;height:1px;background:var(--text-faint);vertical-align:middle;margin:0 4px;}
+  .median-line{position:absolute;left:14px;right:14px;border-top:1px dashed var(--border-12);z-index:1;}
+  .median-label{position:absolute;right:14px;font-size:9px;color:var(--text-muted);font-family:var(--font-mono);background:var(--card);padding:0 4px;transform:translateY(-50%);}
+  .threshold-line{position:absolute;left:14px;right:14px;border-top:1px dashed var(--warning);opacity:0.6;z-index:1;}
+  .threshold-label{position:absolute;left:14px;font-size:9px;color:var(--warning);font-family:var(--font-mono);background:var(--card);padding:0 4px;transform:translateY(-50%);}
+  .bars-row{display:flex;gap:4px;margin-bottom:18px;align-items:flex-end;flex:1;position:relative;}
+
+  /* ── Q7 drill-down mockups ── */
+  .matrix{border:1px solid var(--border-card);border-radius:4px;overflow:hidden;background:var(--card);box-shadow:var(--glow-top);margin-bottom:8px;}
+  .matrix-head,.matrix-row{display:grid;grid-template-columns:60px repeat(4,1fr);font-size:10px;font-family:var(--font-mono);}
+  .matrix-head{background:var(--surface-inset);border-bottom:1px solid var(--border-08);color:var(--text-muted);padding:4px 0;text-align:center;letter-spacing:0.04em;text-transform:uppercase;}
+  .matrix-head span{padding:2px;}
+  .matrix-row{border-bottom:1px solid var(--border-06);}
+  .matrix-row:last-child{border-bottom:none;}
+  .matrix-row span{padding:6px 2px;text-align:center;color:var(--text-primary);font-size:11px;}
+  .matrix-row .row-label{color:var(--text-muted);text-align:left;padding-left:8px;}
+  .matrix-cell{cursor:pointer;}
+  .matrix-cell.clicked{background:var(--accent-soft);color:var(--text-primary);border:1px solid var(--accent-border);border-radius:3px;}
+
+  .page-badge{display:inline-block;padding:4px 10px;background:var(--elevated);border:1px solid var(--border-08);border-radius:4px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);margin-top:12px;}
+  .page-badge.active{background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent);}
+  .arrow-down{text-align:center;color:var(--text-faint);margin:6px 0;font-family:var(--font-mono);font-size:14px;}
+
+  /* Rent Roll preview */
+  .rr-preview{background:var(--card);border:1px solid var(--border-card);border-radius:4px;padding:8px;font-family:var(--font-mono);font-size:10px;box-shadow:var(--glow-top);}
+  .rr-filter-pill{display:inline-block;padding:2px 6px;background:var(--accent-soft);border:1px solid var(--accent-border);color:var(--accent);border-radius:3px;margin-bottom:6px;}
+  .rr-line{display:grid;grid-template-columns:40px 50px 1fr 60px;gap:0;padding:3px 0;border-bottom:1px solid var(--border-06);}
+  .rr-line:last-child{border-bottom:none;}
+  .rr-line span{color:var(--text-secondary);}
+  .rr-line .rent{text-align:right;color:var(--text-primary);}
+
+  /* slide-out for C */
+  .slide-out{position:absolute;top:0;right:0;bottom:0;width:220px;background:var(--elevated);border-left:1px solid var(--border-12);padding:12px;box-shadow:-8px 0 24px rgba(0,0,0,0.4);display:flex;flex-direction:column;}
+  .slide-title{font-size:12px;font-weight:600;margin-bottom:4px;}
+  .slide-sub{font-size:10px;color:var(--text-muted);margin-bottom:10px;}
+  .slide-list{flex:1;font-family:var(--font-mono);font-size:10px;display:flex;flex-direction:column;gap:3px;}
+  .slide-item{display:flex;justify-content:space-between;padding:4px 6px;background:var(--card);border-radius:3px;}
+  .slide-item .u{color:var(--text-secondary);}
+  .slide-item .v{color:var(--text-primary);}
+  .slide-foot{margin-top:10px;padding:6px 10px;background:var(--accent);color:#fff;border-radius:4px;font-size:11px;font-weight:500;text-align:center;cursor:pointer;}
+  .faded{opacity:0.35;pointer-events:none;filter:blur(0.3px);}
+
+  /* modal for B */
+  .modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:12px;}
+  .modal{background:var(--elevated);border:1px solid var(--border-12);border-radius:6px;padding:14px;min-width:260px;max-width:90%;box-shadow:0 12px 32px rgba(0,0,0,0.6);}
+
+  /* ── Q8 URL state ── */
+  .browser-chrome{background:var(--elevated);border:1px solid var(--border-08);border-radius:6px 6px 0 0;padding:8px 10px;display:flex;gap:6px;align-items:center;font-size:11px;font-family:var(--font-mono);color:var(--text-secondary);}
+  .url-bar{flex:1;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;padding:4px 10px;color:var(--text-secondary);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .url-bar .url-param{color:var(--accent);}
+  .browser-body{background:var(--card);border:1px solid var(--border-08);border-top:none;border-radius:0 0 6px 6px;padding:12px;flex:1;display:flex;flex-direction:column;gap:10px;}
+
+  .tab-row{display:flex;gap:4px;border-bottom:1px solid var(--border-06);padding-bottom:6px;margin-bottom:8px;}
+  .tab{padding:3px 8px;font-size:11px;color:var(--text-muted);border-radius:3px 3px 0 0;cursor:pointer;}
+  .tab.active{color:var(--text-primary);background:var(--surface-2);border-bottom:1px solid var(--accent);}
+
+  .share-preview{margin-top:auto;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:4px;font-size:11px;color:var(--accent);}
+  .share-preview .icon-sm{font-family:var(--font-mono);}
+
+  .sm-empty{font-size:11px;color:var(--text-muted);padding:12px;text-align:center;font-family:var(--font-mono);}
+
+  /* kicker / arrow / nav simulation */
+  .nav-fake{display:flex;gap:4px;margin-bottom:8px;}
+  .nav-pill{padding:3px 8px;font-size:10px;color:var(--text-muted);border-radius:3px;font-family:var(--font-mono);}
+  .nav-pill.active{background:var(--surface-2);color:var(--text-primary);}
+
+  .filter-chip-mini{display:inline-block;padding:2px 6px;background:var(--elevated);border:1px solid var(--border-08);border-radius:3px;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);margin-right:4px;}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockups — Q5–Q8</div>
+    <div class="doc-sub">
+      Tooltip content rules, chart annotation, drill-down behavior, and cross-page filter persistence.
+      Reply like <code>5A, 6B, 7C, 8C</code>. Q5's recommendation is three-rules-in-one
+      (A default / B for KPIs / C for slide-out) — pick that as <code>5 ABC</code> if you agree with all three.
+    </div>
+  </div>
+
+  <!-- ========================= Q5 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q5</span><h2 class="q-title">Tooltip content rules</h2></div>
+    <p class="q-context">
+      When the user hovers a number or label, what should the tooltip contain? Three candidate content models shown.
+      Claude's recommendation is that <b>all three rules ship together, one per surface</b> — A everywhere by default,
+      B on the KPI strip where math matters, C inside the unit slide-out where provenance matters.
+    </p>
+    <p class="q-where">Appears on: every label, every KPI, every source-traceability field</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Definitions only</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-kicker">Hover on a chart axis label · any page</div>
+            <div class="stage-frame-title">Lease rollover by month</div>
+            <div class="stage-frame-sub">Portfolio turnover schedule · rolling 24mo</div>
+            <div style="position:relative;margin-top:40px;">
+              <div style="display:inline-block;font-size:11px;color:var(--text-muted);font-family:var(--font-mono);border-bottom:1px dotted var(--text-muted);padding:2px 4px;">WALT</div>
+              <div class="tip" style="left:0;transform:none;top:auto;bottom:calc(100% + 6px);min-width:200px;">
+                <div class="t-title">WALT</div>
+                <div class="t-def">Weighted Average Lease Term. Mean remaining lease duration, weighted by square footage.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Pure glossary. Definition only. No values, no formulas. Lowest info density.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">Definition + computed math</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-kicker">Hover on a KPI strip value</div>
+            <div class="stage-frame-title">Insights → Overview</div>
+            <div class="stage-frame-sub">McDowell Heights · 312 units</div>
+            <div class="kpi-row" style="margin-top:14px;">
+              <div class="kpi">
+                <div class="label">GPR</div>
+                <div class="value">$189,905</div>
+                <div class="sub">Monthly · market</div>
+              </div>
+              <div class="kpi hovered" style="z-index:5;">
+                <div class="label">LTL</div>
+                <div class="value">$10,822</div>
+                <div class="sub">5.7% of GPR</div>
+                <div class="tip" style="bottom:auto;top:calc(100% + 8px);">
+                  <div class="t-title">Loss to Lease</div>
+                  <div class="t-def">Gap between market and in-place rent. Embedded upside on renewal/rollover.</div>
+                  <div class="t-formula">
+                    <div class="f-row"><span class="f-op"></span><span class="f-label">GPR</span><span class="f-val">$189,905</span></div>
+                    <div class="f-row"><span class="f-op">−</span><span class="f-label">In-Place</span><span class="f-val">$179,083</span></div>
+                    <div class="f-rule"></div>
+                    <div class="f-row f-total"><span class="f-op">=</span><span class="f-label">LTL</span><span class="f-val">$10,822</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="kpi">
+                <div class="label">In-Place</div>
+                <div class="value">$179,083</div>
+                <div class="sub">Monthly · collected</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Shows the math. Hovering the LTL KPI reveals how it was computed from visible inputs.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">C</span><span class="opt-name">Provenance only</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-kicker">Hover in unit slide-out → Source Traceability</div>
+            <div class="stage-frame-title">Unit 1218 · 2BR · McDowell</div>
+            <div class="stage-frame-sub">In-place rent · $1,425</div>
+            <div style="margin-top:20px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;position:relative;">
+              <div style="font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;">Source Traceability</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:11px;">
+                <span style="color:var(--text-secondary);">In-place rent</span>
+                <span style="color:var(--text-primary);border-bottom:1px dotted var(--text-muted);cursor:help;">$1,425</span>
+              </div>
+              <div class="tip" style="left:auto;right:0;transform:none;bottom:calc(100% + 8px);min-width:240px;">
+                <div class="t-title">In-place rent · $1,425</div>
+                <div class="t-prov">
+                  Source · Occupancy Summary<br/>
+                  Row 11 · "Occupied, no NTV"<br/>
+                  Extracted · 2026-04-18<br/>
+                  Confidence · <span class="conf">98%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Trust anchor. Where the number came from, when it was pulled, and the confidence score.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text"><b>All three.</b> A default everywhere, B on the KPI strip, C inside the unit slide-out's source-traceability section. Three rules, one per surface, no overlap.</span>
+    </div>
+    <div class="decision-bar">
+      <strong>Your pick for Q5:</strong> A / B / C / ABC (all three)
+    </div>
+  </section>
+
+  <!-- ========================= Q6 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q6</span><h2 class="q-title">Chart annotation system</h2></div>
+    <p class="q-context">
+      When a chart is rendered, what (if anything) gets annotated automatically? Example below uses the lease-rollover chart
+      where Sep '23 stands out as the peak month. Three policies shown.
+    </p>
+    <p class="q-where">Appears on: every chart across Insights + ProForma</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Auto: top 1 anomaly per chart</span></div></div>
+        <div class="opt-stage">
+          <div class="chart-wrap">
+            <div class="c-title">Lease rollover · rolling 24mo</div>
+            <div class="c-sub">McDowell Heights · 312 units</div>
+            <div class="bars-row">
+              <div class="annot-top">Sep '23 peak<br/>18 units (10.3%)<span class="leader"></span></div>
+              <div class="bar" style="height:25%;"></div>
+              <div class="bar" style="height:35%;"></div>
+              <div class="bar" style="height:20%;"></div>
+              <div class="bar" style="height:45%;"></div>
+              <div class="bar" style="height:55%;"></div>
+              <div class="bar" style="height:30%;"></div>
+              <div class="bar" style="height:40%;"></div>
+              <div class="bar" style="height:28%;"></div>
+              <div class="bar peak" style="height:90%;"></div>
+              <div class="bar" style="height:40%;"></div>
+              <div class="bar" style="height:50%;"></div>
+              <div class="bar" style="height:30%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Only the peak (or biggest mover) gets a small leader-line label. One insight surfaced per chart. Rest stay clean.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Only configured thresholds</span></div></div>
+        <div class="opt-stage">
+          <div class="chart-wrap">
+            <div class="c-title">Physical occupancy · by month</div>
+            <div class="c-sub">McDowell · FNMA threshold at 90%</div>
+            <div class="bars-row">
+              <div class="threshold-line" style="bottom:58%;"></div>
+              <div class="threshold-label" style="bottom:58%;">FNMA 90% floor</div>
+              <div class="bar annot" style="height:82%;"></div>
+              <div class="bar annot" style="height:85%;"></div>
+              <div class="bar annot" style="height:78%;"></div>
+              <div class="bar annot" style="height:88%;"></div>
+              <div class="bar annot" style="height:92%;"></div>
+              <div class="bar annot" style="height:90%;"></div>
+              <div class="bar annot" style="height:86%;"></div>
+              <div class="bar annot" style="height:84%;"></div>
+              <div class="bar annot" style="height:82%;"></div>
+              <div class="bar annot" style="height:80%;"></div>
+              <div class="bar annot" style="height:78%;"></div>
+              <div class="bar annot" style="height:76%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Only explicit configured targets (FNMA covenants, scenario goals) get lines. No auto-magic.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Three things, always</span></div></div>
+        <div class="opt-stage">
+          <div class="chart-wrap">
+            <div class="c-title">Lease rollover · rolling 24mo</div>
+            <div class="c-sub">McDowell Heights · 312 units</div>
+            <div class="bars-row">
+              <div class="annot-top">Sep '23 peak<br/>18 units (10.3%)<span class="leader"></span></div>
+              <div class="median-line" style="bottom:42%;"></div>
+              <div class="median-label" style="bottom:42%;">Median · 8.4</div>
+              <div class="threshold-line" style="bottom:70%;"></div>
+              <div class="threshold-label" style="bottom:70%;">Target 15</div>
+              <div class="bar" style="height:25%;"></div>
+              <div class="bar" style="height:35%;"></div>
+              <div class="bar" style="height:20%;"></div>
+              <div class="bar" style="height:45%;"></div>
+              <div class="bar" style="height:55%;"></div>
+              <div class="bar" style="height:30%;"></div>
+              <div class="bar" style="height:40%;"></div>
+              <div class="bar" style="height:28%;"></div>
+              <div class="bar peak" style="height:90%;"></div>
+              <div class="bar" style="height:40%;"></div>
+              <div class="bar" style="height:50%;"></div>
+              <div class="bar" style="height:30%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Peak + median + configured threshold, all layered. Most context. Can get busy on dense charts.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>A.</b> Anomalies are the insight; medians are noise.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q6:</strong> A / B / C</div>
+  </section>
+
+  <!-- ========================= Q7 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q7</span><h2 class="q-title">Drill-down click-through behavior</h2></div>
+    <p class="q-context">
+      User clicks a cell in a matrix (e.g., Rent Upside → Brixton matrix, cell "2BR × In-place %").
+      Three ways this can route. This decision cascades into Q17 (Leakage drill-down), Q25 (unit risk table), and Q26 (expired-no-MTM).
+    </p>
+    <p class="q-where">Appears on: every interactive chart/matrix/table cell across Insights</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Always route to Rent Roll (filtered)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="nav-fake">
+              <span class="nav-pill">Upload</span>
+              <span class="nav-pill">Rent Roll</span>
+              <span class="nav-pill active">Insights</span>
+              <span class="nav-pill">ProForma</span>
+            </div>
+            <div class="stage-kicker">Click cell "2BR · 90–95% in-place"</div>
+            <div class="matrix">
+              <div class="matrix-head"><span>Type</span><span>&lt;85%</span><span>85–90</span><span>90–95</span><span>&gt;95%</span></div>
+              <div class="matrix-row"><span class="row-label">1BR</span><span>12</span><span>18</span><span>34</span><span>22</span></div>
+              <div class="matrix-row"><span class="row-label">2BR</span><span>9</span><span>14</span><span class="matrix-cell clicked">28</span><span>19</span></div>
+              <div class="matrix-row"><span class="row-label">3BR</span><span>4</span><span>8</span><span>12</span><span>7</span></div>
+            </div>
+            <div class="arrow-down">↓</div>
+            <div class="page-badge active">Route to Rent Roll · filtered to those 28 units</div>
+            <div class="rr-preview" style="margin-top:8px;">
+              <span class="rr-filter-pill">type: 2BR</span>
+              <span class="rr-filter-pill">in-place: 90–95%</span>
+              <div class="rr-line" style="margin-top:4px;"><span>1218</span><span>2BR</span><span>Martinez</span><span class="rent">$1,425</span></div>
+              <div class="rr-line"><span>2104</span><span>2BR</span><span>Kim</span><span class="rent">$1,440</span></div>
+              <div class="rr-line"><span>2219</span><span>2BR</span><span>Chen</span><span class="rent">$1,410</span></div>
+              <div class="rr-line" style="color:var(--text-muted);"><span colspan="4">…25 more</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">User leaves Insights context. Rent Roll is the universal landing page. Consistent but disruptive.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Per-surface (varies by source)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-kicker">Behavior depends on where the click came from</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;font-family:var(--font-mono);font-size:11px;">
+              <div style="padding:8px 10px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;">
+                <span style="color:var(--text-muted);">Chart bar →</span> <span style="color:var(--text-primary);">route to Rent Roll (filtered)</span>
+              </div>
+              <div style="padding:8px 10px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;">
+                <span style="color:var(--text-muted);">Table row →</span> <span style="color:var(--text-primary);">open unit slide-out</span>
+              </div>
+              <div style="padding:8px 10px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;">
+                <span style="color:var(--text-muted);">Matrix cell →</span> <span style="color:var(--text-primary);">modal with unit list</span>
+              </div>
+            </div>
+            <div class="modal-overlay" style="margin-top:14px;position:relative;inset:auto;background:transparent;padding:0;">
+              <div class="modal" style="width:100%;max-width:100%;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Modal (from matrix cell click)</div>
+                <div style="font-size:12px;font-weight:500;margin-bottom:6px;">28 units · 2BR · 90–95% in-place</div>
+                <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);">Unit 1218 · Martinez · $1,425<br/>Unit 2104 · Kim · $1,440<br/>…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Every surface gets a bespoke target. Users learn three patterns. More flexibility, less consistency.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">C</span><span class="opt-name">Unified slide-out (from anywhere)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="nav-fake">
+              <span class="nav-pill">Upload</span>
+              <span class="nav-pill">Rent Roll</span>
+              <span class="nav-pill active">Insights</span>
+              <span class="nav-pill">ProForma</span>
+            </div>
+            <div class="stage-kicker">Click cell → slide-out opens, Insights stays visible underneath</div>
+            <div class="faded">
+              <div class="matrix">
+                <div class="matrix-head"><span>Type</span><span>&lt;85%</span><span>85–90</span><span>90–95</span><span>&gt;95%</span></div>
+                <div class="matrix-row"><span class="row-label">1BR</span><span>12</span><span>18</span><span>34</span><span>22</span></div>
+                <div class="matrix-row"><span class="row-label">2BR</span><span>9</span><span>14</span><span class="matrix-cell clicked">28</span><span>19</span></div>
+                <div class="matrix-row"><span class="row-label">3BR</span><span>4</span><span>8</span><span>12</span><span>7</span></div>
+              </div>
+            </div>
+            <div class="slide-out">
+              <div class="slide-title">28 units</div>
+              <div class="slide-sub">2BR · 90–95% in-place</div>
+              <div class="slide-list">
+                <div class="slide-item"><span class="u">1218 Martinez</span><span class="v">$1,425</span></div>
+                <div class="slide-item"><span class="u">2104 Kim</span><span class="v">$1,440</span></div>
+                <div class="slide-item"><span class="u">2219 Chen</span><span class="v">$1,410</span></div>
+                <div class="slide-item"><span class="u">3102 Singh</span><span class="v">$1,435</span></div>
+                <div class="slide-item" style="color:var(--text-muted);"><span>…24 more</span><span></span></div>
+              </div>
+              <div class="slide-foot">Open in Rent Roll →</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">480px right-side panel everywhere. Insights stays visible underneath. Explicit button to go deeper to Rent Roll.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>C.</b> Preserves user context. Matches Linear's Issues panel idiom.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q7:</strong> A / B / C</div>
+  </section>
+
+  <!-- ========================= Q8 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q8</span><h2 class="q-title">Cross-page filter persistence</h2></div>
+    <p class="q-context">
+      User sets a filter on Rent Roll ("Status = Vacant Leased + 2BR"). They switch to Insights. Does the filter come with them?
+      And if a lender shares the URL with a colleague, does the filter travel?
+    </p>
+    <p class="q-where">Appears on: every page with filters (Rent Roll · Insights · ProForma)</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Never persist</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="browser-chrome">
+              <span>←</span><span>→</span>
+              <div class="url-bar">basis.app/deal/mcdowell-heights/insights</div>
+            </div>
+            <div class="browser-body">
+              <div class="tab-row">
+                <span class="tab">Rent Roll</span>
+                <span class="tab active">Insights</span>
+                <span class="tab">ProForma</span>
+              </div>
+              <div class="stage-kicker">Filters on previous tab (Rent Roll):</div>
+              <div style="padding:6px 10px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;">
+                <span class="filter-chip-mini">status: Vacant Leased</span>
+                <span class="filter-chip-mini">type: 2BR</span>
+              </div>
+              <div class="stage-kicker" style="margin-top:4px;">Filters on this tab (Insights):</div>
+              <div class="sm-empty">none · all units shown</div>
+              <div class="share-preview" style="background:var(--surface-inset);border-color:var(--border-08);color:var(--text-muted);">
+                <span class="icon-sm">⎘</span>
+                <span>Shared URL loads with no filters for the recipient</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Each page starts fresh. Cleanest mental model. Filters don't leak. Also doesn't survive share/refresh.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Persist within a deal (in-memory)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="browser-chrome">
+              <span>←</span><span>→</span>
+              <div class="url-bar">basis.app/deal/mcdowell-heights/insights</div>
+            </div>
+            <div class="browser-body">
+              <div class="tab-row">
+                <span class="tab">Rent Roll</span>
+                <span class="tab active">Insights</span>
+                <span class="tab">ProForma</span>
+              </div>
+              <div class="stage-kicker">Filters carry between tabs within this deal:</div>
+              <div style="padding:6px 10px;background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:4px;">
+                <span class="filter-chip-mini" style="background:var(--elevated);border-color:var(--border-12);color:var(--text-primary);">status: Vacant Leased</span>
+                <span class="filter-chip-mini" style="background:var(--elevated);border-color:var(--border-12);color:var(--text-primary);">type: 2BR</span>
+                <span style="font-size:10px;color:var(--accent);margin-left:6px;">carried from Rent Roll</span>
+              </div>
+              <div class="share-preview" style="background:var(--surface-inset);border-color:var(--border-08);color:var(--text-muted);">
+                <span class="icon-sm">⎘</span>
+                <span>Shared URL still loads without filters · state lives in browser only</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Filter travels across tabs within a deal. Lost on page reload. Doesn't travel via URL share.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">C</span><span class="opt-name">URL-encoded (Linear's pattern)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="browser-chrome">
+              <span>←</span><span>→</span>
+              <div class="url-bar">basis.app/deal/mcdowell-heights/insights?<span class="url-param">status=vacant-leased&amp;type=2br</span></div>
+            </div>
+            <div class="browser-body">
+              <div class="tab-row">
+                <span class="tab">Rent Roll</span>
+                <span class="tab active">Insights</span>
+                <span class="tab">ProForma</span>
+              </div>
+              <div class="stage-kicker">Filter lives in URL — same view after reload, share, or back button:</div>
+              <div style="padding:6px 10px;background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:4px;">
+                <span class="filter-chip-mini" style="background:var(--elevated);border-color:var(--border-12);color:var(--text-primary);">status: Vacant Leased</span>
+                <span class="filter-chip-mini" style="background:var(--elevated);border-color:var(--border-12);color:var(--text-primary);">type: 2BR</span>
+              </div>
+              <div class="share-preview">
+                <span class="icon-sm">⎘</span>
+                <span>Copy URL · lender opens it · sees identical filtered view</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Filters live in URL params. Share the URL, share the view. Survives reload + back button. Bookmarkable.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>C.</b> URL-as-state is the right pattern for an institutional tool. Lenders sharing filtered views is a real workflow.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q8:</strong> A / B / C</div>
+  </section>
+
+  <div style="margin-top:56px;padding-top:24px;border-top:1px solid var(--border-08);font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">
+    Reply like <span style="color:var(--text-primary);">5ABC, 6A, 7C, 8C</span>.
+  </div>
+
+</div>
+</body>
+</html>

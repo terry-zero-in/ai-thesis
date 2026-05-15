@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Basis Scaffold Mockups — Q13–Q16</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas:#0A0B0E; --sidebar:#0A0B0E; --surface-1:#14161B;
+    --surface-inset:#0A0B0E; --card:#14161B; --surface-2:#1A1D24;
+    --elevated:#22262E; --elevated-hover:#1F232B;
+    --border-card:#1A1D24; --border-08:#1A1D24; --border-06:#1A1D24; --border-12:#232730;
+    --text-primary:#F0F1F3; --text-secondary:#9298A3; --text-muted:#5F6571; --text-faint:#505153;
+    --accent:#4D5BFF; --accent-hover:#6573FF; --accent-soft:rgba(77,91,255,0.12); --accent-border:rgba(77,91,255,0.24);
+    --danger:#E5484D; --warning:#F5A524; --success:#30A46C;
+    --glow-top:inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-ui: 'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--canvas);color:var(--text-primary);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .page-wrap{max-width:1440px;margin:0 auto;padding:48px 32px 96px;}
+  .doc-header{margin-bottom:56px;padding-bottom:32px;border-bottom:1px solid var(--border-08);}
+  .doc-title{font-size:24px;font-weight:600;letter-spacing:-0.01em;margin-bottom:8px;}
+  .doc-sub{font-size:13px;color:var(--text-secondary);line-height:1.5;max-width:720px;}
+  .doc-sub code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:2px 6px;border-radius:4px;border:1px solid var(--border-card);font-size:12px;}
+  .q-block{margin-bottom:80px;}
+  .q-header{display:flex;align-items:baseline;gap:12px;margin-bottom:8px;}
+  .q-num{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);letter-spacing:0.02em;}
+  .q-title{font-size:20px;font-weight:600;letter-spacing:-0.01em;}
+  .q-context{font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:8px;max-width:760px;}
+  .q-where{font-size:12px;color:var(--text-muted);margin-bottom:24px;font-family:var(--font-mono);}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .opt{background:var(--surface-1);border:1px solid var(--border-08);border-radius:8px;position:relative;}
+  .opt-header{padding:12px 16px;border-bottom:1px solid var(--border-08);background:var(--surface-inset);border-radius:8px 8px 0 0;}
+  .opt-note{padding:10px 16px 14px;font-size:11px;color:var(--text-muted);line-height:1.45;border-top:1px solid var(--border-06);background:var(--surface-1);border-radius:0 0 8px 8px;}
+  .opt-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;}
+  .opt-letter{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--elevated);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;font-weight:500;}
+  .opt-letter.rec{background:var(--accent);color:#fff;}
+  .opt-name{font-size:12px;color:var(--text-primary);font-weight:500;letter-spacing:0;text-transform:none;}
+  .opt-stage{background:var(--canvas);padding:28px 20px;min-height:380px;display:flex;flex-direction:column;}
+  .stage-frame{width:100%;background:var(--card);border:1px solid var(--border-card);border-radius:6px;box-shadow:var(--glow-top);padding:16px;flex:1;display:flex;flex-direction:column;position:relative;}
+  .stage-frame-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+  .stage-frame-sub{font-size:11px;color:var(--text-muted);margin-bottom:14px;}
+  .stage-kicker{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.04em;text-transform:uppercase;}
+  .rec-row{margin-top:20px;padding:14px 18px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:6px;display:flex;gap:14px;align-items:center;}
+  .rec-label{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:600;font-family:var(--font-mono);}
+  .rec-text{font-size:13px;color:var(--text-secondary);line-height:1.5;}
+  .rec-text b{color:var(--text-primary);font-weight:500;}
+  .decision-bar{margin-top:10px;padding:10px 18px;background:var(--surface-inset);border:1px dashed var(--border-08);border-radius:6px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;}
+  .decision-bar strong{color:var(--text-primary);}
+
+  /* ── Q13 scorecard ── */
+  .score-row{display:grid;grid-template-columns:130px 1fr 50px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-06);}
+  .score-row:last-child{border-bottom:none;}
+  .score-cat{font-size:11px;color:var(--text-secondary);}
+  .score-val{font-family:var(--font-mono);font-size:12px;color:var(--text-primary);text-align:right;font-variant-numeric:tabular-nums;}
+  .score-val.muted{color:var(--text-muted);}
+  .score-val.breach{color:#FCD34D;}
+
+  .dots{display:flex;gap:2px;}
+  .dot{width:10px;height:10px;border-radius:2px;background:var(--surface-2);}
+  .dot.filled{background:var(--accent);}
+  .dot.filled.warn{background:var(--warning);}
+  .dot.filled.crit{background:var(--danger);}
+
+  .bar-smooth{height:6px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;position:relative;}
+  .bar-smooth .fill{height:100%;background:var(--accent);border-radius:3px;}
+  .bar-smooth .fill.warn{background:var(--warning);}
+  .bar-smooth .fill.crit{background:var(--danger);}
+
+  /* Overall score header (locked Q13 refinement) */
+  .overall-header{display:flex;align-items:center;gap:12px;padding:12px 4px 14px;border-bottom:1px solid var(--border-06);margin-bottom:10px;}
+  .overall-score{display:flex;align-items:baseline;gap:2px;}
+  .overall-score .big{font-family:var(--font-mono);font-size:36px;font-weight:500;color:var(--text-primary);line-height:1;letter-spacing:-0.02em;}
+  .overall-score .slash{font-family:var(--font-mono);font-size:14px;color:var(--text-muted);margin-left:2px;}
+  .overall-meta{flex:1;}
+  .overall-meta .label{font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:3px;}
+  .overall-meta .verdict{font-size:11px;color:var(--text-primary);font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .overall-meta .verdict .note{color:var(--text-muted);font-weight:400;margin-left:4px;}
+
+  .radar-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;}
+  .radar{position:relative;width:220px;height:220px;}
+  .radar svg{width:100%;height:100%;}
+  .radar-axis-label{position:absolute;font-size:10px;color:var(--text-muted);font-family:var(--font-mono);}
+
+  /* ── Q14 priority ── */
+  .action-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border-card);border-radius:4px;margin-bottom:8px;box-shadow:var(--glow-top);position:relative;}
+  .priority-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .priority-dot.high{background:var(--danger);}
+  .priority-dot.med{background:var(--warning);}
+  .priority-dot.low{background:var(--success);}
+  .action-title{font-size:12px;color:var(--text-primary);font-weight:500;flex:1;}
+  .action-meta{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);}
+
+  .priority-explain{position:absolute;top:calc(100% + 6px);right:0;background:var(--elevated);border:1px solid var(--border-12);border-radius:6px;padding:10px 12px;font-size:11px;color:var(--text-primary);box-shadow:0 8px 20px rgba(0,0,0,0.5);min-width:240px;font-family:var(--font-mono);z-index:5;}
+  .priority-explain .rule-name{color:var(--accent);font-weight:600;margin-bottom:4px;}
+  .priority-explain .rule-body{color:var(--text-secondary);line-height:1.5;}
+
+  .score-explain{background:var(--elevated);border:1px solid var(--border-12);border-radius:6px;padding:12px;font-size:11px;color:var(--text-secondary);font-family:var(--font-mono);margin-top:8px;}
+  .score-explain .head{color:var(--text-primary);font-weight:600;margin-bottom:6px;font-size:11px;}
+  .score-explain .bar-line{display:grid;grid-template-columns:80px 1fr 40px;gap:8px;align-items:center;padding:3px 0;}
+  .score-explain .bar-line .bar{height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden;}
+  .score-explain .bar-line .bar .fill{height:100%;background:var(--accent);}
+
+  /* ── Q15 AI summary ── */
+  .ai-card{background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;padding:12px 14px;}
+  .ai-header{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:10px;}
+  .ai-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .ai-section{margin-bottom:10px;}
+  .ai-section:last-child{margin-bottom:0;}
+  .ai-label{font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;}
+  .ai-label.bull{color:var(--success);}
+  .ai-label.bear{color:var(--danger);}
+  .ai-label.watch{color:var(--warning);}
+  .ai-label.ask{color:var(--accent);}
+  .ai-bullet{font-size:11px;color:var(--text-secondary);line-height:1.5;padding-left:10px;position:relative;margin-bottom:3px;}
+  .ai-bullet:last-child{margin-bottom:0;}
+  .ai-bullet::before{content:'·';position:absolute;left:2px;color:var(--text-muted);}
+
+  /* ── Q16 leakage table (S46 chart-replacement) ── */
+  .lk-frame{display:flex;gap:16px;align-items:stretch;}
+  .lk-frame > .leakage-table{flex:1;min-width:0;}
+  .lk-frame > .sidecar{margin:0;}
+
+  .leakage-table{display:flex;flex-direction:column;}
+  .lk-row{display:grid;grid-template-columns:1fr 90px;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .lk-row:last-child{border-bottom:none;}
+  .lk-row .lk-label{font-family:'Inter',sans-serif;font-size:12px;color:var(--text-primary);font-weight:400;line-height:1.3;}
+  .lk-row .lk-prefix{color:var(--text-muted);margin-right:4px;}
+  .lk-row .lk-meta{color:var(--text-muted);font-size:11px;margin-left:4px;font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .lk-row .lk-amount{font-family:var(--font-mono);font-size:12px;color:var(--text-primary);text-align:right;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;}
+  .lk-row .lk-amount.negative{color:var(--danger);}
+  .lk-row.lk-detail .lk-label{padding-left:14px;}
+  .lk-row.lk-total .lk-label{font-weight:500;}
+  .lk-row.lk-total .lk-amount{font-weight:500;}
+  .lk-row.lk-subtotal{border-top:1px solid rgba(255,255,255,0.10);margin-top:2px;padding-top:9px;}
+  .lk-row.lk-result{border-top:1px solid rgba(255,255,255,0.14);margin-top:2px;padding-top:10px;}
+
+  .lk-row.lk-expandable{cursor:pointer;}
+  .lk-row.lk-expandable .lk-chevron{display:inline-block;width:10px;color:var(--text-muted);margin-right:2px;font-size:8px;}
+  .lk-row.lk-expandable.expanded{background:rgba(77,91,255,0.04);}
+  .lk-row.lk-expandable.expanded .lk-chevron{color:var(--text-primary);}
+
+  .lk-attrib-block{padding:4px 0 8px;background:rgba(255,255,255,0.015);border-bottom:1px solid rgba(255,255,255,0.06);}
+  .lk-attrib{display:grid;grid-template-columns:1fr 90px;gap:12px;padding:3px 0;}
+  .lk-attrib .lk-label{padding-left:48px;font-size:10px;color:var(--text-secondary);font-family:var(--font-mono);line-height:1.2;}
+  .lk-attrib .lk-amount{font-family:var(--font-mono);font-size:10px;text-align:right;color:var(--danger);font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap;}
+  .lk-attrib-footer{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);font-weight:500;border-top:1px solid var(--border-08);padding:5px 0 0;margin:5px 0 0;text-align:right;font-variant-numeric:tabular-nums;}
+
+  /* horizontal stacked leakage bar */
+  .leak-bar{display:flex;height:22px;border-radius:4px;overflow:hidden;background:var(--surface-2);margin-bottom:14px;}
+  .leak-bar > div{height:100%;min-width:2px;}
+  .leak-bar .seg-vac{background:rgba(229,72,77,0.92);}
+  .leak-bar .seg-bd{background:rgba(229,72,77,0.65);}
+  .leak-bar .seg-conc{background:rgba(229,72,77,0.42);}
+  .leak-bar .seg-nri{background:rgba(48,164,108,0.85);position:relative;display:flex;align-items:center;justify-content:center;}
+  .leak-bar .seg-nri-label{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.55);font-variant-numeric:tabular-nums;letter-spacing:0;}
+
+  .lk-row .lk-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:8px;vertical-align:middle;flex-shrink:0;}
+  .lk-row .lk-dot.vac{background:rgba(229,72,77,0.92);}
+  .lk-row .lk-dot.bd{background:rgba(229,72,77,0.65);}
+  .lk-row .lk-dot.conc{background:rgba(229,72,77,0.42);}
+  .lk-row .lk-dot.nri{background:rgba(48,164,108,0.85);}
+
+  /* ── Q16 waterfall (DEPRECATED in S46 — kept for reference) ── */
+  .wf-frame{display:flex;gap:16px;align-items:stretch;}
+  .wf-chart{flex:1;display:flex;align-items:flex-end;gap:6px;height:250px;box-sizing:border-box;}
+  .wf-bar{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;}
+  .wf-bar .bar{width:100%;border-radius:3px 3px 0 0;position:relative;min-height:4px;}
+  .wf-bar .bar.gpr{background:var(--accent);opacity:0.9;}
+  .wf-bar .bar.neg{background:var(--danger);opacity:0.78;}
+  .wf-bar .bar.net{background:var(--success);opacity:0.85;}
+  .wf-bar .bar .val{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:4px;font-family:var(--font-mono);font-size:9px;color:var(--text-secondary);white-space:nowrap;line-height:1;}
+  .wf-bar .lbl{margin-top:6px;font-size:9px;color:var(--text-muted);font-family:var(--font-mono);text-align:center;line-height:1.2;overflow-wrap:break-word;min-height:22px;width:100%;box-sizing:border-box;padding:0 2px;}
+  .wf-bar.highlight .bar{outline:1.5px solid var(--accent);outline-offset:2px;}
+
+  .sidecar{width:150px;background:var(--surface-inset);border:1px solid var(--border-08);border-radius:4px;padding:10px;display:flex;flex-direction:column;gap:10px;font-family:var(--font-mono);justify-content:flex-start;box-sizing:border-box;margin-top:16px;margin-bottom:28px;}
+  .sidecar-master-head{font-size:10px;color:var(--text-secondary);letter-spacing:0.06em;text-transform:uppercase;font-weight:500;padding-bottom:6px;border-bottom:1px solid var(--border-08);margin-bottom:2px;}
+  .sidecar-section{border-top:1px solid var(--border-08);padding-top:8px;}
+  .sidecar-section:first-child{border-top:none;padding-top:0;}
+  .sidecar-head{font-size:9px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:4px;}
+  .sidecar-item{display:flex;justify-content:space-between;font-size:10px;padding:2px 0;gap:6px;}
+  .sidecar-item .unit{color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sidecar-item .val{color:var(--text-primary);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .sidecar-footer{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);font-weight:500;border-top:1px solid var(--border-08);padding-top:5px;margin-top:5px;text-align:right;font-variant-numeric:tabular-nums;}
+
+  /* Expandable waterfall (Option B inner panel) — fixed-pixel mini-bars */
+  .wf-expand{margin-top:12px;padding:10px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;font-family:var(--font-mono);}
+  .wf-expand-head{font-size:10px;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+  .wf-mini-bars{display:flex;align-items:flex-end;gap:2px;height:40px;margin-bottom:6px;}
+  .wf-mini-bars .b{flex:1;background:var(--danger);opacity:0.55;border-radius:1px;}
+  .wf-mini-bars .b.peak{opacity:0.85;}
+  .wf-expand-caption{font-size:9px;color:var(--text-muted);}
+
+  .val-row{display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);padding:2px 0;color:var(--text-secondary);}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockups — Q13–Q16</div>
+    <div class="doc-sub">
+      Entering Batch B — Insights tab decisions. First four cover: Deal Scorecard visualization,
+      Recommended Actions priority logic, AI Summary structure, and Revenue Waterfall depth.
+      Reply like <code>13B, 14A, 15C, 16C</code>.
+    </div>
+  </div>
+
+  <!-- ========================= Q13 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q13</span><h2 class="q-title">Deal Scorecard — 10-dot bars vs smooth bars vs radar</h2></div>
+    <p class="q-context">
+      The Deal Scorecard lives on Insights → Overview. Five scoring categories (Revenue Quality, Rollover Risk, Occupancy,
+      Collections, Market Position), each 0–100. The question is how to render the score visually alongside the number.
+    </p>
+    <p class="q-where">Appears on: Insights → Overview, top-left 2/3 width</p>
+
+    <div class="opts" style="grid-template-columns: 1fr 1.6fr;">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">10-dot bars · rejected (current)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Deal Scorecard</div>
+            <div class="stage-frame-sub">McDowell Heights · 312 units</div>
+            <div class="score-row">
+              <div class="score-cat">Revenue Quality</div>
+              <div class="dots">
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                <div class="dot filled"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+              </div>
+              <div class="score-val">72</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Rollover Risk</div>
+              <div class="dots">
+                <div class="dot filled warn"></div><div class="dot filled warn"></div><div class="dot filled warn"></div>
+                <div class="dot filled warn"></div><div class="dot"></div><div class="dot"></div>
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+              </div>
+              <div class="score-val">42</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Occupancy</div>
+              <div class="dots">
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div><div class="dot"></div>
+              </div>
+              <div class="score-val">91</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Collections</div>
+              <div class="dots">
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot"></div><div class="dot"></div>
+              </div>
+              <div class="score-val">83</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Market Position</div>
+              <div class="dots">
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot filled"></div>
+                <div class="dot filled"></div><div class="dot filled"></div><div class="dot"></div>
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+              </div>
+              <div class="score-val">58</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Rejected. Reads as v0 beta — GitHub contribution graph energy. Not institutional.</div>
+      </div>
+
+      <!-- B — locked final spec -->
+      <div class="opt" style="border-color:var(--accent-border);background:linear-gradient(180deg, var(--accent-soft) 0%, var(--surface-1) 40%);">
+        <div class="opt-header" style="background:var(--accent-soft);border-bottom-color:var(--accent-border);"><div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">Smooth bars · LOCKED · with all refinements</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Deal Scorecard</div>
+            <div class="stage-frame-sub">McDowell Heights · 312 units</div>
+            <div class="overall-header">
+              <div class="overall-score">
+                <span class="big">69</span><span class="slash">/ 100</span>
+              </div>
+              <div class="overall-meta">
+                <div class="label">Overall Deal Score</div>
+                <div class="verdict">Moderate Conviction <span class="note">· watch rollover exposure</span></div>
+              </div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Revenue Quality</div>
+              <div class="bar-smooth"><div class="fill" style="width:72%;"></div></div>
+              <div class="score-val">72</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Rollover Risk</div>
+              <div class="bar-smooth"><div class="fill warn" style="width:42%;"></div></div>
+              <div class="score-val breach">42</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Occupancy</div>
+              <div class="bar-smooth"><div class="fill" style="width:91%;"></div></div>
+              <div class="score-val">91</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Collections</div>
+              <div class="bar-smooth"><div class="fill" style="width:83%;"></div></div>
+              <div class="score-val">83</div>
+            </div>
+            <div class="score-row">
+              <div class="score-cat">Market Position</div>
+              <div class="bar-smooth"><div class="fill" style="width:58%;"></div></div>
+              <div class="score-val">58</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note" style="background:var(--accent-soft);border-top-color:var(--accent-border);color:var(--text-secondary);">
+          <b style="color:var(--text-primary);">Final spec:</b> 36px JetBrains Mono headline · 5-tier conviction ladder (High / Solid / Moderate / Cautious / Pass) · 6px track · 2-channel signal — bar amber only on Rollover's &gt;10%/mo CREFC tripwire; score number shifts independently (white ≥70 → muted &lt;70 → amber-300 &lt;50) · Market Position skips severity thresholding (interpretive metric) · threshold values provisional pending S48 score-formula spec · no radar.
+        </div>
+      </div>
+
+    </div></section>
+
+  <!-- ========================= Q14 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q14</span><h2 class="q-title">Recommended Actions — priority assignment</h2></div>
+    <p class="q-context">
+      Blueprint flags this as an open question: how does the system decide whether an action is
+      <span style="color:var(--danger);">High</span> / <span style="color:var(--warning);">Medium</span> /
+      <span style="color:var(--success);">Low</span> priority?
+      This is about <em>how it's computed</em>, not how it looks. All three options render the same action card — the difference
+      is what appears when the user hovers the priority dot to ask "why is this High?"
+    </p>
+    <p class="q-where">Appears on: Insights → Overview · Recommended Actions section</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Hardcoded rules</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Recommended Actions</div>
+            <div class="stage-frame-sub">Hover priority dot to see the rule that fired</div>
+            <div style="position:relative;">
+              <div class="action-row" style="border-color:rgba(229,72,77,0.28);background:rgba(229,72,77,0.04);">
+                <div class="priority-dot high"></div>
+                <div class="action-title">Renew 18 leases expiring Sep '23 at market rent</div>
+                <div class="action-meta">+$4,680/mo</div>
+              </div>
+              <div class="priority-explain" style="position:relative;top:auto;right:auto;margin-top:4px;">
+                <div class="rule-name">Concentration Risk · R-003</div>
+                <div class="rule-body">Any month with &gt;10% of portfolio expiring = auto-High. Sep '23 has 10.3% (18 of 175 active leases).</div>
+              </div>
+            </div>
+            <div class="action-row" style="margin-top:12px;">
+              <div class="priority-dot med"></div>
+              <div class="action-title">Reduce MTM premium on 14 units at above-market rents</div>
+              <div class="action-meta">+$1,280/mo</div>
+            </div>
+            <div class="action-row">
+              <div class="priority-dot low"></div>
+              <div class="action-title">Review 7 subsidy tenants with expired recertification</div>
+              <div class="action-meta">Compliance</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Documented rules per action type. The rule that fired shows on hover. Fully transparent.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Weighted scoring model</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Recommended Actions</div>
+            <div class="stage-frame-sub">Hover shows weighted driver scores</div>
+            <div style="position:relative;">
+              <div class="action-row" style="border-color:rgba(229,72,77,0.28);background:rgba(229,72,77,0.04);">
+                <div class="priority-dot high"></div>
+                <div class="action-title">Renew 18 leases expiring Sep '23 at market rent</div>
+                <div class="action-meta">87.4</div>
+              </div>
+              <div class="score-explain">
+                <div class="head">Priority score · 87.4</div>
+                <div class="bar-line"><span>Revenue impact</span><div class="bar"><div class="fill" style="width:82%;"></div></div><span>32.8</span></div>
+                <div class="bar-line"><span>Concentration</span><div class="bar"><div class="fill" style="width:90%;"></div></div><span>27.0</span></div>
+                <div class="bar-line"><span>Urgency</span><div class="bar"><div class="fill" style="width:75%;"></div></div><span>18.8</span></div>
+                <div class="bar-line"><span>Recovery</span><div class="bar"><div class="fill" style="width:55%;"></div></div><span>8.8</span></div>
+              </div>
+            </div>
+            <div class="action-row" style="margin-top:12px;">
+              <div class="priority-dot med"></div>
+              <div class="action-title">Reduce MTM premium on 14 units at above-market rents</div>
+              <div class="action-meta">61.2</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Weighted sum of drivers with tunable thresholds in Settings. Sophisticated. Harder to explain to a lender.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Hybrid</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Recommended Actions</div>
+            <div class="stage-frame-sub">Hardcoded for High, scored for Warning/Info</div>
+            <div>
+              <div class="action-row" style="border-color:rgba(229,72,77,0.28);background:rgba(229,72,77,0.04);">
+                <div class="priority-dot high"></div>
+                <div class="action-title">Renew 18 leases expiring Sep '23</div>
+                <div class="action-meta">HIGH · rule</div>
+              </div>
+              <div class="action-row">
+                <div class="priority-dot med"></div>
+                <div class="action-title">Reduce MTM premium on 14 units</div>
+                <div class="action-meta">MED · 61</div>
+              </div>
+              <div class="action-row">
+                <div class="priority-dot low"></div>
+                <div class="action-title">Review 7 subsidy recerts</div>
+                <div class="action-meta">LOW · 38</div>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);padding:8px 12px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:3px;margin-top:4px;">
+                Critical → rule fires (audit-safe). Warning/Info → weighted score.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Hardcoded for Critical → audit-safe. Scored for the middle tier. Mixed mental model.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>A.</b> Institutional tools demand transparent priority. Lenders will not trust a black-box score.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q14:</strong> A / B / C</div>
+  </section>
+
+  <!-- ========================= Q15 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q15</span><h2 class="q-title">AI Summary structure — Bull/Bear vs Bull/Bear/Watch vs Bull/Bear/Open Questions</h2></div>
+    <p class="q-context">
+      The AI Summary card (top-right of Insights → Overview, pre-locked from Q11) is currently specced as Bull/Bear.
+      Question: is two sections enough, or should a third section live there?
+    </p>
+    <p class="q-where">Appears on: Insights → Overview, top-right 1/3 width</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Bull / Bear only (current)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="ai-card">
+              <div class="ai-header"><span class="ai-dot"></span> AI Summary</div>
+              <div class="ai-section">
+                <div class="ai-label bull">Bull</div>
+                <div class="ai-bullet">Loss-to-lease of $10,822/mo ($129.9k annualized) represents embedded upside — 5.7% of GPR recoverable over 18 months.</div>
+                <div class="ai-bullet">Physical occupancy 94.2% · 120 bps above sub-market peers.</div>
+                <div class="ai-bullet">Collections 97.3% · healthy for workforce-housing asset class.</div>
+              </div>
+              <div class="ai-section">
+                <div class="ai-label bear">Bear</div>
+                <div class="ai-bullet">Sep '23 rollover concentration — 10.3% of portfolio expiring in a single month.</div>
+                <div class="ai-bullet">WALT 8.4mo · 1.1mo below subject-peer average · implies turnover volatility.</div>
+                <div class="ai-bullet">Subsidy tenants 14% of unit count · below-market RENTSUB caps regulatory upside.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Sharp two-sided synthesis. Current spec. Easy to scan.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Bull / Bear / Watch</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="ai-card">
+              <div class="ai-header"><span class="ai-dot"></span> AI Summary</div>
+              <div class="ai-section">
+                <div class="ai-label bull">Bull</div>
+                <div class="ai-bullet">LTL $10,822/mo · 5.7% of GPR · 18-month recovery path.</div>
+                <div class="ai-bullet">Occupancy 94.2% · +120 bps vs peers.</div>
+              </div>
+              <div class="ai-section">
+                <div class="ai-label bear">Bear</div>
+                <div class="ai-bullet">Sep '23 rollover — 10.3% of portfolio in one month.</div>
+                <div class="ai-bullet">WALT 1.1mo below peer avg.</div>
+              </div>
+              <div class="ai-section">
+                <div class="ai-label watch">Watch</div>
+                <div class="ai-bullet">Concessions ticking up to 1.2% of GPR across last 3 months of leases.</div>
+                <div class="ai-bullet">2 delinquent tenants &gt;60 days — monitor for collection action.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">"Watch" captures signals that don't deserve Bull or Bear framing. Third tier of synthesis.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">C</span><span class="opt-name">Bull / Bear / Open Questions</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="ai-card">
+              <div class="ai-header"><span class="ai-dot"></span> AI Summary</div>
+              <div class="ai-section">
+                <div class="ai-label bull">Bull</div>
+                <div class="ai-bullet">LTL $10,822/mo · 5.7% of GPR · 18-month recovery path.</div>
+                <div class="ai-bullet">Occupancy 94.2% · +120 bps vs peers.</div>
+              </div>
+              <div class="ai-section">
+                <div class="ai-label bear">Bear</div>
+                <div class="ai-bullet">Sep '23 rollover — 10.3% of portfolio in one month.</div>
+                <div class="ai-bullet">WALT 1.1mo below peer avg.</div>
+              </div>
+              <div class="ai-section">
+                <div class="ai-label ask">Open Questions</div>
+                <div class="ai-bullet">Confirm subsidy tenant re-cert status with ops team.</div>
+                <div class="ai-bullet">Has seller captured any recent rent bumps in the last 60 days?</div>
+                <div class="ai-bullet">What is the historical concession burn rate by quarter?</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">"Open Questions" surfaces things to ask the seller. Lives in the underwriter's notebook today — no competitor does this.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>C.</b> Open questions are the missing third element of every underwriting workflow. Lives in the analyst's notebook today — surfacing them in Basis is genuinely additive.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q15:</strong> A / B / C</div>
+  </section>
+
+  <!-- ========================= Q16 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q16</span><h2 class="q-title">Revenue Leakage — bar only / expandable rows / bar + sidecar</h2></div>
+    <p class="q-context">
+      The Revenue Leakage card lives on Insights → Revenue Leakage. <strong>S46 update:</strong> the waterfall chart was dropped — at a 16:1 magnitude spread (GPR vs leakages), tall bars added no analytical value. Replaced with a horizontal stacked bar that scales segments to actual % of GPR, plus a color-keyed legend.
+      The buyer's real question is still "which units cause each gap?" — three options for how aggressively to surface that attribution.
+    </p>
+    <p class="q-where">Appears on: Insights → Revenue Leakage, top card</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Bar + legend only</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Revenue Leakage</div>
+            <div class="stage-frame-sub">McDowell Heights · 312 units</div>
+            <div class="overall-header">
+              <div class="overall-score">
+                <span class="big">89.6</span><span class="slash">%</span>
+              </div>
+              <div class="overall-meta">
+                <div class="label">NET RENTAL INCOME</div>
+                <div class="verdict">$189,905 GPR <span class="note">· $19,670 leakage (10.4%)</span></div>
+              </div>
+            </div>
+            <div class="leak-bar">
+              <div class="seg-vac" style="flex:5.78;"></div>
+              <div class="seg-bd" style="flex:3.38;"></div>
+              <div class="seg-conc" style="flex:1.20;"></div>
+              <div class="seg-nri" style="flex:89.64;"><span class="seg-nri-label">89.6%</span></div>
+            </div>
+            <div class="leakage-table">
+              <div class="lk-row">
+                <div class="lk-label"><span class="lk-dot vac"></span>Vacancy<span class="lk-meta">· 18 units · 5.8%</span></div>
+                <div class="lk-amount negative">($10,970)</div>
+              </div>
+              <div class="lk-row">
+                <div class="lk-label"><span class="lk-dot bd"></span>Bad Debt<span class="lk-meta">· 9 units · 3.4%</span></div>
+                <div class="lk-amount negative">($6,420)</div>
+              </div>
+              <div class="lk-row">
+                <div class="lk-label"><span class="lk-dot conc"></span>Concessions<span class="lk-meta">· 14 units · 1.2%</span></div>
+                <div class="lk-amount negative">($2,280)</div>
+              </div>
+              <div class="lk-row lk-result">
+                <div class="lk-label"><span class="lk-dot nri"></span>NRI<span class="lk-meta">· 89.6%</span></div>
+                <div class="lk-amount">$170,235</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Bar shows leakage proportions; legend grounds dollars + units + % of GPR. No attribution — user drills elsewhere to see which units caused each gap.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt" style="border-color:var(--accent-border);background:linear-gradient(180deg, var(--accent-soft) 0%, var(--surface-1) 40%);">
+        <div class="opt-header" style="background:var(--accent-soft);border-bottom-color:var(--accent-border);"><div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">Expandable legend rows · LOCKED</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Revenue Leakage</div>
+            <div class="stage-frame-sub">McDowell Heights · 312 units</div>
+            <div class="overall-header">
+              <div class="overall-score">
+                <span class="big">89.6</span><span class="slash">%</span>
+              </div>
+              <div class="overall-meta">
+                <div class="label">NET RENTAL INCOME</div>
+                <div class="verdict">$189,905 GPR <span class="note">· $19,670 leakage (10.4%)</span></div>
+              </div>
+            </div>
+            <div class="leak-bar">
+              <div class="seg-vac" style="flex:5.78;"></div>
+              <div class="seg-bd" style="flex:3.38;"></div>
+              <div class="seg-conc" style="flex:1.20;"></div>
+              <div class="seg-nri" style="flex:89.64;"><span class="seg-nri-label">89.6%</span></div>
+            </div>
+            <div class="leakage-table">
+              <div class="lk-row lk-expandable">
+                <div class="lk-label"><span class="lk-chevron">▶</span><span class="lk-dot vac"></span>Vacancy<span class="lk-meta">· 18 units · 5.8%</span></div>
+                <div class="lk-amount negative">($10,970)</div>
+              </div>
+              <div class="lk-row lk-expandable expanded">
+                <div class="lk-label"><span class="lk-chevron">▼</span><span class="lk-dot bd"></span>Bad Debt<span class="lk-meta">· 9 units · 3.4%</span></div>
+                <div class="lk-amount negative">($6,420)</div>
+              </div>
+              <div class="lk-attrib-block">
+                <div class="lk-attrib"><div class="lk-label">1804 · 90+ days</div><div class="lk-amount">($1,450)</div></div>
+                <div class="lk-attrib"><div class="lk-label">2118 · 60+ days</div><div class="lk-amount">($1,280)</div></div>
+                <div class="lk-attrib"><div class="lk-label">1412 · 30+ days</div><div class="lk-amount">($1,105)</div></div>
+                <div class="lk-attrib-footer">Top 3 = 59.7%</div>
+              </div>
+              <div class="lk-row lk-expandable">
+                <div class="lk-label"><span class="lk-chevron">▶</span><span class="lk-dot conc"></span>Concessions<span class="lk-meta">· 14 units · 1.2%</span></div>
+                <div class="lk-amount negative">($2,280)</div>
+              </div>
+              <div class="lk-row lk-result">
+                <div class="lk-label"><span class="lk-dot nri"></span>NRI<span class="lk-meta">· 89.6%</span></div>
+                <div class="lk-amount">$170,235</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note" style="background:var(--accent-soft);border-top-color:var(--accent-border);color:var(--text-secondary);">Compact default; click any leakage row to reveal top contributing units inline (Bad Debt shown expanded). Aging tags (90+/60+/30+ days) appear only on Bad Debt — vacancy and concessions don't have meaningful aging. Each expansion ends with a concentration footer (Top 3 = X%) — the Basis differentiator. Progressive disclosure: summary first, drill on demand. Mirrors how IC memos read.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Bar + legend + sidecar</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Revenue Leakage</div>
+            <div class="stage-frame-sub">McDowell Heights · 312 units</div>
+            <div class="overall-header">
+              <div class="overall-score">
+                <span class="big">89.6</span><span class="slash">%</span>
+              </div>
+              <div class="overall-meta">
+                <div class="label">NET RENTAL INCOME</div>
+                <div class="verdict">$189,905 GPR <span class="note">· $19,670 leakage (10.4%)</span></div>
+              </div>
+            </div>
+            <div class="leak-bar">
+              <div class="seg-vac" style="flex:5.78;"></div>
+              <div class="seg-bd" style="flex:3.38;"></div>
+              <div class="seg-conc" style="flex:1.20;"></div>
+              <div class="seg-nri" style="flex:89.64;"><span class="seg-nri-label">89.6%</span></div>
+            </div>
+            <div class="lk-frame">
+              <div class="leakage-table">
+                <div class="lk-row">
+                  <div class="lk-label"><span class="lk-dot vac"></span>Vacancy<span class="lk-meta">· 5.8%</span></div>
+                  <div class="lk-amount negative">($10,970)</div>
+                </div>
+                <div class="lk-row">
+                  <div class="lk-label"><span class="lk-dot bd"></span>Bad Debt<span class="lk-meta">· 3.4%</span></div>
+                  <div class="lk-amount negative">($6,420)</div>
+                </div>
+                <div class="lk-row">
+                  <div class="lk-label"><span class="lk-dot conc"></span>Concessions<span class="lk-meta">· 1.2%</span></div>
+                  <div class="lk-amount negative">($2,280)</div>
+                </div>
+                <div class="lk-row lk-result">
+                  <div class="lk-label"><span class="lk-dot nri"></span>NRI<span class="lk-meta">· 89.6%</span></div>
+                  <div class="lk-amount">$170,235</div>
+                </div>
+              </div>
+              <div class="sidecar">
+                <div class="sidecar-master-head">Top contributors</div>
+                <div class="sidecar-section">
+                  <div class="sidecar-head">Vacancy</div>
+                  <div class="sidecar-item"><span class="unit">2314</span><span class="val">-$1,525</span></div>
+                  <div class="sidecar-item"><span class="unit">1108</span><span class="val">-$1,490</span></div>
+                  <div class="sidecar-item"><span class="unit">2207</span><span class="val">-$1,310</span></div>
+                  <div class="sidecar-footer">Top 3 = 39.4%</div>
+                </div>
+                <div class="sidecar-section">
+                  <div class="sidecar-head">Bad Debt</div>
+                  <div class="sidecar-item"><span class="unit">1804 · 90+d</span><span class="val">-$1,450</span></div>
+                  <div class="sidecar-item"><span class="unit">2118 · 60+d</span><span class="val">-$1,280</span></div>
+                  <div class="sidecar-item"><span class="unit">1412 · 30+d</span><span class="val">-$1,105</span></div>
+                  <div class="sidecar-footer">Top 3 = 59.7%</div>
+                </div>
+                <div class="sidecar-section">
+                  <div class="sidecar-head">Concessions</div>
+                  <div class="sidecar-item"><span class="unit">2106</span><span class="val">-$485</span></div>
+                  <div class="sidecar-item"><span class="unit">3215</span><span class="val">-$420</span></div>
+                  <div class="sidecar-item"><span class="unit">1822</span><span class="val">-$365</span></div>
+                  <div class="sidecar-footer">Top 3 = 55.7%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Attribution always visible. Bar tells composition, legend grounds dollars + % of GPR, sidecar names top 3 offenders per category with concentration footer. Bad debt aging tags (90+/60+/30+ days) carry the institutional "is this collectible" signal. Considered S47 — Terry overrode in favor of B's progressive-disclosure pattern (lighter card, accordion-style attribution).</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>C.</b> The underwriter's actual question is always "which units?" Bar tells the proportion story, legend grounds the dollars, sidecar names the offenders — three layers, zero clicks. <em style="color:var(--text-muted);">[Original rec — Terry overrode to B in S47.]</em></span></div>
+    <div class="decision-bar"><strong>Q16 LOCKED:</strong> B (expandable legend rows · progressive disclosure)</div>
+  </section>
+
+  <div style="margin-top:56px;padding-top:24px;border-top:1px solid var(--border-08);font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">
+    Reply like <span style="color:var(--text-primary);">13B, 14A, 15C, 16C</span>.
+    After this batch: 16 of 39 done.
+  </div>
+
+</div>
+</body>
+</html>

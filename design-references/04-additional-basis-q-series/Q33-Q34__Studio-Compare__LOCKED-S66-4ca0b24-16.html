@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scaffold mockup — Q33-Q34</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens — verbatim from src/styles/basis-linear.css §1 (lines 48-82). */
+  :root {
+    /* Surfaces */
+    --bg:                #0B0C0F;
+    --sidebar:           #06070A;
+    --surface:           #15171C;
+    --surface-2:         #1B1E25;
+    --surface-elevated:  #22262E;
+    --surface-hover:     #232730;
+    --border:            #2A2F38;
+    --border-subtle:     #1F2229;
+
+    /* Text */
+    --text-1: #ECEDEF;
+    --text-2: #CFD3DA;
+    --text-3: #7A818D;
+    --text-4: #5F6571;
+
+    /* Accent */
+    --accent:        #4D5BFF;
+    --accent-hover:  #6573FF;
+    --accent-soft:   rgba(77, 91, 255, 0.10);
+    --accent-glow:   rgba(77, 91, 255, 0.18);
+    --accent-border: rgba(77, 91, 255, 0.28);
+
+    /* Severities */
+    --success:      #30A46C;
+    --success-soft: rgba(48, 164, 108, 0.12);
+    --warning:      #F5A524;
+    --warning-soft: rgba(245, 165, 36, 0.12);
+    --danger:       #E5484D;
+    --danger-soft:  rgba(229, 72, 77, 0.12);
+    --info:         #8B5CF6;
+    --info-soft:    rgba(139, 92, 246, 0.12);
+
+    /* Concession floorplan family — single-hue accent ladder per card-gold §2.2 (composition viz).
+       Mockup-locked; fold into basis-linear.css if Q33.A wins. */
+    --conc-studio: rgba(77, 91, 255, 0.32);
+    --conc-1br:    rgba(77, 91, 255, 0.56);
+    --conc-2br:    rgba(77, 91, 255, 0.78);
+    --conc-3br:    rgba(77, 91, 255, 0.95);
+
+    --font-ui:   'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html, body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .page-wrap { max-width: 1440px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* Doc header */
+  .doc-header { margin-bottom: 48px; padding-bottom: 28px; border-bottom: 1px solid var(--border-subtle); }
+  .doc-title { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; color: var(--text-1); }
+  .doc-sub { font-size: 13px; color: var(--text-2); line-height: 1.6; max-width: 920px; }
+  .doc-sub b { color: var(--text-1); font-weight: 500; }
+  .doc-sub i { color: var(--text-2); font-style: italic; }
+  .doc-sub code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle); font-size: 12px; }
+
+  /* Q-block scaffolding */
+  .q-block { margin-bottom: 56px; }
+  .q-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .q-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; padding: 3px 8px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 3px; }
+  .q-title { font-size: 17px; font-weight: 600; letter-spacing: -0.005em; color: var(--text-1); }
+  .q-context { font-size: 12.5px; color: var(--text-2); line-height: 1.6; margin-bottom: 6px; max-width: 980px; }
+  .q-context code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 1px 5px; border-radius: 3px; font-size: 11.5px; }
+  .q-context i { color: var(--text-2); font-style: italic; }
+  .q-where { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; margin-bottom: 18px; }
+  .q-where code { color: var(--text-2); }
+
+  .scale-caption { margin: 0 0 14px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); letter-spacing: 0.02em; line-height: 1.5; }
+  .scale-caption b { color: var(--text-2); font-weight: 500; }
+
+  /* Option panels — 3-col grid, Rule 26 single .bl-card on canvas */
+  .opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .opt {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  .opt.locked {
+    border-color: var(--accent-border);
+    background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 30%);
+  }
+  .opt-header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); border-radius: 8px 8px 0 0; }
+  .opt.locked .opt-header { background: var(--accent-soft); border-bottom-color: var(--accent-border); }
+  .opt-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+  .opt-letter { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; background: var(--surface-elevated); color: var(--text-1); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+  .opt-letter.rec { background: var(--accent); color: #fff; }
+  .opt-name { font-size: 12px; color: var(--text-1); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .opt-stage { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .opt-note { padding: 10px 16px 14px; font-size: 11px; color: var(--text-3); line-height: 1.55; border-top: 1px solid var(--border-subtle); border-radius: 0 0 8px 8px; }
+  .opt.locked .opt-note { background: var(--accent-soft); border-top-color: var(--accent-border); color: var(--text-2); }
+  .opt-note b { color: var(--text-1); }
+  .opt-note code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+
+  .bxn-frame-title { font-size: 11px; font-weight: 600; color: var(--text-1); }
+  .bxn-frame-sub { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); margin-bottom: 4px; }
+
+  /* ============================================================
+     Q33 — Burn-off timeline (3 viz treatments)
+     ============================================================
+     Shared dataset: 200u property, 30 active concessions ($24K total at Jan).
+     Burn-off curve (Jan→Dec '27): $24K → $21.2K → $17.8K → $14.2K → $11K →
+     $8.4K → $6.2K → $4.4K → $3K → $1.8K → $0.9K → $0.3K.
+     Floorplan mix held proportional: Studio 20% / 1BR 40% / 2BR 30% / 3BR 10%.
+     Forward policy: $600/mo additions (cumulative dashed line on Q33.B). */
+  .q33-chart { width: 100%; height: 130px; display: block; }
+  .q33-axis { stroke: var(--border-subtle); stroke-width: 1; }
+  .q33-grid { stroke: var(--border-subtle); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; }
+  .q33-axis-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-4); letter-spacing: 0.04em; text-transform: uppercase; }
+  .q33-y-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-4); }
+
+  /* Q33.A — Stacked bar per month by floorplan */
+  .q33a-legend { display: flex; gap: 12px; padding-top: 10px; border-top: 1px solid var(--border-subtle); margin-top: 8px; }
+  .q33a-leg-row { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 9px; color: var(--text-2); letter-spacing: 0.02em; }
+  .q33a-leg-dot { width: 7px; height: 7px; border-radius: 1px; flex: 0 0 7px; }
+
+  /* Q33.B — Decreasing line + dashed forward-policy */
+  .q33b-line-burnoff { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+  .q33b-area-burnoff { fill: var(--accent-soft); stroke: none; }
+  .q33b-pt { fill: var(--accent); }
+  .q33b-line-policy { stroke: var(--text-3); stroke-width: 1.25; fill: none; stroke-dasharray: 4 3; }
+  .q33b-pt-policy { fill: var(--text-3); }
+  .q33b-legend { display: flex; gap: 16px; padding-top: 10px; border-top: 1px solid var(--border-subtle); margin-top: 8px; }
+  .q33b-leg-row { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 9px; color: var(--text-2); letter-spacing: 0.02em; }
+  .q33b-leg-line { width: 14px; height: 2px; flex: 0 0 14px; }
+  .q33b-leg-line.solid { background: var(--accent); }
+  .q33b-leg-line.dashed { background: linear-gradient(to right, var(--text-3) 50%, transparent 50%); background-size: 4px 2px; background-repeat: repeat-x; }
+
+  /* Q33.C — Per-unit Gantt timeline */
+  .q33c-gantt-wrap { display: flex; flex-direction: column; gap: 3px; padding: 4px 0; }
+  .q33c-gantt-row { display: flex; align-items: center; gap: 8px; height: 12px; }
+  .q33c-gantt-unit { font-family: var(--font-mono); font-size: 9px; color: var(--text-2); letter-spacing: 0.02em; flex: 0 0 30px; text-align: right; }
+  .q33c-gantt-track { position: relative; flex: 1; height: 10px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .q33c-gantt-bar { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 2px; }
+  .q33c-gantt-axis { display: flex; gap: 0; margin-top: 6px; padding-left: 38px; }
+  .q33c-gantt-axis-tick { flex: 1; font-family: var(--font-mono); font-size: 8.5px; color: var(--text-4); letter-spacing: 0.04em; text-transform: uppercase; text-align: left; }
+
+  /* ============================================================
+     Q34 — Forward concession policy editor (3 input shapes)
+     ============================================================
+     Shared baseline: 30% of new leases, $1,000 avg. */
+
+  /* Q34.A — Two global inputs */
+  .q34a-form { display: flex; flex-direction: column; gap: 14px; padding: 8px 0; }
+  .q34a-field { display: flex; flex-direction: column; gap: 5px; }
+  .q34a-label { font-family: var(--font-ui); font-size: 9.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+  .q34a-input-wrap { position: relative; display: flex; align-items: center; }
+  .q34a-input { width: 100%; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 9px 36px 9px 12px; font-family: var(--font-mono); font-size: 14px; color: var(--text-1); font-variant-numeric: tabular-nums; }
+  .q34a-input-suffix { position: absolute; right: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-3); pointer-events: none; }
+  .q34a-input-prefix { position: absolute; left: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-3); pointer-events: none; }
+  .q34a-input.with-prefix { padding-left: 28px; }
+  .q34a-help { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); margin-top: -2px; letter-spacing: 0.02em; }
+
+  /* Q34.B — Per-floorplan table */
+  .q34b-table { display: flex; flex-direction: column; gap: 1px; background: var(--border-subtle); border-radius: 4px; overflow: hidden; }
+  .q34b-row { display: grid; grid-template-columns: 1fr 80px 90px; gap: 1px; }
+  .q34b-cell { background: var(--surface-2); padding: 7px 10px; font-family: var(--font-mono); font-size: 11px; color: var(--text-1); font-variant-numeric: tabular-nums; }
+  .q34b-cell.head { background: var(--surface-elevated); color: var(--text-3); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; padding: 6px 10px; }
+  .q34b-cell.fp { color: var(--text-2); font-family: var(--font-ui); font-size: 11.5px; font-weight: 500; }
+  .q34b-cell.editable { color: var(--text-1); position: relative; }
+  .q34b-cell.editable::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 5px; height: 1px; background: var(--border-subtle); }
+
+  /* Q34.C — Period-based 12-month schedule */
+  .q34c-sched { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+  .q34c-row { display: grid; grid-template-columns: 50px 1fr; gap: 10px; align-items: center; }
+  .q34c-row-label { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+  .q34c-bars { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; align-items: end; height: 32px; }
+  .q34c-bar-cell { display: flex; flex-direction: column; align-items: center; height: 32px; justify-content: flex-end; }
+  .q34c-bar { width: 100%; background: var(--accent-soft); border-top: 1.5px solid var(--accent); border-radius: 1px 1px 0 0; }
+  .q34c-bar.muted { background: var(--surface-2); border-top-color: var(--text-3); }
+  .q34c-vals { display: grid; grid-template-columns: 50px 1fr; gap: 10px; }
+  .q34c-vals-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+  .q34c-vals-cell { font-family: var(--font-mono); font-size: 8.5px; color: var(--text-2); font-variant-numeric: tabular-nums; text-align: center; line-height: 1.2; }
+  .q34c-month-axis { display: grid; grid-template-columns: 50px 1fr; gap: 10px; margin-top: 4px; }
+  .q34c-month-axis-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; }
+  .q34c-month-axis-cell { font-family: var(--font-mono); font-size: 8px; color: var(--text-4); letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
+
+  /* Recommendation row + decision bar */
+  .rec-row { margin-top: 22px; padding: 13px 16px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 6px; display: flex; gap: 14px; align-items: flex-start; }
+  .rec-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 600; font-family: var(--font-mono); white-space: nowrap; flex: 0 0 auto; padding-top: 1px; }
+  .rec-text { font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+  .rec-text b { color: var(--text-1); font-weight: 500; }
+  .rec-text code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .rec-text i { color: var(--text-2); font-style: italic; }
+  .decision-bar { margin-top: 10px; padding: 10px 16px; background: var(--surface-2); border: 1px dashed var(--border-subtle); border-radius: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--text-3); display: flex; gap: 10px; align-items: center; }
+  .decision-bar strong { color: var(--text-1); }
+  .decision-bar.locked { border: 1px solid var(--accent-border); color: var(--text-2); }
+
+  .footer-note { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-3); font-family: var(--font-mono); line-height: 1.7; }
+  .footer-note code { background: var(--surface); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border-subtle); color: var(--text-2); }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockup — Q33-Q34</div>
+    <div class="doc-sub">
+      <b>Concessions tab.</b> Two questions on (Q33) burn-off timeline visualization, (Q34) forward concession policy editor. Same dataset across A/B/C within each question — decision is on <i>treatment</i>, not numbers. Shared property: 200 units, 30 active concessions, $24K total active at Jan '27, $1,000 avg amount, 30% of new leases get concession. Renders with v4-canonical surfaces (<code>--bg #0B0C0F</code> / <code>--surface #15171C</code>) + Cypher Indigo accent (<code>#4D5BFF</code>).
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Q33 — Burn-off timeline
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q33</span><h2 class="q-title">Burn-off timeline</h2></div>
+    <p class="q-context">
+      Blueprint <code>§6.5.4</code> spec: <i>"Concession burn-off timeline (shows how current concessions amortize out)."</i> Question is on the visualization treatment — <i>composition (stacked-by-floorplan), narrative (decreasing line + forward-policy overlay), or detail (per-unit Gantt)</i>. All three panels render the same dataset: $24K active concessions across 30 units (200u property), burning off Jan→Dec '27 ($24K → $300).
+    </p>
+    <p class="q-where">Appears on: Insights → Concessions · canvas-default 1440px · same dataset across A/B/C</p>
+
+    <p class="scale-caption">Same burn-off curve across A/B/C (peak Jan '27 $24K, tail Dec '27 $300). Decision is on <b>visualization surface</b>, not numbers.</p>
+
+    <div class="opts">
+
+      <!-- Q33.A — Stacked bar per month, by floorplan -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Stacked bar per month · by floorplan</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Active concessions · burn-off</div>
+          <div class="bxn-frame-sub">12 months · stacked by floorplan · Studio / 1BR / 2BR / 3BR</div>
+          <svg class="q33-chart" viewBox="0 0 280 130" aria-label="Burn-off stacked bar by floorplan">
+            <!-- y grid (24K / 16K / 8K / 0) -->
+            <line class="q33-grid" x1="30" y1="12" x2="272" y2="12" />
+            <line class="q33-grid" x1="30" y1="38" x2="272" y2="38" />
+            <line class="q33-grid" x1="30" y1="64" x2="272" y2="64" />
+            <line class="q33-grid" x1="30" y1="90" x2="272" y2="90" />
+            <text class="q33-y-label" x="2" y="14">$24K</text>
+            <text class="q33-y-label" x="2" y="40">$16K</text>
+            <text class="q33-y-label" x="6" y="66">$8K</text>
+            <text class="q33-y-label" x="9" y="92">0</text>
+
+            <!-- 12 stacked bars. Bar width 14px, gap 6px. Start x=33.
+                 Heights (px) per month total: Jan78 / Feb69 / Mar58 / Apr46 / May36 / Jun27 / Jul20 / Aug14 / Sep10 / Oct6 / Nov3 / Dec1.
+                 Each bar split: Studio 20% (bottom), 1BR 40%, 2BR 30%, 3BR 10% (top). -->
+            <!-- Jan: total 78 → S15.6 / 1BR31.2 / 2BR23.4 / 3BR7.8 -->
+            <rect x="33"  y="74.4" width="14" height="15.6" fill="var(--conc-studio)" />
+            <rect x="33"  y="43.2" width="14" height="31.2" fill="var(--conc-1br)" />
+            <rect x="33"  y="19.8" width="14" height="23.4" fill="var(--conc-2br)" />
+            <rect x="33"  y="12"   width="14" height="7.8"  fill="var(--conc-3br)" />
+            <!-- Feb: total 69 → S13.8 / 1BR27.6 / 2BR20.7 / 3BR6.9 -->
+            <rect x="53"  y="76.2" width="14" height="13.8" fill="var(--conc-studio)" />
+            <rect x="53"  y="48.6" width="14" height="27.6" fill="var(--conc-1br)" />
+            <rect x="53"  y="27.9" width="14" height="20.7" fill="var(--conc-2br)" />
+            <rect x="53"  y="21"   width="14" height="6.9"  fill="var(--conc-3br)" />
+            <!-- Mar: total 58 → S11.6 / 1BR23.2 / 2BR17.4 / 3BR5.8 -->
+            <rect x="73"  y="78.4" width="14" height="11.6" fill="var(--conc-studio)" />
+            <rect x="73"  y="55.2" width="14" height="23.2" fill="var(--conc-1br)" />
+            <rect x="73"  y="37.8" width="14" height="17.4" fill="var(--conc-2br)" />
+            <rect x="73"  y="32"   width="14" height="5.8"  fill="var(--conc-3br)" />
+            <!-- Apr: total 46 → S9.2 / 1BR18.4 / 2BR13.8 / 3BR4.6 -->
+            <rect x="93"  y="80.8" width="14" height="9.2"  fill="var(--conc-studio)" />
+            <rect x="93"  y="62.4" width="14" height="18.4" fill="var(--conc-1br)" />
+            <rect x="93"  y="48.6" width="14" height="13.8" fill="var(--conc-2br)" />
+            <rect x="93"  y="44"   width="14" height="4.6"  fill="var(--conc-3br)" />
+            <!-- May: total 36 → S7.2 / 1BR14.4 / 2BR10.8 / 3BR3.6 -->
+            <rect x="113" y="82.8" width="14" height="7.2"  fill="var(--conc-studio)" />
+            <rect x="113" y="68.4" width="14" height="14.4" fill="var(--conc-1br)" />
+            <rect x="113" y="57.6" width="14" height="10.8" fill="var(--conc-2br)" />
+            <rect x="113" y="54"   width="14" height="3.6"  fill="var(--conc-3br)" />
+            <!-- Jun: total 27 → S5.4 / 1BR10.8 / 2BR8.1 / 3BR2.7 -->
+            <rect x="133" y="84.6" width="14" height="5.4"  fill="var(--conc-studio)" />
+            <rect x="133" y="73.8" width="14" height="10.8" fill="var(--conc-1br)" />
+            <rect x="133" y="65.7" width="14" height="8.1"  fill="var(--conc-2br)" />
+            <rect x="133" y="63"   width="14" height="2.7"  fill="var(--conc-3br)" />
+            <!-- Jul: total 20 → S4 / 1BR8 / 2BR6 / 3BR2 -->
+            <rect x="153" y="86"   width="14" height="4"    fill="var(--conc-studio)" />
+            <rect x="153" y="78"   width="14" height="8"    fill="var(--conc-1br)" />
+            <rect x="153" y="72"   width="14" height="6"    fill="var(--conc-2br)" />
+            <rect x="153" y="70"   width="14" height="2"    fill="var(--conc-3br)" />
+            <!-- Aug: total 14 → S2.8 / 1BR5.6 / 2BR4.2 / 3BR1.4 -->
+            <rect x="173" y="87.2" width="14" height="2.8"  fill="var(--conc-studio)" />
+            <rect x="173" y="81.6" width="14" height="5.6"  fill="var(--conc-1br)" />
+            <rect x="173" y="77.4" width="14" height="4.2"  fill="var(--conc-2br)" />
+            <rect x="173" y="76"   width="14" height="1.4"  fill="var(--conc-3br)" />
+            <!-- Sep: total 10 → S2 / 1BR4 / 2BR3 / 3BR1 -->
+            <rect x="193" y="88"   width="14" height="2"    fill="var(--conc-studio)" />
+            <rect x="193" y="84"   width="14" height="4"    fill="var(--conc-1br)" />
+            <rect x="193" y="81"   width="14" height="3"    fill="var(--conc-2br)" />
+            <rect x="193" y="80"   width="14" height="1"    fill="var(--conc-3br)" />
+            <!-- Oct: total 6 → S1.2 / 1BR2.4 / 2BR1.8 / 3BR0.6 -->
+            <rect x="213" y="88.8" width="14" height="1.2"  fill="var(--conc-studio)" />
+            <rect x="213" y="86.4" width="14" height="2.4"  fill="var(--conc-1br)" />
+            <rect x="213" y="84.6" width="14" height="1.8"  fill="var(--conc-2br)" />
+            <rect x="213" y="84"   width="14" height="0.6"  fill="var(--conc-3br)" />
+            <!-- Nov: total 3 → S0.6 / 1BR1.2 / 2BR0.9 / 3BR0.3 -->
+            <rect x="233" y="89.4" width="14" height="0.6"  fill="var(--conc-studio)" />
+            <rect x="233" y="88.2" width="14" height="1.2"  fill="var(--conc-1br)" />
+            <rect x="233" y="87.3" width="14" height="0.9"  fill="var(--conc-2br)" />
+            <rect x="233" y="87"   width="14" height="0.3"  fill="var(--conc-3br)" />
+            <!-- Dec: total 1 → S0.2 / 1BR0.4 / 2BR0.3 / 3BR0.1 -->
+            <rect x="253" y="89.8" width="14" height="0.2"  fill="var(--conc-studio)" />
+            <rect x="253" y="89.4" width="14" height="0.4"  fill="var(--conc-1br)" />
+            <rect x="253" y="89.1" width="14" height="0.3"  fill="var(--conc-2br)" />
+            <rect x="253" y="89"   width="14" height="0.1"  fill="var(--conc-3br)" />
+
+            <!-- x baseline -->
+            <line class="q33-axis" x1="30" y1="90" x2="272" y2="90" />
+            <!-- x labels (Jan/Apr/Jul/Oct/Dec) -->
+            <text class="q33-axis-label" x="33"  y="104">JAN</text>
+            <text class="q33-axis-label" x="93"  y="104">APR</text>
+            <text class="q33-axis-label" x="153" y="104">JUL</text>
+            <text class="q33-axis-label" x="213" y="104">OCT</text>
+            <text class="q33-axis-label" x="253" y="104">DEC</text>
+          </svg>
+
+          <div class="q33a-legend">
+            <div class="q33a-leg-row"><span class="q33a-leg-dot" style="background:var(--conc-studio);"></span>Studio</div>
+            <div class="q33a-leg-row"><span class="q33a-leg-dot" style="background:var(--conc-1br);"></span>1BR</div>
+            <div class="q33a-leg-row"><span class="q33a-leg-dot" style="background:var(--conc-2br);"></span>2BR</div>
+            <div class="q33a-leg-row"><span class="q33a-leg-dot" style="background:var(--conc-3br);"></span>3BR</div>
+          </div>
+        </div>
+        <div class="opt-note">
+          12 monthly bars stacked by floorplan. Composition story preserved — reader sees both <i>total burn-off</i> and <i>which floorplans carry which share</i>. <b>Cost:</b> single-narrative chart — no place for forward-policy comparison without overlay. Floorplan stripes are noise on the rapid-burn-off months (Q4) where total height collapses.
+        </div>
+      </div>
+
+      <!-- Q33.B — Decreasing line + dashed forward-policy overlay -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">Decreasing line + dashed forward-policy</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Active concessions · burn-off</div>
+          <div class="bxn-frame-sub">solid: $ remaining · dashed: cumulative forward-policy adds</div>
+          <svg class="q33-chart" viewBox="0 0 280 130" aria-label="Burn-off line with forward policy overlay">
+            <line class="q33-grid" x1="30" y1="12" x2="272" y2="12" />
+            <line class="q33-grid" x1="30" y1="38" x2="272" y2="38" />
+            <line class="q33-grid" x1="30" y1="64" x2="272" y2="64" />
+            <line class="q33-grid" x1="30" y1="90" x2="272" y2="90" />
+            <text class="q33-y-label" x="2" y="14">$24K</text>
+            <text class="q33-y-label" x="2" y="40">$16K</text>
+            <text class="q33-y-label" x="6" y="66">$8K</text>
+            <text class="q33-y-label" x="9" y="92">0</text>
+
+            <!-- Burn-off area + line. Path: monthly $ → y at scale 78px=$24K → y = 90 - ($value × 78/24000).
+                 Jan24K=12 / Feb21.2K=21 / Mar17.8K=32 / Apr14.2K=44 / May11K=54 / Jun8.4K=63 /
+                 Jul6.2K=70 / Aug4.4K=76 / Sep3K=80 / Oct1.8K=84 / Nov0.9K=87 / Dec0.3K=89 -->
+            <path class="q33b-area-burnoff" d="M30,12 L52,21 L74,32 L96,44 L118,54 L140,63 L162,70 L184,76 L206,80 L228,84 L250,87 L272,89 L272,90 L30,90 Z" />
+            <path class="q33b-line-burnoff" d="M30,12 L52,21 L74,32 L96,44 L118,54 L140,63 L162,70 L184,76 L206,80 L228,84 L250,87 L272,89" />
+            <circle class="q33b-pt" cx="30"  cy="12" r="2" />
+            <circle class="q33b-pt" cx="52"  cy="21" r="2" />
+            <circle class="q33b-pt" cx="74"  cy="32" r="2" />
+            <circle class="q33b-pt" cx="96"  cy="44" r="2" />
+            <circle class="q33b-pt" cx="118" cy="54" r="2" />
+            <circle class="q33b-pt" cx="140" cy="63" r="2" />
+            <circle class="q33b-pt" cx="162" cy="70" r="2" />
+            <circle class="q33b-pt" cx="184" cy="76" r="2" />
+            <circle class="q33b-pt" cx="206" cy="80" r="2" />
+            <circle class="q33b-pt" cx="228" cy="84" r="2" />
+            <circle class="q33b-pt" cx="250" cy="87" r="2" />
+            <circle class="q33b-pt" cx="272" cy="89" r="2" />
+
+            <!-- Forward-policy cumulative dashed line. $600/mo additions, cumulative.
+                 Jan$0.6K=88 / Feb$1.2K=86 / Mar$1.8K=84 / Apr$2.4K=82 / May$3K=80 / Jun$3.6K=78 /
+                 Jul$4.2K=76 / Aug$4.8K=74 / Sep$5.4K=72 / Oct$6K=70 / Nov$6.6K=69 / Dec$7.2K=67 -->
+            <path class="q33b-line-policy" d="M30,88 L52,86 L74,84 L96,82 L118,80 L140,78 L162,76 L184,74 L206,72 L228,70 L250,69 L272,67" />
+            <circle class="q33b-pt-policy" cx="30"  cy="88" r="1.5" />
+            <circle class="q33b-pt-policy" cx="52"  cy="86" r="1.5" />
+            <circle class="q33b-pt-policy" cx="74"  cy="84" r="1.5" />
+            <circle class="q33b-pt-policy" cx="96"  cy="82" r="1.5" />
+            <circle class="q33b-pt-policy" cx="118" cy="80" r="1.5" />
+            <circle class="q33b-pt-policy" cx="140" cy="78" r="1.5" />
+            <circle class="q33b-pt-policy" cx="162" cy="76" r="1.5" />
+            <circle class="q33b-pt-policy" cx="184" cy="74" r="1.5" />
+            <circle class="q33b-pt-policy" cx="206" cy="72" r="1.5" />
+            <circle class="q33b-pt-policy" cx="228" cy="70" r="1.5" />
+            <circle class="q33b-pt-policy" cx="250" cy="69" r="1.5" />
+            <circle class="q33b-pt-policy" cx="272" cy="67" r="1.5" />
+
+            <line class="q33-axis" x1="30" y1="90" x2="272" y2="90" />
+            <text class="q33-axis-label" x="28"  y="104">JAN</text>
+            <text class="q33-axis-label" x="93"  y="104">APR</text>
+            <text class="q33-axis-label" x="159" y="104">JUL</text>
+            <text class="q33-axis-label" x="225" y="104">OCT</text>
+            <text class="q33-axis-label" x="248" y="104">DEC</text>
+          </svg>
+
+          <div class="q33b-legend">
+            <div class="q33b-leg-row"><span class="q33b-leg-line solid"></span>$ active (burn-off)</div>
+            <div class="q33b-leg-row"><span class="q33b-leg-line dashed"></span>$ forward policy (cum.)</div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Two narratives in one chart: <i>solid</i> = current concession inventory burning off (Jan $24K → Dec $300); <i>dashed</i> = cumulative additions if forward policy is applied (Q34). Where the lines cross is the institutional read — the moment forward-policy adds outpace legacy burn-off. <b>Cost:</b> dual-line read requires legend lookup; not as composition-rich as A.
+        </div>
+      </div>
+
+      <!-- Q33.C — Per-unit Gantt timeline -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Per-unit Gantt timeline</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Active concessions · per-unit windows</div>
+          <div class="bxn-frame-sub">12 of 30 active · sorted by end month</div>
+          <div class="q33c-gantt-wrap">
+            <!-- 12 unit rows. Each bar positioned via left%/width%. 12 months total → 1 month = 8.33%.
+                 Bars sorted by end month ascending (shortest remaining first). -->
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">104</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:8.33%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">217</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:16.67%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">312</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:16.67%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">408</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:25%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">421</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:33.33%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">516</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:41.67%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">623</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:50%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">711</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:58.33%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">805</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:66.67%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">912</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:75%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">1018</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:91.67%;"></div></div></div>
+            <div class="q33c-gantt-row"><span class="q33c-gantt-unit">1124</span><div class="q33c-gantt-track"><div class="q33c-gantt-bar" style="left:0%; width:100%;"></div></div></div>
+          </div>
+          <div class="q33c-gantt-axis">
+            <div class="q33c-gantt-axis-tick">JAN</div>
+            <div class="q33c-gantt-axis-tick"></div>
+            <div class="q33c-gantt-axis-tick"></div>
+            <div class="q33c-gantt-axis-tick">APR</div>
+            <div class="q33c-gantt-axis-tick"></div>
+            <div class="q33c-gantt-axis-tick"></div>
+            <div class="q33c-gantt-axis-tick">JUL</div>
+            <div class="q33c-gantt-axis-tick"></div>
+            <div class="q33c-gantt-axis-tick"></div>
+            <div class="q33c-gantt-axis-tick">OCT</div>
+            <div class="q33c-gantt-axis-tick"></div>
+            <div class="q33c-gantt-axis-tick">DEC</div>
+          </div>
+        </div>
+        <div class="opt-note">
+          One bar per active concession. Reader sees per-unit burn-off windows directly. <b>Best for ≤30 concessions</b> — densely-occupied portfolios make the chart unreadable. <b>Cost:</b> drops the aggregate-$ story entirely; readers can't tell <i>$24K total</i> from this surface. Detail-rich, narrative-poor.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>B.</b> Decreasing line + dashed forward-policy overlay. Two reasons: (1) <i>two narratives in one chart</i> — the burn-off curve answers "what do we have?" while the forward-policy line answers "what's the policy?" — and the crossover moment is the institutional read; (2) <i>Q33↔Q34 coupling</i> — burn-off and forward-policy editor are paired surfaces, and B is the only treatment that surfaces the relationship between them at first paint. A's stacked-bar composition is a clean v1.1 enhancement once floorplan-specific concession analysis becomes a real workflow; C's Gantt is the right pattern for ≤30-concession portfolios but breaks at portfolio scale.
+        <br/><br/>
+        Honest read on A and C: A is the cleanest single-chart treatment if floorplan-mix matters as much as total $ — but the rapid-burn months collapse the floorplan stripes to noise. C is the only treatment that surfaces per-unit detail, but at the cost of the aggregate read; defer to a drill-out from B if needed.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q33 LOCKED:</strong> B · S66</div>
+  </section>
+
+  <!-- ============================================================
+       Q34 — Forward concession policy editor
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q34</span><h2 class="q-title">Forward concession policy editor</h2></div>
+    <p class="q-context">
+      Blueprint <code>§6.5.4</code> spec: <i>"Forward concession policy: % of new leases with concession / avg concession amount."</i> Question is on the editor surface — <i>two global inputs (simple), per-floorplan editable table (granular), or 12-month period schedule (lease-up tapering)</i>. Same baseline assumption across A/B/C: 30% of new leases, $1,000 avg amount.
+    </p>
+    <p class="q-where">Appears on: Studio → Concession policy panel · paired with Q33 burn-off timeline</p>
+
+    <p class="scale-caption">Same baseline (30% / $1,000) across A/B/C. Decision is on <b>granularity surface</b>, not numbers.</p>
+
+    <div class="opts">
+
+      <!-- Q34.A — Two global inputs -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Two global inputs · simple</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Concession policy</div>
+          <div class="bxn-frame-sub">applies to all new leases</div>
+          <div class="q34a-form">
+            <div class="q34a-field">
+              <label class="q34a-label">% of new leases with concession</label>
+              <div class="q34a-input-wrap">
+                <input class="q34a-input" type="text" value="30" readonly />
+                <span class="q34a-input-suffix">%</span>
+              </div>
+            </div>
+            <div class="q34a-field">
+              <label class="q34a-label">Avg concession amount</label>
+              <div class="q34a-input-wrap">
+                <input class="q34a-input with-prefix" type="text" value="1,000" readonly />
+                <span class="q34a-input-prefix">$</span>
+              </div>
+              <div class="q34a-help">applied as 1 month free equivalent</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Two text inputs — flat, global, applies to all new leases. <b>Benefit:</b> v1 simplicity — most users want a single forward assumption to flex against; granular policy is a second-order need. <b>Cost:</b> can't model floorplan-specific concession dynamics (Studios + 3BRs typically need different policies); can't model lease-up tapering.
+        </div>
+      </div>
+
+      <!-- Q34.B — Per-floorplan table -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Per-floorplan table · editable</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Concession policy · by floorplan</div>
+          <div class="bxn-frame-sub">4 floorplans · % + $ each · derived to global avg</div>
+          <div class="q34b-table">
+            <div class="q34b-row">
+              <div class="q34b-cell head">Floorplan</div>
+              <div class="q34b-cell head">% Conc.</div>
+              <div class="q34b-cell head">Avg Amount</div>
+            </div>
+            <div class="q34b-row">
+              <div class="q34b-cell fp">Studio</div>
+              <div class="q34b-cell editable">40%</div>
+              <div class="q34b-cell editable">$700</div>
+            </div>
+            <div class="q34b-row">
+              <div class="q34b-cell fp">1BR</div>
+              <div class="q34b-cell editable">35%</div>
+              <div class="q34b-cell editable">$900</div>
+            </div>
+            <div class="q34b-row">
+              <div class="q34b-cell fp">2BR</div>
+              <div class="q34b-cell editable">25%</div>
+              <div class="q34b-cell editable">$1,200</div>
+            </div>
+            <div class="q34b-row">
+              <div class="q34b-cell fp">3BR</div>
+              <div class="q34b-cell editable">15%</div>
+              <div class="q34b-cell editable">$1,800</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Editable table — one row per floorplan. <b>Benefit:</b> reflects how concession policies actually work in lease-up — Studios get aggressive concessions to drive absorption, 3BRs get less because they fill themselves. <b>Cost:</b> 4× the input work for the v1 user; granular policy requires data the v1 user may not have yet.
+        </div>
+      </div>
+
+      <!-- Q34.C — Period-based 12-month schedule -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Period-based · 12-month schedule</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Concession policy · monthly schedule</div>
+          <div class="bxn-frame-sub">12-month % schedule · M1-3 aggressive, M4-12 standard</div>
+
+          <div class="q34c-sched">
+            <div class="q34c-row">
+              <span class="q34c-row-label">% w/ Conc.</span>
+              <div class="q34c-bars">
+                <div class="q34c-bar-cell"><div class="q34c-bar" style="height:32px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar" style="height:32px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar" style="height:32px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+                <div class="q34c-bar-cell"><div class="q34c-bar muted" style="height:20px;"></div></div>
+              </div>
+            </div>
+            <div class="q34c-vals">
+              <span></span>
+              <div class="q34c-vals-row">
+                <div class="q34c-vals-cell">50</div>
+                <div class="q34c-vals-cell">50</div>
+                <div class="q34c-vals-cell">50</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+                <div class="q34c-vals-cell">25</div>
+              </div>
+            </div>
+            <div class="q34c-month-axis">
+              <span></span>
+              <div class="q34c-month-axis-row">
+                <div class="q34c-month-axis-cell">M1</div>
+                <div class="q34c-month-axis-cell">M2</div>
+                <div class="q34c-month-axis-cell">M3</div>
+                <div class="q34c-month-axis-cell">M4</div>
+                <div class="q34c-month-axis-cell">M5</div>
+                <div class="q34c-month-axis-cell">M6</div>
+                <div class="q34c-month-axis-cell">M7</div>
+                <div class="q34c-month-axis-cell">M8</div>
+                <div class="q34c-month-axis-cell">M9</div>
+                <div class="q34c-month-axis-cell">M10</div>
+                <div class="q34c-month-axis-cell">M11</div>
+                <div class="q34c-month-axis-cell">M12</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          12-month schedule — % concession varies month-to-month. Captures lease-up tapering: aggressive M1-3 (50%), standard M4-12 (25%). <b>Benefit:</b> only treatment that reflects the time-varying nature of real concession policy. <b>Cost:</b> 12× the input work; most v1 users don't have a 12-month policy thesis yet — they have a single concession assumption.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>A in v1; B in v1.1.</b> v1 keeps the assumption surface terse — two global inputs is enough for most underwriting workflows, and the simplicity makes the policy cheap to flex against the burn-off line in Q33.B. v1.1 adds floorplan granularity (B) once the user demonstrates the workflow needs it (signal: editing the global value repeatedly, or adding floorplan-specific notes). C's monthly schedule is overkill for v1 — the lease-up taper is a stabilized-property edge case; Studio's 12-month assumption editor handles it via separate scenarios.
+        <br/><br/>
+        Honest read on B: B is technically more accurate but creates a 4× input burden on the v1 user who hasn't yet built a per-floorplan policy thesis. v1.1 promotion timing depends on whether floorplan-mix matters in the burn-off chart (Q33.A win) — if Q33 = A, Q34 = B becomes more compelling; if Q33 = B, Q34 = A holds longer.
+        <br/><br/>
+        v1.1 promotion (per-floorplan inputs) is telemetry-gated: v1 users overriding the global concession amount during scenario authoring at material rate.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q34 LOCKED:</strong> A · S66</div>
+  </section>
+
+  <div class="footer-note">
+    Tokens in <code>:root</code> copied verbatim from <code>src/styles/basis-linear.css §1</code>. Card depth ladder per Rule 26 — each option panel = single <code>.bl-card</code> on canvas, no nested surface. Concession floorplan palette (<code>--conc-*</code>) is mockup-locked at single-hue accent ladder per <code>card-gold §2.2</code>; fold into <code>basis-linear.css</code> as semantic tokens if Q33.A wins.
+  </div>
+
+</div>
+</body>
+</html>

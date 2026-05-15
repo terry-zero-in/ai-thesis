@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Basis Drill Policy — Q17</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas:#0A0B0E; --sidebar:#0A0B0E; --surface-1:#14161B;
+    --surface-inset:#0A0B0E; --card:#14161B; --surface-2:#1A1D24;
+    --elevated:#22262E; --elevated-hover:#1F232B;
+    --border-card:#1A1D24; --border-08:#1A1D24; --border-06:#1A1D24; --border-12:#232730;
+    --text-primary:#F0F1F3; --text-secondary:#9298A3; --text-muted:#5F6571; --text-faint:#505153;
+    --accent:#4D5BFF; --accent-hover:#6573FF; --accent-soft:rgba(77,91,255,0.12); --accent-border:rgba(77,91,255,0.24);
+    --danger:#E5484D; --warning:#F5A524; --success:#30A46C;
+    --glow-top:inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-ui: 'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--canvas);color:var(--text-primary);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .page-wrap{max-width:1440px;margin:0 auto;padding:48px 32px 80px;}
+  .doc-header{margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid var(--border-08);}
+  .doc-tag{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
+  .doc-title{font-size:24px;font-weight:600;letter-spacing:-0.01em;margin-bottom:10px;}
+  .doc-sub{font-size:13px;color:var(--text-secondary);line-height:1.55;max-width:780px;}
+  .doc-sub code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:2px 6px;border-radius:4px;border:1px solid var(--border-card);font-size:12px;}
+  .doc-sub b{color:var(--text-primary);font-weight:500;}
+
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .opt{background:var(--surface-1);border:1px solid var(--border-08);border-radius:8px;display:flex;flex-direction:column;}
+  .opt.locked{border-color:var(--accent-border);background:linear-gradient(180deg, var(--accent-soft) 0%, var(--surface-1) 30%);}
+  .opt-header{padding:12px 16px;border-bottom:1px solid var(--border-08);background:var(--surface-inset);border-radius:8px 8px 0 0;}
+  .opt.locked .opt-header{background:var(--accent-soft);border-bottom-color:var(--accent-border);}
+  .opt-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;}
+  .opt-letter{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--elevated);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;font-weight:500;}
+  .opt-letter.rec{background:var(--accent);color:#fff;}
+  .opt-name{font-size:12px;color:var(--text-primary);font-weight:500;letter-spacing:0;text-transform:none;}
+  .opt-stage{padding:22px 18px;flex:1;display:flex;flex-direction:column;gap:22px;}
+  .opt-note{padding:10px 16px 14px;font-size:11px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--border-06);background:var(--surface-1);border-radius:0 0 8px 8px;}
+  .opt.locked .opt-note{background:var(--accent-soft);border-top-color:var(--accent-border);color:var(--text-secondary);}
+  .opt-note b{color:var(--text-primary);}
+  .opt-note code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:1px 5px;border-radius:3px;font-size:10px;}
+
+  /* Diagram blocks */
+  .diagram{display:flex;flex-direction:column;gap:8px;}
+  .diagram-label{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;}
+  .diagram-card{background:var(--card);border:1px solid var(--border-card);border-radius:6px;box-shadow:var(--glow-top);padding:12px;}
+  .diagram-card .frame-title{font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:3px;}
+  .diagram-card .frame-sub{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:10px;}
+
+  /* Row mock — stylized rows representing list items */
+  .row-stack{display:flex;flex-direction:column;}
+  .row-mock{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:11px;color:var(--text-primary);border-bottom:1px solid var(--border-06);}
+  .row-mock:last-child{border-bottom:none;}
+  .row-mock .chevron{display:inline-block;width:10px;font-size:8px;color:var(--text-muted);text-align:center;}
+  .row-mock.expand-trigger{font-weight:500;}
+  .row-mock.expand-trigger.expanded{background:rgba(77,91,255,0.04);}
+  .row-mock.expand-trigger.expanded .chevron{color:var(--text-primary);}
+  .row-mock.indented{padding-left:24px;color:var(--text-secondary);font-family:var(--font-mono);font-size:10px;}
+  .row-mock.dim{color:var(--text-muted);}
+  .row-mock.fade{opacity:0.5;}
+  .row-mock.fade-more{opacity:0.25;}
+  .row-mock.footer{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);font-weight:500;border-top:1px solid var(--border-08);justify-content:flex-end;padding-top:6px;margin-top:2px;border-bottom:none;}
+  .row-mock.footer-arrow{font-family:var(--font-ui);font-size:11px;color:var(--accent);font-weight:500;border-top:1px solid var(--border-08);padding-top:8px;margin-top:2px;border-bottom:none;cursor:pointer;}
+  .row-mock.footer-arrow .label{flex:1;}
+  .row-mock.footer-arrow .arrow{font-size:13px;line-height:1;}
+
+  /* Slide-out mock — anchored to the right edge of its container */
+  .slide-out-wrap{display:grid;grid-template-columns:1fr 14px;gap:0;align-items:start;}
+  .slide-out-mock{margin-top:8px;background:var(--elevated);border:1px solid var(--border-08);border-radius:6px;padding:10px 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.04);}
+  .slide-out-header{font-size:11px;font-weight:600;color:var(--text-primary);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+  .slide-out-header .close{color:var(--text-muted);font-family:var(--font-mono);font-size:13px;}
+  .slide-out-toolbar{display:flex;gap:5px;font-family:var(--font-mono);font-size:9px;color:var(--text-muted);margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border-06);}
+  .slide-out-toolbar span{padding:2px 6px;background:var(--surface-2);border-radius:3px;}
+  .slide-out-rows{display:flex;flex-direction:column;}
+  .slide-out-row{display:flex;justify-content:space-between;font-size:10px;padding:3px 0;color:var(--text-secondary);font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .slide-out-row.dim{color:var(--text-muted);}
+
+  /* Callouts */
+  /* Token-scope principle (S49): severity tokens (#E5484D / #F5A524 / #30A46C) are scoped to data-flag context only. */
+  /* Meta/policy-doc callouts (rejected · locked · recommendation) use a parallel neutral scale to avoid overloading severity meaning. */
+  /* Authority: docs/blueprint/drill-policy.md §5.1 (incl. labeled data-magnitude exception). */
+  .callout{font-size:10px;padding:6px 10px;border-radius:4px;line-height:1.4;font-family:var(--font-mono);letter-spacing:0.02em;}
+  .callout.ok{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--accent-border);}
+  .callout.break{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border-08);}
+  .callout.abandon{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border-08);}
+
+  /* Causality cue between trigger card and slide-out preview */
+  .slide-out-cue{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;}
+  .slide-out-cue .cue-arrow{font-size:11px;line-height:1;color:var(--accent);}
+  .slide-out-cue .cue-label{color:var(--text-muted);}
+
+  /* Multi-surface sketch (Option C) */
+  .surfaces-sketch{display:flex;flex-direction:column;gap:8px;}
+  .surface-card{background:var(--card);border:1px solid var(--border-card);border-radius:5px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;font-size:11px;box-shadow:var(--glow-top);}
+  .surface-card .surface-name{font-weight:500;color:var(--text-primary);}
+  .surface-card .surface-mech{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);background:var(--surface-2);padding:3px 8px;border-radius:3px;}
+
+  /* Spec summary block — the locked values */
+  .spec-summary{margin-top:32px;padding:20px 22px;background:var(--card);border:1px solid var(--border-card);border-radius:6px;box-shadow:var(--glow-top);}
+  .spec-summary-title{font-size:11px;color:var(--accent);font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;font-weight:600;margin-bottom:14px;}
+  .spec-summary ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;}
+  .spec-summary li{font-size:12px;color:var(--text-secondary);line-height:1.5;display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:baseline;}
+  .spec-summary li b{color:var(--text-primary);font-weight:600;font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;text-transform:uppercase;}
+  .spec-summary li code{font-family:var(--font-mono);color:var(--text-primary);background:var(--surface-2);padding:1px 6px;border-radius:3px;font-size:11px;}
+  .spec-summary li .hl{color:var(--text-primary);font-family:var(--font-mono);font-weight:500;}
+
+  /* Surface mapping table */
+  .surface-mapping{margin-top:24px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:8px;overflow:hidden;}
+  .surface-mapping-header{padding:14px 18px;border-bottom:1px solid var(--border-08);display:flex;align-items:baseline;gap:12px;}
+  .surface-mapping-header .h-label{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:0.04em;text-transform:uppercase;font-weight:600;}
+  .surface-mapping-header .h-title{font-size:13px;color:var(--text-primary);font-weight:600;}
+  .surface-mapping table{width:100%;border-collapse:collapse;}
+  .surface-mapping th,.surface-mapping td{text-align:left;padding:10px 18px;font-size:11px;border-bottom:1px solid var(--border-06);}
+  .surface-mapping th{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;font-weight:500;background:var(--surface-inset);}
+  .surface-mapping td{color:var(--text-secondary);}
+  .surface-mapping td.surface-name{color:var(--text-primary);font-weight:500;}
+  .surface-mapping td.row-count{font-family:var(--font-mono);color:var(--text-primary);font-variant-numeric:tabular-nums;}
+  .surface-mapping td .badge{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;line-height:1.4;}
+  .surface-mapping td .badge.chevron{background:rgba(77,91,255,0.08);color:#9DA8FF;border:1px solid rgba(77,91,255,0.22);}
+  .surface-mapping td .badge.arrow{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--border-08);}
+  .surface-mapping td .badge.both{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--border-08);}
+  .surface-mapping tr:last-child td{border-bottom:none;}
+
+  /* Rec row + decision bar */
+  .rec-row{margin-top:24px;padding:14px 18px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:6px;display:flex;gap:14px;align-items:center;}
+  .rec-label{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:600;font-family:var(--font-mono);white-space:nowrap;}
+  .rec-text{font-size:13px;color:var(--text-secondary);line-height:1.5;}
+  .rec-text b{color:var(--text-primary);font-weight:500;}
+  .decision-bar{margin-top:10px;padding:10px 18px;border-radius:6px;font-family:var(--font-mono);font-size:12px;display:flex;gap:10px;align-items:center;}
+  .decision-bar.locked{border:1px solid var(--accent-border);background:var(--accent-soft);color:var(--text-secondary);}
+  .decision-bar.locked strong{color:var(--accent);}
+
+  .footer-note{margin-top:48px;padding-top:24px;border-top:1px solid var(--border-08);font-size:12px;color:var(--text-muted);font-family:var(--font-mono);}
+  .footer-note code{background:var(--card);padding:1px 5px;border-radius:3px;border:1px solid var(--border-card);color:var(--text-primary);}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-tag">policy · drill mechanic</div>
+    <div class="doc-title">Drill mechanic policy across Insights / Studio / Reports</div>
+    <div class="doc-sub">
+      <b>Q16 B</b> locked the chevron + concentration-footer pattern for Revenue Leakage. The pattern works at 3-9 expanded rows; it breaks at 50+. Question: what's the policy across surfaces with very different row-count regimes (Lease Rollover ~12-18, Rent Upside ~300+, Collections ~30-50)?
+      Reply <code>17A / 17B / 17C</code>.
+    </div>
+  </div>
+
+  <div class="opts">
+
+    <!-- A. Universal chevron+footer · rejected -->
+    <div class="opt">
+      <div class="opt-header">
+        <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Universal chevron+footer · rejected</span></div>
+      </div>
+      <div class="opt-stage">
+
+        <div class="diagram">
+          <div class="diagram-label">Small N — works (Q16 B case)</div>
+          <div class="diagram-card">
+            <div class="frame-title">Revenue Leakage</div>
+            <div class="frame-sub">3 categories · 9 rows expanded</div>
+            <div class="row-stack">
+              <div class="row-mock expand-trigger expanded"><span class="chevron">▼</span>Bad Debt · 9 units</div>
+              <div class="row-mock indented">1804 · 90+ days · ($1,450)</div>
+              <div class="row-mock indented">2118 · 60+ days · ($1,280)</div>
+              <div class="row-mock indented">1412 · 30+ days · ($1,105)</div>
+              <div class="row-mock footer">Top 3 = 59.7%</div>
+            </div>
+          </div>
+          <div class="callout ok">Inline expansion · concentration footer · the Q16 B pattern</div>
+        </div>
+
+        <div class="diagram">
+          <div class="diagram-label">Large N — breaks (Rent Upside · 312 units)</div>
+          <div class="diagram-card">
+            <div class="frame-title">Rent Upside</div>
+            <div class="frame-sub">Below Market · 312 units · all expanded inline</div>
+            <div class="row-stack">
+              <div class="row-mock expand-trigger expanded"><span class="chevron">▼</span>Below Market · 312 units</div>
+              <div class="row-mock indented">unit 0101 · ($1,825)</div>
+              <div class="row-mock indented">unit 0102 · ($1,790)</div>
+              <div class="row-mock indented">unit 0103 · ($1,640)</div>
+              <div class="row-mock indented fade">unit 0104 · ($1,580)</div>
+              <div class="row-mock indented fade-more">unit 0105 · ($1,520)</div>
+              <div class="row-mock indented dim">… 307 more rows below the fold</div>
+              <div class="row-mock footer dim">Top 3 = 4.2% (off-screen)</div>
+            </div>
+          </div>
+          <div class="callout break">Breaks · summary card swallowed by detail · concentration footer drifts off-screen · scroll fatigue replaces scan</div>
+        </div>
+
+      </div>
+      <div class="opt-note">Forces every surface into the same shape regardless of row count. Predictable but breaks at scale. The card system's "summary first, drill on demand" premise is lost when 300+ inline rows push the summary out of the viewport.</div>
+    </div>
+
+    <!-- B. Tiered · LOCKED -->
+    <div class="opt locked">
+      <div class="opt-header">
+        <div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">Tiered · LOCKED · N=15</span></div>
+      </div>
+      <div class="opt-stage">
+
+        <div class="diagram">
+          <div class="diagram-label">≤ 15 rows → chevron + concentration footer (inline expand)</div>
+          <div class="diagram-card">
+            <div class="frame-title">Revenue Leakage</div>
+            <div class="frame-sub">3 categories · 9 rows expanded</div>
+            <div class="row-stack">
+              <div class="row-mock expand-trigger expanded"><span class="chevron">▼</span>Bad Debt · 9 units</div>
+              <div class="row-mock indented">1804 · 90+ days · ($1,450)</div>
+              <div class="row-mock indented">2118 · 60+ days · ($1,280)</div>
+              <div class="row-mock indented">1412 · 30+ days · ($1,105)</div>
+              <div class="row-mock footer">Top 3 = 59.7%</div>
+            </div>
+          </div>
+          <div class="callout ok">Same as Q16 B · summary preserved · drill on demand</div>
+        </div>
+
+        <div class="diagram">
+          <div class="diagram-label">&gt; 15 rows → arrow footer → slide-out (navigate out)</div>
+          <div class="diagram-card">
+            <div class="frame-title">Rent Upside</div>
+            <div class="frame-sub">Below Market · 312 units · ($46,200 total)</div>
+            <div class="row-stack">
+              <div class="row-mock"><span class="chevron">·</span>312 units below market rent</div>
+              <div class="row-mock footer-arrow"><span class="label">View all 312 units</span><span class="arrow">→</span></div>
+            </div>
+          </div>
+          <div class="slide-out-cue"><span class="cue-arrow">↓</span><span class="cue-label">opens slide-out</span></div>
+          <div class="slide-out-mock">
+            <div class="slide-out-header"><span>Below Market · 312 units</span><span class="close">×</span></div>
+            <div class="slide-out-toolbar"><span>filter</span><span>sort</span><span>export</span></div>
+            <div class="slide-out-rows">
+              <div class="slide-out-row"><span>unit 0101</span><span>($1,825)</span></div>
+              <div class="slide-out-row"><span>unit 0102</span><span>($1,790)</span></div>
+              <div class="slide-out-row"><span>unit 0103</span><span>($1,640)</span></div>
+              <div class="slide-out-row dim"><span>… 309 more</span><span></span></div>
+            </div>
+          </div>
+          <div class="callout ok">Slide-out · summary card stays on canvas · full table available with filter/sort/export</div>
+        </div>
+
+      </div>
+      <div class="opt-note">
+        <b>Tiered universal at N=15.</b> Same mental model (progressive disclosure: summary first, drill on demand) — only the affordance shifts at threshold. Chevron <code>▶/▼</code> = inline expand. Arrow <code>→</code> = navigate out. Footer always carries count: <code>View all 312 units →</code>, never <code>View all →</code>.
+      </div>
+    </div>
+
+    <!-- C. Per-surface optimal · rejected -->
+    <div class="opt">
+      <div class="opt-header">
+        <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Per-surface optimal · rejected</span></div>
+      </div>
+      <div class="opt-stage">
+
+        <div class="diagram">
+          <div class="diagram-label">Each surface picks its own affordance</div>
+          <div class="surfaces-sketch">
+            <div class="surface-card"><span class="surface-name">Revenue Leakage</span><span class="surface-mech">▼ chevron expand</span></div>
+            <div class="surface-card"><span class="surface-name">Lease Rollover</span><span class="surface-mech">sidecar (always-visible)</span></div>
+            <div class="surface-card"><span class="surface-name">Rent Upside</span><span class="surface-mech">hover tooltip</span></div>
+            <div class="surface-card"><span class="surface-name">Collections</span><span class="surface-mech">→ slide-out</span></div>
+            <div class="surface-card"><span class="surface-name">Unit Risk</span><span class="surface-mech">filter + table</span></div>
+          </div>
+          <div class="callout abandon">Five surfaces · five drill mechanics · zero shared mental model</div>
+        </div>
+
+      </div>
+      <div class="opt-note">Each surface optimized in isolation. Abandons the card system's consistency premise. The mental model fragments: "to see contributors I have to remember which mechanic this surface uses." Wrong friction for an institutional tool.</div>
+    </div>
+
+  </div>
+
+  <!-- Spec summary — the four S48 locks -->
+  <div class="spec-summary">
+    <div class="spec-summary-title">Q17 = B — locks (S48)</div>
+    <ul>
+      <li><b>Threshold</b><span><span class="hl">N = 15</span> rows. Above this, footer becomes arrow-to-slide-out. Anchored against Lease Rollover's 12-month + sub-bucket case (12-18 rows) — covers the typical case cleanly while leaving headroom above Q16 B's 9-row demonstrated case.</span></li>
+      <li><b>Affordance</b><span>Chevron <code>▶</code>/<code>▼</code> = inline expand. Arrow <code>→</code> = slide-out navigation. Visually distinct, never substitute for each other (same row count band would create ambiguity about what's about to happen).</span></li>
+      <li><b>Footer copy</b><span>Always <code>View all N units →</code>. Count required, arrow required. Never <code>View all →</code>, <code>View more</code>, or <code>Show 312 →</code>. The count is the scan-aid that justifies the click.</span></li>
+      <li><b>Spec home</b><span><code>docs/blueprint/drill-policy.md</code> — broader scope than Insights (covers Studio + Reports). Cross-ref from <code>card-gold-standard.md §2.2</code>.</span></li>
+    </ul>
+  </div>
+
+  <!-- Surface mapping under B -->
+  <div class="surface-mapping">
+    <div class="surface-mapping-header">
+      <span class="h-label">Surface mapping under B</span>
+      <span class="h-title">N = 15 applied across Insights surfaces</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Surface</th>
+          <th>Typical row count</th>
+          <th>Resulting affordance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="surface-name">Revenue Leakage</td>
+          <td class="row-count">3-9</td>
+          <td><span class="badge chevron">▼ chevron + concentration footer</span></td>
+        </tr>
+        <tr>
+          <td class="surface-name">Lease Rollover</td>
+          <td class="row-count">12-18</td>
+          <td><span class="badge both">▼ chevron when ≤15 · → slide-out at 16+ (sub-bucket cases)</span></td>
+        </tr>
+        <tr>
+          <td class="surface-name">Rent Upside</td>
+          <td class="row-count">~300+</td>
+          <td><span class="badge arrow">→ slide-out (View all 312 units →)</span></td>
+        </tr>
+        <tr>
+          <td class="surface-name">Collections Quality</td>
+          <td class="row-count">~30-50</td>
+          <td><span class="badge arrow">→ slide-out</span></td>
+        </tr>
+        <tr>
+          <td class="surface-name">Unit Risk</td>
+          <td class="row-count">filter-dependent</td>
+          <td><span class="badge both">▼ chevron when filter narrows ≤15 · → slide-out otherwise</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rec-row">
+    <span class="rec-label">Claude's recommendation</span>
+    <span class="rec-text"><b>B.</b> Tiered universal at N=15 preserves the card system's "summary first, drill on demand" principle while scaling to 300+-row surfaces. A breaks at scale; C abandons consistency.</span>
+  </div>
+  <div class="decision-bar locked"><strong>Q17 LOCKED:</strong> B (tiered · N=15 · arrow footer with count → slide-out)</div>
+
+  <div class="footer-note">
+    Spec home: <code>docs/blueprint/drill-policy.md</code> (writes after Terry's visual confirmation). Cross-ref from <code>card-gold-standard.md §2.2</code>.
+  </div>
+
+</div>
+</body>
+</html>

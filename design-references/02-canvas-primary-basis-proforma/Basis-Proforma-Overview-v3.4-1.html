@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=1440, initial-scale=1"/>
+<title>Basis — Pro Forma Overview · Maple Heights (v3.4 · Reticle refinements)</title>
+
+<!--
+================================================================================
+BASIS · PRO FORMA OVERVIEW — v3.4 (Reticle-grade refinement)
+For: Claude Code (design contract) · Source: Terry's locked page job 2026-05-15
+
+CHANGES IN v3.4 (this pass, P0+P1 from Reticle reference comparison)
+  · DROPPED redundant page hero "Pro Forma · Overview" + subtitle.
+    Chrome already carries Pro Forma › Overview (canvas tab) › Base Case (scenario).
+  · DROPPED pane tab icons (≡ ⤳ ✎ ⧗ ✦) — pane tabs are in-context tabs (text-only),
+    not workspace nav (icons). Matches Reticle's icon-rule.
+  · QUIETED binding rail HERO·UPLIFT chip — plain mono caps accent text,
+    no fill/border. Matches Reticle "status as plain colored text" pattern.
+  · CONVERTED pane "Method comparison" 3-cell grid → thin-bar pattern.
+    Adopts Reticle's Schedule Mix signature (name · ~2px bar · value/delta).
+    Active method has accent bar fill + brighter value + green delta.
+
+CHANGES IN v3.3 (/ferrari body decardification)
+  · All section cards stripped — whitespace + mono small caps section headers.
+  · Math reconciles end-to-end with intermediate ÷3 → ×12 rows in M12 column.
+  · Color hierarchy: white baseline / indigo active / green win / quiet pct.
+  · ASCII operators · month-name chart axes · drop engine-stamp + LIVE pill.
+
+CHANGES IN v3.2 (chrome cohesion)
+  · Shell restructured: full-width brand bar + grid body.
+  · Pane gains binding rail mirroring scenarios row.
+  · Both columns: 52+40+42 = 134px chrome at matching Y positions.
+
+CHANGES IN v3.1 (chrome /lambo bar)
+  · Wordmark + SCENARIOS label dropped. Scenarios row quieted.
+
+CHANGES IN v3 (chrome P0 collapse fix)
+  · Three-row chrome architecture at 1440 target viewport.
+
+STILL PENDING (circle-back to NEXT session)
+  · Density toggle still chunky — could be text-only quieter form
+  · Right-edge meta on every canvas section header (Reticle pattern)
+  · Sensitivity foot wrap at 1440 — flex layout fix
+  · Cockpit "Capex/reno · Max/mo" combined row — split per spec
+  · Chrome doesn't yet have a distinguishing Basis signature (it's clean
+    Linear/Reticle voice but generic to that voice)
+  · /fidelity benchmark fetches never executed in any pass
+
+PAGE JOB (locked, do not violate)
+  Introduce the sensitivity analysis component of Basis and show the
+  projected increase in VALUE over 12 months based on the assumptions
+  the user inputs. Hero metric is VALUE UPLIFT, not Y1 NRI.
+
+HERO MATH (locked)
+  Value@T=0  = in_place_annual_revenue / cap_rate
+  Value@M12  = forecasted_NRI[T-method] / cap_rate
+  T3 ann     = avg(NRI[M10..M12]) × 12   (institutional default)
+  Uplift     = Value@M12 − Value@T=0
+
+DESIGN TOKENS · Q1–Q39 LOCKED (Cypher Indigo #4D5BFF, not Apex Blue)
+  see :root block
+================================================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --accent:        #4D5BFF;
+  --accent-hover:  #6573FF;
+  --accent-soft:   rgba(77,91,255,0.12);
+  --accent-border: rgba(77,91,255,0.24);
+  --accent-fg:     #FFFFFF;
+
+  --bg-canvas:    #0A0B0E;
+  --bg-card:      #14161B;
+  --bg-surface-2: #1A1D24;
+  --bg-elevated:  #22262E;
+  --bg-hover:     #1A1D24;
+  --bg-inset:     #0A0B0E;
+
+  --border-08:     #1A1D24;
+  --border-12:     #232730;
+  --border-strong: #2A2F38;
+
+  --fg-primary:    #F0F1F3;
+  --fg-secondary:  #9298A3;
+  --fg-tertiary:   #5F6571;
+  --fg-quaternary: #505153;
+
+  --sev-good:  #30A46C;
+  --sev-warn:  #F5A524;
+  --sev-bad:   #E5484D;
+  --sev-info:  #8B5CF6;
+  --sev-good-bg: rgba(48,164,108,0.10);
+
+  --glow-top: inset 0 1px 0 rgba(255,255,255,0.04);
+  --geist: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono:  'JetBrains Mono', ui-monospace, monospace;
+
+  --r-card:  6px;
+  --r-inner: 4px;
+  --r-chip:  4px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg-canvas);color:var(--fg-primary);font-family:var(--geist);font-size:14px;letter-spacing:-0.005em;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{min-height:100vh;overflow-x:hidden}
+
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:'tnum';letter-spacing:-0.01em}
+.label{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-tertiary)}
+
+/* Shell · top chrome spans full width, body splits into canvas + companion */
+.shell{display:flex;flex-direction:column;min-height:100vh}
+.body-shell{display:grid;grid-template-columns:1fr 440px;flex:1;min-height:0}
+
+/* Canvas */
+.canvas{display:flex;flex-direction:column;min-width:0}
+
+/* TOP CHROME — Row 1 (full width, spans canvas + companion) */
+.brand-bar{display:flex;align-items:center;gap:14px;padding:0 28px;border-bottom:1px solid var(--border-08);background:var(--bg-canvas);height:52px;position:sticky;top:0;z-index:11}
+.brand-mark{width:22px;height:22px;border-radius:5px;background:var(--accent);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;letter-spacing:-0.04em;flex-shrink:0}
+.brand-deal{font-family:var(--geist);font-size:14px;color:var(--fg-primary);letter-spacing:-0.015em;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:10px}
+.brand-deal .units{font-family:var(--mono);color:var(--fg-tertiary);font-size:11px;font-weight:400;letter-spacing:0}
+.brand-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:13px;color:var(--fg-secondary);background:transparent;border:1px solid var(--border-12);border-radius:5px;cursor:pointer;font-family:var(--geist);letter-spacing:-0.005em;white-space:nowrap}
+.btn:hover{background:var(--bg-hover);color:var(--fg-primary)}
+.btn.is-primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.is-primary:hover{background:var(--accent-hover);color:#fff}
+
+/* Row 2 — Scenarios row (dedicated, chips can breathe, quiet by default) */
+.scenarios-row{display:flex;align-items:center;gap:0;padding:0 28px;border-bottom:1px solid var(--border-08);background:var(--bg-canvas);height:40px;position:sticky;top:52px;z-index:10}
+.scn-tabs{display:flex;align-items:center;gap:2px;flex:1;min-width:0;overflow:hidden}
+.scn-tab{padding:4px 10px;font-size:12.5px;color:var(--fg-tertiary);border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;letter-spacing:-0.005em;white-space:nowrap;flex-shrink:0}
+.scn-tab:hover{background:var(--bg-hover);color:var(--fg-secondary)}
+.scn-tab:hover .scn-val{color:var(--fg-tertiary)}
+.scn-tab .scn-val{font-family:var(--mono);font-size:10.5px;color:var(--fg-quaternary);letter-spacing:0;font-variant-numeric:tabular-nums}
+.scn-tab.is-active{background:var(--accent-soft);color:var(--fg-primary);border-color:var(--accent-border)}
+.scn-tab.is-active .scn-val{color:var(--accent)}
+.scn-plus{padding:4px 8px;font-size:13px;color:var(--fg-quaternary);cursor:pointer;border-radius:4px;display:inline-flex;align-items:center;flex-shrink:0}
+.scn-plus:hover{background:var(--bg-hover);color:var(--fg-secondary)}
+
+/* Row 3 — Canvas tabs */
+.canvas-tabs{display:flex;align-items:center;gap:0;padding:0 28px;border-bottom:1px solid var(--border-08);background:var(--bg-canvas);height:42px}
+.canvas-tab{padding:0 12px;height:42px;display:flex;align-items:center;gap:7px;color:var(--fg-tertiary);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:-0.005em;white-space:nowrap;flex-shrink:0}
+.canvas-tab:hover{color:var(--fg-secondary)}
+.canvas-tab.is-active{color:var(--fg-primary);border-bottom-color:var(--accent)}
+.canvas-tab .tab-num{font-family:var(--mono);font-size:11px;color:var(--fg-quaternary);padding:1px 5px;border:1px solid transparent;border-radius:3px;line-height:1.1;font-variant-numeric:tabular-nums}
+.canvas-tab.is-active .tab-num{color:var(--accent);border-color:var(--accent-border)}
+.canvas-tabs .stamp{margin-left:auto;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);flex-shrink:0}
+.canvas-tabs .stamp .dot{width:5px;height:5px;border-radius:50%;background:var(--sev-good);display:inline-block}
+.canvas-tabs .stamp .ver{color:var(--fg-secondary)}
+
+.density-toggle{display:inline-flex;background:var(--bg-surface-2);border:1px solid var(--border-08);border-radius:3px;padding:2px;font-size:10px;font-family:var(--mono);letter-spacing:0.04em}
+.density-toggle .d-opt{padding:3px 9px;color:var(--fg-tertiary);border-radius:2px;cursor:pointer;text-transform:uppercase}
+.density-toggle .d-opt.is-active{background:var(--bg-elevated);color:var(--fg-primary)}
+
+/* Canvas body */
+.canvas-body{padding:32px 36px 64px;display:flex;flex-direction:column;gap:48px;max-width:1180px}
+body.is-compact .canvas-body{gap:32px;padding:22px 28px 48px}
+.section-divider{height:1px;background:var(--border-08);margin:0;border:none}
+
+/* Page hero */
+.page-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.page-hero h1{font-family:var(--geist);font-size:22px;font-weight:600;letter-spacing:-0.02em;color:var(--fg-primary);display:flex;align-items:baseline;gap:10px}
+.page-hero h1 .sep{color:var(--fg-quaternary);font-weight:400}
+.page-hero .sub{font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);margin-top:4px;letter-spacing:0.04em;text-transform:uppercase}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. VALUE UPLIFT HERO BLOCK (decardified · /ferrari pass)
+   ═══════════════════════════════════════════════════════════════════ */
+.uplift-hero{position:relative}
+
+.uplift-top{display:grid;grid-template-columns:1fr auto;gap:32px;padding:0 0 22px;align-items:flex-start}
+
+.uplift-num-wrap{display:flex;flex-direction:column;gap:6px}
+.uplift-num-label{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-tertiary)}
+.uplift-num{font-family:var(--mono);font-size:54px;font-weight:500;letter-spacing:-0.035em;color:var(--fg-primary);line-height:1;display:flex;align-items:baseline;gap:14px;margin-top:4px}
+.uplift-num .sign{color:var(--sev-good)}
+.uplift-num .pct{font-size:20px;color:var(--sev-good);font-weight:500;letter-spacing:-0.02em}
+.uplift-num-sub{font-family:var(--geist);font-size:13px;color:var(--fg-secondary);line-height:1.55;letter-spacing:-0.005em;max-width:540px;margin-top:10px}
+.uplift-num-sub em{font-style:normal;color:var(--fg-primary);font-weight:500;font-family:var(--mono);letter-spacing:-0.01em;font-size:12px}
+
+.uplift-controls{display:flex;flex-direction:column;gap:18px;align-items:flex-end;min-width:280px}
+.ctrl-group{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.ctrl-label{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-tertiary)}
+.t-method{display:inline-flex;background:var(--bg-inset);border:1px solid var(--border-12);border-radius:5px;padding:3px;font-family:var(--mono);font-size:12px;gap:0}
+.t-method .t-opt{padding:6px 12px;color:var(--fg-tertiary);border-radius:3px;cursor:pointer;display:flex;flex-direction:column;gap:2px;align-items:center;min-width:66px;border:1px solid transparent}
+.t-method .t-opt .t-name{font-weight:500;letter-spacing:-0.005em}
+.t-method .t-opt .t-defn{font-size:9px;color:var(--fg-quaternary);letter-spacing:0.04em;text-transform:uppercase}
+.t-method .t-opt.is-active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-border)}
+.t-method .t-opt.is-active .t-defn{color:var(--accent)}
+.t-method .t-opt:not(.is-active):hover{color:var(--fg-secondary)}
+
+.cap-rate-wrap{display:inline-flex;align-items:center;gap:8px;background:var(--bg-inset);border:1px solid var(--border-12);border-radius:5px;padding:7px 12px;cursor:ew-resize;transition:border-color 0.1s}
+.cap-rate-wrap:hover{border-color:var(--accent-border)}
+.cap-rate-val{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--fg-primary);letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.cap-rate-suffix{font-family:var(--mono);font-size:13px;color:var(--fg-secondary);letter-spacing:-0.005em}
+.cap-rate-drag{font-family:var(--mono);font-size:10px;color:var(--fg-quaternary);letter-spacing:0.04em;text-transform:uppercase}
+
+/* Value derivation cascade — plain on canvas, no inner panel */
+.uplift-derive{border-top:1px solid var(--border-08);padding:24px 0 0}
+.derive-hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+.derive-hdr .title{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-secondary);font-weight:500}
+.derive-hdr .stamp{font-family:var(--mono);font-size:11px;color:var(--fg-tertiary)}
+.derive-hdr .stamp .ok{color:var(--sev-good)}
+
+.derive-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 36px;align-items:start}
+.derive-col{display:flex;flex-direction:column}
+.derive-col-hdr{font-family:var(--mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border-08)}
+.derive-col-hdr.is-now{color:var(--fg-secondary)}
+.derive-col-hdr.is-fwd{color:var(--accent)}
+
+.d-row{display:grid;grid-template-columns:1fr auto;gap:18px;padding:7px 0;font-size:13px;align-items:baseline}
+.d-row.is-result{padding-top:10px;margin-top:4px;border-top:1px solid var(--border-08)}
+.d-row .d-label{font-family:var(--geist);color:var(--fg-secondary);display:flex;align-items:center;gap:8px;letter-spacing:-0.005em}
+.d-row .d-label .op{font-family:var(--mono);color:var(--fg-quaternary);font-size:13px;width:14px;display:inline-block}
+.d-row .d-val{font-family:var(--mono);color:var(--fg-primary);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;font-weight:500}
+.d-row.is-result .d-label{color:var(--fg-primary);font-weight:500}
+/* Value@T=0 result: white (baseline truth, not active) */
+.d-row.is-result.is-baseline .d-val{color:var(--fg-primary);font-size:16px}
+/* Value@M12 result: indigo (active forward-looking number) */
+.d-row.is-result.is-forecast .d-val{color:var(--accent);font-size:16px}
+.d-row .stamp-mini{font-family:var(--mono);font-size:10px;color:var(--fg-quaternary);letter-spacing:-0.005em;margin-left:6px;font-weight:400}
+
+/* Value uplift bottom-line — plain row, green for the win, no bar/card */
+.uplift-result{margin-top:20px;padding:14px 0 0;border-top:1px solid var(--border-08);display:flex;align-items:baseline;justify-content:space-between;gap:14px}
+.uplift-result-lhs{display:flex;align-items:baseline;gap:14px}
+.uplift-result-label{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-secondary);font-weight:500}
+.uplift-result-formula{font-family:var(--mono);font-size:12px;color:var(--fg-tertiary);letter-spacing:-0.005em}
+.uplift-result-val{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--sev-good);letter-spacing:-0.025em;display:flex;align-items:baseline;gap:10px}
+.uplift-result-val .pct{font-size:13px;color:var(--fg-secondary);font-weight:400}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. ASSUMPTIONS COCKPIT
+   ═══════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   3. ASSUMPTIONS COCKPIT (decardified · /ferrari pass)
+   ═══════════════════════════════════════════════════════════════════ */
+.cockpit{}
+.cockpit-hdr{padding:0 0 16px;display:flex;align-items:baseline;justify-content:space-between}
+.cockpit-hdr .lhs{display:flex;align-items:baseline;gap:14px}
+.cockpit-hdr h3{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-secondary);font-weight:500}
+.cockpit-hdr .sub{font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);letter-spacing:-0.005em}
+.cockpit-hdr .sub em{font-style:normal;color:var(--accent)}
+.cockpit-hdr .rhs{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:11px;color:var(--fg-tertiary)}
+.cockpit-hdr .rhs .reset{cursor:pointer;color:var(--accent)}
+.cockpit-hdr .rhs .reset:hover{color:var(--accent-hover)}
+
+.cockpit-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1.2fr;gap:32px}
+.cockpit-group{padding:0}
+.cockpit-group .grp-label{font-family:var(--mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-tertiary);margin-bottom:12px;display:flex;align-items:center;gap:6px;font-weight:500}
+.cockpit-group .grp-label .grp-ld{font-family:var(--mono);font-size:9px;color:var(--fg-quaternary);padding:1px 5px;border:1px solid var(--border-08);border-radius:3px;letter-spacing:0.04em;font-weight:400}
+.cockpit-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:13px;gap:10px}
+.cockpit-row .ck-key{font-family:var(--geist);color:var(--fg-secondary);letter-spacing:-0.005em}
+.cockpit-row .ck-val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--fg-primary);font-weight:500;padding:4px 10px;background:var(--bg-inset);border:1px solid var(--border-12);border-radius:4px;cursor:ew-resize;letter-spacing:-0.01em;transition:border-color 0.1s, color 0.1s}
+.cockpit-row .ck-val:hover{border-color:var(--accent-border);color:var(--accent-hover)}
+.cockpit-row .ck-val.is-off{color:var(--fg-quaternary);background:transparent}
+.cockpit-row .ck-toggle{display:inline-flex;align-items:center;border:1px solid var(--border-12);border-radius:4px;overflow:hidden;font-family:var(--mono);font-size:11px}
+.cockpit-row .ck-toggle span{padding:3px 8px;color:var(--fg-tertiary);cursor:pointer}
+.cockpit-row .ck-toggle span.is-active{background:var(--bg-elevated);color:var(--fg-primary)}
+.cockpit-row .ck-meta{font-family:var(--mono);font-size:10px;color:var(--fg-quaternary);cursor:pointer;margin-left:4px}
+.cockpit-row .ck-meta:hover{color:var(--accent)}
+.cockpit-row .ck-pair{display:flex;align-items:center;gap:6px}
+.cockpit-row .ck-pair .arrow{color:var(--fg-quaternary);font-family:var(--mono);font-size:11px}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. 12-MONTH VALUE TRAJECTORY CHART
+   ═══════════════════════════════════════════════════════════════════ */
+.traj-card{}
+.traj-hdr{padding:0 0 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.traj-hdr .lhs{display:flex;flex-direction:column;gap:6px}
+.traj-hdr .lhs .t-lbl{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-secondary);font-weight:500}
+.traj-hdr .lhs h3{display:none}
+.traj-hdr .lhs .desc{font-family:var(--geist);font-size:13px;color:var(--fg-secondary);max-width:540px;line-height:1.55;letter-spacing:-0.005em;margin-top:2px}
+.traj-hdr .lhs .desc em{font-style:normal;color:var(--fg-primary);font-weight:500;font-family:var(--mono);letter-spacing:-0.01em;font-size:12px}
+.traj-hdr .rhs{display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-top:4px}
+.traj-legend{display:flex;align-items:center;gap:16px;font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);letter-spacing:-0.005em}
+.traj-legend .lg-d{width:10px;height:2px;display:inline-block;margin-right:6px;vertical-align:middle}
+.traj-legend .lg-d.is-primary{background:var(--accent)}
+.traj-legend .lg-d.is-baseline{background:repeating-linear-gradient(90deg, #5F6571 0 4px, transparent 4px 8px)}
+.traj-legend .lg-d.is-area{background:var(--accent-soft);width:14px;height:6px;border-radius:1px}
+.traj-cta{font-family:var(--mono);font-size:11px;color:var(--accent);cursor:pointer;letter-spacing:-0.005em}
+
+.traj-svg-wrap{padding:8px 0 0}
+.traj-svg{width:100%;height:260px;display:block}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. SENSITIVITY PREVIEW
+   ═══════════════════════════════════════════════════════════════════ */
+.sens-card{}
+.sens-hdr{padding:0 0 14px;display:flex;align-items:flex-end;justify-content:space-between}
+.sens-hdr .lhs h3{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-secondary);font-weight:500;display:flex;align-items:center;gap:10px}
+.sens-hdr .lhs h3 .preview-tag{font-family:var(--mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-tertiary);padding:0;border:none;background:transparent;border-radius:0;font-weight:400}
+.sens-hdr .lhs h3 .preview-tag::before{content:'·';margin-right:6px;color:var(--fg-quaternary)}
+.sens-hdr .lhs .sub{font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);margin-top:6px;letter-spacing:-0.005em;max-width:560px;line-height:1.55}
+.sens-hdr .rhs{font-family:var(--mono);font-size:12px;color:var(--accent);cursor:pointer;display:flex;flex-direction:column;align-items:flex-end;gap:4px;letter-spacing:-0.005em;text-align:right;max-width:280px;line-height:1.5}
+.sens-hdr .rhs .cta{display:flex;align-items:center;gap:4px}
+.sens-hdr .rhs .cta:hover{color:var(--accent-hover)}
+.sens-hdr .rhs .more{color:var(--fg-tertiary);font-size:11px}
+
+.sens-body{padding:0}
+.sens-row{display:grid;grid-template-columns:200px 1fr 130px;gap:18px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border-08)}
+.sens-row:last-child{border-bottom:none}
+.sens-row .sens-name{font-family:var(--geist);font-size:13px;color:var(--fg-primary);font-weight:500;display:flex;align-items:center;gap:8px;letter-spacing:-0.005em;flex-wrap:wrap}
+.sens-row .sens-name .ld-ref{font-family:var(--mono);font-size:9px;color:var(--fg-tertiary);padding:0;border:none;border-radius:0;cursor:pointer;letter-spacing:0.02em;font-weight:400}
+.sens-row .sens-name .ld-ref:hover{color:var(--accent)}
+.sens-row .sens-name .now{font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);font-weight:400;letter-spacing:-0.005em}
+
+.sens-bar-wrap{display:grid;grid-template-columns:1fr 2px 1fr;gap:0;align-items:center;height:24px;position:relative}
+.sens-bar-wrap .axis{height:24px;background:var(--border-12);justify-self:center}
+.sens-bar-neg{height:20px;background:var(--sev-bad);justify-self:end;border-radius:2px 0 0 2px;display:flex;align-items:center;justify-content:flex-start;padding-left:8px;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.95);letter-spacing:-0.01em;opacity:0.92}
+.sens-bar-pos{height:20px;background:var(--sev-good);justify-self:start;border-radius:0 2px 2px 0;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.95);letter-spacing:-0.01em;opacity:0.92}
+.sens-row .sens-impact{font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);text-align:right;letter-spacing:-0.005em;line-height:1.45}
+.sens-row .sens-impact .swing{color:var(--fg-secondary)}
+
+.sens-foot{margin-top:10px;padding-top:14px;border-top:1px solid var(--border-08);display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);letter-spacing:-0.005em}
+.sens-foot em{font-style:normal;color:var(--fg-secondary)}
+
+/* Companion pane */
+.companion{background:var(--bg-card);border-left:1px solid var(--border-08);display:flex;flex-direction:column;min-width:0}
+
+/* Pane Row 2 — Binding rail (40px, mirrors scenarios row geometry) */
+.pane-binding-rail{display:flex;align-items:center;justify-content:space-between;padding:0 22px;height:40px;border-bottom:1px solid var(--border-08);background:var(--bg-card)}
+.pane-binding-rail .label{font-family:var(--mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-tertiary);font-weight:500}
+.pane-binding-rail .chip{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:0.06em;text-transform:uppercase;font-weight:500}
+
+/* Pane Row 3 — Tabs (42px, mirrors canvas-tabs row geometry) */
+.comp-tabs{display:flex;align-items:center;border-bottom:1px solid var(--border-08);padding:0 12px;height:42px;gap:2px;background:var(--bg-card)}
+.comp-tab{padding:0 12px;height:42px;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg-tertiary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:-0.005em}
+.comp-tab.is-active{color:var(--fg-primary);border-bottom-color:var(--accent)}
+.comp-tab .badge{font-family:var(--mono);font-size:10px;color:var(--fg-tertiary);padding:1px 5px;background:var(--bg-elevated);border-radius:3px}
+.comp-tab.is-active .badge{color:var(--accent);background:var(--accent-soft)}
+.comp-body{padding:20px 22px;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
+
+.comp-section{display:flex;flex-direction:column;gap:10px}
+.comp-section-hdr{font-family:var(--mono);font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--fg-tertiary);display:flex;align-items:center;justify-content:space-between;font-weight:500}
+.comp-bound-label{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:0.04em;text-transform:uppercase;font-weight:500;padding:2px 7px;background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:3px}
+
+.comp-kv{display:grid;grid-template-columns:130px 1fr;gap:5px 12px;font-size:13px}
+.comp-kv dt{color:var(--fg-tertiary);font-family:var(--geist);letter-spacing:-0.005em}
+.comp-kv dd{font-family:var(--mono);color:var(--fg-primary);text-align:right;font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
+.comp-kv dd.is-accent{color:var(--accent)}
+.comp-kv dd.is-good{color:var(--sev-good)}
+
+.comp-defn{font-family:var(--geist);font-size:13px;color:var(--fg-secondary);line-height:1.55;letter-spacing:-0.005em}
+.comp-defn em{font-style:normal;color:var(--fg-primary);font-weight:500;font-family:var(--mono);letter-spacing:-0.01em;font-size:12px}
+
+.comp-formula{font-family:var(--mono);font-size:12px;color:var(--fg-secondary);background:var(--bg-inset);border:1px solid var(--border-08);border-radius:5px;padding:12px 14px;line-height:1.7;letter-spacing:-0.01em}
+.comp-formula .accent{color:var(--accent)}
+.comp-formula .var{color:var(--fg-primary);font-weight:500}
+.comp-formula .eq{color:var(--fg-quaternary)}
+
+.comp-method-bars{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.comp-method-bar{display:grid;grid-template-columns:60px 1fr 80px;gap:12px;align-items:center;cursor:pointer;padding:2px 0}
+.comp-method-bar .m-name{font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);letter-spacing:-0.005em}
+.comp-method-bar.is-active .m-name{color:var(--accent)}
+.comp-method-bar .m-track{height:2px;background:var(--border-08);position:relative;border-radius:1px}
+.comp-method-bar .m-fill{position:absolute;left:0;top:0;height:100%;background:var(--fg-quaternary);border-radius:1px}
+.comp-method-bar.is-active .m-fill{background:var(--accent)}
+.comp-method-bar .m-val{font-family:var(--mono);font-size:11px;color:var(--fg-secondary);text-align:right;font-variant-numeric:tabular-nums;letter-spacing:-0.005em;display:flex;flex-direction:column;gap:1px}
+.comp-method-bar.is-active .m-val .v{color:var(--fg-primary)}
+.comp-method-bar .m-val .v{font-weight:500}
+.comp-method-bar .m-val .d{font-size:10px;color:var(--fg-quaternary)}
+.comp-method-bar.is-active .m-val .d{color:var(--sev-good)}
+.comp-method-bar:hover:not(.is-active) .m-name{color:var(--fg-secondary)}
+.comp-method-bar:hover:not(.is-active) .m-fill{background:var(--fg-tertiary)}
+
+/* Annotation hints */
+.annot{position:relative}
+.annot::after{content:attr(data-annot);position:absolute;top:6px;right:6px;font-family:var(--mono);font-size:9px;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:3px;padding:1px 5px;letter-spacing:0.04em;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:5}
+body.show-annots .annot::after{opacity:1}
+.annot-toggle{position:fixed;bottom:18px;left:18px;z-index:100;font-family:var(--mono);font-size:11px;color:var(--fg-tertiary);background:var(--bg-elevated);border:1px solid var(--border-12);border-radius:5px;padding:6px 10px;cursor:pointer;letter-spacing:-0.005em}
+.annot-toggle:hover{color:var(--accent);border-color:var(--accent-border)}
+.annot-toggle.is-on{color:var(--accent);border-color:var(--accent-border)}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--fg-quaternary)}
+</style>
+</head>
+<body>
+
+<div class="annot-toggle" id="annotToggle">⌥ pattern annotations: off</div>
+
+<div class="shell">
+
+  <!-- TOP CHROME — full-width brand bar (spans canvas + companion) -->
+  <header class="brand-bar">
+    <div class="brand-mark">B</div>
+    <div class="brand-deal">Maple Heights <span class="units">412u · 6 FPs</span></div>
+    <div class="brand-actions">
+      <button class="btn">⎘ Save</button>
+      <button class="btn">⇆ Compare</button>
+      <button class="btn is-primary">↗ Export</button>
+    </div>
+  </header>
+
+  <!-- BODY SHELL — canvas (1fr) + companion pane (440px) -->
+  <div class="body-shell">
+
+  <!-- CANVAS -->
+  <main class="canvas">
+
+    <!-- Row 2 — Scenarios (mirrors pane binding-rail at the same Y) -->
+    <div class="scenarios-row">
+      <div class="scn-tabs">
+        <div class="scn-tab is-active">Base Case <span class="scn-val">+$10.2M</span></div>
+        <div class="scn-tab">Downside <span class="scn-val">+$3.4M</span></div>
+        <div class="scn-tab">Value-Add <span class="scn-val">+$18.7M</span></div>
+        <div class="scn-tab">Market Normalize <span class="scn-val">+$12.1M</span></div>
+        <div class="scn-tab">Custom 1 <span class="scn-val">—</span></div>
+        <div class="scn-plus">+</div>
+      </div>
+    </div>
+
+    <!-- Row 3 — Canvas tabs (mirrors pane comp-tabs at the same Y) -->
+    <div class="canvas-tabs">
+      <div class="canvas-tab is-active"><span class="tab-num">1</span> Overview</div>
+      <div class="canvas-tab"><span class="tab-num">2</span> Renewal Rules</div>
+      <div class="canvas-tab"><span class="tab-num">3</span> Monthly Detail</div>
+      <div class="canvas-tab"><span class="tab-num">4</span> Year-1 Revenue</div>
+      <div class="canvas-tab"><span class="tab-num">5</span> Compare</div>
+      <div class="stamp">
+        <span class="density-toggle" id="densityToggle">
+          <span class="d-opt is-active" data-density="comfortable">Comfortable</span>
+          <span class="d-opt" data-density="compact">Compact</span>
+        </span>
+        <span class="dot"></span>
+      <span class="ver">v2.1.0</span>
+      <span>·</span>
+      <span>just now</span>
+    </div>
+  </div>
+
+  <div class="canvas-body">
+
+    <!-- Page-hero removed — chrome carries Pro Forma › Overview › Base Case -->
+
+    <!-- 2. VALUE UPLIFT HERO BLOCK -->
+    <div class="uplift-hero annot" data-annot="VALUE UPLIFT · hero · T-method × cap rate × derivation">
+
+      <div class="uplift-top">
+
+        <div class="uplift-num-wrap">
+          <div class="uplift-num-label">Projected value uplift · 12 months</div>
+          <div class="uplift-num">
+            <span class="sign">+</span>$10.24M
+            <span class="pct">+6.5%</span>
+          </div>
+          <div class="uplift-num-sub">
+            What this asset is projected to be worth at <em>M12</em> versus its <em>in-place</em> annualized value today, capitalized at the current cap rate. <em>Drag any assumption</em> below to see how it moves the uplift.
+          </div>
+        </div>
+
+        <div class="uplift-controls">
+          <div class="ctrl-group">
+            <div class="ctrl-label">Valuation method</div>
+            <div class="t-method" id="tMethod">
+              <div class="t-opt" data-t="T1">
+                <span class="t-name">T1 ann</span>
+                <span class="t-defn">M12 × 12</span>
+              </div>
+              <div class="t-opt is-active" data-t="T3">
+                <span class="t-name">T3 ann</span>
+                <span class="t-defn">M10–12 avg</span>
+              </div>
+              <div class="t-opt" data-t="T12">
+                <span class="t-name">T12</span>
+                <span class="t-defn">M1–12 sum</span>
+              </div>
+            </div>
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">Cap rate</div>
+            <div class="cap-rate-wrap">
+              <span class="cap-rate-val">5.50</span>
+              <span class="cap-rate-suffix">%</span>
+              <span class="cap-rate-drag">⇔ drag</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Value derivation cascade -->
+      <div class="uplift-derive">
+        <div class="derive-hdr">
+          <div class="title">Value derivation</div>
+          <div class="stamp">Reconciled · runLegacyShape output <span class="ok">✓</span></div>
+        </div>
+
+        <div class="derive-grid">
+
+          <div class="derive-col">
+            <div class="derive-col-hdr is-now">Value @ T=0 · today's in-place baseline</div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">&nbsp;</span>In-place rent (weighted avg)</div>
+              <div class="d-val">$1,876 <span class="stamp-mini">/u/mo</span></div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">×</span>Occupied units (T=0)</div>
+              <div class="d-val">383</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">×</span>12 months</div>
+              <div class="d-val">12</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">=</span>In-place annual revenue</div>
+              <div class="d-val">$8,621,376</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">÷</span>Cap rate</div>
+              <div class="d-val">5.50%</div>
+            </div>
+            <div class="d-row is-result is-baseline">
+              <div class="d-label">Value @ T=0</div>
+              <div class="d-val">$156.75M</div>
+            </div>
+          </div>
+
+          <div class="derive-col">
+            <div class="derive-col-hdr is-fwd">Value @ M12 · forecast · T3 method</div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">&nbsp;</span>NRI · M10</div>
+              <div class="d-val">$755,200</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">&nbsp;</span>NRI · M11</div>
+              <div class="d-val">$759,780</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">&nbsp;</span>NRI · M12</div>
+              <div class="d-val">$781,160</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">÷</span>3 → T3 average</div>
+              <div class="d-val">$765,380</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">×</span>12 → annualized</div>
+              <div class="d-val">$9,184,560</div>
+            </div>
+            <div class="d-row">
+              <div class="d-label"><span class="op">÷</span>Cap rate</div>
+              <div class="d-val">5.50%</div>
+            </div>
+            <div class="d-row is-result is-forecast">
+              <div class="d-label">Value @ M12</div>
+              <div class="d-val">$166.99M</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="uplift-result">
+          <div class="uplift-result-lhs">
+            <span class="uplift-result-label">Value uplift</span>
+            <span class="uplift-result-formula">= $166.99M − $156.75M</span>
+          </div>
+          <div class="uplift-result-val">
+            +$10.24M
+            <span class="pct">+6.5%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. ASSUMPTIONS COCKPIT -->
+    <div class="cockpit annot" data-annot="assumptions cockpit · drag any · live recompute">
+      <div class="cockpit-hdr">
+        <div class="lhs">
+          <h3>Assumptions</h3>
+          <span class="sub">Portfolio-level · drag any value · governed by <em>LD-1 thru LD-15</em></span>
+        </div>
+        <div class="rhs">
+          <span class="reset">Reset to engine defaults</span>
+        </div>
+      </div>
+      <div class="cockpit-grid">
+
+        <div class="cockpit-group">
+          <div class="grp-label">Absorption <span class="grp-ld">LD-2 · 3 · 4 · 14</span></div>
+          <div class="cockpit-row">
+            <span class="ck-key">Target occupancy</span>
+            <span class="ck-val">95.0 %</span>
+          </div>
+          <div class="cockpit-row">
+            <span class="ck-key">Monthly move-ins</span>
+            <span class="ck-pair">
+              <span class="ck-val">4 u/mo</span>
+              <span class="ck-meta">M1–12 ↗</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="cockpit-group">
+          <div class="grp-label">Renewal bands <span class="grp-ld">LD-1 · 15</span></div>
+          <div class="cockpit-row">
+            <span class="ck-key">&lt; 80 % occ</span>
+            <span class="ck-val">+1.0 %</span>
+          </div>
+          <div class="cockpit-row">
+            <span class="ck-key">80–90 % occ</span>
+            <span class="ck-val">+3.0 %</span>
+          </div>
+          <div class="cockpit-row">
+            <span class="ck-key">≥ 90 % occ</span>
+            <span class="ck-val">+5.0 %</span>
+          </div>
+        </div>
+
+        <div class="cockpit-group">
+          <div class="grp-label">Turnover &amp; market <span class="grp-ld">LD-5 · 13</span></div>
+          <div class="cockpit-row">
+            <span class="ck-key">Annual turnover</span>
+            <span class="ck-val">50.0 %</span>
+          </div>
+          <div class="cockpit-row">
+            <span class="ck-key">Market rent growth</span>
+            <span class="ck-val">+3.0 %/yr</span>
+          </div>
+        </div>
+
+        <div class="cockpit-group">
+          <div class="grp-label">Renovation program <span class="grp-ld">LD-6 · 9 · 11 · 12</span></div>
+          <div class="cockpit-row">
+            <span class="ck-key">Reno premium</span>
+            <span class="ck-pair">
+              <span class="ck-val">+$150</span>
+              <span class="ck-toggle"><span class="is-active">$</span><span>%</span></span>
+            </span>
+          </div>
+          <div class="cockpit-row">
+            <span class="ck-key">Window</span>
+            <span class="ck-pair">
+              <span class="ck-val">M1</span>
+              <span class="arrow">→</span>
+              <span class="ck-val">12 mo</span>
+            </span>
+          </div>
+          <div class="cockpit-row">
+            <span class="ck-key">Capex/reno · Max/mo</span>
+            <span class="ck-pair">
+              <span class="ck-val">$8,000</span>
+              <span class="ck-val is-off">off</span>
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 4. VALUE TRAJECTORY CHART -->
+    <div class="traj-card annot" data-annot="value trajectory · area = cumulative uplift">
+      <div class="traj-hdr">
+        <div class="lhs">
+          <div class="t-lbl">12-month value trajectory</div>
+          <h3>Asset value over the forecast horizon</h3>
+          <div class="desc">Each month's NRI projected forward and capitalized at <em>5.50%</em>. The shaded area between the dashed baseline and the curve is the cumulative <em>+$10.24M</em> uplift the model projects.</div>
+        </div>
+        <div class="rhs">
+          <div class="traj-legend">
+            <span><span class="lg-d is-area"></span>Uplift</span>
+            <span><span class="lg-d is-primary"></span>Value @ M</span>
+            <span><span class="lg-d is-baseline"></span>Value @ T=0</span>
+          </div>
+          <div class="traj-cta">Hover any month → trace ↗</div>
+        </div>
+      </div>
+      <div class="traj-svg-wrap">
+        <svg class="traj-svg" viewBox="0 0 1100 260" preserveAspectRatio="none">
+
+          <line x1="80" y1="50"  x2="1060" y2="50"  stroke="#1A1D24" stroke-dasharray="2,4"/>
+          <line x1="80" y1="85"  x2="1060" y2="85"  stroke="#15171C" stroke-dasharray="2,4"/>
+          <line x1="80" y1="120" x2="1060" y2="120" stroke="#1A1D24" stroke-dasharray="2,4"/>
+          <line x1="80" y1="155" x2="1060" y2="155" stroke="#15171C" stroke-dasharray="2,4"/>
+          <line x1="80" y1="190" x2="1060" y2="190" stroke="#1A1D24" stroke-dasharray="2,4"/>
+
+          <text x="70" y="55"  text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5F6571">$170M</text>
+          <text x="70" y="90"  text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5F6571">$165M</text>
+          <text x="70" y="125" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5F6571">$160M</text>
+          <text x="70" y="160" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5F6571">$155M</text>
+          <text x="70" y="195" text-anchor="end" font-family="JetBrains Mono" font-size="10" fill="#5F6571">$150M</text>
+
+          <!-- Baseline: Value@T=0 = $156.75M -->
+          <line x1="80" y1="153" x2="1060" y2="153" stroke="#5F6571" stroke-width="1" stroke-dasharray="5,5"/>
+          <text x="1066" y="156" font-family="JetBrains Mono" font-size="10" fill="#9298A3" letter-spacing="-0.01em">$156.75M  T=0</text>
+
+          <!-- Uplift area -->
+          <path d="M 80 152
+                   L 162 150 L 244 146 L 326 140 L 408 132 L 490 122 L 572 110
+                   L 654 96 L 736 84 L 818 74 L 900 64 L 982 58 L 1060 52
+                   L 1060 153 L 80 153 Z"
+                fill="rgba(77,91,255,0.10)"/>
+
+          <!-- Value line -->
+          <path d="M 80 152 L 162 150 L 244 146 L 326 140 L 408 132 L 490 122 L 572 110 L 654 96 L 736 84 L 818 74 L 900 64 L 982 58 L 1060 52"
+                stroke="#4D5BFF" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+
+          <g fill="#0A0B0E" stroke="#4D5BFF" stroke-width="1.5">
+            <circle cx="80" cy="152" r="3"/>
+            <circle cx="162" cy="150" r="3"/>
+            <circle cx="244" cy="146" r="3"/>
+            <circle cx="326" cy="140" r="3"/>
+            <circle cx="408" cy="132" r="3"/>
+            <circle cx="490" cy="122" r="3"/>
+            <circle cx="572" cy="110" r="3"/>
+            <circle cx="654" cy="96"  r="3"/>
+            <circle cx="736" cy="84"  r="3"/>
+            <circle cx="818" cy="74"  r="3"/>
+            <circle cx="900" cy="64"  r="3"/>
+            <circle cx="982" cy="58"  r="3"/>
+            <circle cx="1060" cy="52" r="4" fill="#4D5BFF"/>
+          </g>
+
+          <line x1="1060" y1="52" x2="1060" y2="22" stroke="#4D5BFF" stroke-width="1" stroke-dasharray="2,2"/>
+          <rect x="970" y="6" width="118" height="22" fill="rgba(77,91,255,0.12)" stroke="#4D5BFF" stroke-width="1" rx="3"/>
+          <text x="1029" y="20" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#4D5BFF" letter-spacing="0.04em">M12 · $166.99M</text>
+
+          <g font-family="JetBrains Mono" font-size="10" fill="#5F6571" text-anchor="middle">
+            <text x="80" y="232">Today</text>
+            <text x="162" y="232">Jan</text>
+            <text x="244" y="232">Feb</text>
+            <text x="326" y="232">Mar</text>
+            <text x="408" y="232">Apr</text>
+            <text x="490" y="232">May</text>
+            <text x="572" y="232">Jun</text>
+            <text x="654" y="232">Jul</text>
+            <text x="736" y="232">Aug</text>
+            <text x="818" y="232">Sep</text>
+            <text x="900" y="232">Oct</text>
+            <text x="982" y="232">Nov</text>
+            <text x="1060" y="232">Dec</text>
+            <text x="80" y="248" fill="#7A818D" font-size="9">2026</text>
+            <text x="572" y="248" fill="#7A818D" font-size="9">2027</text>
+          </g>
+
+          <text x="900" y="148" text-anchor="middle" font-family="JetBrains Mono" font-size="11" letter-spacing="-0.005em" opacity="0.85">
+            <tspan font-weight="500" fill="#4D5BFF">+$10.24M</tspan>
+            <tspan dx="6" fill="#9298A3">cumulative uplift</tspan>
+          </text>
+
+        </svg>
+      </div>
+    </div>
+
+    <!-- 5. SENSITIVITY PREVIEW -->
+    <div class="sens-card annot" data-annot="sensitivity preview · top 3 · → Studio">
+      <div class="sens-hdr">
+        <div class="lhs">
+          <h3>Sensitivity preview <span class="preview-tag">top 3 · preview</span></h3>
+          <div class="sub">±100 bp / ±1 pp / ±10 pp swings on the highest-leverage parameters · ranked by absolute Δ value uplift</div>
+        </div>
+        <div class="rhs">
+          <span class="cta">Open Sensitivity Studio →</span>
+          <span class="more">all 12 parameters · tornado · contour ↗</span>
+        </div>
+      </div>
+
+      <div class="sens-body">
+
+        <div class="sens-row">
+          <div class="sens-name">
+            Cap rate <span class="ld-ref">UI</span>
+            <span class="now">· 5.50% now</span>
+          </div>
+          <div class="sens-bar-wrap">
+            <div class="sens-bar-neg" style="width:78%">−$11.4M</div>
+            <div class="axis"></div>
+            <div class="sens-bar-pos" style="width:92%">+$13.6M</div>
+          </div>
+          <div class="sens-impact">
+            ±100 bp swing<br>
+            <span class="swing">±$12.5M avg</span>
+          </div>
+        </div>
+
+        <div class="sens-row">
+          <div class="sens-name">
+            Market rent growth <span class="ld-ref">LD-13</span>
+            <span class="now">· +3.0%/yr now</span>
+          </div>
+          <div class="sens-bar-wrap">
+            <div class="sens-bar-neg" style="width:38%">−$5.6M</div>
+            <div class="axis"></div>
+            <div class="sens-bar-pos" style="width:42%">+$6.2M</div>
+          </div>
+          <div class="sens-impact">
+            ±1 pp swing<br>
+            <span class="swing">±$5.9M avg</span>
+          </div>
+        </div>
+
+        <div class="sens-row">
+          <div class="sens-name">
+            Turnover rate <span class="ld-ref">LD-5</span>
+            <span class="now">· 50.0% now</span>
+          </div>
+          <div class="sens-bar-wrap">
+            <div class="sens-bar-neg" style="width:28%">−$4.2M</div>
+            <div class="axis"></div>
+            <div class="sens-bar-pos" style="width:24%">+$3.6M</div>
+          </div>
+          <div class="sens-impact">
+            ±10 pp swing<br>
+            <span class="swing">±$3.9M avg</span>
+          </div>
+        </div>
+
+        <div class="sens-foot">
+          <span>Sensitivity numbers are linear estimates around the current operating point · <em>full studio</em> models discrete jumps and parameter interactions</span>
+          <span>9 more parameters in studio</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- COMPANION PANE — binding rail + tabs + body, chrome rows align to canvas -->
+<aside class="companion">
+
+  <!-- Pane Row 2 — Binding rail (40px, mirrors canvas scenarios-row) -->
+  <div class="pane-binding-rail">
+    <span class="label">Bound value</span>
+    <span class="chip">Hero · Uplift</span>
+  </div>
+
+  <!-- Pane Row 3 — Tabs (42px, mirrors canvas-tabs) -->
+  <div class="comp-tabs">
+    <div class="comp-tab is-active">Details</div>
+    <div class="comp-tab">Trace</div>
+    <div class="comp-tab">Notes</div>
+    <div class="comp-tab">Activity <span class="badge">6</span></div>
+    <div class="comp-tab">Assistant</div>
+  </div>
+
+  <div class="comp-body">
+
+    <div class="comp-section">
+      <dl class="comp-kv">
+        <dt>Metric</dt><dd style="font-family:var(--geist);color:var(--fg-primary);text-align:right">Projected value uplift</dd>
+        <dt>Value</dt><dd class="is-accent">+$10.24M</dd>
+        <dt>Percentage</dt><dd class="is-good">+6.5%</dd>
+        <dt>Scenario</dt><dd>Base Case</dd>
+        <dt>Method</dt><dd>T3 ann</dd>
+        <dt>Cap rate</dt><dd>5.50%</dd>
+        <dt>Horizon</dt><dd>12 months</dd>
+      </dl>
+    </div>
+
+    <div class="comp-section">
+      <div class="comp-section-hdr"><span>Definition</span></div>
+      <div class="comp-defn">
+        The dollar increase in asset value from <em>T=0</em> (today's in-place rent capitalized) to <em>M12</em> (forecast NRI capitalized at the same cap rate). The valuation method controls which forecasted period is annualized in the numerator.
+      </div>
+      <div class="comp-formula">
+<span class="eq">// Value @ T=0</span><br>
+<span class="var">in_place_revenue</span> <span class="eq">=</span> in_place_rent × occupied × 12<br>
+<span class="var">value_T0</span> <span class="eq">=</span> in_place_revenue <span class="eq">÷</span> cap_rate<br><br>
+<span class="eq">// Value @ M12 · T3 method</span><br>
+<span class="var">nri_T3</span> <span class="eq">=</span> avg(NRI[M10..M12]) × 12<br>
+<span class="var">value_M12</span> <span class="eq">=</span> nri_T3 <span class="eq">÷</span> cap_rate<br><br>
+<span class="accent">uplift</span> <span class="eq">=</span> value_M12 <span class="eq">−</span> value_T0
+      </div>
+    </div>
+
+    <div class="comp-section">
+      <div class="comp-section-hdr"><span>Method comparison</span><span style="font-family:var(--mono);font-size:10px;color:var(--fg-quaternary);letter-spacing:0.04em;text-transform:uppercase;font-weight:400">click to switch</span></div>
+      <div class="comp-method-bars">
+        <div class="comp-method-bar">
+          <span class="m-name">T1 ann</span>
+          <span class="m-track"><span class="m-fill" style="width:100%"></span></span>
+          <span class="m-val"><span class="v">$170.4M</span><span class="d">+$13.7M</span></span>
+        </div>
+        <div class="comp-method-bar is-active">
+          <span class="m-name">T3 ann</span>
+          <span class="m-track"><span class="m-fill" style="width:75%"></span></span>
+          <span class="m-val"><span class="v">$166.99M</span><span class="d">+$10.24M</span></span>
+        </div>
+        <div class="comp-method-bar">
+          <span class="m-name">T12</span>
+          <span class="m-track"><span class="m-fill" style="width:29%"></span></span>
+          <span class="m-val"><span class="v">$160.7M</span><span class="d">+$4.0M</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="comp-section">
+      <div class="comp-section-hdr"><span>Provenance</span></div>
+      <dl class="comp-kv">
+        <dt>NRI source</dt><dd style="font-size:11px">runLegacyShape · M10–12</dd>
+        <dt>In-place source</dt><dd style="font-size:11px">rent_roll · 383 occ</dd>
+        <dt>Cap rate source</dt><dd style="font-size:11px">UI · user input</dd>
+        <dt>Confidence</dt><dd class="is-good">94%</dd>
+        <dt>Last computed</dt><dd style="color:var(--fg-tertiary)">just now</dd>
+      </dl>
+    </div>
+
+    <div class="comp-section">
+      <div class="comp-section-hdr"><span>Three rent concepts in play</span></div>
+      <dl class="comp-kv">
+        <dt>In-place rent</dt><dd>$1,876/u</dd>
+        <dt>Unrenovated mkt</dt><dd>$2,012/u</dd>
+        <dt>Renovated mkt</dt><dd class="is-accent">$2,162/u</dd>
+      </dl>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--fg-quaternary);margin-top:4px;letter-spacing:-0.005em">LD-7 · LD-8 · LD-9 stratification</div>
+    </div>
+
+  </div>
+</aside>
+
+  </div><!-- /body-shell -->
+
+</div><!-- /shell -->
+
+<script>
+(function(){
+  const btn = document.getElementById('annotToggle');
+  btn.addEventListener('click', () => {
+    document.body.classList.toggle('show-annots');
+    const on = document.body.classList.contains('show-annots');
+    btn.classList.toggle('is-on', on);
+    btn.textContent = on ? '⌥ pattern annotations: on' : '⌥ pattern annotations: off';
+  });
+})();
+
+(function(){
+  const t = document.getElementById('densityToggle');
+  if(!t) return;
+  t.querySelectorAll('.d-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      t.querySelectorAll('.d-opt').forEach(o => o.classList.remove('is-active'));
+      opt.classList.add('is-active');
+      document.body.classList.toggle('is-compact', opt.getAttribute('data-density') === 'compact');
+    });
+  });
+})();
+
+(function(){
+  const t = document.getElementById('tMethod');
+  if(!t) return;
+  t.querySelectorAll('.t-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      t.querySelectorAll('.t-opt').forEach(o => o.classList.remove('is-active'));
+      opt.classList.add('is-active');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

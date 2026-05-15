@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scaffold mockup — Q35-Q39</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens — verbatim from src/styles/basis-linear.css §1. */
+  :root {
+    --bg:                #0B0C0F;
+    --sidebar:           #06070A;
+    --surface:           #15171C;
+    --surface-2:         #1B1E25;
+    --surface-elevated:  #22262E;
+    --surface-hover:     #232730;
+    --border:            #2A2F38;
+    --border-subtle:     #1F2229;
+
+    --text-1: #ECEDEF;
+    --text-2: #CFD3DA;
+    --text-3: #7A818D;
+    --text-4: #5F6571;
+
+    --accent:        #4D5BFF;
+    --accent-hover:  #6573FF;
+    --accent-soft:   rgba(77, 91, 255, 0.10);
+    --accent-glow:   rgba(77, 91, 255, 0.18);
+    --accent-border: rgba(77, 91, 255, 0.28);
+
+    --success:      #30A46C;
+    --success-soft: rgba(48, 164, 108, 0.12);
+    --warning:      #F5A524;
+    --warning-soft: rgba(245, 165, 36, 0.12);
+    --danger:       #E5484D;
+    --danger-soft:  rgba(229, 72, 77, 0.12);
+    --info:         #8B5CF6;
+    --info-soft:    rgba(139, 92, 246, 0.12);
+
+    --font-ui:   'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html, body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .page-wrap { max-width: 1440px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* Doc header */
+  .doc-header { margin-bottom: 48px; padding-bottom: 28px; border-bottom: 1px solid var(--border-subtle); }
+  .doc-title { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; color: var(--text-1); }
+  .doc-sub { font-size: 13px; color: var(--text-2); line-height: 1.6; max-width: 920px; }
+  .doc-sub b { color: var(--text-1); font-weight: 500; }
+  .doc-sub i { color: var(--text-2); font-style: italic; }
+  .doc-sub code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle); font-size: 12px; }
+
+  /* Q-block scaffolding */
+  .q-block { margin-bottom: 56px; }
+  .q-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .q-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; padding: 3px 8px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 3px; }
+  .q-title { font-size: 17px; font-weight: 600; letter-spacing: -0.005em; color: var(--text-1); }
+  .q-context { font-size: 12.5px; color: var(--text-2); line-height: 1.6; margin-bottom: 6px; max-width: 980px; }
+  .q-context code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 1px 5px; border-radius: 3px; font-size: 11.5px; }
+  .q-context i { color: var(--text-2); font-style: italic; }
+  .q-where { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; margin-bottom: 18px; }
+  .q-where code { color: var(--text-2); }
+
+  .scale-caption { margin: 0 0 14px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); letter-spacing: 0.02em; line-height: 1.5; }
+  .scale-caption b { color: var(--text-2); font-weight: 500; }
+
+  /* Option panels — 3-col grid, Rule 26 single .bl-card on canvas */
+  .opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .opt {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  .opt-header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); border-radius: 8px 8px 0 0; }
+  .opt-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+  .opt-letter { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; background: var(--surface-elevated); color: var(--text-1); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+  .opt-letter.rec { background: var(--accent); color: #fff; }
+  .opt-name { font-size: 12px; color: var(--text-1); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .opt-stage { padding: 16px 14px 14px; flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .opt-note { padding: 10px 16px 14px; font-size: 11px; color: var(--text-3); line-height: 1.55; border-top: 1px solid var(--border-subtle); border-radius: 0 0 8px 8px; }
+  .opt-note b { color: var(--text-1); }
+  .opt-note code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+
+  .bxn-frame-title { font-size: 11px; font-weight: 600; color: var(--text-1); }
+  .bxn-frame-sub { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); margin-bottom: 4px; }
+
+  /* ============================================================
+     Q35 — Big-number hierarchy (3 treatments)
+     ============================================================
+     Year-1 Projected EGR: $2,362,800 (+7.40% / +$162,800 vs In-Place baseline $2,200,000).
+     Cross-scenario context (used in B/C): vs Base $2,275,800 → +$87,000 (+3.82%);
+     vs Downside $2,250,000 → +$112,800 (+5.01%). */
+  .q35-stage { display: flex; align-items: center; justify-content: center; padding: 18px 4px 8px; min-height: 130px; }
+  .q35-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .q35-hero-label { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .q35-hero-value { font-family: var(--font-mono); font-size: 30px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .q35-hero-delta { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--success); font-variant-numeric: tabular-nums; }
+  .q35-hero-delta .pct { color: var(--text-3); }
+  .q35-hero-base { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-4); letter-spacing: 0.02em; }
+
+  /* Q35.B — side-pill */
+  .q35b-row { display: flex; align-items: center; gap: 14px; }
+  .q35b-pill { padding: 5px 9px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--text-2); letter-spacing: 0.02em; display: flex; flex-direction: column; gap: 2px; }
+  .q35b-pill-label { color: var(--text-4); font-size: 8.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .q35b-pill-val { color: var(--success); font-weight: 500; }
+
+  /* Q35.C — three numbers in a row */
+  .q35c-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+  .q35c-cell { display: flex; flex-direction: column; gap: 3px; padding: 10px 8px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; }
+  .q35c-cell-label { font-family: var(--font-mono); font-size: 8.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .q35c-cell-val { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--success); letter-spacing: -0.005em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .q35c-cell-pct { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  /* ============================================================
+     Q36 — Waterfall orientation (3 treatments)
+     ============================================================
+     6 steps: In-Place $2,200,000 → +LTL Capture $110K → +Turnover Uplift $72K
+     → -Vacancy ($8K) → -Concessions ($8K) → -Bad Debt ($4K) → Year-1 EGR $2,362,000.
+     Chart values normalized; full numbers rendered as labels. */
+
+  /* Q36.A — Horizontal */
+  .q36a-wrap { width: 100%; padding: 4px 0; display: flex; flex-direction: column; gap: 10px; }
+  .q36a-row { display: grid; grid-template-columns: 90px 1fr 60px; gap: 8px; align-items: center; height: 18px; }
+  .q36a-row-label { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-2); letter-spacing: 0.02em; text-transform: uppercase; font-weight: 500; }
+  .q36a-row-track { position: relative; height: 12px; background: transparent; }
+  .q36a-bar { position: absolute; top: 0; bottom: 0; border-radius: 1px; }
+  .q36a-bar.start, .q36a-bar.end { background: var(--accent); }
+  .q36a-bar.pos { background: var(--success); }
+  .q36a-bar.neg { background: var(--danger); }
+  .q36a-row-val { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-1); font-variant-numeric: tabular-nums; text-align: right; }
+  .q36a-row-val.pos { color: var(--success); }
+  .q36a-row-val.neg { color: var(--danger); }
+
+  /* Q36.B — Vertical */
+  .q36b-wrap { display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 4px; width: 100%; }
+  .q36b-row { display: grid; grid-template-columns: 18px 1fr 60px; gap: 8px; align-items: center; width: 100%; }
+  .q36b-conn { display: flex; justify-content: center; height: 14px; }
+  .q36b-conn-line { width: 1px; background: var(--border-subtle); }
+  .q36b-bar-track { position: relative; height: 18px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .q36b-bar { position: absolute; top: 0; bottom: 0; }
+  .q36b-bar.start, .q36b-bar.end { background: var(--accent); left: 0; right: 0; }
+  .q36b-bar.pos { background: var(--success); }
+  .q36b-bar.neg { background: var(--danger); }
+  .q36b-row-label { font-family: var(--font-mono); font-size: 8.5px; color: var(--text-2); letter-spacing: 0.02em; }
+  .q36b-row-val { font-family: var(--font-mono); font-size: 9px; color: var(--text-1); font-variant-numeric: tabular-nums; text-align: right; }
+  .q36b-row-val.pos { color: var(--success); }
+  .q36b-row-val.neg { color: var(--danger); }
+
+  /* Q36.C — Stepped/terraced */
+  .q36c-svg { width: 100%; height: 150px; display: block; }
+  .q36c-grid { stroke: var(--border-subtle); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.4; }
+  .q36c-bar.start, .q36c-bar.end { fill: var(--accent); }
+  .q36c-bar.pos { fill: var(--success); }
+  .q36c-bar.neg { fill: var(--danger); }
+  .q36c-conn { stroke: var(--text-4); stroke-width: 0.6; stroke-dasharray: 1 2; }
+  .q36c-label { font-family: var(--font-mono); font-size: 7.5px; fill: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; }
+  .q36c-val { font-family: var(--font-mono); font-size: 7.5px; fill: var(--text-1); font-variant-numeric: tabular-nums; }
+  .q36c-val.pos { fill: var(--success); }
+  .q36c-val.neg { fill: var(--danger); }
+  .q36c-y-label { font-family: var(--font-mono); font-size: 7.5px; fill: var(--text-4); }
+
+  /* ============================================================
+     Q37 — Sensitivity card layout (3 treatments)
+     ============================================================
+     6 inputs ranked by ±10% flex magnitude on Year-1 EGR:
+       Market rent growth ±$22K · Vacancy rate ±$11K · LTL Capture ±$11K
+       · Turnover Uplift ±$7K · Renewal rate ±$5K · Concession take-rate ±$3K. */
+
+  /* Q37.A — Static grid (3-col) */
+  .q37a-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .q37a-card { padding: 8px 9px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; display: flex; flex-direction: column; gap: 3px; }
+  .q37a-card-label { font-family: var(--font-mono); font-size: 8px; color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.3; }
+  .q37a-card-val { font-family: var(--font-mono); font-size: 11px; color: var(--text-1); font-variant-numeric: tabular-nums; font-weight: 500; }
+
+  /* Q37.B — Slider cards */
+  .q37b-stack { display: flex; flex-direction: column; gap: 7px; }
+  .q37b-card { padding: 7px 10px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; display: grid; grid-template-columns: 1fr 60px; gap: 6px; align-items: center; row-gap: 4px; }
+  .q37b-card-label { font-family: var(--font-mono); font-size: 9px; color: var(--text-2); letter-spacing: 0.02em; }
+  .q37b-card-val { font-family: var(--font-mono); font-size: 10px; color: var(--text-1); font-variant-numeric: tabular-nums; text-align: right; }
+  .q37b-slider { grid-column: 1 / -1; height: 4px; background: var(--surface-elevated); border-radius: 2px; position: relative; }
+  .q37b-slider-track { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-radius: 2px; }
+  .q37b-slider-thumb { position: absolute; top: -4px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); transform: translateX(-50%); }
+
+  /* Q37.C — Tornado chart (HTML labels + SVG bars per row) */
+  .q37c-rows { display: flex; flex-direction: column; gap: 5px; padding: 4px 0; }
+  .q37c-row { display: grid; grid-template-columns: 100px 1fr 36px; gap: 8px; align-items: center; height: 14px; }
+  .q37c-row-label { font-family: var(--font-mono); font-size: 8.5px; color: var(--text-2); letter-spacing: 0.02em; text-align: right; line-height: 1.2; }
+  .q37c-row-svg { width: 100%; height: 14px; display: block; }
+  .q37c-bar.pos { fill: var(--success); }
+  .q37c-bar.neg { fill: var(--danger); }
+  .q37c-axis-line { stroke: var(--border); stroke-width: 1; }
+  .q37c-grid-line { stroke: var(--border-subtle); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.45; }
+  .q37c-row-val { font-family: var(--font-mono); font-size: 8.5px; color: var(--text-1); font-variant-numeric: tabular-nums; text-align: left; }
+  .q37c-axis-row { display: grid; grid-template-columns: 100px 1fr 36px; gap: 8px; padding-top: 6px; border-top: 1px solid var(--border-subtle); margin-top: 4px; }
+  .q37c-axis-svg { width: 100%; height: 12px; display: block; }
+  .q37c-axis-label { font-family: var(--font-mono); font-size: 7.5px; fill: var(--text-4); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* ============================================================
+     Q38 — Monthly decomposition default state
+     ============================================================
+     12 rows × 6 cols. Same data, three presentation modes. */
+  .q38-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .q38-table th { padding: 6px 7px; text-align: right; font-size: 8.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; border-bottom: 1px solid var(--border-subtle); }
+  .q38-table th:first-child { text-align: left; }
+  .q38-table td { padding: 4px 7px; text-align: right; font-size: 9.5px; color: var(--text-1); border-bottom: 1px solid var(--border-subtle); }
+  .q38-table td:first-child { text-align: left; color: var(--text-2); font-weight: 500; }
+  .q38-table tr:last-child td { border-bottom: none; }
+  .q38-table .pos { color: var(--success); }
+  .q38-table .neg { color: var(--danger); }
+  .q38-table .total td { background: var(--surface-2); color: var(--text-1); font-weight: 600; padding-top: 7px; padding-bottom: 7px; border-top: 1px solid var(--border); }
+  .q38-table .total td:first-child { color: var(--text-1); }
+
+  /* Q38.B — Collapsed */
+  .q38b-collapsed { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; }
+  .q38b-summary { display: flex; flex-direction: column; gap: 3px; }
+  .q38b-summary-label { font-family: var(--font-mono); font-size: 8.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .q38b-summary-val { font-family: var(--font-mono); font-size: 13px; color: var(--text-1); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .q38b-expand { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: transparent; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--text-2); letter-spacing: 0.02em; cursor: pointer; }
+  .q38b-expand-meta { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); margin-top: 8px; letter-spacing: 0.02em; }
+
+  /* Q38.C — Quieter (smaller font) */
+  .q38c-table { font-size: 8.5px; }
+  .q38c-table th { font-size: 7.5px; padding: 5px 6px; }
+  .q38c-table td { font-size: 8.5px; padding: 3px 6px; }
+
+  /* ============================================================
+     Q39 — Compare delta column treatment
+     ============================================================
+     Active vs Base scenario delta on KPI Comparison rows. */
+  .q39-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .q39-table th { padding: 6px 8px; text-align: right; font-size: 8.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; border-bottom: 1px solid var(--border-subtle); }
+  .q39-table th:first-child { text-align: left; }
+  .q39-table td { padding: 7px 8px; text-align: right; font-size: 10.5px; color: var(--text-1); border-bottom: 1px solid var(--border-subtle); }
+  .q39-table td:first-child { text-align: left; color: var(--text-2); font-family: var(--font-ui); font-size: 11.5px; font-weight: 500; }
+  .q39-table tr:last-child td { border-bottom: none; }
+  .q39-table .pos { color: var(--success); }
+  .q39-delta-pair { display: inline-flex; align-items: baseline; gap: 5px; }
+  .q39-delta-pair .pct { color: var(--text-3); font-size: 9px; }
+  .q39c-stack { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1.2; }
+  .q39c-stack .pct { font-size: 8.5px; color: var(--text-3); font-weight: 400; }
+
+  /* Recommendation row + decision bar */
+  .rec-row { margin-top: 22px; padding: 13px 16px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 6px; display: flex; gap: 14px; align-items: flex-start; }
+  .rec-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 600; font-family: var(--font-mono); white-space: nowrap; flex: 0 0 auto; padding-top: 1px; }
+  .rec-text { font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+  .rec-text b { color: var(--text-1); font-weight: 500; }
+  .rec-text code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .rec-text i { color: var(--text-2); font-style: italic; }
+  .decision-bar { margin-top: 10px; padding: 10px 16px; background: var(--surface-2); border: 1px dashed var(--border-subtle); border-radius: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--text-3); display: flex; gap: 10px; align-items: center; }
+  .decision-bar strong { color: var(--text-1); }
+
+  .footer-note { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-3); font-family: var(--font-mono); line-height: 1.7; }
+  .footer-note code { background: var(--surface); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border-subtle); color: var(--text-2); }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockup — Q35-Q39</div>
+    <div class="doc-sub">
+      <b>Year-1 Revenue tab + Compare tab.</b> Five questions on (Q35) big-number hierarchy, (Q36) waterfall orientation, (Q37) sensitivity card layout, (Q38) monthly decomposition default state, (Q39) Compare-tab delta column treatment. Same dataset across A/B/C within each question — decision is on <i>treatment</i>, not numbers. Shared property: 200 units, In-Place baseline EGR <code>$2,200,000</code>, Year-1 Projected EGR <code>$2,362,800</code> (+7.40% vs In-Place). Compare-tab Active vs Base delta: <code>+$87,000</code> (+3.82%). Renders with v4-canonical surfaces (<code>--bg #0B0C0F</code> / <code>--surface #15171C</code>) + Cypher Indigo accent (<code>#4D5BFF</code>).
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Q35 — Big-number hierarchy
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q35</span><h2 class="q-title">Big-number hierarchy</h2></div>
+    <p class="q-context">
+      Blueprint <code>§8 Row 1</code> spec: <i>"Year-1 Projected EGR — single big number, +7.4% vs In-Place baseline."</i> Question is on the <i>cross-scenario surfacing strategy</i> — single + delta vs In-Place only (per blueprint), single + side-pill rank vs other scenarios, or three numbers in a row (vs In-Place / vs Base / vs Downside).
+    </p>
+    <p class="q-where">Appears on: Year-1 Revenue tab · top hero row</p>
+    <p class="scale-caption">Same Year-1 value across A/B/C (<b>$2,362,800</b>). Decision is on <b>cross-scenario layering</b>, not the headline number.</p>
+
+    <div class="opts">
+
+      <!-- Q35.A — Single number + delta -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Single number + delta vs In-Place baseline</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Year-1 Projected EGR</div>
+          <div class="bxn-frame-sub">vs In-Place baseline</div>
+          <div class="q35-stage">
+            <div class="q35-hero">
+              <div class="q35-hero-label">Year-1 EGR</div>
+              <div class="q35-hero-value">$2,362,800</div>
+              <div class="q35-hero-delta">+$162,800 <span class="pct">(+7.40%)</span></div>
+              <div class="q35-hero-base">vs In-Place $2,200,000</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          One number, one delta. Honors blueprint spec exactly. <b>Benefit:</b> per-scenario surface stays disciplined; cross-scenario comparisons ship on the dedicated Compare tab. <b>Cost:</b> reader who wants "vs Base" or "vs Downside" must navigate to Compare.
+        </div>
+      </div>
+
+      <!-- Q35.B — Single + side-pill rank -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Single number + side-pill rank vs Base</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Year-1 Projected EGR</div>
+          <div class="bxn-frame-sub">vs In-Place baseline · w/ rank pill</div>
+          <div class="q35-stage">
+            <div class="q35b-row">
+              <div class="q35-hero">
+                <div class="q35-hero-label">Year-1 EGR</div>
+                <div class="q35-hero-value">$2,362,800</div>
+                <div class="q35-hero-delta">+$162,800 <span class="pct">(+7.40%)</span></div>
+                <div class="q35-hero-base">vs In-Place $2,200,000</div>
+              </div>
+              <div class="q35b-pill">
+                <span class="q35b-pill-label">vs Base</span>
+                <span class="q35b-pill-val">+$87,000</span>
+                <span class="q35b-pill-label" style="color:var(--text-3); text-transform:none; letter-spacing:0.02em; font-size:9px;">+3.82%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Hero stays primary; side-pill adds one cross-scenario reference point at a glance. <b>Benefit:</b> "is this scenario better than Base?" answered without leaving the tab. <b>Cost:</b> mixes per-scenario and cross-scenario surfaces; reader must hold two reference frames simultaneously.
+        </div>
+      </div>
+
+      <!-- Q35.C — Three numbers in a row -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Three numbers in a row · cross-scenario</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Year-1 Projected EGR · cross-scenario deltas</div>
+          <div class="bxn-frame-sub">vs In-Place / vs Base / vs Downside</div>
+          <div class="q35-stage">
+            <div class="q35c-grid">
+              <div class="q35c-cell">
+                <span class="q35c-cell-label">vs In-Place</span>
+                <span class="q35c-cell-val">+$162,800</span>
+                <span class="q35c-cell-pct">+7.40%</span>
+              </div>
+              <div class="q35c-cell">
+                <span class="q35c-cell-label">vs Base</span>
+                <span class="q35c-cell-val">+$87,000</span>
+                <span class="q35c-cell-pct">+3.82%</span>
+              </div>
+              <div class="q35c-cell">
+                <span class="q35c-cell-label">vs Downside</span>
+                <span class="q35c-cell-val">+$112,800</span>
+                <span class="q35c-cell-pct">+5.01%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Three deltas in parallel — full cross-scenario context at first paint. <b>Benefit:</b> reader places Active anywhere in the deal envelope without nav. <b>Cost:</b> hero number disappears; three deltas compete for attention; Compare tab becomes redundant for first-look reads.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>A.</b> Per-scenario discipline. The Year-1 Revenue tab answers <i>"what is this scenario worth?"</i> — one number, one delta vs the baseline that established the underwrite. <b>B and C answer a different question:</b> <i>"how does this scenario compare to others?"</i> — that's the Compare tab's job. Mixing them on Year-1 Revenue muddies both surfaces. Generalization: per-scenario surfaces stay disciplined; cross-scenario comparison lives on Compare.
+        <br/><br/>
+        Honest read on B and C: B is the most defensible compromise if Compare-tab nav friction proves real — a single side-pill is cheaper than three columns. C is the most informative single view but it kills the hero hierarchy and overlaps the Compare tab's reason for existing.
+      </span>
+    </div>
+    <div class="decision-bar"><strong>Your pick for Q35:</strong> A / B / C</div>
+  </section>
+
+  <!-- ============================================================
+       Q36 — Waterfall orientation
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q36</span><h2 class="q-title">Waterfall orientation</h2></div>
+    <p class="q-context">
+      Blueprint <code>§8 Row 2</code> spec: <i>"Horizontal, 6 steps. In-Place +LTL Capture +Turnover Uplift -Vacancy -Concessions -Bad Debt = Year-1 EGR."</i> Question is on the <i>visual treatment</i> — horizontal row-form (per blueprint), vertical top-down, or stepped/terraced (Bloomberg / FactSet / institutional finance standard).
+    </p>
+    <p class="q-where">Appears on: Year-1 Revenue tab · row 2</p>
+    <p class="scale-caption">Same 6 steps across A/B/C: In-Place <b>$2,200,000</b> → +<b>$110K</b> LTL → +<b>$72K</b> Turnover → −<b>$8K</b> Vacancy → −<b>$8K</b> Concessions → −<b>$4K</b> Bad Debt → Year-1 <b>$2,362,000</b>.</p>
+
+    <div class="opts">
+
+      <!-- Q36.A — Horizontal -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Horizontal · row-form per blueprint</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">In-Place → Year-1 bridge</div>
+          <div class="bxn-frame-sub">6 steps · horizontal flow</div>
+          <div class="q36a-wrap">
+            <div class="q36a-row">
+              <div class="q36a-row-label">In-Place</div>
+              <div class="q36a-row-track"><div class="q36a-bar start" style="left:0%; width:93.1%;"></div></div>
+              <div class="q36a-row-val">$2,200,000</div>
+            </div>
+            <div class="q36a-row">
+              <div class="q36a-row-label">+LTL Capture</div>
+              <div class="q36a-row-track"><div class="q36a-bar pos" style="left:93.1%; width:4.66%;"></div></div>
+              <div class="q36a-row-val pos">+$110,000</div>
+            </div>
+            <div class="q36a-row">
+              <div class="q36a-row-label">+Turnover</div>
+              <div class="q36a-row-track"><div class="q36a-bar pos" style="left:97.76%; width:3.05%;"></div></div>
+              <div class="q36a-row-val pos">+$72,000</div>
+            </div>
+            <div class="q36a-row">
+              <div class="q36a-row-label">−Vacancy</div>
+              <div class="q36a-row-track"><div class="q36a-bar neg" style="left:100.81%; width:0.34%;"></div></div>
+              <div class="q36a-row-val neg">($8,000)</div>
+            </div>
+            <div class="q36a-row">
+              <div class="q36a-row-label">−Concessions</div>
+              <div class="q36a-row-track"><div class="q36a-bar neg" style="left:100.46%; width:0.34%;"></div></div>
+              <div class="q36a-row-val neg">($8,000)</div>
+            </div>
+            <div class="q36a-row">
+              <div class="q36a-row-label">−Bad Debt</div>
+              <div class="q36a-row-track"><div class="q36a-bar neg" style="left:100.12%; width:0.17%;"></div></div>
+              <div class="q36a-row-val neg">($4,000)</div>
+            </div>
+            <div class="q36a-row" style="border-top:1px solid var(--border-subtle); padding-top:6px; margin-top:2px; height:24px;">
+              <div class="q36a-row-label" style="color:var(--text-1);">Year-1 EGR</div>
+              <div class="q36a-row-track"><div class="q36a-bar end" style="left:0%; width:100%;"></div></div>
+              <div class="q36a-row-val" style="color:var(--text-1); font-weight:500;">$2,362,000</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          One row per step, sentence-form left-to-right. <b>Benefit:</b> labels get full width — long step names ("LTL Capture") never truncate. <b>Cost:</b> contribution magnitude is hard to read across rows; the <i>flow</i> story flattens. The blueprint default — disciplined and readable, but loses the institutional-waterfall visual.
+        </div>
+      </div>
+
+      <!-- Q36.B — Vertical -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Vertical · top-down stack</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">In-Place → Year-1 bridge</div>
+          <div class="bxn-frame-sub">6 steps · vertical descent</div>
+          <div class="q36b-wrap">
+            <div class="q36b-row">
+              <div class="q36b-conn"></div>
+              <div class="q36b-row-label">In-Place</div>
+              <div class="q36b-row-val">$2,200,000</div>
+            </div>
+            <div class="q36b-row"><div class="q36b-conn"><div class="q36b-conn-line"></div></div><div></div><div></div></div>
+            <div class="q36b-row">
+              <div class="q36b-conn"></div>
+              <div class="q36b-row-label">+LTL Capture</div>
+              <div class="q36b-row-val pos">+$110,000</div>
+            </div>
+            <div class="q36b-row"><div class="q36b-conn"><div class="q36b-conn-line"></div></div><div></div><div></div></div>
+            <div class="q36b-row">
+              <div class="q36b-conn"></div>
+              <div class="q36b-row-label">+Turnover</div>
+              <div class="q36b-row-val pos">+$72,000</div>
+            </div>
+            <div class="q36b-row"><div class="q36b-conn"><div class="q36b-conn-line"></div></div><div></div><div></div></div>
+            <div class="q36b-row">
+              <div class="q36b-conn"></div>
+              <div class="q36b-row-label">−Vacancy</div>
+              <div class="q36b-row-val neg">($8,000)</div>
+            </div>
+            <div class="q36b-row"><div class="q36b-conn"><div class="q36b-conn-line"></div></div><div></div><div></div></div>
+            <div class="q36b-row">
+              <div class="q36b-conn"></div>
+              <div class="q36b-row-label">−Concessions</div>
+              <div class="q36b-row-val neg">($8,000)</div>
+            </div>
+            <div class="q36b-row"><div class="q36b-conn"><div class="q36b-conn-line"></div></div><div></div><div></div></div>
+            <div class="q36b-row">
+              <div class="q36b-conn"></div>
+              <div class="q36b-row-label">−Bad Debt</div>
+              <div class="q36b-row-val neg">($4,000)</div>
+            </div>
+            <div class="q36b-row" style="border-top:1px solid var(--border-subtle); padding-top:6px; margin-top:6px;">
+              <div class="q36b-conn"></div>
+              <div class="q36b-row-label" style="color:var(--text-1);">Year-1 EGR</div>
+              <div class="q36b-row-val" style="color:var(--text-1); font-weight:500;">$2,362,000</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Stack runs top-to-bottom with connectors between steps. <b>Benefit:</b> long labels get more space; mobile-friendlier layout. <b>Cost:</b> reads as a list, not a bridge — the <i>flow</i> from In-Place to Year-1 weakens; verticals consume more page height than a single hero row.
+        </div>
+      </div>
+
+      <!-- Q36.C — Stepped/terraced -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Stepped / terraced · institutional standard</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">In-Place → Year-1 bridge</div>
+          <div class="bxn-frame-sub">stepped waterfall · Bloomberg / FactSet pattern</div>
+          <svg class="q36c-svg" viewBox="0 0 320 150" aria-label="Stepped waterfall: In-Place to Year-1 EGR">
+            <!-- Y-axis grid lines and labels.
+                 Range: 2,180K (bottom) → 2,400K (top). 220K span over 110px (y=15 top, y=125 bottom).
+                 Each $20K = 10px.
+                 In-Place baseline = 2200K = y=125 - (20/220)*110 = 125 - 10 = 115.
+                 In-Place top = same as baseline (it's the start position).
+                 +LTL Capture: 2200 → 2310. Bar from y=115 (2200) to y=60 (2310). Wait, recalc:
+                 y for value V: 125 - ((V - 2180) / 220) * 110.
+                 V=2180: y=125. V=2400: y=15. V=2200: y=115. V=2310: y=60. V=2382: y=24.
+                 V=2374: y=28. V=2366: y=32. V=2362: y=34.
+                 Bar widths: 6 steps + 1 final = 7 columns @ 36px each = 252px width, starting x=42 (leave 42 for y-axis).
+                 Step centers x: 60, 96, 132, 168, 204, 240, 276. -->
+
+            <line class="q36c-grid" x1="42" y1="15" x2="305" y2="15"/>
+            <line class="q36c-grid" x1="42" y1="60" x2="305" y2="60"/>
+            <line class="q36c-grid" x1="42" y1="105" x2="305" y2="105"/>
+            <text class="q36c-y-label" x="2" y="18">$2.40M</text>
+            <text class="q36c-y-label" x="2" y="63">$2.31M</text>
+            <text class="q36c-y-label" x="2" y="108">$2.20M</text>
+            <line class="q36c-axis" x1="42" y1="125" x2="305" y2="125" stroke="var(--border)" stroke-width="1"/>
+
+            <!-- In-Place: bar from baseline (y=125) up to 2200 (y=115). 10px tall starting at y=115. -->
+            <rect class="q36c-bar start" x="48" y="115" width="24" height="10"/>
+            <text class="q36c-val" x="60" y="111" text-anchor="middle">$2.20M</text>
+            <text class="q36c-label" x="60" y="142" text-anchor="middle">IN-PLACE</text>
+
+            <!-- Connector line from In-Place top to LTL bar bottom -->
+            <line class="q36c-conn" x1="72" y1="115" x2="84" y2="115"/>
+
+            <!-- +LTL Capture: 2200 → 2310 (+110). Bar from y=115 to y=60. -->
+            <rect class="q36c-bar pos" x="84" y="60" width="24" height="55"/>
+            <text class="q36c-val pos" x="96" y="56" text-anchor="middle">+$110K</text>
+            <text class="q36c-label" x="96" y="142" text-anchor="middle">+LTL</text>
+
+            <line class="q36c-conn" x1="108" y1="60" x2="120" y2="60"/>
+
+            <!-- +Turnover: 2310 → 2382 (+72). Bar from y=60 to y=24. -->
+            <rect class="q36c-bar pos" x="120" y="24" width="24" height="36"/>
+            <text class="q36c-val pos" x="132" y="20" text-anchor="middle">+$72K</text>
+            <text class="q36c-label" x="132" y="142" text-anchor="middle">+TURN</text>
+
+            <line class="q36c-conn" x1="144" y1="24" x2="156" y2="24"/>
+
+            <!-- −Vacancy: 2382 → 2374 (-8). Bar from y=24 to y=28. -->
+            <rect class="q36c-bar neg" x="156" y="24" width="24" height="4"/>
+            <text class="q36c-val neg" x="168" y="20" text-anchor="middle">−$8K</text>
+            <text class="q36c-label" x="168" y="142" text-anchor="middle">−VAC</text>
+
+            <line class="q36c-conn" x1="180" y1="28" x2="192" y2="28"/>
+
+            <!-- −Concessions: 2374 → 2366 (-8). Bar from y=28 to y=32. -->
+            <rect class="q36c-bar neg" x="192" y="28" width="24" height="4"/>
+            <text class="q36c-val neg" x="204" y="24" text-anchor="middle">−$8K</text>
+            <text class="q36c-label" x="204" y="142" text-anchor="middle">−CONC</text>
+
+            <line class="q36c-conn" x1="216" y1="32" x2="228" y2="32"/>
+
+            <!-- −Bad Debt: 2366 → 2362 (-4). Bar from y=32 to y=34. -->
+            <rect class="q36c-bar neg" x="228" y="32" width="24" height="2"/>
+            <text class="q36c-val neg" x="240" y="28" text-anchor="middle">−$4K</text>
+            <text class="q36c-label" x="240" y="142" text-anchor="middle">−BAD</text>
+
+            <line class="q36c-conn" x1="252" y1="34" x2="264" y2="34"/>
+
+            <!-- Year-1 EGR: 2362. Full bar from baseline (y=125) to 2362 (y=34). -->
+            <rect class="q36c-bar end" x="264" y="34" width="24" height="91"/>
+            <text class="q36c-val" x="276" y="30" text-anchor="middle" style="fill:var(--text-1);">$2.36M</text>
+            <text class="q36c-label" x="276" y="142" text-anchor="middle">YEAR-1</text>
+          </svg>
+        </div>
+        <div class="opt-note">
+          Each bar visually steps from where the prior left off — flow + elevation in one shape. <b>Benefit:</b> contribution magnitude is preattentive; institutional finance standard (every IC memo uses this). <b>Cost:</b> small steps (Vacancy / Concessions / Bad Debt at &lt;$10K each) compress against the y-scale; mitigated by inline value labels.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>C.</b> Stepped/terraced waterfall is THE institutional finance standard for revenue/expense decomposition — every IC memo, every Bloomberg/FactSet output, every Stripe Treasury report uses this shape. Two reasons it pulls ahead: (1) <i>preattentive contribution magnitude</i> — the reader sees that LTL Capture and Turnover Uplift are the lift drivers without reading numbers; (2) <i>flow + elevation in one shape</i> — A's row-form preserves flow but flattens elevation; B's vertical stack preserves nothing of either. Visx <code>BarStack</code> with custom y-offsets, or Tremor <code>BarChart</code> with stacked + offset config.
+        <br/><br/>
+        Honest read on A and B: A is the safest blueprint-honoring choice and reads cleanly at narrow widths; B is the most accessible label treatment if labels grow long or screen is mobile. Neither matches C's institutional pattern recognition — buyers and lenders read this shape every day.
+      </span>
+    </div>
+    <div class="decision-bar"><strong>Your pick for Q36:</strong> A / B / C</div>
+  </section>
+
+  <!-- ============================================================
+       Q37 — Sensitivity card layout
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q37</span><h2 class="q-title">Sensitivity card layout</h2></div>
+    <p class="q-context">
+      Blueprint <code>§8 Row 4</code> spec: <i>"Component sensitivity — mini-cards showing the +/- impact of each assumption input if you flexed it 10%."</i> Question is on the <i>visualization</i> — static grid of mini-cards, interactive sliders that update impact $ live, or tornado chart (centered horizontal bars sorted by magnitude).
+    </p>
+    <p class="q-where">Appears on: Year-1 Revenue tab · row 4</p>
+    <p class="scale-caption">Six inputs across A/B/C, ranked by absolute Year-1 EGR impact at ±10% flex: Market rent growth <b>±$22K</b> · Vacancy rate <b>±$11K</b> · LTL Capture <b>±$11K</b> · Turnover Uplift <b>±$7K</b> · Renewal rate <b>±$5K</b> · Concession take-rate <b>±$3K</b>.</p>
+
+    <div class="opts">
+
+      <!-- Q37.A — Static grid -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Static grid · 3-col mini-cards</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Sensitivity at ±10% flex</div>
+          <div class="bxn-frame-sub">6 inputs · 3-col grid · per-input impact $</div>
+          <div class="q37a-grid">
+            <div class="q37a-card">
+              <div class="q37a-card-label">Market Rent Growth</div>
+              <div class="q37a-card-val">±$22,000</div>
+            </div>
+            <div class="q37a-card">
+              <div class="q37a-card-label">Vacancy Rate</div>
+              <div class="q37a-card-val">±$11,000</div>
+            </div>
+            <div class="q37a-card">
+              <div class="q37a-card-label">LTL Capture</div>
+              <div class="q37a-card-val">±$11,000</div>
+            </div>
+            <div class="q37a-card">
+              <div class="q37a-card-label">Turnover Uplift</div>
+              <div class="q37a-card-val">±$7,000</div>
+            </div>
+            <div class="q37a-card">
+              <div class="q37a-card-label">Renewal Rate</div>
+              <div class="q37a-card-val">±$5,000</div>
+            </div>
+            <div class="q37a-card">
+              <div class="q37a-card-label">Concession Take-Rate</div>
+              <div class="q37a-card-val">±$3,000</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Six cards in a uniform grid — values readable, layout disciplined. <b>Benefit:</b> compact; works on narrow canvases. <b>Cost:</b> magnitude ranking is hidden — reader must compare values mentally. The biggest lever (Market Rent Growth at ±$22K) reads identically to the smallest (Concession Take-Rate at ±$3K) in card-shape terms.
+        </div>
+      </div>
+
+      <!-- Q37.B — Sliders -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Interactive sliders · live impact</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Sensitivity · drag to flex</div>
+          <div class="bxn-frame-sub">6 sliders · live impact $ on flex</div>
+          <div class="q37b-stack">
+            <div class="q37b-card">
+              <div class="q37b-card-label">Market Rent Growth</div>
+              <div class="q37b-card-val">±$22,000</div>
+              <div class="q37b-slider"><div class="q37b-slider-track" style="left:30%; width:40%;"></div><div class="q37b-slider-thumb" style="left:50%;"></div></div>
+            </div>
+            <div class="q37b-card">
+              <div class="q37b-card-label">Vacancy Rate</div>
+              <div class="q37b-card-val">±$11,000</div>
+              <div class="q37b-slider"><div class="q37b-slider-track" style="left:35%; width:30%;"></div><div class="q37b-slider-thumb" style="left:50%;"></div></div>
+            </div>
+            <div class="q37b-card">
+              <div class="q37b-card-label">LTL Capture</div>
+              <div class="q37b-card-val">±$11,000</div>
+              <div class="q37b-slider"><div class="q37b-slider-track" style="left:35%; width:30%;"></div><div class="q37b-slider-thumb" style="left:50%;"></div></div>
+            </div>
+            <div class="q37b-card">
+              <div class="q37b-card-label">Turnover Uplift</div>
+              <div class="q37b-card-val">±$7,000</div>
+              <div class="q37b-slider"><div class="q37b-slider-track" style="left:38%; width:24%;"></div><div class="q37b-slider-thumb" style="left:50%;"></div></div>
+            </div>
+            <div class="q37b-card">
+              <div class="q37b-card-label">Renewal Rate</div>
+              <div class="q37b-card-val">±$5,000</div>
+              <div class="q37b-slider"><div class="q37b-slider-track" style="left:40%; width:20%;"></div><div class="q37b-slider-thumb" style="left:50%;"></div></div>
+            </div>
+            <div class="q37b-card">
+              <div class="q37b-card-label">Concession Take-Rate</div>
+              <div class="q37b-card-val">±$3,000</div>
+              <div class="q37b-slider"><div class="q37b-slider-track" style="left:42%; width:16%;"></div><div class="q37b-slider-thumb" style="left:50%;"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Each card has a slider; dragging flexes the assumption and live-updates impact $. <b>Benefit:</b> exploratory power — "what if vacancy were 7%?" answered without a scenario rebuild. <b>Cost:</b> implies the input <i>has changed</i> — confusing on a "current state" surface where assumption set should match the printed scorecard. Sliders belong in Studio, not Insights.
+        </div>
+      </div>
+
+      <!-- Q37.C — Tornado chart -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Tornado chart · ranked sensitivity</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Sensitivity at ±10% flex</div>
+          <div class="bxn-frame-sub">tornado · sorted by magnitude · institutional standard</div>
+          <div class="q37c-rows">
+            <!-- viewBox 0 0 200 14. Center at x=100. Range ±$25K = ±90px. 1px = $278.
+                 Bar widths: ±$22K=79.2, ±$11K=39.6, ±$7K=25.2, ±$5K=18, ±$3K=10.8. Bar height 12. -->
+
+            <!-- Market Rent Growth ±$22K -->
+            <div class="q37c-row">
+              <span class="q37c-row-label">Market Rent Growth</span>
+              <svg class="q37c-row-svg" viewBox="0 0 200 14" preserveAspectRatio="none">
+                <line class="q37c-axis-line" x1="100" y1="0" x2="100" y2="14"/>
+                <rect class="q37c-bar neg" x="20.8" y="1" width="79.2" height="12"/>
+                <rect class="q37c-bar pos" x="100" y="1" width="79.2" height="12"/>
+              </svg>
+              <span class="q37c-row-val" style="color:var(--success);">±$22K</span>
+            </div>
+
+            <!-- Vacancy Rate ±$11K -->
+            <div class="q37c-row">
+              <span class="q37c-row-label">Vacancy Rate</span>
+              <svg class="q37c-row-svg" viewBox="0 0 200 14" preserveAspectRatio="none">
+                <line class="q37c-axis-line" x1="100" y1="0" x2="100" y2="14"/>
+                <rect class="q37c-bar neg" x="60.4" y="1" width="39.6" height="12"/>
+                <rect class="q37c-bar pos" x="100" y="1" width="39.6" height="12"/>
+              </svg>
+              <span class="q37c-row-val" style="color:var(--success);">±$11K</span>
+            </div>
+
+            <!-- LTL Capture ±$11K -->
+            <div class="q37c-row">
+              <span class="q37c-row-label">LTL Capture</span>
+              <svg class="q37c-row-svg" viewBox="0 0 200 14" preserveAspectRatio="none">
+                <line class="q37c-axis-line" x1="100" y1="0" x2="100" y2="14"/>
+                <rect class="q37c-bar neg" x="60.4" y="1" width="39.6" height="12"/>
+                <rect class="q37c-bar pos" x="100" y="1" width="39.6" height="12"/>
+              </svg>
+              <span class="q37c-row-val" style="color:var(--success);">±$11K</span>
+            </div>
+
+            <!-- Turnover Uplift ±$7K -->
+            <div class="q37c-row">
+              <span class="q37c-row-label">Turnover Uplift</span>
+              <svg class="q37c-row-svg" viewBox="0 0 200 14" preserveAspectRatio="none">
+                <line class="q37c-axis-line" x1="100" y1="0" x2="100" y2="14"/>
+                <rect class="q37c-bar neg" x="74.8" y="1" width="25.2" height="12"/>
+                <rect class="q37c-bar pos" x="100" y="1" width="25.2" height="12"/>
+              </svg>
+              <span class="q37c-row-val" style="color:var(--success);">±$7K</span>
+            </div>
+
+            <!-- Renewal Rate ±$5K -->
+            <div class="q37c-row">
+              <span class="q37c-row-label">Renewal Rate</span>
+              <svg class="q37c-row-svg" viewBox="0 0 200 14" preserveAspectRatio="none">
+                <line class="q37c-axis-line" x1="100" y1="0" x2="100" y2="14"/>
+                <rect class="q37c-bar neg" x="82" y="1" width="18" height="12"/>
+                <rect class="q37c-bar pos" x="100" y="1" width="18" height="12"/>
+              </svg>
+              <span class="q37c-row-val" style="color:var(--success);">±$5K</span>
+            </div>
+
+            <!-- Concession Take-Rate ±$3K -->
+            <div class="q37c-row">
+              <span class="q37c-row-label">Concession Take-Rate</span>
+              <svg class="q37c-row-svg" viewBox="0 0 200 14" preserveAspectRatio="none">
+                <line class="q37c-axis-line" x1="100" y1="0" x2="100" y2="14"/>
+                <rect class="q37c-bar neg" x="89.2" y="1" width="10.8" height="12"/>
+                <rect class="q37c-bar pos" x="100" y="1" width="10.8" height="12"/>
+              </svg>
+              <span class="q37c-row-val" style="color:var(--success);">±$3K</span>
+            </div>
+
+            <!-- Axis -->
+            <div class="q37c-axis-row">
+              <span></span>
+              <svg class="q37c-axis-svg" viewBox="0 0 200 12" preserveAspectRatio="none">
+                <text class="q37c-axis-label" x="10" y="9" text-anchor="middle">−$25K</text>
+                <text class="q37c-axis-label" x="100" y="9" text-anchor="middle">$0</text>
+                <text class="q37c-axis-label" x="190" y="9" text-anchor="middle">+$25K</text>
+              </svg>
+              <span></span>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Centered horizontal bars, sorted by absolute magnitude. <b>Benefit:</b> rank is preattentive — Market Rent Growth (top, widest) is visibly 7× the impact of Concession Take-Rate (bottom, narrowest). Institutional finance standard for sensitivity. <b>Cost:</b> requires more vertical space than a 3-col grid; tightest bars (±$3K) compress at this scale — mitigated by inline value labels.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>C.</b> Tornado chart is THE sensitivity visualization in institutional finance — used in every IC memo, every DCF model, every risk presentation. Two reasons it wins: (1) <i>preattentive ranking</i> — the chart shape tells the reader what to flex first (the longest bars) without reading any number; (2) <i>directional symmetry</i> — same-magnitude flex in either direction is rendered identically, which matches how sensitivity is actually reasoned about. Static grid (A) hides the ranking; sliders (B) imply the input has changed and belong in Studio.
+        <br/><br/>
+        Honest read on A and B: A is the disciplined fallback if vertical space is tight or the surface is rendering on mobile. B is the right pattern in Studio where the user is <i>actively flexing</i> assumptions — here on Insights, where the assumption set should match the printed scorecard, sliders create a "is this the active state or am I exploring?" ambiguity.
+      </span>
+    </div>
+    <div class="decision-bar"><strong>Your pick for Q37:</strong> A / B / C</div>
+  </section>
+
+  <!-- ============================================================
+       Q38 — Monthly decomposition default state
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q38</span><h2 class="q-title">Monthly decomposition default state</h2></div>
+    <p class="q-context">
+      Blueprint <code>§8 Row 3</code> spec: <i>"Monthly decomposition table (12 rows × 6 cols)."</i> Question is on the <i>default state</i> — always shown (institutional dense-data preference), collapsed by default with click-to-expand (shorter initial load), or shown but visually quieter (smaller font, de-prioritized vs hero/waterfall).
+    </p>
+    <p class="q-where">Appears on: Year-1 Revenue tab · row 3</p>
+    <p class="scale-caption">Same 12×6 dataset across A/B/C — Months Jan-Dec '27, columns: Month / In-Place / LTL Capture / Turnover / Concessions+Vacancy / Net Revenue. Total Net Revenue: <b>$2,362,000</b>.</p>
+
+    <div class="opts">
+
+      <!-- Q38.A — Always shown -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Always shown · institutional dense-data</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Monthly decomposition · Year-1</div>
+          <div class="bxn-frame-sub">12 rows × 6 cols · always rendered</div>
+          <table class="q38-table">
+            <thead>
+              <tr><th>Month</th><th>In-Place</th><th>+LTL</th><th>+Turnover</th><th>−C+V</th><th>Net Rev</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Jan</td><td>183,333</td><td class="pos">7,000</td><td class="pos">0</td><td class="neg">(2,500)</td><td>187,833</td></tr>
+              <tr><td>Feb</td><td>183,333</td><td class="pos">7,500</td><td class="pos">2,000</td><td class="neg">(2,200)</td><td>190,633</td></tr>
+              <tr><td>Mar</td><td>183,333</td><td class="pos">8,000</td><td class="pos">3,500</td><td class="neg">(2,000)</td><td>192,833</td></tr>
+              <tr><td>Apr</td><td>183,333</td><td class="pos">8,500</td><td class="pos">5,000</td><td class="neg">(1,800)</td><td>195,033</td></tr>
+              <tr><td>May</td><td>183,333</td><td class="pos">9,000</td><td class="pos">6,500</td><td class="neg">(1,600)</td><td>197,233</td></tr>
+              <tr><td>Jun</td><td>183,333</td><td class="pos">9,500</td><td class="pos">8,000</td><td class="neg">(1,500)</td><td>199,333</td></tr>
+              <tr><td>Jul</td><td>183,333</td><td class="pos">10,000</td><td class="pos">9,500</td><td class="neg">(1,300)</td><td>201,533</td></tr>
+              <tr><td>Aug</td><td>183,333</td><td class="pos">10,000</td><td class="pos">10,500</td><td class="neg">(1,100)</td><td>202,733</td></tr>
+              <tr><td>Sep</td><td>183,333</td><td class="pos">10,000</td><td class="pos">11,500</td><td class="neg">(900)</td><td>203,933</td></tr>
+              <tr><td>Oct</td><td>183,333</td><td class="pos">10,000</td><td class="pos">12,000</td><td class="neg">(700)</td><td>204,633</td></tr>
+              <tr><td>Nov</td><td>183,333</td><td class="pos">10,000</td><td class="pos">12,500</td><td class="neg">(500)</td><td>205,333</td></tr>
+              <tr><td>Dec</td><td>183,341</td><td class="pos">10,500</td><td class="pos">14,000</td><td class="neg">(900)</td><td>206,941</td></tr>
+              <tr class="total"><td>Total</td><td>2,200,000</td><td class="pos">110,000</td><td class="pos">95,000</td><td class="neg">(17,000)</td><td>2,362,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          Full table rendered every load — no interaction required. <b>Benefit:</b> institutional users want all the data; audit trail visible by default. Honors "every number reachable in one screen" expectation. <b>Cost:</b> page is longer; for a quick-look reader the table competes with the hero/waterfall for attention.
+        </div>
+      </div>
+
+      <!-- Q38.B — Collapsed -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Collapsed · click to expand</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Monthly decomposition · Year-1</div>
+          <div class="bxn-frame-sub">collapsed by default · 12 months hidden</div>
+          <div class="q38b-collapsed">
+            <div class="q38b-summary">
+              <span class="q38b-summary-label">Annual Net Revenue</span>
+              <span class="q38b-summary-val">$2,362,000</span>
+            </div>
+            <button class="q38b-expand">Expand · 12 months ▾</button>
+          </div>
+          <div class="q38b-expand-meta">click to reveal monthly breakdown · Jan–Dec '27</div>
+        </div>
+        <div class="opt-note">
+          Header summary + expand affordance; table hidden until requested. <b>Benefit:</b> page is shorter on initial load; quick-look reader sees just the annual total. <b>Cost:</b> hides the audit trail by default; institutional reader who expects all data has to add a click. Breaks the "every number visible at first paint" expectation.
+        </div>
+      </div>
+
+      <!-- Q38.C — Quieter -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Always shown · visually quieter</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Monthly decomposition · Year-1</div>
+          <div class="bxn-frame-sub">rendered at smaller scale · 12 months</div>
+          <table class="q38-table q38c-table">
+            <thead>
+              <tr><th>Month</th><th>In-Place</th><th>+LTL</th><th>+Turnover</th><th>−C+V</th><th>Net Rev</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Jan</td><td>183,333</td><td class="pos">7,000</td><td class="pos">0</td><td class="neg">(2,500)</td><td>187,833</td></tr>
+              <tr><td>Feb</td><td>183,333</td><td class="pos">7,500</td><td class="pos">2,000</td><td class="neg">(2,200)</td><td>190,633</td></tr>
+              <tr><td>Mar</td><td>183,333</td><td class="pos">8,000</td><td class="pos">3,500</td><td class="neg">(2,000)</td><td>192,833</td></tr>
+              <tr><td>Apr</td><td>183,333</td><td class="pos">8,500</td><td class="pos">5,000</td><td class="neg">(1,800)</td><td>195,033</td></tr>
+              <tr><td>May</td><td>183,333</td><td class="pos">9,000</td><td class="pos">6,500</td><td class="neg">(1,600)</td><td>197,233</td></tr>
+              <tr><td>Jun</td><td>183,333</td><td class="pos">9,500</td><td class="pos">8,000</td><td class="neg">(1,500)</td><td>199,333</td></tr>
+              <tr><td>Jul</td><td>183,333</td><td class="pos">10,000</td><td class="pos">9,500</td><td class="neg">(1,300)</td><td>201,533</td></tr>
+              <tr><td>Aug</td><td>183,333</td><td class="pos">10,000</td><td class="pos">10,500</td><td class="neg">(1,100)</td><td>202,733</td></tr>
+              <tr><td>Sep</td><td>183,333</td><td class="pos">10,000</td><td class="pos">11,500</td><td class="neg">(900)</td><td>203,933</td></tr>
+              <tr><td>Oct</td><td>183,333</td><td class="pos">10,000</td><td class="pos">12,000</td><td class="neg">(700)</td><td>204,633</td></tr>
+              <tr><td>Nov</td><td>183,333</td><td class="pos">10,000</td><td class="pos">12,500</td><td class="neg">(500)</td><td>205,333</td></tr>
+              <tr><td>Dec</td><td>183,341</td><td class="pos">10,500</td><td class="pos">14,000</td><td class="neg">(900)</td><td>206,941</td></tr>
+              <tr class="total"><td>Total</td><td>2,200,000</td><td class="pos">110,000</td><td class="pos">95,000</td><td class="neg">(17,000)</td><td>2,362,000</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          Full table rendered, but sized down (8.5px vs 9.5px). <b>Benefit:</b> data fully visible without burying it; visual hierarchy puts hero/waterfall first. <b>Cost:</b> small text strains readability — JetBrains Mono at 8.5px is at the legibility floor. Compromise that satisfies neither density-prefer nor hierarchy-prefer fully.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>A.</b> Institutional users want all the data. Two reasons: (1) <i>audit trail visible by default</i> — the monthly decomposition is where the reader checks that lift assumptions match seasonality reasoning; collapsing it hides the verification surface; (2) <i>"every number reachable in one screen" expectation</i> — Basis sells against the redIQ/Cactus pattern of "summary up top, drill to find the truth." Always-shown signals confidence in the math.
+        <br/><br/>
+        Honest read on B and C: B is appropriate if the page is heavily over-stuffed and we need vertical space — but the answer there is to cut <i>other</i> rows, not collapse the audit table. C's smaller-font compromise is the worst of both worlds — strains the eye without buying meaningful page-length back.
+      </span>
+    </div>
+    <div class="decision-bar"><strong>Your pick for Q38:</strong> A / B / C</div>
+  </section>
+
+  <!-- ============================================================
+       Q39 — Compare delta column treatment
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q39</span><h2 class="q-title">Compare delta column treatment</h2></div>
+    <p class="q-context">
+      Blueprint <code>§6.5.6</code> spec: <i>"Add delta column: $X (±Y%) from Base."</i> Question is on the <i>presentation</i> — single column with $ and % combined inline (per blueprint), two adjacent columns ($ then %), or single column with $ as headline + % as smaller text below.
+    </p>
+    <p class="q-where">Appears on: Compare tab · KPI Comparison table</p>
+    <p class="scale-caption">Same 4 KPI rows across A/B/C: Year-1 EGR, Year-1 NOI, Y1 Cap Rate, Y1 DSCR. All deltas computed Active vs Base scenario.</p>
+
+    <div class="opts">
+
+      <!-- Q39.A — Single combined -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Single column · $ and % combined</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">KPI Comparison · Active vs Base</div>
+          <div class="bxn-frame-sub">delta column: $X (±Y%) inline · per blueprint</div>
+          <table class="q39-table">
+            <thead>
+              <tr><th>KPI</th><th>Base</th><th>Active</th><th>vs Base</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Year-1 EGR</td><td>$2,275,800</td><td>$2,362,800</td><td><span class="pos">+$87,000 (+3.82%)</span></td></tr>
+              <tr><td>Year-1 NOI</td><td>$1,428,000</td><td>$1,482,000</td><td><span class="pos">+$54,000 (+3.78%)</span></td></tr>
+              <tr><td>Y1 Cap Rate</td><td>5.97%</td><td>6.18%</td><td><span class="pos">+0.21pp (+3.51%)</span></td></tr>
+              <tr><td>Y1 DSCR</td><td>1.37×</td><td>1.42×</td><td><span class="pos">+0.05× (+3.65%)</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          One delta column, inline format. Honors blueprint spec. <b>Benefit:</b> compact; same-row scan; minimum column count. <b>Cost:</b> $ and % weight equally — reader must parse which is the lender headline vs the magnitude check. Inline format mixes two units in one cell.
+        </div>
+      </div>
+
+      <!-- Q39.B — Two columns -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Two adjacent columns · $ and %</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">KPI Comparison · Active vs Base</div>
+          <div class="bxn-frame-sub">delta split into two columns · $ then %</div>
+          <table class="q39-table">
+            <thead>
+              <tr><th>KPI</th><th>Base</th><th>Active</th><th>$ Δ</th><th>% Δ</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Year-1 EGR</td><td>$2,275,800</td><td>$2,362,800</td><td><span class="pos">+$87,000</span></td><td><span class="pos">+3.82%</span></td></tr>
+              <tr><td>Year-1 NOI</td><td>$1,428,000</td><td>$1,482,000</td><td><span class="pos">+$54,000</span></td><td><span class="pos">+3.78%</span></td></tr>
+              <tr><td>Y1 Cap Rate</td><td>5.97%</td><td>6.18%</td><td><span class="pos">+0.21pp</span></td><td><span class="pos">+3.51%</span></td></tr>
+              <tr><td>Y1 DSCR</td><td>1.37×</td><td>1.42×</td><td><span class="pos">+0.05×</span></td><td><span class="pos">+3.65%</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          Two columns — $ delta and % delta scan independently. <b>Benefit:</b> reader can compare $ deltas across rows without % noise (and vice versa); columnar discipline. <b>Cost:</b> 5 columns instead of 4 — wider, narrower at fixed canvas; both deltas weight equally, no headline hierarchy.
+        </div>
+      </div>
+
+      <!-- Q39.C — $ primary + % below -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">$ primary · % stacked below</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">KPI Comparison · Active vs Base</div>
+          <div class="bxn-frame-sub">delta column · $ headline · % smaller stacked</div>
+          <table class="q39-table">
+            <thead>
+              <tr><th>KPI</th><th>Base</th><th>Active</th><th>vs Base</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Year-1 EGR</td><td>$2,275,800</td><td>$2,362,800</td><td><span class="q39c-stack pos"><span>+$87,000</span><span class="pct">+3.82%</span></span></td></tr>
+              <tr><td>Year-1 NOI</td><td>$1,428,000</td><td>$1,482,000</td><td><span class="q39c-stack pos"><span>+$54,000</span><span class="pct">+3.78%</span></span></td></tr>
+              <tr><td>Y1 Cap Rate</td><td>5.97%</td><td>6.18%</td><td><span class="q39c-stack pos"><span>+0.21pp</span><span class="pct">+3.51%</span></span></td></tr>
+              <tr><td>Y1 DSCR</td><td>1.37×</td><td>1.42×</td><td><span class="q39c-stack pos"><span>+0.05×</span><span class="pct">+3.65%</span></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          $ delta is the headline; % delta sits below at smaller weight. <b>Benefit:</b> hierarchy makes the lender's question ($ — is this deal accretive?) primary; % serves as the magnitude check at a glance. Single column footprint. <b>Cost:</b> two-tier vertical inside one cell increases row height; stacking pattern less common in lender output (vs side-by-side).
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>C.</b> $ is the lender's question. <i>"Is this deal +$87K accretive vs Base?"</i> is what gets approved or declined; the % is the magnitude check that contextualizes the $. Hierarchy makes the priority clear without two columns of numbers competing. Two reasons it pulls ahead: (1) <i>headline / context split</i> — the typographic weight encodes the read order; (2) <i>single-column footprint</i> — the table stays narrow enough to add scenarios horizontally if/when Compare grows beyond Base.
+        <br/><br/>
+        Honest read on A and B: A is the disciplined blueprint-honoring choice and is fine when there's only one delta column to render. B is the right choice if the user routinely scans <i>across rows</i> for a single delta type ("which KPIs have the biggest % move?") — but on a 4-row table that scan is short anyway.
+      </span>
+    </div>
+    <div class="decision-bar"><strong>Your pick for Q39:</strong> A / B / C</div>
+  </section>
+
+  <div class="footer-note">
+    Tokens in <code>:root</code> copied verbatim from <code>src/styles/basis-linear.css §1</code>. Card depth ladder per Rule 26 — each option panel = single <code>.bl-card</code> on canvas, no nested surface.
+  </div>
+
+</div>
+</body>
+</html>

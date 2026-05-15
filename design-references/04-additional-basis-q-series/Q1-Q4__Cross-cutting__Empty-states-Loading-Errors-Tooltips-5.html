@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Basis Scaffold Mockups — Q1–Q4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas:        #0A0B0E;
+    --sidebar:       #0A0B0E;
+    --surface-1:     #14161B;
+    --surface-inset: #0A0B0E;
+    --card:          #14161B;
+    --surface-2:     #1A1D24;
+    --elevated:      #22262E;
+    --border-card:   #1A1D24;
+    --border-08:     #1A1D24;
+    --border-06:     #1A1D24;
+    --text-primary:  #F0F1F3;
+    --text-secondary:#9298A3;
+    --text-muted:    #5F6571;
+    --text-placeholder: rgba(255,255,255,0.20);
+    --accent:        #4D5BFF;
+    --accent-hover:  #6573FF;
+    --danger:        #E5484D;
+    --danger-bg:     rgba(229, 72, 77, 0.08);
+    --warning:       #F5A524;
+    --success:       #30A46C;
+    --glow-top:      inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-ui: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono:     'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--canvas);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page-wrap {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+  }
+
+  .doc-header {
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border-08);
+  }
+  .doc-title {
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .doc-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 720px;
+  }
+  .doc-sub code {
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    background: var(--card);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-card);
+    font-size: 12px;
+  }
+
+  /* Question section */
+  .q-block {
+    margin-bottom: 80px;
+  }
+  .q-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .q-num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+  .q-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .q-context {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-bottom: 8px;
+    max-width: 760px;
+  }
+  .q-where {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    font-family: var(--font-mono);
+  }
+
+  /* Options row */
+  .opts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .opt {
+    background: var(--surface-1);
+    border: 1px solid var(--border-08);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .opt-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-08);
+    background: var(--surface-inset);
+  }
+  .opt-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .opt-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: var(--elevated);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .opt-letter.rec {
+    background: var(--accent);
+    color: #fff;
+  }
+  .opt-name {
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .opt-stage {
+    background: var(--canvas);
+    padding: 28px 20px;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+  .opt-note {
+    padding: 10px 16px 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.45;
+    border-top: 1px solid var(--border-06);
+    background: var(--surface-1);
+  }
+
+  /* Stage frame — mimics a basis surface with sidebar/title */
+  .stage-frame {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-radius: 6px;
+    box-shadow: var(--glow-top);
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .stage-frame-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .stage-frame-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .stage-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+  }
+  .stage-body.start { align-items: flex-start; }
+
+  /* Empty state variants — Q1 */
+  .empty-a {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+  .empty-a a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .empty-a a:hover { color: var(--accent-hover); }
+
+  .empty-b {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+  }
+  .empty-b svg {
+    color: #505153;
+    width: 24px;
+    height: 24px;
+  }
+  .empty-b-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .empty-b a {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .empty-c {
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-radius: 8px;
+    padding: 32px 24px;
+    text-align: center;
+    max-width: 320px;
+    box-shadow: var(--glow-top);
+  }
+  .empty-c-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .empty-c-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .empty-c-btn {
+    display: inline-block;
+    padding: 7px 14px;
+    background: linear-gradient(180deg, #353940 0%, #23252A 50%, #17181B 100%);
+    color: var(--text-primary);
+    border: 1px solid;
+    border-image: linear-gradient(180deg, #5D666F, #4F575F, #444951) 1;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* Filtered-empty — Q2 */
+  .rr-shell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 160px;
+  }
+  .rr-filters {
+    display: flex;
+    gap: 6px;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-06);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .rr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: var(--elevated);
+    border: 1px solid var(--border-08);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+  }
+  .rr-chip-x { color: var(--text-muted); cursor: pointer; }
+  .rr-header {
+    display: grid;
+    grid-template-columns: 52px 60px 1fr 80px;
+    gap: 0;
+    padding: 6px 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--surface-inset);
+    border-radius: 4px 4px 0 0;
+    border-bottom: 1px solid var(--border-08);
+  }
+  .rr-row-inline {
+    grid-column: 1 / -1;
+    padding: 28px 8px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+  }
+  .rr-row-inline a {
+    color: var(--accent);
+    font-weight: 500;
+    text-decoration: none;
+    margin-left: 8px;
+  }
+
+  .rr-center-card {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .rr-center-inner {
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    min-width: 220px;
+  }
+  .rr-center-inner .title {
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .rr-center-inner .chips {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .rr-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: rgba(77, 91, 255, 0.08);
+    border: 1px solid rgba(77, 91, 255, 0.20);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .rr-banner-left { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .rr-banner-clear { color: var(--accent); font-weight: 500; cursor: pointer; }
+
+  /* Loading skeleton — Q3 */
+  .sk-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .sk-kpi {
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+    padding: 10px;
+    box-shadow: var(--glow-top);
+    min-height: 56px;
+  }
+  .sk-kpi .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .sk-kpi .value {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  .sk-kpi .sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .sk-bar-placeholder {
+    height: 80px;
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+    box-shadow: var(--glow-top);
+    padding: 10px;
+    display: flex;
+    align-items: end;
+    gap: 4px;
+  }
+  .sk-bar-placeholder .bar {
+    flex: 1;
+    background: var(--surface-2);
+    border-radius: 2px;
+  }
+
+  /* Skeleton shimmer */
+  @keyframes shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+  }
+  .shimmer {
+    background: linear-gradient(90deg, #151619 0%, #1C1D20 50%, #151619 100%);
+    background-size: 200px 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 3px;
+  }
+  .sk-label-bar { height: 8px; width: 60%; }
+  .sk-value-bar { height: 16px; width: 80%; margin-top: 6px; }
+  .sk-sub-bar   { height: 8px; width: 40%; margin-top: 4px; }
+  .sk-bar-block { height: 80px; width: 100%; }
+
+  /* Top progress bar for C */
+  .top-progress {
+    position: absolute;
+    top: -16px;
+    left: -16px;
+    right: -16px;
+    height: 2px;
+    background: rgba(255,255,255,0.04);
+    overflow: hidden;
+    border-radius: 2px;
+  }
+  .top-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -30%;
+    width: 30%;
+    height: 100%;
+    background: var(--accent);
+    animation: slide 1.4s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { left: -30%; }
+    100% { left: 100%; }
+  }
+
+  /* Error patterns — Q4 */
+  .err-a {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+  }
+  .err-a-card {
+    background: var(--danger-bg);
+    border: 1px solid rgba(229, 72, 77, 0.28);
+    border-radius: 8px;
+    padding: 24px 20px;
+    max-width: 320px;
+    text-align: center;
+  }
+  .err-a-title {
+    color: var(--danger);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .err-a-desc {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .err-a-btn {
+    padding: 7px 14px;
+    background: var(--elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-08);
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .err-b {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px;
+  }
+  .err-b-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-radius: 4px;
+  }
+  .err-b-row.error {
+    border-color: rgba(229, 72, 77, 0.40);
+    background: var(--danger-bg);
+  }
+  .err-b-row .icon {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .err-b-row.error .icon { color: var(--danger); }
+  .err-b-row .name {
+    font-size: 11px;
+    color: var(--text-primary);
+    flex: 1;
+  }
+  .err-b-row .status {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .err-b-row.error .status { color: var(--danger); font-weight: 500; }
+  .err-b-row .retry {
+    font-size: 10px;
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .err-b-toast {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--elevated);
+    border: 1px solid var(--border-08);
+    border-left: 2px solid var(--danger);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .err-c {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+  }
+  .err-c-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--danger-bg);
+    border: 1px solid rgba(229, 72, 77, 0.24);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-primary);
+  }
+  .err-c-banner .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--danger);
+  }
+  .err-c-banner .msg { flex: 1; color: var(--text-secondary); }
+  .err-c-banner .action {
+    color: var(--accent);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .err-c-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-left: 2px solid var(--warning);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .err-c-inline .name { color: var(--text-primary); font-weight: 500; }
+  .err-c-inline .action {
+    margin-left: auto;
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .err-c-fullpage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+    border: 1px solid var(--border-card);
+    border-radius: 6px;
+    padding: 20px;
+    margin-top: 4px;
+  }
+  .err-c-fullpage-inner {
+    text-align: center;
+    max-width: 240px;
+  }
+  .err-c-fullpage-title {
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .err-c-fullpage-desc {
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  /* Recommendation footer */
+  .rec-row {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-08);
+    border-radius: 6px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .rec-label {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    font-family: var(--font-mono);
+  }
+  .rec-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .rec-text b { color: var(--text-primary); font-weight: 500; }
+
+  /* Decision prompt */
+  .decision-bar {
+    margin-top: 10px;
+    padding: 10px 18px;
+    background: var(--surface-inset);
+    border: 1px dashed var(--border-08);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .decision-bar strong {
+    color: var(--text-primary);
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockups — Q1–Q4 (pilot)</div>
+    <div class="doc-sub">
+      Four visual decisions. Each question shows three options rendered in Basis's real tokens from
+      <code>basis-linear.css</code>. Pick one option per question, then reply in chat like <code>1A, 2C, 3B, 4C</code>.
+      If the visual format is working, we'll scale this to the remaining 35 questions.
+    </div>
+  </div>
+
+  <!-- ========================= Q1 ========================= -->
+  <section class="q-block">
+    <div class="q-header">
+      <span class="q-num">Q1</span>
+      <h2 class="q-title">Empty state — no data yet</h2>
+    </div>
+    <p class="q-context">
+      When a surface has no data yet because the user hasn't taken an action (e.g., no deals pinned, no reports generated,
+      no deals uploaded). This is <em>not</em> "search returned nothing" — that's Q2.
+    </p>
+    <p class="q-where">Appears on: Dashboard → Pinned deals · Reports → Preview · any first-load zero state</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter rec">A</span>
+            <span class="opt-name">Text only (Linear pattern)</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Pinned deals</div>
+            <div class="stage-frame-sub">Quick access to deals you're actively underwriting</div>
+            <div class="stage-body">
+              <div class="empty-a">
+                Pin a deal to see it here. <a href="#">Open a property →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Lightest weight. One muted line + one inline action. No icon. No card.
+        </div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">B</span>
+            <span class="opt-name">Muted icon + text</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Pinned deals</div>
+            <div class="stage-frame-sub">Quick access to deals you're actively underwriting</div>
+            <div class="stage-body">
+              <div class="empty-b">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>
+                </svg>
+                <div class="empty-b-text">No deals pinned yet</div>
+                <a href="#">Open a property →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Muted 24px icon anchors the eye. Slight visual weight without becoming a card.
+        </div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">C</span>
+            <span class="opt-name">Bounded card + CTA</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Pinned deals</div>
+            <div class="stage-frame-sub">Quick access to deals you're actively underwriting</div>
+            <div class="stage-body">
+              <div class="empty-c">
+                <div class="empty-c-title">No pinned deals yet</div>
+                <div class="empty-c-desc">Pin any property from its detail page to access it quickly from here.</div>
+                <div class="empty-c-btn">Browse properties</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Heaviest treatment. Card with title, description, button. Vercel/shadcn pattern.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text"><b>A.</b> Matches blueprint §1.9 ("no empty-state pep talks") and token discipline.</span>
+    </div>
+    <div class="decision-bar">
+      <strong>Your pick for Q1:</strong> A / B / C
+    </div>
+  </section>
+
+  <!-- ========================= Q2 ========================= -->
+  <section class="q-block">
+    <div class="q-header">
+      <span class="q-num">Q2</span>
+      <h2 class="q-title">Empty state — filters returned nothing</h2>
+    </div>
+    <p class="q-context">
+      User applies filters to a table (e.g., Rent Roll filtered to "Status = Vacant Leased + 2BR") and the result set is empty.
+      Data exists; the filters excluded it. The fix is always "remove a filter."
+    </p>
+    <p class="q-where">Appears on: Rent Roll · Insights → Unit Risk · Reports list · Settings → Flag Rules</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter rec">A</span>
+            <span class="opt-name">Inline row in table body</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="rr-shell">
+              <div class="rr-filters">
+                <span class="rr-chip">Status = Vacant Leased <span class="rr-chip-x">×</span></span>
+                <span class="rr-chip">Type = 2BR <span class="rr-chip-x">×</span></span>
+              </div>
+              <div class="rr-header">
+                <span>Unit</span><span>Type</span><span>Tenant</span><span style="text-align:right;">Rent</span>
+              </div>
+              <div class="rr-row-inline">
+                No units match these filters. <a href="#">Clear all filters</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Table chrome stays. Single row replaces data. No layout shift.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">B</span>
+            <span class="opt-name">Replace body with centered card</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="rr-shell">
+              <div class="rr-filters">
+                <span class="rr-chip">Status = Vacant Leased <span class="rr-chip-x">×</span></span>
+                <span class="rr-chip">Type = 2BR <span class="rr-chip-x">×</span></span>
+              </div>
+              <div class="rr-center-card">
+                <div class="rr-center-inner">
+                  <div class="title">Nothing matches</div>
+                  <div class="chips">
+                    <span class="rr-chip">Vacant Leased <span class="rr-chip-x">×</span></span>
+                    <span class="rr-chip">2BR <span class="rr-chip-x">×</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Table header gone. Card in the middle with removable chips. More discoverable, heavier shift.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">C</span>
+            <span class="opt-name">Persistent banner above table</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="rr-shell">
+              <div class="rr-filters">
+                <span class="rr-chip">Status = Vacant Leased <span class="rr-chip-x">×</span></span>
+                <span class="rr-chip">Type = 2BR <span class="rr-chip-x">×</span></span>
+              </div>
+              <div class="rr-banner">
+                <div class="rr-banner-left">
+                  No matches for current filters
+                </div>
+                <span class="rr-banner-clear">Clear filters →</span>
+              </div>
+              <div class="rr-header">
+                <span>Unit</span><span>Type</span><span>Tenant</span><span style="text-align:right;">Rent</span>
+              </div>
+              <div class="rr-row-inline" style="padding: 12px 8px; color: var(--text-muted);">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Blue banner permanently shown. Table empty underneath. Adds vertical space.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text"><b>A.</b> Cheapest layout, no shift, and your filter pills already show what's active.</span>
+    </div>
+    <div class="decision-bar">
+      <strong>Your pick for Q2:</strong> A / B / C
+    </div>
+  </section>
+
+  <!-- ========================= Q3 ========================= -->
+  <section class="q-block">
+    <div class="q-header">
+      <span class="q-num">Q3</span>
+      <h2 class="q-title">Loading state — skeleton vs nothing vs progress bar</h2>
+    </div>
+    <p class="q-context">
+      When a page is fetching data. Blueprint §2.6 says "no spinner under 500ms, skeleton above." Question is how aggressive:
+      skeleton on <em>every</em> async load, only on slow loads, or only on initial page mount.
+    </p>
+    <p class="q-where">Appears on: Insights tabs loading · Rent Roll first load · ProForma recalculation</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">A</span>
+            <span class="opt-name">Aggressive skeleton (always)</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Insights → Overview</div>
+            <div class="stage-frame-sub">Deal: McDowell Heights · 312 units</div>
+            <div class="sk-kpi-row">
+              <div class="sk-kpi"><div class="shimmer sk-label-bar"></div><div class="shimmer sk-value-bar"></div><div class="shimmer sk-sub-bar"></div></div>
+              <div class="sk-kpi"><div class="shimmer sk-label-bar"></div><div class="shimmer sk-value-bar"></div><div class="shimmer sk-sub-bar"></div></div>
+              <div class="sk-kpi"><div class="shimmer sk-label-bar"></div><div class="shimmer sk-value-bar"></div><div class="shimmer sk-sub-bar"></div></div>
+            </div>
+            <div class="shimmer sk-bar-block"></div>
+          </div>
+        </div>
+        <div class="opt-note">Every load, from t=0, shows shimmering skeleton. Fast loads flash. Most consistent.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter rec">B</span>
+            <span class="opt-name">Only after ~800ms (deferred)</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Insights → Overview</div>
+            <div class="stage-frame-sub">Deal: McDowell Heights · 312 units</div>
+            <div class="sk-kpi-row">
+              <div class="sk-kpi"><div class="label">Physical Occ</div><div class="value">94.23%</div><div class="sub">+1.2% vs T-3mo</div></div>
+              <div class="sk-kpi"><div class="label">Loss to Lease</div><div class="value">$78,412</div><div class="sub">4.1% of GPR</div></div>
+              <div class="sk-kpi"><div class="label">WALT</div><div class="value">8.4 mo</div><div class="sub">Portfolio avg</div></div>
+            </div>
+            <div class="sk-bar-placeholder">
+              <div class="bar" style="height: 30%;"></div>
+              <div class="bar" style="height: 55%;"></div>
+              <div class="bar" style="height: 80%;"></div>
+              <div class="bar" style="height: 40%;"></div>
+              <div class="bar" style="height: 65%;"></div>
+              <div class="bar" style="height: 25%;"></div>
+              <div class="bar" style="height: 90%;"></div>
+              <div class="bar" style="height: 45%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Quick loads show nothing (just completes). Slow loads trigger skeleton after 800ms.
+          Shown here in final state since it loads fast.
+        </div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">C</span>
+            <span class="opt-name">Initial mount only + top progress bar</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame" style="position: relative;">
+            <div class="top-progress"></div>
+            <div class="stage-frame-title">Insights → Overview</div>
+            <div class="stage-frame-sub">Deal: McDowell Heights · 312 units</div>
+            <div class="sk-kpi-row">
+              <div class="sk-kpi"><div class="label">Physical Occ</div><div class="value">94.23%</div><div class="sub">+1.2% vs T-3mo</div></div>
+              <div class="sk-kpi"><div class="label">Loss to Lease</div><div class="value">$78,412</div><div class="sub">4.1% of GPR</div></div>
+              <div class="sk-kpi"><div class="label">WALT</div><div class="value">8.4 mo</div><div class="sub">Portfolio avg</div></div>
+            </div>
+            <div class="sk-bar-placeholder">
+              <div class="bar" style="height: 30%;"></div>
+              <div class="bar" style="height: 55%;"></div>
+              <div class="bar" style="height: 80%;"></div>
+              <div class="bar" style="height: 40%;"></div>
+              <div class="bar" style="height: 65%;"></div>
+              <div class="bar" style="height: 25%;"></div>
+              <div class="bar" style="height: 90%;"></div>
+              <div class="bar" style="height: 45%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          First page mount uses skeleton (not shown). Subsequent interactions show thin accent bar
+          sliding across the top while the current content stays visible. Linear's pattern.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text"><b>B.</b> Aggressive skeletons make a fast app feel slow. Defer until load actually feels slow.</span>
+    </div>
+    <div class="decision-bar">
+      <strong>Your pick for Q3:</strong> A / B / C
+    </div>
+  </section>
+
+  <!-- ========================= Q4 ========================= -->
+  <section class="q-block">
+    <div class="q-header">
+      <span class="q-num">Q4</span>
+      <h2 class="q-title">Error state — parse / generation / network failures</h2>
+    </div>
+    <p class="q-context">
+      Three failure classes exist: (a) rent roll parse fails, (b) report/export generation fails,
+      (c) network or auth blip. Question: one pattern covers all three, three patterns by class,
+      or a tiered system matched to severity?
+    </p>
+    <p class="q-where">Appears on: Upload (parse fails) · Reports (gen fails) · any page (network)</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">A</span>
+            <span class="opt-name">Single pattern everywhere</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Upload</div>
+            <div class="stage-frame-sub">Processing rent roll</div>
+            <div class="err-a">
+              <div class="err-a-card">
+                <div class="err-a-title">Something went wrong</div>
+                <div class="err-a-desc">We couldn't complete this action. Please try again.</div>
+                <button class="err-a-btn">Retry</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Same red-tinted card everywhere. Heavy and consistent. One code path.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter">B</span>
+            <span class="opt-name">Per-class (inline / toast / banner)</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Upload</div>
+            <div class="stage-frame-sub">3 files queued · 1 failed</div>
+            <div class="err-b">
+              <div class="err-b-row">
+                <span class="icon">✓</span>
+                <span class="name">Brickyard-RR-2024-04.xlsx</span>
+                <span class="status">Parsed · 226 units</span>
+              </div>
+              <div class="err-b-row error">
+                <span class="icon">!</span>
+                <span class="name">McDowell-RR-legacy.xls</span>
+                <span class="status">Parse failed · unsupported format</span>
+                <span class="retry">Retry</span>
+              </div>
+              <div class="err-b-row">
+                <span class="icon">…</span>
+                <span class="name">Tropicana-RR-2024-04.xlsx</span>
+                <span class="status">Parsing…</span>
+              </div>
+              <div class="err-b-toast">
+                <span>Export failed. File too large.</span>
+                <span style="color: var(--accent); margin-left: auto; cursor: pointer;">Retry</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Parse fails stay inline next to the file. Report fails = toast. Network = top banner.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label">
+            <span class="opt-letter rec">C</span>
+            <span class="opt-name">Tiered by severity</span>
+          </div>
+        </div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Upload</div>
+            <div class="stage-frame-sub">3 files queued · 1 corrupted</div>
+            <div class="err-c">
+              <div class="err-c-banner">
+                <span class="dot"></span>
+                <span class="msg">Connection restored</span>
+                <span class="action">Dismiss</span>
+              </div>
+              <div class="err-c-inline">
+                <span style="color: var(--warning);">!</span>
+                <span class="name">Brickyard-RR.xlsx</span>
+                <span style="color: var(--text-muted);">Some rows skipped — header mismatch</span>
+                <span class="action">Review</span>
+              </div>
+              <div class="err-c-fullpage">
+                <div class="err-c-fullpage-inner">
+                  <div class="err-c-fullpage-title">File corrupted</div>
+                  <div class="err-c-fullpage-desc">
+                    McDowell-RR-legacy.xls could not be read. Try re-exporting from OneSite.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Transient (network blip) = small top banner. Contextual (partial fail) = inline row. Unrecoverable = full-page.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text"><b>C.</b> Maps severity to surface size. Matches Linear's discipline.</span>
+    </div>
+    <div class="decision-bar">
+      <strong>Your pick for Q4:</strong> A / B / C
+    </div>
+  </section>
+
+  <div style="margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border-08); font-size: 12px; color: var(--text-muted); font-family: var(--font-mono);">
+    End of pilot batch. Reply in chat like <span style="color: var(--text-primary);">1A, 2A, 3B, 4C</span> (or add notes). If the format works we'll scale to the remaining 35 questions.
+  </div>
+
+</div>
+</body>
+</html>

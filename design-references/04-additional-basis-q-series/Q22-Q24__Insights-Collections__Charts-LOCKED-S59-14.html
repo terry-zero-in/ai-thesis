@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scaffold mockup — Q22-Q24</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens — verbatim from src/styles/basis-linear.css §1 (verified live S62, lines 48-82).
+     V4 canonical surfaces/text/accent + Q13 GOLD STANDARD saturated severities (Basis exception).
+     Sidebar = Basis floating offset (#06070A) — kept for parity with live app shell even though
+     this mockup has no sidebar; tokens stay aligned with the live system. */
+  :root {
+    /* Surfaces */
+    --bg:                #0B0C0F;
+    --sidebar:           #06070A;
+    --surface:           #15171C;
+    --surface-2:         #1B1E25;
+    --surface-elevated:  #22262E;
+    --surface-hover:     #232730;
+    --border:            #2A2F38;
+    --border-subtle:     #1F2229;
+
+    /* Text */
+    --text-1: #ECEDEF;
+    --text-2: #CFD3DA;
+    --text-3: #7A818D;
+    --text-4: #5F6571; /* derived: extra-faint for axis labels — between text-3 and pure muted */
+
+    /* Accent */
+    --accent:        #4D5BFF;
+    --accent-hover:  #6573FF;
+    --accent-soft:   rgba(77, 91, 255, 0.10);
+    --accent-glow:   rgba(77, 91, 255, 0.18);
+    --accent-border: rgba(77, 91, 255, 0.28);
+
+    /* Severities — Q13 GOLD STANDARD saturated */
+    --success:      #30A46C;
+    --success-soft: rgba(48, 164, 108, 0.12);
+    --warning:      #F5A524;
+    --warning-soft: rgba(245, 165, 36, 0.12);
+    --danger:       #E5484D;
+    --danger-soft:  rgba(229, 72, 77, 0.12);
+    --info:         #8B5CF6;
+    --info-soft:    rgba(139, 92, 246, 0.12);
+
+    /* Aging-bucket palette — three reds + green per card-gold §2.2 (single-hue family,
+       transparency varies emphasis). 90+ = darkest red. NOT yet in live tokens; locked
+       at mockup level pending fold into basis-linear.css. */
+    --age-0-30:  rgba(229, 72, 77, 0.42);
+    --age-31-60: rgba(229, 72, 77, 0.62);
+    --age-61-90: rgba(229, 72, 77, 0.78);
+    --age-90:    rgba(229, 72, 77, 0.92);
+
+    --font-ui:   'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html, body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .page-wrap { max-width: 1440px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* ============================================================
+     Doc header — folder convention: title only, no eyebrow
+     ============================================================ */
+  .doc-header { margin-bottom: 48px; padding-bottom: 28px; border-bottom: 1px solid var(--border-subtle); }
+  .doc-title { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; color: var(--text-1); }
+  .doc-sub { font-size: 13px; color: var(--text-2); line-height: 1.6; max-width: 920px; }
+  .doc-sub b { color: var(--text-1); font-weight: 500; }
+  .doc-sub i { color: var(--text-2); font-style: italic; }
+  .doc-sub code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle); font-size: 12px; }
+
+  /* ============================================================
+     Q-block scaffolding
+     ============================================================ */
+  .q-block { margin-bottom: 56px; }
+  .q-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .q-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; padding: 3px 8px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 3px; }
+  .q-title { font-size: 17px; font-weight: 600; letter-spacing: -0.005em; color: var(--text-1); }
+  .q-context { font-size: 12.5px; color: var(--text-2); line-height: 1.6; margin-bottom: 6px; max-width: 980px; }
+  .q-context code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 1px 5px; border-radius: 3px; font-size: 11.5px; }
+  .q-context i { color: var(--text-2); font-style: italic; }
+  .q-where { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; margin-bottom: 18px; }
+  .q-where code { color: var(--text-2); }
+
+  /* Drill-inheritance callout (Rule 23) */
+  .drill-inherit { margin: 14px 0 18px; padding: 9px 14px; background: var(--surface); border: 1px solid var(--border-subtle); border-left: 2px solid var(--accent); border-radius: 0 4px 4px 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-2); line-height: 1.6; }
+  .drill-inherit b { color: var(--text-1); font-weight: 500; }
+  .drill-inherit code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+
+  .scale-caption { margin: 0 0 14px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); letter-spacing: 0.02em; line-height: 1.5; }
+  .scale-caption b { color: var(--text-2); font-weight: 500; }
+
+  /* ============================================================
+     Option panels — 3-column grid (A / B / C), single .bl-card on canvas (Rule 26)
+     ============================================================ */
+  .opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .opt {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  .opt.locked {
+    border-color: var(--accent-border);
+    background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 30%);
+  }
+  .opt-header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); border-radius: 8px 8px 0 0; }
+  .opt.locked .opt-header { background: var(--accent-soft); border-bottom-color: var(--accent-border); }
+  .opt-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+  .opt-letter { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; background: var(--surface-elevated); color: var(--text-1); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+  .opt-letter.rec { background: var(--accent); color: #fff; }
+  .opt-name { font-size: 12px; color: var(--text-1); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .opt-stage { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .opt-note { padding: 10px 16px 14px; font-size: 11px; color: var(--text-3); line-height: 1.55; border-top: 1px solid var(--border-subtle); border-radius: 0 0 8px 8px; }
+  .opt.locked .opt-note { background: var(--accent-soft); border-top-color: var(--accent-border); color: var(--text-2); }
+  .opt-note b { color: var(--text-1); }
+  .opt-note code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+
+  /* Frame title + sub (above stage content) */
+  .bxn-frame-title { font-size: 11px; font-weight: 600; color: var(--text-1); }
+  .bxn-frame-sub { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); margin-bottom: 4px; }
+
+  /* ============================================================
+     Q22 — Line chart shell (12-month rolling 90-day exposure)
+     ============================================================
+     Shared SVG dimensions: 280×130. Inner plot area starts at x=30, y=12 and ends at
+     x=272, y=90 (78px tall). Y-axis = exposure %. Data shape held constant across
+     A/B/C — peak Sep '27 at 31%, portfolio avg 18%. */
+  .ln-chart { width: 100%; height: 130px; display: block; }
+  .ln-axis { stroke: var(--border-subtle); stroke-width: 1; }
+  .ln-grid { stroke: var(--border-subtle); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; }
+  .ln-line { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+  .ln-area { fill: var(--accent-soft); stroke: none; }
+  .ln-pt { fill: var(--accent); }
+  .ln-pt-peak { fill: var(--warning); stroke: var(--bg); stroke-width: 1.5; }
+  .ln-axis-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-4); letter-spacing: 0.04em; text-transform: uppercase; }
+  .ln-y-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-4); }
+
+  /* B-only: dashed reference line at portfolio avg */
+  .ln-ref { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 3 3; }
+  .ln-ref-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* C-only: peak callout chip — small floating annotation pinned to peak point */
+  .ln-callout-leader { stroke: var(--warning); stroke-width: 1; }
+  .ln-callout-bg { fill: var(--surface-elevated); stroke: var(--warning); stroke-width: 1; }
+  .ln-callout-tx { font-family: var(--font-mono); font-size: 9px; fill: var(--text-1); letter-spacing: 0.02em; }
+  .ln-callout-tx-strong { font-family: var(--font-mono); font-size: 9px; fill: var(--warning); font-weight: 500; }
+
+  /* ============================================================
+     Q23 — Aging bucket viz (bars + donut)
+     ============================================================
+     Shared totals across A/B/C: $73,402 across 4 buckets.
+     0-30: $22,103 (30.1%) · 31-60: $19,824 (27.0%) · 61-90: $6,670 (9.1%) · 90+: $24,805 (33.8%) */
+
+  /* Q23.A — Card-gold §1 hero card */
+  .age-hero { display: flex; align-items: baseline; gap: 12px; padding: 8px 4px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px; }
+  .age-hero-num { font-family: var(--font-mono); font-size: 28px; font-weight: 500; color: var(--text-1); line-height: 1; letter-spacing: -0.02em; }
+  .age-hero-meta { display: flex; flex-direction: column; }
+  .age-hero-label { font-family: var(--font-ui); font-size: 9.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; margin-bottom: 4px; }
+  .age-hero-verdict { font-family: var(--font-ui); font-size: 11px; color: var(--text-1); font-weight: 500; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .age-hero-verdict .age-hero-verdict-mono { font-family: var(--font-mono); }
+  .age-hero-verdict .age-hero-verdict-muted { color: var(--text-3); margin-left: 4px; font-weight: 400; }
+
+  /* Q23.A — Stacked horizontal bar with $ caption above each segment */
+  .age-bar-wrap { display: flex; flex-direction: column; gap: 0; }
+  .age-bar-vals { display: grid; grid-template-columns: 30.1fr 27.0fr 9.1fr 33.8fr; gap: 1px; margin-bottom: 4px; }
+  .age-bar-val { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-1); text-align: center; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .age-bar-val.peak { color: var(--warning); font-weight: 500; }
+  .age-bar { display: grid; grid-template-columns: 30.1fr 27.0fr 9.1fr 33.8fr; gap: 1px; height: 22px; border-radius: 3px; overflow: hidden; background: var(--surface-2); }
+  .age-bar > div { height: 100%; }
+  .age-seg-1 { background: var(--age-0-30); }
+  .age-seg-2 { background: var(--age-31-60); }
+  .age-seg-3 { background: var(--age-61-90); }
+  .age-seg-4 { background: var(--age-90); }
+  .age-bar-labels { display: grid; grid-template-columns: 30.1fr 27.0fr 9.1fr 33.8fr; gap: 1px; margin-top: 4px; }
+  .age-bar-label { font-family: var(--font-ui); font-size: 8.5px; color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; text-align: center; line-height: 1.2; }
+
+  /* Q23.A — Concentration footer (card-gold §2.2 Basis differentiator) */
+  .age-conc-footer { font-family: var(--font-mono); font-size: 10px; color: var(--text-2); font-weight: 500; border-top: 1px solid rgba(255,255,255,0.06); padding: 7px 0 0; margin: 12px 0 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Q23.B — Four vertical bars side-by-side. Pixel heights (not %) to avoid
+     flex-column percentage-height ambiguity. Bars max at 78px (90+ peak). */
+  .age-vbars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-items: end; padding: 8px 0 4px; }
+  .age-vbar-col { display: flex; flex-direction: column; align-items: center; }
+  .age-vbar-val { font-family: var(--font-mono); font-size: 9px; color: var(--text-1); font-variant-numeric: tabular-nums; margin-bottom: 4px; line-height: 1; }
+  .age-vbar-val.peak { color: var(--warning); }
+  .age-vbar { width: 100%; border-radius: 2px 2px 0 0; flex-shrink: 0; }
+  .age-vbar-lbl { font-family: var(--font-ui); font-size: 8.5px; color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 5px; line-height: 1; }
+
+  /* Q23.C — Donut chart */
+  .age-donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 0; }
+  .age-donut { width: 110px; height: 110px; }
+  .age-donut-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; width: 100%; }
+  .age-leg-row { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 9px; color: var(--text-2); }
+  .age-leg-dot { width: 7px; height: 7px; border-radius: 1px; flex: 0 0 7px; }
+  .age-leg-lbl { font-family: var(--font-ui); font-size: 8.5px; color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; flex: 1; }
+  .age-leg-val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-1); }
+
+  /* ============================================================
+     Q24 — "Trend not available" placeholder treatments
+     ============================================================ */
+  .q24-chart-shell { background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 10px; }
+
+  /* Q24.A — Tooltip-style chip pinned over chart (rendered as if hovering) */
+  .q24a-wrap { position: relative; }
+  .q24a-tooltip {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--surface-elevated);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 6px 9px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--text-2);
+    letter-spacing: 0.02em;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .q24a-tooltip::before {
+    content: "";
+    position: absolute;
+    top: -4px; right: 12px;
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 4px solid var(--surface-elevated);
+  }
+  .q24a-tooltip b { color: var(--text-1); font-weight: 500; }
+
+  /* Q24.B — Inline label below chart */
+  .q24b-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 7px 10px;
+    background: var(--surface-2);
+    border: 1px dashed var(--border-subtle);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+  }
+  .q24b-inline svg { flex: 0 0 12px; }
+  .q24b-inline b { color: var(--text-2); font-weight: 500; }
+
+  /* Q24.C — chart only (no extra modules) */
+  /* No special styles needed — just the chart shell. */
+
+  /* Mini chart shared across Q24 panels (4 buckets) + donut center text.
+     Inline SVG presentational attrs are unreliable for var()/font-family/text-transform —
+     use CSS classes. */
+  .mini-chart { width: 100%; height: 90px; display: block; }
+  .mc-lbl { font-family: var(--font-ui); font-size: 8px; fill: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .mc-val { font-family: var(--font-mono); font-size: 9px; fill: var(--text-1); }
+  .mc-val.peak { fill: var(--warning); }
+  .age-donut-center-num { font-family: var(--font-mono); font-size: 12px; font-weight: 500; fill: var(--text-1); }
+  .age-donut-center-lbl { font-family: var(--font-ui); font-size: 7px; fill: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+
+  /* ============================================================
+     Recommendation row + decision bar
+     ============================================================ */
+  .rec-row { margin-top: 22px; padding: 13px 16px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 6px; display: flex; gap: 14px; align-items: flex-start; }
+  .rec-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 600; font-family: var(--font-mono); white-space: nowrap; flex: 0 0 auto; padding-top: 1px; }
+  .rec-text { font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+  .rec-text b { color: var(--text-1); font-weight: 500; }
+  .rec-text code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .rec-text i { color: var(--text-2); font-style: italic; }
+  .decision-bar { margin-top: 10px; padding: 10px 16px; background: var(--surface-2); border: 1px dashed var(--border-subtle); border-radius: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--text-3); display: flex; gap: 10px; align-items: center; }
+  .decision-bar strong { color: var(--text-1); }
+  .decision-bar.locked { border: 1px solid var(--accent-border); color: var(--text-2); }
+
+  .footer-note { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-3); font-family: var(--font-mono); line-height: 1.7; }
+  .footer-note code { background: var(--surface); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border-subtle); color: var(--text-2); }
+
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockup — Q22-Q24</div>
+    <div class="doc-sub">
+      <b>Insights — Collections + data availability.</b> Three questions on (Q22) rolling 90-day exposure annotation, (Q23) aging-bucket visualization, (Q24) single-parse trend handling. Data shape held constant across A/B/C within each question — decision is purely on <i>treatment</i>, not numbers. All three render with v4-canonical surfaces (<code>--bg #0B0C0F</code> / <code>--surface #15171C</code>) + Q13 saturated severities (Basis-specific exception per S58 Option A) + Cypher Indigo accent (<code>#4D5BFF</code>).
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Q22 — Rolling 90-day exposure trendline annotation
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q22</span><h2 class="q-title">Rolling 90-day exposure trendline annotation</h2></div>
+    <p class="q-context">
+      Blueprint <code>§6.4.4</code> spec: dashboard-style line chart showing rolling 90-day exposure % over the next 12 months. Question is whether the chart carries an annotation layer that surfaces the institutional read — <i>"when does exposure peak and how far above the portfolio's run-rate is that month?"</i> — or whether the reader interprets the raw line. Three panels below render the same dataset (peak Sep '27 at 31%, portfolio avg ~18%) and differ only in annotation treatment.
+    </p>
+    <p class="q-where">Appears on: Insights → Lease Rollover · canvas-default 1440px · same dataset across A/B/C</p>
+
+    <p class="scale-caption">Same line shape across A/B/C. Decision is on <b>annotation layer</b>, not data.</p>
+
+    <div class="opts">
+
+      <!-- Q22.A — Plain line, no annotation -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Plain line · no annotation</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Rolling 90-day exposure</div>
+          <div class="bxn-frame-sub">Jan '27 – Dec '27 · % of portfolio</div>
+          <svg class="ln-chart" viewBox="0 0 280 130" aria-label="Rolling 90-day exposure trendline">
+            <!-- y axis grid -->
+            <line class="ln-grid" x1="30" y1="32" x2="272" y2="32" />
+            <line class="ln-grid" x1="30" y1="58" x2="272" y2="58" />
+            <line class="ln-grid" x1="30" y1="84" x2="272" y2="84" />
+            <!-- y axis labels (35 / 24 / 12 / 0) -->
+            <text class="ln-y-label" x="4" y="14">35</text>
+            <text class="ln-y-label" x="4" y="36">24</text>
+            <text class="ln-y-label" x="4" y="62">12</text>
+            <text class="ln-y-label" x="9" y="92">0</text>
+            <!-- area fill under line -->
+            <path class="ln-area" d="M30,59 L52,63 L74,54 L96,52 L118,48 L140,41 L162,37 L184,28 L206,21 L228,39 L250,52 L272,57 L272,90 L30,90 Z" />
+            <!-- line -->
+            <path class="ln-line" d="M30,59 L52,63 L74,54 L96,52 L118,48 L140,41 L162,37 L184,28 L206,21 L228,39 L250,52 L272,57" />
+            <!-- data points -->
+            <circle class="ln-pt" cx="30"  cy="59" r="2" />
+            <circle class="ln-pt" cx="52"  cy="63" r="2" />
+            <circle class="ln-pt" cx="74"  cy="54" r="2" />
+            <circle class="ln-pt" cx="96"  cy="52" r="2" />
+            <circle class="ln-pt" cx="118" cy="48" r="2" />
+            <circle class="ln-pt" cx="140" cy="41" r="2" />
+            <circle class="ln-pt" cx="162" cy="37" r="2" />
+            <circle class="ln-pt" cx="184" cy="28" r="2" />
+            <circle class="ln-pt" cx="206" cy="21" r="2" />
+            <circle class="ln-pt" cx="228" cy="39" r="2" />
+            <circle class="ln-pt" cx="250" cy="52" r="2" />
+            <circle class="ln-pt" cx="272" cy="57" r="2" />
+            <!-- x-axis baseline -->
+            <line class="ln-axis" x1="30" y1="90" x2="272" y2="90" />
+            <!-- x labels -->
+            <text class="ln-axis-label" x="28"  y="104">JAN</text>
+            <text class="ln-axis-label" x="93"  y="104">APR</text>
+            <text class="ln-axis-label" x="159" y="104">JUL</text>
+            <text class="ln-axis-label" x="225" y="104">OCT</text>
+            <text class="ln-axis-label" x="248" y="104">DEC</text>
+          </svg>
+        </div>
+        <div class="opt-note">
+          Bare line, axis labels only. Reader interprets the spike, locates the peak month visually, and benchmarks against an internalized portfolio avg. <b>Cost:</b> the institutional read — <i>"Sep '27 is 1.7× run-rate"</i> — is implicit, requires ~2 seconds of parse work per viewer, and is lossy on quick-scan IC reviews.
+        </div>
+      </div>
+
+      <!-- Q22.B — Line + horizontal reference at portfolio avg -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Line + horizontal reference at portfolio avg</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Rolling 90-day exposure</div>
+          <div class="bxn-frame-sub">12-month line + dashed reference at 18% (portfolio avg)</div>
+          <svg class="ln-chart" viewBox="0 0 280 130" aria-label="Rolling 90-day exposure with portfolio avg reference">
+            <line class="ln-grid" x1="30" y1="32" x2="272" y2="32" />
+            <line class="ln-grid" x1="30" y1="58" x2="272" y2="58" />
+            <line class="ln-grid" x1="30" y1="84" x2="272" y2="84" />
+            <text class="ln-y-label" x="4" y="14">35</text>
+            <text class="ln-y-label" x="4" y="36">24</text>
+            <text class="ln-y-label" x="4" y="62">12</text>
+            <text class="ln-y-label" x="9" y="92">0</text>
+            <path class="ln-area" d="M30,59 L52,63 L74,54 L96,52 L118,48 L140,41 L162,37 L184,28 L206,21 L228,39 L250,52 L272,57 L272,90 L30,90 Z" />
+            <!-- portfolio avg reference line at 18% (y=50) -->
+            <line class="ln-ref" x1="30" y1="50" x2="272" y2="50" />
+            <text class="ln-ref-label" x="232" y="46">AVG 18%</text>
+            <path class="ln-line" d="M30,59 L52,63 L74,54 L96,52 L118,48 L140,41 L162,37 L184,28 L206,21 L228,39 L250,52 L272,57" />
+            <circle class="ln-pt" cx="30"  cy="59" r="2" />
+            <circle class="ln-pt" cx="52"  cy="63" r="2" />
+            <circle class="ln-pt" cx="74"  cy="54" r="2" />
+            <circle class="ln-pt" cx="96"  cy="52" r="2" />
+            <circle class="ln-pt" cx="118" cy="48" r="2" />
+            <circle class="ln-pt" cx="140" cy="41" r="2" />
+            <circle class="ln-pt" cx="162" cy="37" r="2" />
+            <circle class="ln-pt" cx="184" cy="28" r="2" />
+            <circle class="ln-pt" cx="206" cy="21" r="2" />
+            <circle class="ln-pt" cx="228" cy="39" r="2" />
+            <circle class="ln-pt" cx="250" cy="52" r="2" />
+            <circle class="ln-pt" cx="272" cy="57" r="2" />
+            <line class="ln-axis" x1="30" y1="90" x2="272" y2="90" />
+            <text class="ln-axis-label" x="28"  y="104">JAN</text>
+            <text class="ln-axis-label" x="93"  y="104">APR</text>
+            <text class="ln-axis-label" x="159" y="104">JUL</text>
+            <text class="ln-axis-label" x="225" y="104">OCT</text>
+            <text class="ln-axis-label" x="248" y="104">DEC</text>
+          </svg>
+        </div>
+        <div class="opt-note">
+          Adds a dashed horizontal at the portfolio's 12-month average exposure. Above-line months read as elevated; below-line as quiet. <b>Cost:</b> on a 12-point chart, every reader can already see the average eyeballing the line — the reference adds visual weight without adding signal. Reads slightly noisier than A.
+        </div>
+      </div>
+
+      <!-- Q22.C — Line + auto-callout on peak month -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">C</span><span class="opt-name">Line + auto-callout on peak month</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Rolling 90-day exposure</div>
+          <div class="bxn-frame-sub">12-month line + auto-callout on Sep '27 peak (Q6 system)</div>
+          <svg class="ln-chart" viewBox="0 0 280 130" aria-label="Rolling 90-day exposure with peak callout">
+            <line class="ln-grid" x1="30" y1="32" x2="272" y2="32" />
+            <line class="ln-grid" x1="30" y1="58" x2="272" y2="58" />
+            <line class="ln-grid" x1="30" y1="84" x2="272" y2="84" />
+            <text class="ln-y-label" x="4" y="14">35</text>
+            <text class="ln-y-label" x="4" y="36">24</text>
+            <text class="ln-y-label" x="4" y="62">12</text>
+            <text class="ln-y-label" x="9" y="92">0</text>
+            <path class="ln-area" d="M30,59 L52,63 L74,54 L96,52 L118,48 L140,41 L162,37 L184,28 L206,21 L228,39 L250,52 L272,57 L272,90 L30,90 Z" />
+            <path class="ln-line" d="M30,59 L52,63 L74,54 L96,52 L118,48 L140,41 L162,37 L184,28 L206,21 L228,39 L250,52 L272,57" />
+            <circle class="ln-pt" cx="30"  cy="59" r="2" />
+            <circle class="ln-pt" cx="52"  cy="63" r="2" />
+            <circle class="ln-pt" cx="74"  cy="54" r="2" />
+            <circle class="ln-pt" cx="96"  cy="52" r="2" />
+            <circle class="ln-pt" cx="118" cy="48" r="2" />
+            <circle class="ln-pt" cx="140" cy="41" r="2" />
+            <circle class="ln-pt" cx="162" cy="37" r="2" />
+            <circle class="ln-pt" cx="184" cy="28" r="2" />
+            <!-- Peak point (Sep) — emphasized -->
+            <circle class="ln-pt-peak" cx="206" cy="21" r="3" />
+            <circle class="ln-pt" cx="228" cy="39" r="2" />
+            <circle class="ln-pt" cx="250" cy="52" r="2" />
+            <circle class="ln-pt" cx="272" cy="57" r="2" />
+            <!-- Callout leader from peak to chip -->
+            <line class="ln-callout-leader" x1="206" y1="21" x2="206" y2="6" />
+            <!-- Callout chip — width sized to fit JBMono 9px text "SEP '27 · 31% · 1.7×" (~108px) plus padding -->
+            <rect class="ln-callout-bg" x="124" y="2" width="120" height="14" rx="2" />
+            <text class="ln-callout-tx-strong" x="130" y="12">SEP '27 · 31% · 1.7×</text>
+            <line class="ln-axis" x1="30" y1="90" x2="272" y2="90" />
+            <text class="ln-axis-label" x="28"  y="104">JAN</text>
+            <text class="ln-axis-label" x="93"  y="104">APR</text>
+            <text class="ln-axis-label" x="159" y="104">JUL</text>
+            <text class="ln-axis-label" x="225" y="104">OCT</text>
+            <text class="ln-axis-label" x="248" y="104">DEC</text>
+          </svg>
+        </div>
+        <div class="opt-note">
+          Peak month auto-detected and annotated inline: month, value, and run-rate multiple. Reader gets the institutional read in <b>~200ms</b>, matching the IC-memo card standard. Hooks into the Q6 callout system (peak detection, threshold-driven, single annotation). <b>Cost:</b> none material — single annotation does not crowd the chart, and the leader line + chip respect chart margins.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>C.</b> The peak-month callout is the only treatment that surfaces the institutional read directly — <i>"Sep '27 is 1.7× run-rate"</i>. A leaves the read implicit (~2 seconds of viewer parse work per scan); B's reference line is technically correct but reads as noise on a 12-point chart where the eye already integrates the average. C ships the conclusion at first paint, lets B/A be implicit fallbacks if the callout system ever fails to fire (no peak meets threshold, multiple co-equal peaks, etc.).
+        <br/><br/>
+        Honest read on cost: per <code>card-gold-standard.md</code> and Basis's IC-memo standard — <i>data is only as credible as its presentation</i>. A bare chart hands the institutional reader 2 seconds of work that Basis is positioned to do for them. C is the institutional version. <code>--warning</code> hue on peak point (not <code>--danger</code>) signals "elevated, watch" rather than "tripwire breached" — the latter is reserved for hard CREFC/Fannie thresholds per <code>card-gold §4</code>.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q22 LOCKED:</strong> C · S59</div>
+  </section>
+
+  <!-- ============================================================
+       Q23 — Aging bucket visualization
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q23</span><h2 class="q-title">Aging bucket visualization</h2></div>
+    <p class="q-context">
+      Blueprint <code>§4</code> spec: delinquency aging buckets <code>0–30 / 31–60 / 61–90 / 90+</code>. Question is on the visualization surface — <i>compact stacked bar (lender standard), four vertical bars (more legible per-bucket), or donut (visually distinctive)</i>. All three panels render the same dataset: <code>$73,402</code> total across 4 buckets, <code>$24,805</code> concentrated in 90+ (33.8%). A panel applies the <code>card-gold §1</code> hero pattern with 90+ as the headline number.
+    </p>
+    <p class="q-where">Appears on: Insights → Collections · canvas-default 1440px · same dataset across A/B/C</p>
+
+    <div class="drill-inherit">
+      <b>Drill inheritance — composition + breakdown:</b> Q23 inherits the <code>card-gold §2.2</code> composition pattern (segments scaled to actual % of total, color-anchored legend, concentration footer). Drill mechanic per <code>drill-policy.md</code>: ≤15 contributor units → expandable rows + <code>Top 3 = X.X%</code> footer; &gt;15 → arrow → slide-out. A panel renders the locked B-pattern with concentration footer; B and C drop the composition surface entirely.
+    </div>
+
+    <p class="scale-caption">Same dataset across A/B/C. Decision is on <b>visualization surface</b>, not numbers.</p>
+
+    <div class="opts">
+
+      <!-- Q23.A — Stacked horizontal bar (card-gold hero card) -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Stacked horizontal bar · card-gold §1 hero</span></div>
+        </div>
+        <div class="opt-stage">
+          <!-- Card-gold §1 hero -->
+          <div class="age-hero">
+            <div class="age-hero-num">$24,805</div>
+            <div class="age-hero-meta">
+              <div class="age-hero-label">90+ Days Delinquent</div>
+              <div class="age-hero-verdict">
+                <span class="age-hero-verdict-mono">$73,402</span> across 4 buckets<span class="age-hero-verdict-muted">· 33.8% concentration in 90+</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stacked bar with $ above each segment -->
+          <div class="age-bar-wrap">
+            <div class="age-bar-vals">
+              <div class="age-bar-val">$22,103</div>
+              <div class="age-bar-val">$19,824</div>
+              <div class="age-bar-val">$6,670</div>
+              <div class="age-bar-val peak">$24,805</div>
+            </div>
+            <div class="age-bar">
+              <div class="age-seg-1"></div>
+              <div class="age-seg-2"></div>
+              <div class="age-seg-3"></div>
+              <div class="age-seg-4"></div>
+            </div>
+            <div class="age-bar-labels">
+              <div class="age-bar-label">0–30</div>
+              <div class="age-bar-label">31–60</div>
+              <div class="age-bar-label">61–90</div>
+              <div class="age-bar-label">90+</div>
+            </div>
+          </div>
+
+          <!-- Concentration footer -->
+          <div class="age-conc-footer">90+ = 33.8% · Top 2 buckets = 64.0%</div>
+        </div>
+        <div class="opt-note">
+          Single bar, 4 segments scaled to actual % of total. <code>$</code> above each segment, bucket labels below. Hero number is 90+ ($24,805) per <code>card-gold §1</code> — that's the institutional read. <b>Lender-standard:</b> FNMA loan packages, agency credit memos, and Fannie/Freddie SBL submissions all render aging this way. Concentration footer is the Basis differentiator (<code>card-gold §2.2</code>) — never drop it.
+        </div>
+      </div>
+
+      <!-- Q23.B — Four vertical bars side-by-side -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Four vertical bars · per-bucket</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Aging buckets</div>
+          <div class="bxn-frame-sub">$73,402 total · per-bucket vertical bars</div>
+          <div class="age-vbars">
+            <div class="age-vbar-col">
+              <div class="age-vbar-val">$22,103</div>
+              <div class="age-vbar age-seg-1" style="height:69px;"></div>
+              <div class="age-vbar-lbl">0–30</div>
+            </div>
+            <div class="age-vbar-col">
+              <div class="age-vbar-val">$19,824</div>
+              <div class="age-vbar age-seg-2" style="height:62px;"></div>
+              <div class="age-vbar-lbl">31–60</div>
+            </div>
+            <div class="age-vbar-col">
+              <div class="age-vbar-val">$6,670</div>
+              <div class="age-vbar age-seg-3" style="height:21px;"></div>
+              <div class="age-vbar-lbl">61–90</div>
+            </div>
+            <div class="age-vbar-col">
+              <div class="age-vbar-val peak">$24,805</div>
+              <div class="age-vbar age-seg-4" style="height:78px;"></div>
+              <div class="age-vbar-lbl">90+</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Four discrete vertical bars, one per bucket. Per-bucket $ values legible without overlay tricks. <b>Cost:</b> kills the composition story — the reader cannot see at-a-glance that 90+ is 33.8% <i>of total delinquency</i>. Each bar is its own visual unit; the four-bucket-total relationship is reconstructed numerically. Also reads as a generic chart, not a lender-standard surface.
+        </div>
+      </div>
+
+      <!-- Q23.C — Donut chart -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Donut · 4 wedges</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Aging buckets</div>
+          <div class="bxn-frame-sub">$73,402 total · 4-wedge donut</div>
+          <div class="age-donut-wrap">
+            <svg class="age-donut" viewBox="0 0 110 110" aria-label="Aging bucket donut">
+              <!-- Donut wedges. Total circumference = 2π·40 ≈ 251.3.
+                   Wedge lengths: 30.1% = 75.7, 27.0% = 67.9, 9.1% = 22.9, 33.8% = 85.0.
+                   Wedges drawn with stroke-dasharray + offset rotation. -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="var(--surface-2)" stroke-width="14" />
+              <!-- 0-30 (start at top, angle 0) -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="rgba(229,72,77,0.42)" stroke-width="14"
+                      stroke-dasharray="75.7 251.3" stroke-dashoffset="0" transform="rotate(-90 55 55)" />
+              <!-- 31-60 -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="rgba(229,72,77,0.62)" stroke-width="14"
+                      stroke-dasharray="67.9 251.3" stroke-dashoffset="-75.7" transform="rotate(-90 55 55)" />
+              <!-- 61-90 -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="rgba(229,72,77,0.78)" stroke-width="14"
+                      stroke-dasharray="22.9 251.3" stroke-dashoffset="-143.6" transform="rotate(-90 55 55)" />
+              <!-- 90+ -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="rgba(229,72,77,0.92)" stroke-width="14"
+                      stroke-dasharray="85.0 251.3" stroke-dashoffset="-166.5" transform="rotate(-90 55 55)" />
+              <!-- Center label -->
+              <text class="age-donut-center-num" x="55" y="52" text-anchor="middle">$73K</text>
+              <text class="age-donut-center-lbl" x="55" y="65" text-anchor="middle">TOTAL</text>
+            </svg>
+            <div class="age-donut-legend">
+              <div class="age-leg-row"><span class="age-leg-dot" style="background:var(--age-0-30);"></span><span class="age-leg-lbl">0–30</span><span class="age-leg-val">$22.1K</span></div>
+              <div class="age-leg-row"><span class="age-leg-dot" style="background:var(--age-31-60);"></span><span class="age-leg-lbl">31–60</span><span class="age-leg-val">$19.8K</span></div>
+              <div class="age-leg-row"><span class="age-leg-dot" style="background:var(--age-61-90);"></span><span class="age-leg-lbl">61–90</span><span class="age-leg-val">$6.7K</span></div>
+              <div class="age-leg-row"><span class="age-leg-dot" style="background:var(--age-90);"></span><span class="age-leg-lbl">90+</span><span class="age-leg-val">$24.8K</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Distinctive donut shape, 4 wedges color-anchored to bucket. Center carries total. <b>Cost:</b> wedge angles read as proportions but precise values require the legend (eye remap from arc → label → number). Donuts are weak for ordinal data — 0-30 / 31-60 / 61-90 / 90+ have an inherent <i>order</i> that a horizontal bar preserves (left=newest, right=oldest) but a donut destroys (clockwise from 12 o'clock is arbitrary). Below the lender-standard bar.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>A.</b> Stacked horizontal bar with 90+ as the hero number per <code>card-gold §1</code>. Three reasons: (1) <i>lender standard</i> — FNMA, Fannie/Freddie SBL, agency credit memos all render aging buckets as horizontal stacked bars, so the recipient already reads them this way; (2) <i>composition preservation</i> — the reader sees at-a-glance that 90+ is 33.8% of delinquency, a question B and C only answer numerically; (3) <i>concentration footer</i> — the Basis differentiator (<i>"is the leakage concentrated or distributed?"</i>) attaches naturally to a composition surface and is the punchline of <code>card-gold §2.2</code>.
+        <br/><br/>
+        Honest read on B and C: B gives the cleanest per-bucket read but breaks the composition story that's the surface's reason for existing. C's donut is visually distinctive but defeats the inherent ordering of the buckets — 0-30 / 31-60 / 61-90 / 90+ is a sequence, not a partition. A is the institutional answer; B/C are aesthetic alternatives that lose institutional fit.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q23 LOCKED:</strong> A · S59</div>
+  </section>
+
+
+  <!-- ============================================================
+       Q24 — Single-parse vs trend handling
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q24</span><h2 class="q-title">Single-parse vs trend handling</h2></div>
+    <p class="q-context">
+      Blueprint <code>§6.4.5</code> spec: <i>"Add 'Aging trend' — if historical parses exist (v1.1), show whether 0–30 bucket is growing or shrinking. v1 placeholder: tooltip 'Trend available after second parse.'"</i> Question is how the v1 product handles the surface where a trend module would eventually sit. Three panels: tooltip (per blueprint), inline label (more visible), or hide entirely (cascade to v1.1 feature spec).
+    </p>
+    <p class="q-where">Appears on: Insights → Collections · same Q23.A surface · trend treatment differs across A/B/C</p>
+
+    <p class="scale-caption">Same Q23.A aging-bar surface across A/B/C. Decision is on <b>where the v1.1-trend feature lives</b> in v1.</p>
+
+    <div class="opts">
+
+      <!-- Q24.A — Tooltip placeholder (per blueprint) -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Tooltip placeholder · per blueprint</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Aging buckets · trend</div>
+          <div class="bxn-frame-sub">tooltip-on-hover · "Trend available after second parse"</div>
+          <div class="q24-chart-shell q24a-wrap">
+            <svg class="mini-chart" viewBox="0 0 280 90" aria-label="Aging bucket bar (Q23.A surface)">
+              <rect x="6" y="36" width="80" height="22" fill="var(--age-0-30)" rx="2" />
+              <rect x="88" y="36" width="74" height="22" fill="var(--age-31-60)" rx="0" />
+              <rect x="164" y="36" width="24" height="22" fill="var(--age-61-90)" rx="0" />
+              <rect x="190" y="36" width="84" height="22" fill="var(--age-90)" rx="2" />
+              <text class="mc-lbl" x="6" y="74">0–30</text>
+              <text class="mc-lbl" x="92" y="74">31–60</text>
+              <text class="mc-lbl" x="166" y="74">61–90</text>
+              <text class="mc-lbl" x="194" y="74">90+</text>
+              <text class="mc-val" x="6" y="28">$22,103</text>
+              <text class="mc-val" x="88" y="28">$19,824</text>
+              <text class="mc-val" x="164" y="28">$6,670</text>
+              <text class="mc-val peak" x="190" y="28">$24,805</text>
+            </svg>
+            <!-- Tooltip rendered as if hovering -->
+            <div class="q24a-tooltip">
+              <b>Trend</b> available after second parse
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Hover the chart → tooltip appears: <i>"Trend available after second parse."</i> No persistent visual weight; the missing feature is invisible until the user goes looking. <b>Cost:</b> users may not discover the tooltip — affordance is implicit. <b>Benefit:</b> first-paint chart is clean; the v1 surface looks complete, not under-construction.
+        </div>
+      </div>
+
+      <!-- Q24.B — Inline label below chart -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Inline label · below chart</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Aging buckets · trend</div>
+          <div class="bxn-frame-sub">inline label below chart · always visible</div>
+          <div class="q24-chart-shell">
+            <svg class="mini-chart" viewBox="0 0 280 90" aria-label="Aging bucket bar (Q23.A surface)">
+              <rect x="6" y="36" width="80" height="22" fill="var(--age-0-30)" rx="2" />
+              <rect x="88" y="36" width="74" height="22" fill="var(--age-31-60)" rx="0" />
+              <rect x="164" y="36" width="24" height="22" fill="var(--age-61-90)" rx="0" />
+              <rect x="190" y="36" width="84" height="22" fill="var(--age-90)" rx="2" />
+              <text class="mc-lbl" x="6" y="74">0–30</text>
+              <text class="mc-lbl" x="92" y="74">31–60</text>
+              <text class="mc-lbl" x="166" y="74">61–90</text>
+              <text class="mc-lbl" x="194" y="74">90+</text>
+              <text class="mc-val" x="6" y="28">$22,103</text>
+              <text class="mc-val" x="88" y="28">$19,824</text>
+              <text class="mc-val" x="164" y="28">$6,670</text>
+              <text class="mc-val peak" x="190" y="28">$24,805</text>
+            </svg>
+          </div>
+          <div class="q24b-inline">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="var(--text-3)" stroke-width="1" /><line x1="6" y1="3.5" x2="6" y2="6.5" stroke="var(--text-3)" stroke-width="1" /><circle cx="6" cy="8" r="0.6" fill="var(--text-3)" /></svg>
+            <b>Aging trend</b> available after second parse
+          </div>
+        </div>
+        <div class="opt-note">
+          Persistent inline label below the chart, with info-icon prefix. Affordance is explicit — the user knows a v1.1 feature is coming. <b>Cost:</b> always-on visual weight on a missing feature. The v1 surface advertises its own incompleteness on every load. Reads as <i>"under construction"</i> rather than <i>"complete v1."</i>
+        </div>
+      </div>
+
+      <!-- Q24.C — Hide trend module entirely (cascade to v1.1) -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">C</span><span class="opt-name">Hide trend module · cascade to v1.1</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Aging buckets</div>
+          <div class="bxn-frame-sub">no trend module in v1 · ships in v1.1 once second-parse exists</div>
+          <div class="q24-chart-shell">
+            <svg class="mini-chart" viewBox="0 0 280 90" aria-label="Aging bucket bar (Q23.A surface)">
+              <rect x="6" y="36" width="80" height="22" fill="var(--age-0-30)" rx="2" />
+              <rect x="88" y="36" width="74" height="22" fill="var(--age-31-60)" rx="0" />
+              <rect x="164" y="36" width="24" height="22" fill="var(--age-61-90)" rx="0" />
+              <rect x="190" y="36" width="84" height="22" fill="var(--age-90)" rx="2" />
+              <text class="mc-lbl" x="6" y="74">0–30</text>
+              <text class="mc-lbl" x="92" y="74">31–60</text>
+              <text class="mc-lbl" x="166" y="74">61–90</text>
+              <text class="mc-lbl" x="194" y="74">90+</text>
+              <text class="mc-val" x="6" y="28">$22,103</text>
+              <text class="mc-val" x="88" y="28">$19,824</text>
+              <text class="mc-val" x="164" y="28">$6,670</text>
+              <text class="mc-val peak" x="190" y="28">$24,805</text>
+            </svg>
+          </div>
+        </div>
+        <div class="opt-note">
+          No trend module rendered in v1. The aging chart ships standalone; the trend feature lands in v1.1 once a second parse exists for the deal. <b>Benefit:</b> v1 surface ships <i>complete</i> — no placeholder, no hover-to-find, no advertised incompleteness. <b>Cascade:</b> v1.1-feature policy needs an entry: "trend module spec'd in <code>§6.4.5</code>, lands when historical-parse data path exists." No code stubs in v1.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>C.</b> Hide the trend module entirely in v1. Two reasons: (1) <i>placeholder UX is asymmetric</i> — every user who triggers the tooltip (A) or sees the inline label (B) gets a <i>negative impression</i> ("this product is missing a feature") with zero corresponding positive impression for users who don't go looking; (2) <i>v1 should ship complete</i> — Basis is positioned as IC-memo grade. Advertising what's missing on every load is the opposite of institutional confidence. C cascades cleanly: once a second parse exists for the deal, the trend module lands as a v1.1 enhancement, and the only required artifact is a v1.1-feature-policy entry pointing at <code>§6.4.5</code>.
+        <br/><br/>
+        Honest read on A: A is the blueprint's stated v1 placeholder, so picking C means amending the blueprint. The amendment is small (delete the tooltip line in <code>§6.4.5</code>, add <i>"Trend module ships in v1.1"</i>) but it's a real edit. If the blueprint's intent is to <i>signal forthcoming features</i> to users, A wins; if the intent is to <i>ship complete v1 surfaces</i>, C wins. My read is the latter — placeholders communicate "draft" to institutional readers.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q24 LOCKED:</strong> C · S59</div>
+  </section>
+
+  <div class="footer-note">
+    Tokens in <code>:root</code> copied verbatim from <code>src/styles/basis-linear.css §1</code> (S58 V4 hybrid — V4 canonical surfaces + Q13 GOLD STANDARD saturated severities). Aging-bucket palette (<code>--age-*</code>) is mockup-locked at <code>card-gold §2.2</code> (single-hue red family, transparency varies emphasis); fold into <code>basis-linear.css</code> as semantic tokens when this lands in the live app. Card depth ladder per Rule 26 — each option panel = single <code>.bl-card</code> on canvas, no nested surface. Default-locked panels reflect the S58 pre-rendered Claude picks (Q22=C, Q23=A, Q24=C); decision rows still read <code>A / B / C</code> for Terry's lock.
+  </div>
+
+</div>
+</body>
+</html>

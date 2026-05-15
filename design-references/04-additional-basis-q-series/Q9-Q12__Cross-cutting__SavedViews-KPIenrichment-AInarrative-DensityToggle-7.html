@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Basis Scaffold Mockups — Q9–Q12</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas:#0A0B0E; --sidebar:#0A0B0E; --surface-1:#14161B;
+    --surface-inset:#0A0B0E; --card:#14161B; --surface-2:#1A1D24;
+    --elevated:#22262E; --elevated-hover:#1F232B;
+    --border-card:#1A1D24; --border-08:#1A1D24; --border-06:#1A1D24; --border-12:#232730;
+    --text-primary:#F0F1F3; --text-secondary:#9298A3; --text-muted:#5F6571; --text-faint:#505153;
+    --accent:#4D5BFF; --accent-hover:#6573FF; --accent-soft:rgba(77,91,255,0.12); --accent-border:rgba(77,91,255,0.24);
+    --danger:#E5484D; --warning:#F5A524; --success:#30A46C;
+    --glow-top:inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-ui: 'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--canvas);color:var(--text-primary);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .page-wrap{max-width:1440px;margin:0 auto;padding:48px 32px 96px;}
+  .doc-header{margin-bottom:56px;padding-bottom:32px;border-bottom:1px solid var(--border-08);}
+  .doc-title{font-size:24px;font-weight:600;letter-spacing:-0.01em;margin-bottom:8px;}
+  .doc-sub{font-size:13px;color:var(--text-secondary);line-height:1.5;max-width:720px;}
+  .doc-sub code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:2px 6px;border-radius:4px;border:1px solid var(--border-card);font-size:12px;}
+  .q-block{margin-bottom:80px;}
+  .q-header{display:flex;align-items:baseline;gap:12px;margin-bottom:8px;}
+  .q-num{font-family:var(--font-mono);font-size:13px;color:var(--text-muted);letter-spacing:0.02em;}
+  .q-title{font-size:20px;font-weight:600;letter-spacing:-0.01em;}
+  .q-context{font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:8px;max-width:760px;}
+  .q-where{font-size:12px;color:var(--text-muted);margin-bottom:24px;font-family:var(--font-mono);}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .opt{background:var(--surface-1);border:1px solid var(--border-08);border-radius:8px;position:relative;}
+  .opt-header{padding:12px 16px;border-bottom:1px solid var(--border-08);background:var(--surface-inset);border-radius:8px 8px 0 0;}
+  .opt-note{padding:10px 16px 14px;font-size:11px;color:var(--text-muted);line-height:1.45;border-top:1px solid var(--border-06);background:var(--surface-1);border-radius:0 0 8px 8px;}
+  .opt-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;}
+  .opt-letter{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--elevated);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;font-weight:500;}
+  .opt-letter.rec{background:var(--accent);color:#fff;}
+  .opt-name{font-size:12px;color:var(--text-primary);font-weight:500;letter-spacing:0;text-transform:none;}
+  .opt-stage{background:var(--canvas);padding:28px 20px;min-height:340px;display:flex;flex-direction:column;}
+  .stage-frame{width:100%;background:var(--card);border:1px solid var(--border-card);border-radius:6px;box-shadow:var(--glow-top);padding:16px;flex:1;display:flex;flex-direction:column;position:relative;}
+  .stage-frame-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+  .stage-frame-sub{font-size:11px;color:var(--text-muted);margin-bottom:16px;}
+  .stage-kicker{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:10px;letter-spacing:0.04em;text-transform:uppercase;}
+  .rec-row{margin-top:20px;padding:14px 18px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:6px;display:flex;gap:14px;align-items:center;}
+  .rec-label{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:600;font-family:var(--font-mono);}
+  .rec-text{font-size:13px;color:var(--text-secondary);line-height:1.5;}
+  .rec-text b{color:var(--text-primary);font-weight:500;}
+  .decision-bar{margin-top:10px;padding:10px 18px;background:var(--surface-inset);border:1px dashed var(--border-08);border-radius:6px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;}
+  .decision-bar strong{color:var(--text-primary);}
+
+  /* ── Q9 saved views ── */
+  .page-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border-06);margin-bottom:12px;}
+  .page-head-title{font-size:13px;font-weight:600;}
+  .views-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--elevated);border:1px solid var(--border-08);border-radius:4px;font-size:11px;color:var(--text-primary);font-family:var(--font-mono);cursor:pointer;}
+  .views-pill.accent{background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent);}
+  .views-menu{background:var(--elevated);border:1px solid var(--border-12);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.5);padding:4px;min-width:200px;font-family:var(--font-mono);font-size:11px;margin-top:6px;}
+  .views-menu-item{padding:6px 8px;color:var(--text-secondary);cursor:pointer;border-radius:3px;display:flex;align-items:center;gap:8px;}
+  .views-menu-item.active{background:var(--accent-soft);color:var(--text-primary);}
+  .views-menu-item .chev{color:var(--text-muted);}
+  .views-menu-item .avatars{display:inline-flex;margin-left:auto;gap:-4px;}
+  .views-menu-item .avatar{width:14px;height:14px;border-radius:50%;background:var(--accent);border:1px solid var(--card);font-size:8px;display:inline-flex;align-items:center;justify-content:center;color:#fff;margin-left:-3px;}
+  .views-menu-item .avatar.b{background:#D946EF;}
+  .views-menu-item .avatar.c{background:#10B981;}
+  .views-menu-section{padding:4px 8px;font-size:9px;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-faint);margin-top:4px;}
+  .empty-line{padding:6px 0;font-size:11px;color:var(--text-muted);font-style:italic;}
+
+  /* filters placeholder */
+  .filters-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 0;font-size:11px;color:var(--text-muted);font-family:var(--font-mono);}
+  .filter-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;background:var(--elevated);border:1px solid var(--border-08);border-radius:3px;color:var(--text-secondary);}
+  .data-line{display:grid;grid-template-columns:50px 50px 1fr 60px;gap:0;padding:4px 0;border-bottom:1px solid var(--border-06);font-size:11px;font-family:var(--font-mono);color:var(--text-secondary);}
+  .data-line .rent{text-align:right;color:var(--text-primary);}
+
+  /* ── Q10 KPI enrichment ── */
+  .kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .kpi{background:var(--card);border:1px solid var(--border-card);border-radius:4px;padding:10px 12px;box-shadow:var(--glow-top);position:relative;display:flex;flex-direction:column;}
+  .kpi .label{font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;font-weight:500;}
+  .kpi .value{font-family:var(--font-mono);font-size:18px;color:var(--text-primary);font-weight:500;letter-spacing:-0.01em;}
+  .kpi .sub{font-size:10px;color:var(--text-muted);margin-top:2px;}
+  .kpi .delta{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:3px 6px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:3px;font-size:11px;font-family:var(--font-mono);align-self:flex-start;}
+  .kpi .delta.up{color:var(--success);border-color:rgba(48,164,108,0.24);background:rgba(48,164,108,0.06);}
+  .kpi .delta.down{color:var(--danger);border-color:rgba(229,72,77,0.24);background:rgba(229,72,77,0.06);}
+  .kpi .spark-wrap{margin-top:10px;padding-top:8px;border-top:1px solid var(--border-06);display:flex;align-items:flex-end;gap:3px;height:22px;}
+  .kpi .spark-bar{flex:1;background:var(--accent);opacity:0.35;border-radius:2px 2px 0 0;min-height:3px;}
+  .kpi .spark-bar.peak{opacity:1;}
+  .kpi .spark-label{font-size:9px;color:var(--text-faint);font-family:var(--font-mono);text-align:center;line-height:1.4;margin-top:4px;}
+  .kpi .spark-label .peak{display:block;color:var(--text-muted);}
+
+  /* ── Q11 narrative ── */
+  .tab-row{display:flex;gap:4px;border-bottom:1px solid var(--border-06);padding-bottom:6px;margin-bottom:10px;}
+  .tab{padding:3px 8px;font-size:11px;color:var(--text-muted);border-radius:3px 3px 0 0;font-family:var(--font-mono);}
+  .tab.active{color:var(--text-primary);background:var(--surface-2);border-bottom:1px solid var(--accent);}
+
+  .ai-card{background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;padding:10px 12px;margin-top:8px;}
+  .ai-header{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px;}
+  .ai-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .ai-section{margin-bottom:6px;}
+  .ai-section:last-child{margin-bottom:0;}
+  .ai-label{font-size:10px;font-weight:600;color:var(--text-secondary);letter-spacing:0.02em;margin-bottom:2px;}
+  .ai-label.bull{color:var(--success);}
+  .ai-label.bear{color:var(--danger);}
+  .ai-label.watch{color:var(--warning);}
+  .ai-bullet{font-size:11px;color:var(--text-secondary);line-height:1.4;padding-left:8px;position:relative;}
+  .ai-bullet::before{content:'·';position:absolute;left:0;}
+
+  .callout-line{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:3px;margin-bottom:10px;font-size:11px;color:var(--text-primary);}
+  .callout-line .ai-dot{flex-shrink:0;}
+  .callout-line .msg{color:var(--text-secondary);}
+  .callout-line .msg b{color:var(--text-primary);font-weight:500;}
+
+  .chart-placeholder{height:60px;background:var(--surface-2);border:1px solid var(--border-06);border-radius:4px;display:flex;align-items:flex-end;gap:2px;padding:8px;}
+  .chart-placeholder .b{flex:1;background:var(--text-faint);border-radius:1px;}
+
+  .two-col{display:grid;grid-template-columns:2fr 1fr;gap:8px;}
+
+  /* ── Q12 density ── */
+  .density-toggle{display:inline-flex;background:var(--surface-2);border:1px solid var(--border-08);border-radius:4px;padding:2px;font-size:10px;font-family:var(--font-mono);margin-bottom:10px;}
+  .density-toggle .opt-d{padding:3px 8px;color:var(--text-muted);border-radius:3px;cursor:pointer;}
+  .density-toggle .opt-d.active{background:var(--elevated);color:var(--text-primary);}
+
+  .rr-table{border:1px solid var(--border-card);border-radius:4px;overflow:hidden;background:var(--card);box-shadow:var(--glow-top);}
+  .rr-head{display:grid;grid-template-columns:50px 50px 1fr 60px 60px;background:var(--surface-inset);padding:6px 8px;font-size:9px;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;border-bottom:1px solid var(--border-08);}
+  .rr-row{display:grid;grid-template-columns:50px 50px 1fr 60px 60px;padding:8px;font-size:11px;font-family:var(--font-mono);border-bottom:1px solid var(--border-06);color:var(--text-secondary);}
+  .rr-row:last-child{border-bottom:none;}
+  .rr-row .rent{text-align:right;color:var(--text-primary);}
+  .rr-row.comfortable{padding:12px 8px;}
+  .rr-row.compact{padding:5px 8px;}
+
+  .card-sample{background:var(--card);border:1px solid var(--border-card);border-radius:4px;box-shadow:var(--glow-top);margin-top:10px;}
+  .card-sample.comfortable{padding:24px;}
+  .card-sample.compact{padding:16px;}
+  .card-sample-title{font-size:12px;font-weight:500;margin-bottom:4px;}
+  .card-sample-sub{font-size:10px;color:var(--text-muted);}
+  .card-sample-chart{margin-top:16px;display:flex;align-items:flex-end;gap:2px;}
+  .card-sample-chart.comfortable{height:80px;}
+  .card-sample-chart.compact{height:64px;}
+  .card-sample-chart .b{flex:1;background:var(--text-faint);border-radius:1px;}
+  .stage-label{font-family:var(--font-mono);font-size:9px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-top:12px;margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockups — Q9–Q12</div>
+    <div class="doc-sub">
+      Saved views, KPI card enrichment, narrative AI placement, and density toggle scope.
+      Reply like <code>9A, 10A, 11A, 12B</code>. Two of these have v1 vs v1.1 tradeoffs worth reading
+      — Q9 and Q10.
+    </div>
+  </div>
+
+  <!-- ========================= Q9 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q9</span><h2 class="q-title">Saved views</h2></div>
+    <p class="q-context">
+      User applies filters + column choices on Rent Roll (e.g., "2BR · Vacant Leased · Rent descending"). Should they be able
+      to save that configuration and return to it later? Three scopes shown.
+    </p>
+    <p class="q-where">Appears on: Rent Roll · Insights · Reports — any filterable page</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">No saved views in v1</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="page-head">
+              <div class="page-head-title">Rent Roll · McDowell Heights</div>
+            </div>
+            <div class="filters-row">
+              <span class="filter-chip">Status = Occupied</span>
+              <span class="filter-chip">Type = 2BR</span>
+              <span class="filter-chip">Sort: Rent ↓</span>
+            </div>
+            <div class="data-line"><span>1218</span><span>2BR</span><span>Martinez</span><span class="rent">$1,525</span></div>
+            <div class="data-line"><span>2104</span><span>2BR</span><span>Kim</span><span class="rent">$1,490</span></div>
+            <div class="data-line"><span>2219</span><span>2BR</span><span>Chen</span><span class="rent">$1,475</span></div>
+            <div class="stage-label">No "save this view" button. URL (Q8) preserves the state across share/reload.</div>
+          </div>
+        </div>
+        <div class="opt-note">Filters still persist through URL (Q8). Just no named-view concept in v1. Deferred to v1.1.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Per-user saved views</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="page-head">
+              <div class="page-head-title">Rent Roll · McDowell Heights</div>
+              <span class="views-pill accent">Views: 2BR Rollover ▾</span>
+            </div>
+            <div class="views-menu">
+              <div class="views-menu-item active">2BR Rollover <span style="margin-left:auto;color:var(--text-muted);">3 filters</span></div>
+              <div class="views-menu-item">Vacant Leased <span style="margin-left:auto;color:var(--text-muted);">1 filter</span></div>
+              <div class="views-menu-item">Above-Market Renewals <span style="margin-left:auto;color:var(--text-muted);">2 filters</span></div>
+              <div class="views-menu-section">—</div>
+              <div class="views-menu-item" style="color:var(--accent);">+ Save current view</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Each user saves named configurations. Stored in Supabase. Not shared across colleagues.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Team-shared views</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="page-head">
+              <div class="page-head-title">Rent Roll · McDowell Heights</div>
+              <span class="views-pill accent">Views: 2BR Rollover ▾</span>
+            </div>
+            <div class="views-menu">
+              <div class="views-menu-section">Personal</div>
+              <div class="views-menu-item active">2BR Rollover</div>
+              <div class="views-menu-section">Shared · acquisitions team</div>
+              <div class="views-menu-item">Broker Delivery Package
+                <span class="avatars"><span class="avatar">T</span><span class="avatar b">M</span><span class="avatar c">J</span></span>
+              </div>
+              <div class="views-menu-item">FNMA Submission Set
+                <span class="avatars"><span class="avatar">T</span><span class="avatar b">M</span></span>
+              </div>
+              <div class="views-menu-section">—</div>
+              <div class="views-menu-item" style="color:var(--accent);">+ Save & share with team</div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Views scoped to team + deal. Teammates see each other's views. Heavier build. v2 territory.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>A.</b> URL-as-state from Q8 already covers the share-a-view workflow. Saved views are a v1.1 enhancement.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q9:</strong> A / B / C</div>
+  </section>
+
+  <!-- ========================= Q10 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q10</span><h2 class="q-title">KPI card system — value only, delta, or sparkline distribution</h2></div>
+    <p class="q-context">
+      Every Insights tab has a KPI strip across the top. The cards can show just the value, a value + delta vs prior period,
+      or a value + a tiny chart showing distribution across floorplans. Basis is single-snapshot in v1 — so "delta vs prior"
+      has no time data to delta against (next parse enables it). But sparklines <em>within</em> the snapshot (by floorplan, by unit type) work today.
+    </p>
+    <p class="q-where">Appears on: every Insights tab · KPI strip</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Value only (v1)</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Insights → Overview</div>
+            <div class="stage-frame-sub">KPI strip · big number + caption</div>
+            <div class="kpi-row">
+              <div class="kpi">
+                <div class="label">Physical Occ</div>
+                <div class="value">94.23%</div>
+                <div class="sub">294 of 312 units</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Loss to Lease</div>
+                <div class="value">$10,822</div>
+                <div class="sub">5.7% of GPR</div>
+              </div>
+              <div class="kpi">
+                <div class="label">WALT</div>
+                <div class="value">8.4 mo</div>
+                <div class="sub">Weighted by SF</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Cleanest. Big number + 1-line caption. Current state. Ships in v1.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Value + delta vs prior period</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Insights → Overview</div>
+            <div class="stage-frame-sub">KPI strip · adds delta vs last parse</div>
+            <div class="kpi-row">
+              <div class="kpi">
+                <div class="label">Physical Occ</div>
+                <div class="value">94.23%</div>
+                <div class="sub">294 of 312 units</div>
+                <div class="delta up">↑ +1.2% vs T-3mo</div>
+              </div>
+              <div class="kpi">
+                <div class="label">Loss to Lease</div>
+                <div class="value">$10,822</div>
+                <div class="sub">5.7% of GPR</div>
+                <div class="delta down">↓ −$1,480 vs T-3mo</div>
+              </div>
+              <div class="kpi">
+                <div class="label">WALT</div>
+                <div class="value">8.4 mo</div>
+                <div class="sub">Weighted by SF</div>
+                <div class="delta down">↓ −0.6 mo vs T-3mo</div>
+              </div>
+            </div>
+            <div class="stage-label">Requires historical parses. No signal to compute delta in v1 (single snapshot only).</div>
+          </div>
+        </div>
+        <div class="opt-note">Needs prior rent roll to compare against. v1 data model doesn't support it yet. Defer to v1.1.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Value + in-snapshot sparkline</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="stage-frame-title">Insights → Overview</div>
+            <div class="stage-frame-sub">KPI strip · sparkline shows distribution across floorplans</div>
+            <div class="kpi-row">
+              <div class="kpi">
+                <div class="label">Physical Occ</div>
+                <div class="value">94.23%</div>
+                <div class="sub">294 of 312 units</div>
+                <div class="spark-wrap">
+                  <div class="spark-bar" style="height:60%;" title="Studio · 91.0%"></div>
+                  <div class="spark-bar" style="height:90%;" title="1BR · 94.8%"></div>
+                  <div class="spark-bar peak" style="height:100%;" title="2BR · 96.2% (peak)"></div>
+                  <div class="spark-bar" style="height:70%;" title="2BR/2BA · 92.5%"></div>
+                  <div class="spark-bar" style="height:80%;" title="3BR · 93.8%"></div>
+                </div>
+                <div class="spark-label">By floorplan<span class="peak">peak 2BR</span></div>
+              </div>
+              <div class="kpi">
+                <div class="label">Loss to Lease</div>
+                <div class="value">$10,822</div>
+                <div class="sub">5.7% of GPR</div>
+                <div class="spark-wrap">
+                  <div class="spark-bar" style="height:40%;" title="Studio · $820"></div>
+                  <div class="spark-bar" style="height:55%;" title="1BR · $1,950"></div>
+                  <div class="spark-bar peak" style="height:100%;" title="2BR · $4,680 (peak)"></div>
+                  <div class="spark-bar" style="height:60%;" title="2BR/2BA · $2,110"></div>
+                  <div class="spark-bar" style="height:35%;" title="3BR · $1,262"></div>
+                </div>
+                <div class="spark-label">By floorplan<span class="peak">peak 2BR</span></div>
+              </div>
+              <div class="kpi">
+                <div class="label">WALT</div>
+                <div class="value">8.4 mo</div>
+                <div class="sub">Weighted by SF</div>
+                <div class="spark-wrap">
+                  <div class="spark-bar" style="height:70%;" title="Studio · 7.8mo"></div>
+                  <div class="spark-bar peak" style="height:100%;" title="1BR · 9.2mo (peak)"></div>
+                  <div class="spark-bar" style="height:80%;" title="2BR · 8.5mo"></div>
+                  <div class="spark-bar" style="height:60%;" title="2BR/2BA · 7.4mo"></div>
+                  <div class="spark-bar" style="height:50%;" title="3BR · 6.9mo"></div>
+                </div>
+                <div class="spark-label">By floorplan<span class="peak">peak 1BR</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Works with single parse. Reveals distribution <em>within</em> the snapshot. No competitor surfaces this.
+          More build effort. Claude's vote: defer to v1.1.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>A in v1.</b> C in v1.1 once the differentiating tabs are shipped. B blocked until historical parses exist.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q10:</strong> A / B / C</div>
+  </section>
+
+  <!-- ========================= Q11 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q11</span><h2 class="q-title">Narrative AI commentary placement</h2></div>
+    <p class="q-context">
+      Blueprint locks an AI Summary card (Bull/Bear bullets) on the Insights → Overview tab. Silent on the other 5 Insights tabs.
+      Should the other tabs also get AI commentary?
+    </p>
+    <p class="q-where">Appears on: Insights tabs (Overview · Leakage · Upside · Rollover · Collections · Unit Risk)</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Overview only</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="tab-row">
+              <span class="tab active">Overview</span>
+              <span class="tab">Leakage</span>
+              <span class="tab">Upside</span>
+              <span class="tab">Rollover</span>
+            </div>
+            <div class="two-col">
+              <div class="chart-placeholder">
+                <div class="b" style="height:30%;"></div><div class="b" style="height:60%;"></div>
+                <div class="b" style="height:80%;"></div><div class="b" style="height:45%;"></div>
+                <div class="b" style="height:70%;"></div><div class="b" style="height:55%;"></div>
+              </div>
+              <div class="ai-card">
+                <div class="ai-header"><span class="ai-dot"></span> AI Summary</div>
+                <div class="ai-section"><div class="ai-label bull">Bull</div>
+                  <div class="ai-bullet">10.3% portfolio in Sep '23 rollover — rent reset opportunity</div>
+                </div>
+                <div class="ai-section"><div class="ai-label bear">Bear</div>
+                  <div class="ai-bullet">WALT at 8.4mo · 1.1mo below subject-peer avg</div>
+                </div>
+              </div>
+            </div>
+            <div class="stage-label">Switch to Leakage tab →</div>
+            <div class="tab-row" style="margin-top:6px;">
+              <span class="tab">Overview</span>
+              <span class="tab active">Leakage</span>
+              <span class="tab">Upside</span>
+              <span class="tab">Rollover</span>
+            </div>
+            <div class="chart-placeholder" style="flex:1;height:60px;">
+              <div class="b" style="height:90%;"></div><div class="b" style="height:75%;"></div>
+              <div class="b" style="height:60%;"></div><div class="b" style="height:40%;"></div>
+              <div class="b" style="height:85%;"></div>
+            </div>
+            <div class="stage-label">Pure data. No AI card. Underwriter draws conclusions.</div>
+          </div>
+        </div>
+        <div class="opt-note">Only Overview has AI synthesis. Other tabs stay pure data. Disciplined, zero-hype.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Every Insights tab</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="tab-row">
+              <span class="tab">Overview</span>
+              <span class="tab active">Leakage</span>
+              <span class="tab">Upside</span>
+              <span class="tab">Rollover</span>
+            </div>
+            <div class="two-col">
+              <div class="chart-placeholder" style="height:72px;">
+                <div class="b" style="height:90%;"></div><div class="b" style="height:75%;"></div>
+                <div class="b" style="height:60%;"></div><div class="b" style="height:40%;"></div>
+                <div class="b" style="height:85%;"></div>
+              </div>
+              <div class="ai-card">
+                <div class="ai-header"><span class="ai-dot"></span> AI · Leakage</div>
+                <div class="ai-section"><div class="ai-label bull">Bull</div>
+                  <div class="ai-bullet">Concessions only 1.2% of GPR — well below sub-market peers</div>
+                </div>
+                <div class="ai-section"><div class="ai-label bear">Bear</div>
+                  <div class="ai-bullet">Bad debt $6,420 · 3.6% of GPR · subsidy tenants driver</div>
+                </div>
+              </div>
+            </div>
+            <div class="stage-label">+ Upside, Rollover, Collections, Unit Risk all get their own AI cards</div>
+          </div>
+        </div>
+        <div class="opt-note">Each tab gets its own AI summary scoped to that tab's data. 6× build. Risk of "AI noise."</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Overview + per-tab anomaly callout</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="tab-row">
+              <span class="tab">Overview</span>
+              <span class="tab active">Rollover</span>
+              <span class="tab">Upside</span>
+              <span class="tab">Leakage</span>
+            </div>
+            <div class="callout-line">
+              <span class="ai-dot"></span>
+              <div class="msg"><b>Anomaly:</b> Sep '23 expirations are 2.8× portfolio average.</div>
+            </div>
+            <div class="chart-placeholder" style="flex:1;height:90px;">
+              <div class="b" style="height:30%;"></div><div class="b" style="height:45%;"></div>
+              <div class="b" style="height:50%;"></div><div class="b" style="height:35%;"></div>
+              <div class="b" style="height:55%;"></div><div class="b" style="height:42%;"></div>
+              <div class="b" style="height:38%;"></div><div class="b" style="height:90%; background: var(--danger); opacity:0.7;"></div>
+              <div class="b" style="height:48%;"></div><div class="b" style="height:52%;"></div>
+            </div>
+            <div class="stage-label">One single-line callout per tab · only when anomaly threshold met · silence otherwise</div>
+          </div>
+        </div>
+        <div class="opt-note">Sparse, signal-only. No Bull/Bear on sub-tabs. A single blue line when something's actually worth flagging.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>A.</b> Overview is the synthesis surface. Sub-tabs are the evidence. Keeping AI confined to synthesis maintains zero-hype discipline.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q11:</strong> A / B / C</div>
+  </section>
+
+  <!-- ========================= Q12 ========================= -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q12</span><h2 class="q-title">Density toggle scope</h2></div>
+    <p class="q-context">
+      Blueprint defines "Comfortable / Compact" toggle in Settings + keyboard shortcut "D." What actually changes when flipped?
+      Three scopes shown side by side — each mockup shows the <em>compact</em> state.
+    </p>
+    <p class="q-where">Global setting · affects every page</p>
+
+    <div class="opts">
+
+      <!-- A -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Table rows only</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="density-toggle"><span class="opt-d">Comfortable</span><span class="opt-d active">Compact</span></div>
+            <div class="rr-table">
+              <div class="rr-head"><span>Unit</span><span>Type</span><span>Tenant</span><span style="text-align:right;">Mkt</span><span style="text-align:right;">Rent</span></div>
+              <div class="rr-row compact"><span>1218</span><span>2BR</span><span>Martinez</span><span class="rent">$1,525</span><span class="rent">$1,425</span></div>
+              <div class="rr-row compact"><span>2104</span><span>2BR</span><span>Kim</span><span class="rent">$1,525</span><span class="rent">$1,440</span></div>
+              <div class="rr-row compact"><span>2219</span><span>2BR</span><span>Chen</span><span class="rent">$1,525</span><span class="rent">$1,410</span></div>
+              <div class="rr-row compact"><span>3102</span><span>2BR</span><span>Singh</span><span class="rent">$1,525</span><span class="rent">$1,435</span></div>
+            </div>
+            <div class="card-sample comfortable">
+              <div class="card-sample-title">Rollover schedule</div>
+              <div class="card-sample-sub">Card padding stays comfortable (24px)</div>
+              <div class="card-sample-chart comfortable">
+                <div class="b" style="height:40%;"></div><div class="b" style="height:60%;"></div>
+                <div class="b" style="height:80%;"></div><div class="b" style="height:50%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Rows go 44px → 36px. Cards + charts don't change. Minimal scope. Barely feels different.</div>
+      </div>
+
+      <!-- B -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">Page-wide padding + rows</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="density-toggle"><span class="opt-d">Comfortable</span><span class="opt-d active">Compact</span></div>
+            <div class="rr-table">
+              <div class="rr-head"><span>Unit</span><span>Type</span><span>Tenant</span><span style="text-align:right;">Mkt</span><span style="text-align:right;">Rent</span></div>
+              <div class="rr-row compact"><span>1218</span><span>2BR</span><span>Martinez</span><span class="rent">$1,525</span><span class="rent">$1,425</span></div>
+              <div class="rr-row compact"><span>2104</span><span>2BR</span><span>Kim</span><span class="rent">$1,525</span><span class="rent">$1,440</span></div>
+              <div class="rr-row compact"><span>2219</span><span>2BR</span><span>Chen</span><span class="rent">$1,525</span><span class="rent">$1,410</span></div>
+              <div class="rr-row compact"><span>3102</span><span>2BR</span><span>Singh</span><span class="rent">$1,525</span><span class="rent">$1,435</span></div>
+            </div>
+            <div class="card-sample compact">
+              <div class="card-sample-title">Rollover schedule</div>
+              <div class="card-sample-sub">Card padding 24 → 16px · section gap 32 → 24px</div>
+              <div class="card-sample-chart comfortable">
+                <div class="b" style="height:40%;"></div><div class="b" style="height:60%;"></div>
+                <div class="b" style="height:80%;"></div><div class="b" style="height:50%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Rows 44→36. Card padding 24→16. Section gap 32→24. Chart <em>heights</em> stay. Linear's pattern.</div>
+      </div>
+
+      <!-- C -->
+      <div class="opt">
+        <div class="opt-header"><div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Everything + chart heights</span></div></div>
+        <div class="opt-stage">
+          <div class="stage-frame">
+            <div class="density-toggle"><span class="opt-d">Comfortable</span><span class="opt-d active">Compact</span></div>
+            <div class="rr-table">
+              <div class="rr-head"><span>Unit</span><span>Type</span><span>Tenant</span><span style="text-align:right;">Mkt</span><span style="text-align:right;">Rent</span></div>
+              <div class="rr-row compact"><span>1218</span><span>2BR</span><span>Martinez</span><span class="rent">$1,525</span><span class="rent">$1,425</span></div>
+              <div class="rr-row compact"><span>2104</span><span>2BR</span><span>Kim</span><span class="rent">$1,525</span><span class="rent">$1,440</span></div>
+              <div class="rr-row compact"><span>2219</span><span>2BR</span><span>Chen</span><span class="rent">$1,525</span><span class="rent">$1,410</span></div>
+              <div class="rr-row compact"><span>3102</span><span>2BR</span><span>Singh</span><span class="rent">$1,525</span><span class="rent">$1,435</span></div>
+            </div>
+            <div class="card-sample compact">
+              <div class="card-sample-title">Rollover schedule</div>
+              <div class="card-sample-sub">Everything shrinks · including charts (h-80 → h-64)</div>
+              <div class="card-sample-chart compact">
+                <div class="b" style="height:40%;"></div><div class="b" style="height:60%;"></div>
+                <div class="b" style="height:80%;"></div><div class="b" style="height:50%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">Rows + cards + charts all shrink. Most aggressive. Chart proportions shift — can feel disorienting.</div>
+      </div>
+
+    </div>
+
+    <div class="rec-row"><span class="rec-label">Claude's recommendation</span><span class="rec-text"><b>B.</b> A is too narrow to feel useful. C's chart resizing disorients. Page-wide padding + rows is the Linear scope.</span></div>
+    <div class="decision-bar"><strong>Your pick for Q12:</strong> A / B / C</div>
+  </section>
+
+  <div style="margin-top:56px;padding-top:24px;border-top:1px solid var(--border-08);font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">
+    Reply like <span style="color:var(--text-primary);">9A, 10A, 11A, 12B</span>.
+    After this batch: 12 of 39 done. Batch A (cross-cutting) complete. Next up: Batch B (Insights tab-by-tab, 15 questions).
+  </div>
+
+</div>
+</body>
+</html>

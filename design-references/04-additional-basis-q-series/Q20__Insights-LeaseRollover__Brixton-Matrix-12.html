@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scaffold mockup — Q20</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens — verbatim from src/styles/basis-linear.css (verified live S50). */
+  :root {
+    --canvas:#0A0B0E; --sidebar:#0A0B0E; --surface-1:#14161B;
+    --surface-inset:#0A0B0E; --card:#14161B; --surface-2:#1A1D24;
+    --elevated:#22262E; --elevated-hover:#1F232B;
+    --border-08:#1A1D24; --border-06:#1A1D24; --border-12:#232730; --border-04:rgba(255,255,255,0.04);
+    --text-primary:#F0F1F3; --text-secondary:#9298A3; --text-muted:#5F6571; --text-faint:#505153;
+    --accent:#4D5BFF; --accent-hover:#6573FF; --accent-soft:rgba(77,91,255,0.12); --accent-border:rgba(77,91,255,0.24);
+    --danger:#E5484D; --warning:#F5A524; --success:#30A46C;     /* severity palette — BANNED for categorical UI per drill-policy.md §5.1 */
+
+    /* Status tokens — PROPOSED, NOT LOCKED. Categorical UI palette per §5.1.
+       Canonical hex deferred to post-Q20-lock spec. Names approved S50; values illustrative. */
+    --status-renewed: #14B8A6;     /* teal — distinct from severity-success #30A46C */
+    --status-mtm:     #6F6F77;     /* violet */
+    --status-ntv:     #EC4899;     /* magenta — distinct from severity-danger #E5484D */
+    --status-unknown: #8A8A93;     /* zinc neutral */
+
+    /* C divergence palette — PROPOSED, illustrative for mockup */
+    --diverge-cool: #3B82F6;       /* blue — under-indexed */
+    --diverge-warm: #FB923C;       /* orange — over-indexed (distinct from severity-warning #F5A524) */
+
+    --glow-top: inset 0 1px 0 rgba(255,255,255,0.04);
+    --font-ui: 'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--canvas);color:var(--text-primary);font-family:var(--font-ui);font-size:13px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .page-wrap{max-width:1440px;margin:0 auto;padding:48px 32px 80px;}
+
+  /* Folder convention: scaffold-mockups/ = title only, no eyebrow. Per drill-policy.md §5.2. */
+  .doc-header{margin-bottom:48px;padding-bottom:28px;border-bottom:1px solid var(--border-08);}
+  .doc-title{font-size:24px;font-weight:600;letter-spacing:-0.01em;margin-bottom:10px;}
+  .doc-sub{font-size:13px;color:var(--text-secondary);line-height:1.55;max-width:920px;}
+  .doc-sub code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:2px 6px;border-radius:4px;border:1px solid var(--border-08);font-size:12px;}
+  .doc-sub b{color:var(--text-primary);font-weight:500;}
+  .doc-sub i{color:var(--text-secondary);font-style:italic;}
+
+  /* Q-block (single-question scaffold; q-num kept for consistency with multi-Q files) */
+  .q-block{margin-bottom:48px;}
+  .q-header{display:flex;align-items:baseline;gap:14px;margin-bottom:10px;}
+  .q-num{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.06em;text-transform:uppercase;font-weight:500;padding:3px 8px;background:var(--surface-2);border:1px solid var(--border-08);border-radius:3px;}
+  .q-title{font-size:17px;font-weight:600;letter-spacing:-0.005em;color:var(--text-primary);}
+  .q-context{font-size:12px;color:var(--text-secondary);line-height:1.55;margin-bottom:6px;max-width:960px;}
+  .q-context code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:1px 5px;border-radius:3px;font-size:11px;}
+  .q-context i{color:var(--text-secondary);font-style:italic;}
+  .q-where{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.02em;margin-bottom:18px;}
+
+  /* Drill-inheritance callout — Rule 23. Cites Q17 lock + drill-policy.md. */
+  .drill-inherit{margin:14px 0 14px;padding:9px 14px;background:var(--surface-1);border:1px solid var(--border-08);border-left:2px solid var(--accent);border-radius:0 4px 4px 0;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);line-height:1.55;}
+  .drill-inherit b{color:var(--text-primary);font-weight:500;}
+  .drill-inherit code{font-family:var(--font-mono);color:var(--text-primary);background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:10px;}
+
+  /* Status-token proposal callout — Rule 21 + S49 §5.1 compliance. */
+  .token-proposal{margin:0 0 18px;padding:10px 14px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:4px;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);line-height:1.6;}
+  .token-proposal b{color:var(--text-primary);font-weight:500;}
+  .token-proposal .token-row{display:flex;align-items:center;gap:10px;padding:3px 0;}
+  .token-proposal .swatch{width:11px;height:11px;border-radius:2px;display:inline-block;flex:0 0 11px;}
+  .token-proposal .tname{color:var(--text-primary);font-size:10.5px;letter-spacing:0.02em;flex:0 0 230px;}
+  .token-proposal .thex{color:var(--text-muted);font-size:10.5px;letter-spacing:0.02em;flex:0 0 90px;}
+  .token-proposal .tcomment{color:var(--text-secondary);font-size:10.5px;font-family:var(--font-ui);}
+  .token-proposal .proposal-tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-border);padding:1px 6px;border-radius:3px;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;font-weight:600;margin-left:8px;vertical-align:1px;}
+
+  /* Scale caption — sets expectation for panel-scale rendering */
+  .scale-caption{margin:0 0 14px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted);letter-spacing:0.02em;line-height:1.5;}
+
+  /* Option panels — per Terry's depth-ladder directive (S50): ONE .bl-card per option,
+     sitting directly on canvas. No nested .diagram-card layer. Card recipe per S42. */
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .opt{
+    background:var(--card);
+    border:1px solid var(--border-08);
+    border-radius:8px;
+    box-shadow:var(--glow-top);
+    display:flex;flex-direction:column;
+  }
+  .opt.locked{
+    border-color:var(--accent-border);
+    background:linear-gradient(180deg, var(--accent-soft) 0%, var(--card) 30%);
+  }
+  .opt-header{padding:12px 16px;border-bottom:1px solid var(--border-08);border-radius:8px 8px 0 0;}
+  .opt.locked .opt-header{background:var(--accent-soft);border-bottom-color:var(--accent-border);}
+  .opt-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--text-secondary);letter-spacing:0.04em;text-transform:uppercase;}
+  .opt-letter{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--elevated);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;font-weight:500;}
+  .opt-letter.rec{background:var(--accent);color:#fff;}
+  .opt-name{font-size:12px;color:var(--text-primary);font-weight:500;letter-spacing:0;text-transform:none;}
+  .opt-stage{padding:14px 14px 12px;flex:1;display:flex;flex-direction:column;gap:8px;}
+  .opt-note{padding:10px 16px 14px;font-size:11px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--border-06);border-radius:0 0 8px 8px;}
+  .opt.locked .opt-note{background:var(--accent-soft);border-top-color:var(--accent-border);color:var(--text-secondary);}
+  .opt-note b{color:var(--text-primary);}
+  .opt-note code{font-family:var(--font-mono);color:var(--text-primary);background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:10px;}
+
+  /* Frame title (above matrix) */
+  .bxn-frame-title{font-size:11px;font-weight:600;color:var(--text-primary);}
+  .bxn-frame-sub{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:2px;}
+
+  /* Brixton matrix — CSS grid, panel-scale */
+  .bxn-matrix{
+    display:grid;
+    grid-template-columns:34px repeat(5, 1fr);
+    gap:1px;
+    background:var(--border-08);     /* gaps show through as 1px hairline separator */
+    border:1px solid var(--border-08);
+    border-radius:4px;
+    overflow:hidden;
+    margin-top:2px;
+  }
+  .bxn-th, .bxn-row-label, .bxn-cell{
+    background:var(--card);          /* default cell bg = card (matches container) */
+    min-height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:var(--font-mono);
+    font-size:9.5px;
+    color:var(--text-primary);
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+  }
+  .bxn-th{
+    background:var(--surface-inset);
+    color:var(--text-muted);
+    font-size:8.5px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    font-weight:500;
+    padding:5px 2px;
+  }
+  .bxn-th.fp-label, .bxn-row-label{
+    justify-content:flex-start;
+    padding-left:5px;
+    padding-right:3px;
+    color:var(--text-secondary);
+    font-size:9px;
+    letter-spacing:0.04em;
+  }
+  .bxn-row-label{background:var(--surface-inset);}
+  .bxn-cell{padding:0 3px;}
+  .bxn-cell.empty{color:var(--text-faint);}
+  .bxn-cell.total-col{font-weight:600;background:var(--surface-2);}
+  .bxn-row-label.total-row{font-weight:600;color:var(--text-primary);background:var(--surface-2);}
+  .bxn-cell.total-row{font-weight:600;background:var(--surface-2);}
+
+  /* === OPTION A — single-hue ramp (accent intensity = magnitude) === */
+  .a-l1{background:rgba(77,91,255,0.06);}
+  .a-l2{background:rgba(77,91,255,0.13);}
+  .a-l3{background:rgba(77,91,255,0.22);}
+  .a-l4{background:rgba(77,91,255,0.34);}
+  .a-l5{background:rgba(77,91,255,0.50);}
+  .a-l6{background:rgba(77,91,255,0.65);}
+
+  /* === OPTION B — status-colored per column (per-column hue + intensity) === */
+  .b-renewed-l1{background:rgba(20,184,166,0.07);}
+  .b-renewed-l2{background:rgba(20,184,166,0.18);}
+  .b-renewed-l3{background:rgba(20,184,166,0.32);}
+  .b-renewed-l4{background:rgba(20,184,166,0.48);}
+  .b-renewed-l5{background:rgba(20,184,166,0.65);}
+  .b-mtm-l1{background:rgba(139,92,246,0.10);}
+  .b-mtm-l2{background:rgba(139,92,246,0.22);}
+  .b-mtm-l3{background:rgba(139,92,246,0.40);}
+  .b-mtm-l4{background:rgba(139,92,246,0.58);}
+  .b-ntv-l1{background:rgba(236,72,153,0.10);}
+  .b-ntv-l2{background:rgba(236,72,153,0.24);}
+  .b-ntv-l3{background:rgba(236,72,153,0.42);}
+  .b-ntv-l4{background:rgba(236,72,153,0.60);}
+  .b-unk-l1{background:rgba(113,113,122,0.18);}
+  .b-unk-l2{background:rgba(113,113,122,0.30);}
+  .b-unk-l3{background:rgba(113,113,122,0.48);}
+  .b-unk-l4{background:rgba(113,113,122,0.65);}
+
+  /* === OPTION C — divergence two-tone (cool=under, warm=over baseline) === */
+  .c-cool-l1{background:rgba(59,130,246,0.10);}
+  .c-cool-l2{background:rgba(59,130,246,0.24);}
+  .c-cool-l3{background:rgba(59,130,246,0.40);}
+  .c-cool-l4{background:rgba(59,130,246,0.58);}
+  .c-warm-l1{background:rgba(251,146,60,0.12);}
+  .c-warm-l2{background:rgba(251,146,60,0.28);}
+  .c-warm-l3{background:rgba(251,146,60,0.46);}
+  .c-warm-l4{background:rgba(251,146,60,0.62);}
+  .c-neutral{background:var(--card);}
+
+  /* Legend (per option) */
+  .bxn-legend{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border-06);font-family:var(--font-mono);font-size:9px;color:var(--text-secondary);letter-spacing:0.02em;line-height:1.4;}
+  .bxn-legend .lg-key{color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-size:8.5px;flex:0 0 100%;margin-bottom:2px;}
+  .bxn-legend .lg-item{display:flex;align-items:center;gap:5px;}
+  .bxn-legend .lg-dot{width:9px;height:9px;border-radius:1px;display:inline-block;flex:0 0 9px;}
+  .bxn-legend .lg-ramp{display:inline-flex;gap:1px;}
+  .bxn-legend .lg-ramp span{width:7px;height:9px;display:inline-block;}
+
+  /* Recommendation row + decision bar (q13-q16 / q17 pattern) */
+  .rec-row{margin-top:22px;padding:13px 16px;background:var(--surface-1);border:1px solid var(--border-08);border-radius:6px;display:flex;gap:14px;align-items:flex-start;}
+  .rec-label{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);font-weight:600;font-family:var(--font-mono);white-space:nowrap;flex:0 0 auto;padding-top:1px;}
+  .rec-text{font-size:12.5px;color:var(--text-secondary);line-height:1.55;}
+  .rec-text b{color:var(--text-primary);font-weight:500;}
+  .rec-text code{font-family:var(--font-mono);color:var(--text-primary);background:var(--card);padding:1px 5px;border-radius:3px;font-size:11px;}
+  .decision-bar{margin-top:10px;padding:10px 16px;background:var(--surface-inset);border:1px dashed var(--border-08);border-radius:6px;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);display:flex;gap:10px;align-items:center;}
+  .decision-bar strong{color:var(--text-primary);}
+
+  .footer-note{margin-top:48px;padding-top:24px;border-top:1px solid var(--border-08);font-size:11px;color:var(--text-muted);font-family:var(--font-mono);line-height:1.65;}
+  .footer-note code{background:var(--card);padding:1px 5px;border-radius:3px;border:1px solid var(--border-08);color:var(--text-primary);}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockup — Q20</div>
+    <div class="doc-sub">
+      Brixton matrix lives on <b>Insights → Lease Rollover</b> (blueprint §6.4.4 + §12 self-flag: <i>"the visual execution — heatmap intensity, cell click-through — needs a dedicated design pass"</i>). Highest-leverage visual investment in the blueprint per the Q44 carry-forward. Three encoding options below; decision is on the encoding choice, not data readability at panel scale.
+    </div>
+  </div>
+
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q20</span><h2 class="q-title">Brixton matrix — color ramp + cell treatment</h2></div>
+    <p class="q-context">
+      The Brixton matrix shows lease-rollover composition: <b>floorplan rows × lease-status columns</b> (<code>Renewed</code> · <code>MTM</code> · <code>NTV</code> · <code>Unknown</code> · <code>Total</code>). Vacant units are excluded — vacancies aren't lease-rollover events. Question: how should cells encode information beyond the raw count, and what is the cell-level visual primitive?
+    </p>
+    <p class="q-where">Appears on: Insights → Lease Rollover · 6 floorplans × 4 status columns + Total = 30 cells · ~180 unit example</p>
+
+    <div class="drill-inherit">
+      <b>Drill inheritance — nuance vs. Q17 surface-mapping:</b> Q17 lists Lease Rollover at row count 12-18 → <code>▼ chevron when ≤15</code>. That's the <b>matrix-row count</b>. <b>Per-cell drill</b> is into the unit list inside that cell (0–200 units depending on floorplan × status), which sits in the <code>&gt;15</code> regime almost universally. Cell-level affordance therefore = <code>arrow → slide-out</code>, not chevron — consistent with Rent Upside and Collections Quality cells (<code>drill-policy.md §1</code>, <code>§4</code>). Different scope, different affordance — both rules hold without conflict.
+    </div>
+
+    <div class="token-proposal">
+      <div style="margin-bottom:6px;"><b>Status tokens</b><span class="proposal-tag">Proposed · not locked</span></div>
+      <div style="color:var(--text-secondary);font-size:10.5px;line-height:1.55;margin-bottom:8px;font-family:var(--font-ui);">
+        Categorical UI palette for lease-status encoding. Per <code>drill-policy.md §5.1</code>, severity tokens (<code>#E5484D</code> / <code>#F5A524</code> / <code>#30A46C</code>) are scoped to data-flag context only — categorical UI labels MUST NOT borrow them. Below: 4 proposed token names + illustrative hex. Names approved S50; canonical hex defers to a post-Q20-lock spec session and a `basis-linear.css` write.
+      </div>
+      <div class="token-row"><span class="swatch" style="background:#14B8A6;"></span><span class="tname">--bl-status-renewed</span><span class="thex">#14B8A6</span><span class="tcomment">teal · positive cool, distinct from severity-success</span></div>
+      <div class="token-row"><span class="swatch" style="background:#8B5CF6;"></span><span class="tname">--bl-status-mtm</span><span class="thex">#8B5CF6</span><span class="tcomment">violet · in-between / uncertain commitment</span></div>
+      <div class="token-row"><span class="swatch" style="background:#EC4899;"></span><span class="tname">--bl-status-ntv</span><span class="thex">#EC4899</span><span class="tcomment">magenta · departing, distinct from severity-danger</span></div>
+      <div class="token-row"><span class="swatch" style="background:#71717A;"></span><span class="tname">--bl-status-unknown</span><span class="thex">#71717A</span><span class="tcomment">zinc · neutral / unresolved</span></div>
+    </div>
+
+    <p class="scale-caption">Matrix shown at reduced scale for treatment comparison. Decision is on <b style="color:var(--text-secondary)">encoding choice</b>, not data readability — at production scale the matrix gets wider cells, larger type, and full hover/click affordances.</p>
+
+    <div class="opts">
+
+      <!-- ============================================================
+           Q20.A — Single-hue sequential ramp
+           ============================================================ -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Single-hue ramp · accent intensity</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease rollover composition</div>
+          <div class="bxn-frame-sub">180 units · 6 floorplans · 4 statuses</div>
+          <div class="bxn-matrix" aria-label="Brixton matrix · single-hue ramp">
+            <!-- header row -->
+            <div class="bxn-th fp-label">FP</div>
+            <div class="bxn-th">REN</div>
+            <div class="bxn-th">MTM</div>
+            <div class="bxn-th">NTV</div>
+            <div class="bxn-th">UNK</div>
+            <div class="bxn-th">TOT</div>
+            <!-- S1 -->
+            <div class="bxn-row-label">S1</div>
+            <div class="bxn-cell a-l4">14</div>
+            <div class="bxn-cell a-l1">2</div>
+            <div class="bxn-cell a-l2">4</div>
+            <div class="bxn-cell a-l2">5</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- A1 -->
+            <div class="bxn-row-label">A1</div>
+            <div class="bxn-cell a-l5">22</div>
+            <div class="bxn-cell a-l1">1</div>
+            <div class="bxn-cell a-l1">3</div>
+            <div class="bxn-cell a-l3">9</div>
+            <div class="bxn-cell total-col">35</div>
+            <!-- A2 -->
+            <div class="bxn-row-label">A2</div>
+            <div class="bxn-cell a-l4">18</div>
+            <div class="bxn-cell empty">—</div>
+            <div class="bxn-cell a-l1">1</div>
+            <div class="bxn-cell a-l2">6</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- B1 -->
+            <div class="bxn-row-label">B1</div>
+            <div class="bxn-cell a-l6">28</div>
+            <div class="bxn-cell a-l1">2</div>
+            <div class="bxn-cell a-l1">3</div>
+            <div class="bxn-cell a-l2">7</div>
+            <div class="bxn-cell total-col">40</div>
+            <!-- B2 -->
+            <div class="bxn-row-label">B2</div>
+            <div class="bxn-cell a-l4">16</div>
+            <div class="bxn-cell a-l1">3</div>
+            <div class="bxn-cell a-l2">5</div>
+            <div class="bxn-cell a-l2">6</div>
+            <div class="bxn-cell total-col">30</div>
+            <!-- C1 -->
+            <div class="bxn-row-label">C1</div>
+            <div class="bxn-cell a-l3">10</div>
+            <div class="bxn-cell a-l1">1</div>
+            <div class="bxn-cell a-l1">2</div>
+            <div class="bxn-cell a-l3">12</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- Total row -->
+            <div class="bxn-row-label total-row">TOT</div>
+            <div class="bxn-cell total-row">108</div>
+            <div class="bxn-cell total-row">9</div>
+            <div class="bxn-cell total-row">18</div>
+            <div class="bxn-cell total-row">45</div>
+            <div class="bxn-cell total-row">180</div>
+          </div>
+          <div class="bxn-legend">
+            <span class="lg-key">Cell intensity = count</span>
+            <span class="lg-item">
+              <span class="lg-ramp">
+                <span class="a-l1"></span><span class="a-l2"></span><span class="a-l3"></span><span class="a-l4"></span><span class="a-l5"></span><span class="a-l6"></span>
+              </span>
+              <span style="margin-left:6px;">low → high</span>
+            </span>
+          </div>
+        </div>
+        <div class="opt-note">
+          Single-hue accent ramp (`#4D5BFF`). Cell intensity scales to count magnitude. Linear / Vercel style — clean, restrained, reads <b>volume</b>. Cost: a 28-unit cell and a 22-unit cell look nearly identical at panel scale; intra-status comparison loses precision, and the matrix's <i>distribution</i> story (which status owns which floorplan) is masked by the single-hue uniformity.
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Q20.B — Status-colored per column (recommended)
+           ============================================================ -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">Status-colored per column · per-column intensity</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease rollover composition</div>
+          <div class="bxn-frame-sub">180 units · color = status, intensity = count within column</div>
+          <div class="bxn-matrix" aria-label="Brixton matrix · status-colored per column">
+            <div class="bxn-th fp-label">FP</div>
+            <div class="bxn-th">REN</div>
+            <div class="bxn-th">MTM</div>
+            <div class="bxn-th">NTV</div>
+            <div class="bxn-th">UNK</div>
+            <div class="bxn-th">TOT</div>
+            <!-- S1 -->
+            <div class="bxn-row-label">S1</div>
+            <div class="bxn-cell b-renewed-l3">14</div>
+            <div class="bxn-cell b-mtm-l3">2</div>
+            <div class="bxn-cell b-ntv-l4">4</div>
+            <div class="bxn-cell b-unk-l1">5</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- A1 -->
+            <div class="bxn-row-label">A1</div>
+            <div class="bxn-cell b-renewed-l4">22</div>
+            <div class="bxn-cell b-mtm-l1">1</div>
+            <div class="bxn-cell b-ntv-l3">3</div>
+            <div class="bxn-cell b-unk-l3">9</div>
+            <div class="bxn-cell total-col">35</div>
+            <!-- A2 -->
+            <div class="bxn-row-label">A2</div>
+            <div class="bxn-cell b-renewed-l3">18</div>
+            <div class="bxn-cell empty">—</div>
+            <div class="bxn-cell b-ntv-l1">1</div>
+            <div class="bxn-cell b-unk-l2">6</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- B1 -->
+            <div class="bxn-row-label">B1</div>
+            <div class="bxn-cell b-renewed-l5">28</div>
+            <div class="bxn-cell b-mtm-l3">2</div>
+            <div class="bxn-cell b-ntv-l3">3</div>
+            <div class="bxn-cell b-unk-l2">7</div>
+            <div class="bxn-cell total-col">40</div>
+            <!-- B2 -->
+            <div class="bxn-row-label">B2</div>
+            <div class="bxn-cell b-renewed-l3">16</div>
+            <div class="bxn-cell b-mtm-l4">3</div>
+            <div class="bxn-cell b-ntv-l4">5</div>
+            <div class="bxn-cell b-unk-l2">6</div>
+            <div class="bxn-cell total-col">30</div>
+            <!-- C1 -->
+            <div class="bxn-row-label">C1</div>
+            <div class="bxn-cell b-renewed-l2">10</div>
+            <div class="bxn-cell b-mtm-l1">1</div>
+            <div class="bxn-cell b-ntv-l2">2</div>
+            <div class="bxn-cell b-unk-l4">12</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- Total row -->
+            <div class="bxn-row-label total-row">TOT</div>
+            <div class="bxn-cell total-row">108</div>
+            <div class="bxn-cell total-row">9</div>
+            <div class="bxn-cell total-row">18</div>
+            <div class="bxn-cell total-row">45</div>
+            <div class="bxn-cell total-row">180</div>
+          </div>
+          <div class="bxn-legend">
+            <span class="lg-key">Color = status · intensity = count within column</span>
+            <span class="lg-item"><span class="lg-dot" style="background:#14B8A6;"></span>Renewed</span>
+            <span class="lg-item"><span class="lg-dot" style="background:#8B5CF6;"></span>MTM</span>
+            <span class="lg-item"><span class="lg-dot" style="background:#EC4899;"></span>NTV</span>
+            <span class="lg-item"><span class="lg-dot" style="background:#71717A;"></span>Unknown</span>
+          </div>
+        </div>
+        <div class="opt-note">
+          Each column owns a hue family from the proposed status tokens. Per-column intensity = magnitude within that status. Reads <b>distribution by status</b> preattentively — "C1 is mostly Unknown," "B2 is the NTV/MTM hotspot," "B1 has the strongest renewing." Hue carries categorical meaning, intensity carries magnitude — two-channel encoding inside the same cell. Categorical UI per <code>§5.1</code> using non-severity hues.
+        </div>
+      </div>
+
+      <!-- ============================================================
+           Q20.C — Self-referential divergence ramp
+           ============================================================ -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Divergence from property baseline · two-tone</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease rollover composition · vs property baseline</div>
+          <div class="bxn-frame-sub">color = direction (cool=under, warm=over), intensity = pp deviation</div>
+          <div class="bxn-matrix" aria-label="Brixton matrix · divergence from property baseline">
+            <div class="bxn-th fp-label">FP</div>
+            <div class="bxn-th">REN</div>
+            <div class="bxn-th">MTM</div>
+            <div class="bxn-th">NTV</div>
+            <div class="bxn-th">UNK</div>
+            <div class="bxn-th">TOT</div>
+            <!-- S1: dev -4/+3/+6/-5 -->
+            <div class="bxn-row-label">S1</div>
+            <div class="bxn-cell c-cool-l1">14</div>
+            <div class="bxn-cell c-warm-l1">2</div>
+            <div class="bxn-cell c-warm-l2">4</div>
+            <div class="bxn-cell c-cool-l1">5</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- A1: dev +3/-2/-1/+1 -->
+            <div class="bxn-row-label">A1</div>
+            <div class="bxn-cell c-warm-l1">22</div>
+            <div class="bxn-cell c-cool-l1">1</div>
+            <div class="bxn-cell c-neutral">3</div>
+            <div class="bxn-cell c-neutral">9</div>
+            <div class="bxn-cell total-col">35</div>
+            <!-- A2: dev +12/-5/-6/-1 -->
+            <div class="bxn-row-label">A2</div>
+            <div class="bxn-cell c-warm-l3">18</div>
+            <div class="bxn-cell c-cool-l2">—</div>
+            <div class="bxn-cell c-cool-l2">1</div>
+            <div class="bxn-cell c-neutral">6</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- B1: dev +10/0/-3/-7 -->
+            <div class="bxn-row-label">B1</div>
+            <div class="bxn-cell c-warm-l3">28</div>
+            <div class="bxn-cell c-neutral">2</div>
+            <div class="bxn-cell c-cool-l1">3</div>
+            <div class="bxn-cell c-cool-l2">7</div>
+            <div class="bxn-cell total-col">40</div>
+            <!-- B2: dev -7/+5/+7/-5 -->
+            <div class="bxn-row-label">B2</div>
+            <div class="bxn-cell c-cool-l2">16</div>
+            <div class="bxn-cell c-warm-l2">3</div>
+            <div class="bxn-cell c-warm-l2">5</div>
+            <div class="bxn-cell c-cool-l1">6</div>
+            <div class="bxn-cell total-col">30</div>
+            <!-- C1: dev -20/-1/-2/+23 -->
+            <div class="bxn-row-label">C1</div>
+            <div class="bxn-cell c-cool-l4">10</div>
+            <div class="bxn-cell c-neutral">1</div>
+            <div class="bxn-cell c-neutral">2</div>
+            <div class="bxn-cell c-warm-l4">12</div>
+            <div class="bxn-cell total-col">25</div>
+            <!-- Total row -->
+            <div class="bxn-row-label total-row">TOT</div>
+            <div class="bxn-cell total-row">108</div>
+            <div class="bxn-cell total-row">9</div>
+            <div class="bxn-cell total-row">18</div>
+            <div class="bxn-cell total-row">45</div>
+            <div class="bxn-cell total-row">180</div>
+          </div>
+          <div class="bxn-legend">
+            <span class="lg-key">Property baseline · Renewed 60% · MTM 5% · NTV 10% · Unknown 25%</span>
+            <span class="lg-item">
+              <span class="lg-ramp">
+                <span class="c-cool-l4"></span><span class="c-cool-l3"></span><span class="c-cool-l2"></span><span class="c-cool-l1"></span>
+                <span style="background:var(--card);"></span>
+                <span class="c-warm-l1"></span><span class="c-warm-l2"></span><span class="c-warm-l3"></span><span class="c-warm-l4"></span>
+              </span>
+              <span style="margin-left:6px;">−20pp · baseline · +23pp</span>
+            </span>
+          </div>
+        </div>
+        <div class="opt-note">
+          Self-referential anomaly detector. Each cell colored by how much that floorplan's status share <b>diverges</b> from the property's own overall mix — cool blue = under-indexed, warm orange = over-indexed, near-baseline = card-bg neutral. <b>C1 lights up</b>: massively under-renewed, massively over-Unknown — the anomaly. B2 surfaces as a turnover cluster. Computable from the rent roll alone (no comp data). Reads <i>"which floorplans behave differently from the building."</i>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>B.</b> The matrix's headline question is <i>"how is rollover distributed by status across floorplans?"</i> — categorical-by-status. B answers that preattentively: hue carries the status, intensity carries the magnitude, two channels in one cell. A reads volume only and loses the distribution story. C is genuinely valuable as an <b>anomaly detector</b> (C1 lights up beautifully) but answers a secondary question (<i>"which floorplans diverge from baseline?"</i>) — best as a v1.1 toggle <i>on top of</i> B, not in place of it. <b>Status token canonical hex is a separate decision</b> — locking B locks the encoding choice and the four token names; canonical hex follows in a post-lock spec session.
+      </span>
+    </div>
+    <div class="decision-bar"><strong>Your pick for Q20:</strong> A / B / C</div>
+  </section>
+
+  <div class="footer-note">
+    Drill mechanic inherited per Q17 lock — per-cell click → arrow → slide-out (cell unit count is universally in the &gt;15 regime). See <code>docs/blueprint/drill-policy.md</code> §1, §4. Status-token names approved S50 with illustrative hex; canonical values land in a post-Q20-lock spec session per <code>drill-policy.md §5.1</code> (categorical UI must not borrow severity palette). Card depth ladder: each option panel = single <code>.bl-card</code> on canvas, no nested surface — fixes the 4-layer nest pattern from earlier scaffolds (S50 Terry directive).
+  </div>
+
+</div>
+</body>
+</html>

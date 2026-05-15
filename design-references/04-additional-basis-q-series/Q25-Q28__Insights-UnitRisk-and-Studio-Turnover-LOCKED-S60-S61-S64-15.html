@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scaffold mockup — Q25-Q28</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens — verbatim from src/styles/basis-linear.css §1 (verified live S62, lines 48-82).
+     V4 canonical surfaces/text/accent + Q13 GOLD STANDARD saturated severities (Basis exception).
+     Sidebar = Basis floating offset (#06070A) — kept for parity with live app shell. */
+  :root {
+    /* Surfaces */
+    --bg:                #0B0C0F;
+    --sidebar:           #06070A;
+    --surface:           #15171C;
+    --surface-2:         #1B1E25;
+    --surface-elevated:  #22262E;
+    --surface-hover:     #232730;
+    --border:            #2A2F38;
+    --border-subtle:     #1F2229;
+
+    /* Text */
+    --text-1: #ECEDEF;
+    --text-2: #CFD3DA;
+    --text-3: #7A818D;
+    --text-4: #5F6571; /* derived: extra-faint for axis labels — between text-3 and pure muted */
+
+    /* Accent */
+    --accent:        #4D5BFF;
+    --accent-hover:  #6573FF;
+    --accent-soft:   rgba(77, 91, 255, 0.10);
+    --accent-glow:   rgba(77, 91, 255, 0.18);
+    --accent-border: rgba(77, 91, 255, 0.28);
+
+    /* Severities — Q13 GOLD STANDARD saturated */
+    --success:      #30A46C;
+    --success-soft: rgba(48, 164, 108, 0.12);
+    --warning:      #F5A524;
+    --warning-soft: rgba(245, 165, 36, 0.12);
+    --danger:       #E5484D;
+    --danger-soft:  rgba(229, 72, 77, 0.12);
+    --info:         #8B5CF6;
+    --info-soft:    rgba(139, 92, 246, 0.12);
+
+    --font-ui:   'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html, body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .page-wrap { max-width: 1440px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  /* ============================================================
+     Doc header — folder convention: title only, no eyebrow
+     ============================================================ */
+  .doc-header { margin-bottom: 48px; padding-bottom: 28px; border-bottom: 1px solid var(--border-subtle); }
+  .doc-title { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; color: var(--text-1); }
+  .doc-sub { font-size: 13px; color: var(--text-2); line-height: 1.6; max-width: 920px; }
+  .doc-sub b { color: var(--text-1); font-weight: 500; }
+  .doc-sub i { color: var(--text-2); font-style: italic; }
+  .doc-sub code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle); font-size: 12px; }
+
+  /* ============================================================
+     Q-block scaffolding
+     ============================================================ */
+  .q-block { margin-bottom: 56px; }
+  .q-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
+  .q-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; padding: 3px 8px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 3px; }
+  .q-title { font-size: 17px; font-weight: 600; letter-spacing: -0.005em; color: var(--text-1); }
+  .q-context { font-size: 12.5px; color: var(--text-2); line-height: 1.6; margin-bottom: 6px; max-width: 980px; }
+  .q-context code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface); padding: 1px 5px; border-radius: 3px; font-size: 11.5px; }
+  .q-context i { color: var(--text-2); font-style: italic; }
+  .q-where { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.02em; margin-bottom: 18px; }
+  .q-where code { color: var(--text-2); }
+
+  /* Drill-inheritance callout (Rule 23) */
+  .drill-inherit { margin: 14px 0 18px; padding: 9px 14px; background: var(--surface); border: 1px solid var(--border-subtle); border-left: 2px solid var(--accent); border-radius: 0 4px 4px 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-2); line-height: 1.6; }
+  .drill-inherit b { color: var(--text-1); font-weight: 500; }
+  .drill-inherit code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+
+  .scale-caption { margin: 0 0 14px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); letter-spacing: 0.02em; line-height: 1.5; }
+  .scale-caption b { color: var(--text-2); font-weight: 500; }
+
+  /* ============================================================
+     Option panels — 3-column grid (A / B / C), single .bl-card on canvas (Rule 26)
+     ============================================================ */
+  .opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .opt {
+    background: var(--surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+  }
+  .opt.locked {
+    border-color: var(--accent-border);
+    background: linear-gradient(180deg, var(--accent-soft) 0%, var(--surface) 30%);
+  }
+  .opt-header { padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); border-radius: 8px 8px 0 0; }
+  .opt.locked .opt-header { background: var(--accent-soft); border-bottom-color: var(--accent-border); }
+  .opt-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--text-2); letter-spacing: 0.04em; text-transform: uppercase; }
+  .opt-letter { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; background: var(--surface-elevated); color: var(--text-1); font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
+  .opt-letter.rec { background: var(--accent); color: #fff; }
+  .opt-name { font-size: 12px; color: var(--text-1); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .opt-stage { padding: 14px 14px 12px; flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .opt-note { padding: 10px 16px 14px; font-size: 11px; color: var(--text-3); line-height: 1.55; border-top: 1px solid var(--border-subtle); border-radius: 0 0 8px 8px; }
+  .opt.locked .opt-note { background: var(--accent-soft); border-top-color: var(--accent-border); color: var(--text-2); }
+  .opt-note b { color: var(--text-1); }
+  .opt-note code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+
+  /* Frame title + sub (above stage content) */
+  .bxn-frame-title { font-size: 11px; font-weight: 600; color: var(--text-1); }
+  .bxn-frame-sub { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); margin-bottom: 4px; }
+
+  /* ============================================================
+     Tab-context eyebrow (shared across Q25-Q27 — same Insights → Unit Risk surface)
+     ============================================================ */
+  .tab-eyebrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 9.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 10px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 3px; margin-bottom: 8px; }
+  .tab-eyebrow .sep { color: var(--text-4); }
+  .tab-eyebrow b { color: var(--text-2); font-weight: 500; }
+
+  /* ============================================================
+     Compact data table — shared across Q25/Q26/Q27 panels
+     ============================================================ */
+  .dtbl { width: 100%; border-collapse: collapse; font-size: 11px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; overflow: hidden; }
+  .dtbl thead th { font-family: var(--font-ui); font-size: 9px; font-weight: 500; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; text-align: left; padding: 7px 10px; background: var(--bg); border-bottom: 1px solid var(--border-subtle); white-space: nowrap; }
+  .dtbl tbody td { padding: 8px 10px; border-bottom: 1px solid var(--border-subtle); color: var(--text-2); vertical-align: middle; }
+  .dtbl tbody tr:last-child td { border-bottom: none; }
+  .dtbl .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-1); text-align: right; }
+  .dtbl .unit-id { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-1); font-weight: 500; }
+  .dtbl .muted { color: var(--text-3); }
+  .dtbl .blank { color: var(--text-4); font-style: italic; }
+  .dtbl tbody tr.hover-cue { background: var(--surface-hover); }
+  .dtbl tbody tr.hover-cue td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+
+  /* Status pills (Q25 / Q26 / Q27) — using Q13 saturated severities */
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 3px; font-family: var(--font-mono); font-size: 9.5px; font-weight: 500; letter-spacing: 0.02em; }
+  .pill .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .pill.warn { background: var(--warning-soft); color: var(--warning); }
+  .pill.warn .dot { background: var(--warning); }
+  .pill.crit { background: var(--danger-soft); color: var(--danger); }
+  .pill.crit .dot { background: var(--danger); }
+  .pill.info { background: var(--info-soft); color: var(--info); }
+  .pill.info .dot { background: var(--info); }
+  .pill.ok { background: var(--success-soft); color: var(--success); }
+  .pill.ok .dot { background: var(--success); }
+  .pill.unk { background: var(--surface-elevated); color: var(--text-3); border: 1px solid var(--border-subtle); }
+  .pill.unk .dot { background: var(--text-4); }
+
+  /* ============================================================
+     Q25 — Unknown status units treatment
+     ============================================================ */
+
+  /* Q25.B — KPI strip (above table) */
+  .q25-kpi { display: flex; gap: 10px; align-items: stretch; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border-subtle); border-left: 2px solid var(--warning); border-radius: 4px; margin-bottom: 10px; }
+  .q25-kpi-num { font-family: var(--font-mono); font-size: 22px; font-weight: 500; color: var(--text-1); line-height: 1; letter-spacing: -0.02em; }
+  .q25-kpi-meta { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+  .q25-kpi-lbl { font-family: var(--font-ui); font-size: 9px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+  .q25-kpi-sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-2); }
+
+  /* Q25.C — Banner-only callout (no table) */
+  .q25-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--danger-soft);
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+  .q25-banner-icon { flex: 0 0 16px; color: var(--danger); display: flex; align-items: center; justify-content: center; }
+  .q25-banner-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .q25-banner-title { font-family: var(--font-ui); font-size: 12px; font-weight: 500; color: var(--text-1); }
+  .q25-banner-sub { font-family: var(--font-mono); font-size: 10px; color: var(--text-2); }
+  .q25-banner-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    background: var(--danger);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .q25-banner-cta svg { width: 10px; height: 10px; }
+  .q25-banner-ghost {
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    border: 1px dashed var(--border);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+  .q25-banner-ghost b { color: var(--text-2); font-weight: 500; }
+
+  /* ============================================================
+     Q26 — Expired no-MTM resolution UX
+     ============================================================ */
+
+  /* Q26.A — Per-row "Resolve" button column (right-aligned) */
+  .q26-resolve-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--text-1);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  /* Ghost slide-out preview — pinned to right edge below the table.
+     Renders the resolution affordance statically for each panel, so the
+     viewer can compare what fires when the user resolves. */
+  .ghost-slide {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 4px 4px 0;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-2);
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .ghost-slide-head { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .ghost-slide-radios { display: flex; flex-direction: column; gap: 4px; }
+  .ghost-slide-radio { display: flex; align-items: center; gap: 7px; }
+  .ghost-slide-radio-dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--text-3); flex: 0 0 10px; }
+  .ghost-slide-radio.active .ghost-slide-radio-dot { border-color: var(--accent); position: relative; }
+  .ghost-slide-radio.active .ghost-slide-radio-dot::after { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .ghost-slide-radio span { color: var(--text-2); }
+  .ghost-slide-radio.active span { color: var(--text-1); }
+
+  /* Q26.A custom-context slide-out — narrow, just 3 radios */
+
+  /* Q26.B — Bulk-select column + sticky bulk-action bar */
+  .q26-checkbox { width: 12px; height: 12px; border: 1.5px solid var(--text-3); border-radius: 2px; flex: 0 0 12px; display: inline-block; vertical-align: middle; position: relative; }
+  .q26-checkbox.checked { border-color: var(--accent); background: var(--accent); }
+  .q26-checkbox.checked::after {
+    content: "";
+    position: absolute;
+    top: 1px; left: 3px;
+    width: 3px; height: 6px;
+    border: solid #fff;
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+  .q26-bulk-bar {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--accent-border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .q26-bulk-count { font-family: var(--font-mono); font-size: 10px; color: var(--text-1); letter-spacing: 0.02em; }
+  .q26-bulk-count b { color: var(--accent); font-weight: 500; }
+  .q26-bulk-actions { display: flex; gap: 6px; }
+  .q26-bulk-btn {
+    padding: 5px 12px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    border: 1px solid var(--accent);
+  }
+  .q26-bulk-btn.secondary { background: var(--surface); color: var(--text-1); border: 1px solid var(--border); }
+
+  /* Q26.C — Full unit slide-out preview with tab strip */
+  .ghost-slide-tabs { display: flex; gap: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 8px; }
+  .ghost-slide-tab { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; padding-bottom: 4px; }
+  .ghost-slide-tab.active { color: var(--text-1); border-bottom: 1.5px solid var(--accent); margin-bottom: -7px; padding-bottom: 4px; }
+  .ghost-slide-fields { display: flex; flex-direction: column; gap: 5px; }
+  .ghost-slide-field { display: flex; justify-content: space-between; gap: 12px; font-family: var(--font-mono); font-size: 10px; }
+  .ghost-slide-field-lbl { color: var(--text-3); letter-spacing: 0.02em; }
+  .ghost-slide-field-val { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+  /* ============================================================
+     Q27 — Unit-level risk composite
+     ============================================================ */
+
+  /* Q27 flag-cluster cell content (used in A) */
+  .q27-flag-cluster { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  /* Q27.B — Risk score cell with severity dot */
+  .q27-risk-score { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .q27-risk-score .score-num { color: var(--text-1); font-weight: 500; }
+  .q27-risk-score .score-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .q27-risk-score.low .score-dot { background: var(--success); }
+  .q27-risk-score.mid .score-dot { background: var(--warning); }
+  .q27-risk-score.high .score-dot { background: var(--danger); }
+
+  .q27-sort-arrow { display: inline-flex; align-items: center; gap: 3px; }
+  .q27-sort-arrow svg { width: 8px; height: 8px; }
+
+  /* Q27.C — Two labeled mini-tables (split surface) */
+  .q27-split-section { margin-bottom: 10px; }
+  .q27-split-section:last-child { margin-bottom: 0; }
+  .q27-split-label { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px; padding-left: 2px; }
+  .q27-split-label b { color: var(--text-2); font-weight: 500; }
+  .q27-split-divider { height: 1px; background: var(--border-subtle); margin: 10px 0; }
+
+  /* ============================================================
+     Q28 — Bar-severity bands (Studio → Turnover)
+     ============================================================ */
+  .q28-chart-shell { background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 10px 12px 8px; }
+  .q28-chart { width: 100%; height: 130px; display: block; }
+  .q28-bar-low { fill: var(--success); }
+  .q28-bar-watch { fill: var(--warning); }
+  .q28-bar-heavy { fill: var(--danger); }
+  .q28-axis { stroke: var(--border-subtle); stroke-width: 1; }
+  .q28-grid { stroke: var(--border-subtle); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; }
+  .q28-x-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-4); letter-spacing: 0.04em; text-transform: uppercase; }
+  .q28-y-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-4); }
+  .q28-bar-val { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-3); }
+  .q28-bar-val.peak { fill: var(--text-1); font-weight: 500; }
+
+  /* Q28 legend strip (below chart) */
+  .q28-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 12px 0; font-family: var(--font-mono); font-size: 10px; color: var(--text-2); align-items: center; }
+  .q28-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+  .q28-legend-dot { width: 8px; height: 8px; border-radius: 1px; flex: 0 0 8px; }
+  .q28-legend-dot.low { background: var(--success); }
+  .q28-legend-dot.watch { background: var(--warning); }
+  .q28-legend-dot.heavy { background: var(--danger); }
+  .q28-legend-lbl { color: var(--text-3); }
+  .q28-legend-val { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+  /* Q28.B — Static tooltip pinned to peak bar */
+  .q28-tooltip-wrap { position: relative; }
+  .q28-tooltip {
+    position: absolute;
+    top: 10px;
+    right: 18px;
+    background: var(--surface-elevated);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 6px 9px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    color: var(--text-2);
+    letter-spacing: 0.02em;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .q28-tooltip b { color: var(--text-1); font-weight: 500; }
+  .q28-tooltip .tt-row { display: flex; justify-content: space-between; gap: 14px; }
+  .q28-tooltip .tt-lbl { color: var(--text-3); }
+  .q28-tooltip .tt-caption { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border-subtle); font-size: 8.5px; color: var(--text-3); text-align: center; letter-spacing: 0.04em; font-style: italic; }
+
+  /* Q28 dual-metric viz — bars (expirations, banded) + line (turnover, neutral) + 8.33% baseline ref */
+  .q28-ref-line { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.6; }
+  .q28-ref-label { font-family: var(--font-mono); font-size: 8.5px; fill: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; }
+  .q28-line { stroke: var(--text-2); stroke-width: 1.5; fill: none; opacity: 0.85; }
+  .q28-line-pt { fill: var(--text-2); }
+  .q28-bar-neutral { fill: var(--text-3); opacity: 0.7; }
+  .q28-row-label { font-family: var(--font-mono); font-size: 9.5px; color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; padding-left: 2px; line-height: 1.3; }
+  .q28-row-label b { color: var(--text-2); font-weight: 500; }
+
+  /* ============================================================
+     Recommendation row + decision bar
+     ============================================================ */
+  .rec-row { margin-top: 22px; padding: 13px 16px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 6px; display: flex; gap: 14px; align-items: flex-start; }
+  .rec-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 600; font-family: var(--font-mono); white-space: nowrap; flex: 0 0 auto; padding-top: 1px; }
+  .rec-text { font-size: 12.5px; color: var(--text-2); line-height: 1.6; }
+  .rec-text b { color: var(--text-1); font-weight: 500; }
+  .rec-text code { font-family: var(--font-mono); color: var(--text-1); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+  .rec-text i { color: var(--text-2); font-style: italic; }
+  .decision-bar { margin-top: 10px; padding: 10px 16px; background: var(--surface-2); border: 1px dashed var(--border-subtle); border-radius: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--text-3); display: flex; gap: 10px; align-items: center; }
+  .decision-bar strong { color: var(--text-1); }
+  .decision-bar.locked { border: 1px solid var(--accent-border); color: var(--text-2); }
+
+  .footer-note { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-3); font-family: var(--font-mono); line-height: 1.7; }
+  .footer-note code { background: var(--surface); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border-subtle); color: var(--text-2); }
+
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="doc-title">Scaffold mockup — Q25-Q28</div>
+    <div class="doc-sub">
+      <b>Insights — Unit Risk + Studio — Turnover.</b> Four questions: (Q25) unknown-status-units surface treatment, (Q26) expired-no-MTM resolution interaction model, (Q27) whether each unit carries a 0–100 composite risk score, (Q28) lease-expirations + projected-turnover dual-metric viz. Data shape held constant across A/B/C within each question — decision is purely on the dimension named (surface treatment / interaction model / score presence / viz layout). All four render with v4-canonical surfaces (<code>--bg #0B0C0F</code> / <code>--surface #15171C</code>) + Q13 saturated severities (Basis-specific exception per S58 Option A) + Cypher Indigo accent (<code>#4D5BFF</code>).
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Q25 — Unknown status units treatment
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q25</span><h2 class="q-title">Unknown status units treatment</h2></div>
+    <p class="q-context">
+      Blueprint <code>§6.4.6</code> spec: <i>"Add: Unknown status units table — Brixton fold. Units with ambiguous lease status. Count in KPI strip + detail table below."</i> Question is the surface treatment — <i>table only (dense, scan-and-act), KPI card + table (per blueprint stated structure), or red callout banner with Resolve CTA (no standalone table)</i>. Three panels render the same dataset: 3 unknown-status units on a 226-unit property, same row identity across A/B/C.
+    </p>
+    <p class="q-where">Appears on: Insights → Unit Risk · canvas-default 1440px · same dataset across A/B/C</p>
+
+    <p class="scale-caption">Same 3-row dataset across A/B/C. Decision is on <b>surface treatment</b>, not numbers.</p>
+
+    <div class="opts">
+
+      <!-- Q25.A — Table only -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Table only · scan-and-act</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="tab-eyebrow"><b>INSIGHTS</b><span class="sep">›</span><b>UNIT RISK</b><span class="sep">·</span>226 UNITS<span class="sep">·</span>3 FLAGGED</div>
+          <div class="bxn-frame-title">Unknown status units</div>
+          <div class="bxn-frame-sub">3 units · ambiguous lease status</div>
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Tenant</th>
+                <th>Lease End</th>
+                <th>Status</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="unit-id">304</td>
+                <td>2BR/2BA</td>
+                <td>Anderson, K.</td>
+                <td>09/15/2025</td>
+                <td><span class="pill unk"><span class="dot"></span>blank</span></td>
+                <td class="muted">PMS</td>
+              </tr>
+              <tr>
+                <td class="unit-id">217</td>
+                <td>1BR/1BA</td>
+                <td class="blank">(blank)</td>
+                <td class="blank">(blank)</td>
+                <td><span class="pill unk"><span class="dot"></span>—</span></td>
+                <td class="muted">PMS</td>
+              </tr>
+              <tr>
+                <td class="unit-id">412</td>
+                <td>Studio</td>
+                <td>Wilson, T.</td>
+                <td>03/31/2025</td>
+                <td><span class="pill unk"><span class="dot"></span>?</span></td>
+                <td class="muted">PMS</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          Bare table, no header KPI. Underwriter scans 3 rows, identifies what needs resolving, takes action. <b>Cost:</b> the count is implicit — reader must look at the rows to know how many. Loses the IC-memo "X flagged" headline that lets the reviewer judge magnitude before drilling.
+        </div>
+      </div>
+
+      <!-- Q25.B — KPI card + table (DEFAULT-LOCK per blueprint §6.4.1 KPI-then-detail pattern) -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">B</span><span class="opt-name">KPI strip + table · per blueprint</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="tab-eyebrow"><b>INSIGHTS</b><span class="sep">›</span><b>UNIT RISK</b><span class="sep">·</span>226 UNITS<span class="sep">·</span>3 FLAGGED</div>
+          <div class="q25-kpi">
+            <div class="q25-kpi-num">3</div>
+            <div class="q25-kpi-meta">
+              <div class="q25-kpi-lbl">Unknown Status</div>
+              <div class="q25-kpi-sub">1.3% of 226 units · ambiguous lease state</div>
+            </div>
+          </div>
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Tenant</th>
+                <th>Lease End</th>
+                <th>Status</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="unit-id">304</td>
+                <td>2BR/2BA</td>
+                <td>Anderson, K.</td>
+                <td>09/15/2025</td>
+                <td><span class="pill unk"><span class="dot"></span>blank</span></td>
+                <td class="muted">PMS</td>
+              </tr>
+              <tr>
+                <td class="unit-id">217</td>
+                <td>1BR/1BA</td>
+                <td class="blank">(blank)</td>
+                <td class="blank">(blank)</td>
+                <td><span class="pill unk"><span class="dot"></span>—</span></td>
+                <td class="muted">PMS</td>
+              </tr>
+              <tr>
+                <td class="unit-id">412</td>
+                <td>Studio</td>
+                <td>Wilson, T.</td>
+                <td>03/31/2025</td>
+                <td><span class="pill unk"><span class="dot"></span>?</span></td>
+                <td class="muted">PMS</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          Headline KPI strip (<b>3 Unknown · 1.3%</b>) above the detail table. Matches blueprint <code>§6.4.1</code> KPI-then-detail pattern used app-wide. <b>Benefit:</b> reviewer reads the magnitude at a glance, drills only when warranted. <code>--warning</code> left-rule on KPI = "elevated, watch" not "tripwire breached" (<code>--danger</code> reserved for hard CREFC/Fannie thresholds per <code>card-gold §4</code>).
+        </div>
+      </div>
+
+      <!-- Q25.C — Inline callout banner -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Callout banner · Resolve CTA</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="tab-eyebrow"><b>INSIGHTS</b><span class="sep">›</span><b>UNIT RISK</b><span class="sep">·</span>226 UNITS<span class="sep">·</span>3 FLAGGED</div>
+          <div class="q25-banner">
+            <div class="q25-banner-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1.5L15 14H1L8 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <line x1="8" y1="6.5" x2="8" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="8" cy="11.5" r="0.75" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="q25-banner-body">
+              <div class="q25-banner-title">3 Unknown status units</div>
+              <div class="q25-banner-sub">Ambiguous lease state · resolution required before underwrite</div>
+            </div>
+            <div class="q25-banner-cta">
+              Resolve
+              <svg viewBox="0 0 10 10" fill="none"><path d="M3 1L7 5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+          </div>
+          <div class="q25-banner-ghost">
+            <b>Resolve →</b> opens slide-out with 3 unknown-status units. No standalone table on the Unit Risk tab.
+          </div>
+        </div>
+        <div class="opt-note">
+          Red <code>--danger</code> banner with single Resolve CTA. No table on the page — the affected units only appear after the user clicks. <b>Cost:</b> hides the data behind a click; loss-of-context for the reviewer who wants to scan all flagged units across types in parallel. Also: <code>--danger</code> hue on a non-tripwire condition violates the severity ladder (<code>--warning</code> is the right hue per <code>card-gold §4</code>).
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>B.</b> KPI strip + table is the pattern blueprint <code>§6.4.6</code> states explicitly and the pattern <code>§6.4.1</code> establishes app-wide. Two reasons it pulls ahead of A and C: (1) <i>magnitude before drill</i> — the headline KPI (<b>3 Unknown · 1.3%</b>) lets the reviewer judge severity before reading rows, matching IC-memo discipline; (2) <i>scan parity</i> — keeping the detail table inline preserves cross-row comparison (which units, what types, what dates) that disappears when the data hides behind a Resolve click (C). A drops the headline; C drops the detail. B keeps both.
+        <br/><br/>
+        Honest read on hue choice: <code>--warning</code> not <code>--danger</code> — unknown status is "elevated, investigate" not "tripwire breached." C's red banner reads as a system-down event, not a data-quality flag. Reserve <code>--danger</code> for hard CREFC/Fannie thresholds per <code>card-gold §4</code>.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q25 LOCKED:</strong> B · S60</div>
+  </section>
+
+
+  <!-- ============================================================
+       Q26 — Expired no-MTM resolution UX
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q26</span><h2 class="q-title">Expired no-MTM resolution UX</h2></div>
+    <p class="q-context">
+      Blueprint <code>§6.4.6</code> spec: <i>"units past lease end with no MTM transition. List with 'resolve status' action."</i> Question is the interaction model that fires when the user resolves a row — <i>per-row Resolve button → custom 3-radio slide-out (Convert to MTM / Add NTV / Mark for legal); bulk-select rows + bulk action menu; or per-row click opens the unit's standard slide-out (the same surface every other tab opens)</i>. Same 4-row dataset across A/B/C; difference is what fires when the user acts.
+    </p>
+    <p class="q-where">Appears on: Insights → Unit Risk · canvas-default 1440px · same dataset across A/B/C</p>
+
+    <div class="drill-inherit">
+      <b>Drill inheritance — single resolution surface:</b> Resolution UX inherits from <code>drill-policy.md §5</code> — the unit slide-out is the single resolution surface app-wide. Custom inline mechanics (per-row buttons, bulk bars) fork resolution UX away from the unit slide-out and require parallel maintenance. Q26.C preserves the single-source-of-truth pattern; A and B introduce parallel resolution paths that need to be reconciled later.
+    </div>
+
+    <p class="scale-caption">Same 4-row dataset across A/B/C. Decision is on <b>interaction model</b>, not data.</p>
+
+    <div class="opts">
+
+      <!-- Q26.A — Per-row Resolve button + custom 3-radio slide-out -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">A</span><span class="opt-name">Per-row Resolve button · custom slide-out</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Expired · no MTM</div>
+          <div class="bxn-frame-sub">4 units · custom slide-out fires on Resolve</div>
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Tenant</th>
+                <th>Expired</th>
+                <th>Days Past</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="unit-id">102</td>
+                <td>1BR/1BA</td>
+                <td>Hayes, R.</td>
+                <td>06/30/2024</td>
+                <td class="num">184</td>
+                <td><span class="q26-resolve-btn">Resolve</span></td>
+              </tr>
+              <tr>
+                <td class="unit-id">215</td>
+                <td>2BR/2BA</td>
+                <td>Lopez, M.</td>
+                <td>08/15/2024</td>
+                <td class="num">138</td>
+                <td><span class="q26-resolve-btn">Resolve</span></td>
+              </tr>
+              <tr>
+                <td class="unit-id">308</td>
+                <td>Studio</td>
+                <td>Patel, S.</td>
+                <td>09/01/2024</td>
+                <td class="num">121</td>
+                <td><span class="q26-resolve-btn">Resolve</span></td>
+              </tr>
+              <tr>
+                <td class="unit-id">411</td>
+                <td>2BR/2BA</td>
+                <td>Brooks, T.</td>
+                <td>09/15/2024</td>
+                <td class="num">107</td>
+                <td><span class="q26-resolve-btn">Resolve</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="ghost-slide">
+            <div class="ghost-slide-head">CUSTOM SLIDE-OUT · UNIT 102</div>
+            <div class="ghost-slide-radios">
+              <div class="ghost-slide-radio active"><span class="ghost-slide-radio-dot"></span><span>Convert to MTM</span></div>
+              <div class="ghost-slide-radio"><span class="ghost-slide-radio-dot"></span><span>Add NTV</span></div>
+              <div class="ghost-slide-radio"><span class="ghost-slide-radio-dot"></span><span>Mark for legal</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Per-row <code>[Resolve]</code> opens a narrow custom slide-out with 3 radios (Convert to MTM / Add NTV / Mark for legal). <b>Benefit:</b> single click, fewer screens. <b>Cost:</b> resolution UX forks from the unit slide-out — the same unit now has two surfaces that resolve flags, only one of which carries Detail/Charges/Flags context. Maintenance debt + reviewer confusion.
+        </div>
+      </div>
+
+      <!-- Q26.B — Bulk-select + bulk-action bar -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Bulk-select · bulk action bar</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Expired · no MTM</div>
+          <div class="bxn-frame-sub">4 units · 2 selected · bulk action sticky bar</div>
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Tenant</th>
+                <th>Expired</th>
+                <th>Days Past</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="q26-checkbox checked"></span></td>
+                <td class="unit-id">102</td>
+                <td>1BR/1BA</td>
+                <td>Hayes, R.</td>
+                <td>06/30/2024</td>
+                <td class="num">184</td>
+              </tr>
+              <tr>
+                <td><span class="q26-checkbox checked"></span></td>
+                <td class="unit-id">215</td>
+                <td>2BR/2BA</td>
+                <td>Lopez, M.</td>
+                <td>08/15/2024</td>
+                <td class="num">138</td>
+              </tr>
+              <tr>
+                <td><span class="q26-checkbox"></span></td>
+                <td class="unit-id">308</td>
+                <td>Studio</td>
+                <td>Patel, S.</td>
+                <td>09/01/2024</td>
+                <td class="num">121</td>
+              </tr>
+              <tr>
+                <td><span class="q26-checkbox"></span></td>
+                <td class="unit-id">411</td>
+                <td>2BR/2BA</td>
+                <td>Brooks, T.</td>
+                <td>09/15/2024</td>
+                <td class="num">107</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="q26-bulk-bar">
+            <div class="q26-bulk-count"><b>2 selected</b> · 2 of 4 expired no-MTM</div>
+            <div class="q26-bulk-actions">
+              <span class="q26-bulk-btn secondary">Cancel</span>
+              <span class="q26-bulk-btn">Resolve…</span>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Leftmost checkbox column + sticky bulk-action bar at bottom. Faster for 10+ units. <b>Cost:</b> still forks from the unit slide-out (bulk action triggers a separate modal, not the per-unit resolution surface). Most expired-no-MTM lists in practice are short — bulk affordance solves a problem most users don't have, and adds a column on every load.
+        </div>
+      </div>
+
+      <!-- Q26.C — Per-row click → standard unit slide-out (DEFAULT-LOCK) -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">C</span><span class="opt-name">Per-row click · standard unit slide-out</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Expired · no MTM</div>
+          <div class="bxn-frame-sub">4 units · row-click opens unit slide-out (single surface)</div>
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Tenant</th>
+                <th>Expired</th>
+                <th>Days Past</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hover-cue">
+                <td class="unit-id">102</td>
+                <td>1BR/1BA</td>
+                <td>Hayes, R.</td>
+                <td>06/30/2024</td>
+                <td class="num">184</td>
+              </tr>
+              <tr>
+                <td class="unit-id">215</td>
+                <td>2BR/2BA</td>
+                <td>Lopez, M.</td>
+                <td>08/15/2024</td>
+                <td class="num">138</td>
+              </tr>
+              <tr>
+                <td class="unit-id">308</td>
+                <td>Studio</td>
+                <td>Patel, S.</td>
+                <td>09/01/2024</td>
+                <td class="num">121</td>
+              </tr>
+              <tr>
+                <td class="unit-id">411</td>
+                <td>2BR/2BA</td>
+                <td>Brooks, T.</td>
+                <td>09/15/2024</td>
+                <td class="num">107</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="ghost-slide">
+            <div class="ghost-slide-head">UNIT SLIDE-OUT · UNIT 102</div>
+            <div class="ghost-slide-tabs">
+              <span class="ghost-slide-tab active">Detail</span>
+              <span class="ghost-slide-tab">Charges</span>
+              <span class="ghost-slide-tab">Flags</span>
+            </div>
+            <div class="ghost-slide-fields">
+              <div class="ghost-slide-field"><span class="ghost-slide-field-lbl">Tenant</span><span class="ghost-slide-field-val">Hayes, R.</span></div>
+              <div class="ghost-slide-field"><span class="ghost-slide-field-lbl">Lease End</span><span class="ghost-slide-field-val">06/30/2024</span></div>
+              <div class="ghost-slide-field"><span class="ghost-slide-field-lbl">Days Past</span><span class="ghost-slide-field-val">184</span></div>
+              <div class="ghost-slide-field"><span class="ghost-slide-field-lbl">Resolution</span><span class="ghost-slide-field-val">→ Flags tab</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Rows are entirely clickable (subtle <code>--accent</code> left-edge cue on hover). Click opens the unit's <b>standard</b> slide-out — Detail / Charges / Flags tabs, with resolution living on the Flags tab as it does everywhere else in the app. <b>Benefit:</b> single resolution surface across the product. <code>drill-policy.md §5</code> applies — no fork.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>C.</b> The unit slide-out is already the resolution surface app-wide (Rent Roll Units tab, Flags tab, every other entry point). Forking it on the Unit Risk tab — whether via custom 3-radio modal (A) or bulk-action bar (B) — creates a parallel resolution path that the team has to maintain twice and reviewers have to learn twice. <i>Single source of truth</i> per <code>drill-policy.md §5</code>.
+        <br/><br/>
+        Honest read on A: A is the fastest UX for resolving a single unit (one click, three radios, done). If expired-no-MTM is a high-frequency action, A's speed matters. <b>But</b> the Flags tab inside the standard slide-out can carry the same three radios — the speed advantage collapses once parity is reached, and parity costs nothing structurally. B's bulk affordance is a real benefit when N is large, but it doesn't justify the column-on-every-load cost when most expired-no-MTM lists are short.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q26 LOCKED:</strong> C · S60</div>
+  </section>
+
+
+  <!-- ============================================================
+       Q27 — Unit-level risk composite
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q27</span><h2 class="q-title">Unit-level risk composite</h2></div>
+    <p class="q-context">
+      Blueprint silent. Question is whether each unit should carry a 0–100 composite risk score, similar to confidence scoring — <i>no composite (risk surfaces only via flag count + severity), composite as a Risk column on the Rent Roll table (sortable), or composite on the Unit Risk tab only (split surface, doesn't pollute Rent Roll)</i>. Same 4-unit dataset across A/B/C; difference is whether and where the score appears.
+    </p>
+    <p class="q-where">Appears on: Insights → Unit Risk + (B/C only) Rent Roll Units · same dataset across A/B/C</p>
+
+    <div class="drill-inherit">
+      <b>Drill inheritance — risk surface authority:</b> Risk encoding inherits from <code>card-gold §4</code> severity signaling — flag count + severity (<code>--success</code>/<code>--warning</code>/<code>--danger</code>) is the canonical risk surface app-wide. A composite 0–100 score introduces a fourth severity vocabulary that must be reconciled with the existing three-tier ladder. Q27.A keeps risk surfaces unified to existing severity tokens.
+    </div>
+
+    <p class="scale-caption">Same 4-unit dataset across A/B/C. Decision is on <b>score presence and placement</b>, not numbers.</p>
+
+    <div class="opts">
+
+      <!-- Q27.A — No composite (DEFAULT-LOCK) -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">No composite · flags only</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Unit Risk · flag-driven</div>
+          <div class="bxn-frame-sub">flag count + severity = canonical risk surface</div>
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Tenant</th>
+                <th>Lease End</th>
+                <th>Flags</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="unit-id">102</td>
+                <td>1BR/1BA</td>
+                <td>Hayes, R.</td>
+                <td>06/30/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill crit"><span class="dot"></span>1 crit</span>
+                    <span class="pill warn"><span class="dot"></span>2 warn</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="unit-id">215</td>
+                <td>2BR/2BA</td>
+                <td>Lopez, M.</td>
+                <td>08/15/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill warn"><span class="dot"></span>1 warn</span>
+                    <span class="pill info"><span class="dot"></span>1 info</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="unit-id">308</td>
+                <td>Studio</td>
+                <td>Patel, S.</td>
+                <td>09/01/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill warn"><span class="dot"></span>1 warn</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="unit-id">411</td>
+                <td>2BR/2BA</td>
+                <td>Brooks, T.</td>
+                <td>09/15/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill crit"><span class="dot"></span>2 crit</span>
+                    <span class="pill warn"><span class="dot"></span>2 warn</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          Flag count + severity is the only risk surface. <b>Benefit:</b> transparent — every flag traces to a concrete underwriting condition with a defined severity per <code>card-gold §4</code>. No composite means no opaque rubric, no "why is this 78 not 82" questions, no reconciliation against the three-tier severity ladder. <b>Punt to v1.1</b> if user demand surfaces; v1 ships clean.
+        </div>
+      </div>
+
+      <!-- Q27.B — Composite score on Rent Roll table -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Composite on Rent Roll · sortable</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Rent Roll · with Risk column</div>
+          <div class="bxn-frame-sub">composite 0–100 score · sortable</div>
+          <table class="dtbl">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Tenant</th>
+                <th>Lease End</th>
+                <th>Flags</th>
+                <th>
+                  <span class="q27-sort-arrow">
+                    Risk
+                    <svg viewBox="0 0 8 8" fill="none"><path d="M4 1L7 5H1L4 1Z" fill="currentColor"/></svg>
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="unit-id">411</td>
+                <td>2BR/2BA</td>
+                <td>Brooks, T.</td>
+                <td>09/15/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill crit"><span class="dot"></span>2 crit</span>
+                  </div>
+                </td>
+                <td class="num">
+                  <span class="q27-risk-score high">
+                    <span class="score-dot"></span><span class="score-num">91</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="unit-id">102</td>
+                <td>1BR/1BA</td>
+                <td>Hayes, R.</td>
+                <td>06/30/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill crit"><span class="dot"></span>1 crit</span>
+                  </div>
+                </td>
+                <td class="num">
+                  <span class="q27-risk-score high">
+                    <span class="score-dot"></span><span class="score-num">78</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="unit-id">215</td>
+                <td>2BR/2BA</td>
+                <td>Lopez, M.</td>
+                <td>08/15/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill warn"><span class="dot"></span>1 warn</span>
+                  </div>
+                </td>
+                <td class="num">
+                  <span class="q27-risk-score mid">
+                    <span class="score-dot"></span><span class="score-num">42</span>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="unit-id">308</td>
+                <td>Studio</td>
+                <td>Patel, S.</td>
+                <td>09/01/2024</td>
+                <td>
+                  <div class="q27-flag-cluster">
+                    <span class="pill warn"><span class="dot"></span>1 warn</span>
+                  </div>
+                </td>
+                <td class="num">
+                  <span class="q27-risk-score low">
+                    <span class="score-dot"></span><span class="score-num">28</span>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="opt-note">
+          New <b>Risk</b> column on the Rent Roll Units table — 0–100 score with severity-colored dot, sortable. <b>Benefit:</b> single quantitative ordering across all units. <b>Cost:</b> introduces a fourth severity vocabulary alongside <code>--success</code>/<code>--warning</code>/<code>--danger</code> flags; users must learn the rubric mapping (what does 78 mean vs 82?). Pollutes the canonical Rent Roll surface with a derived metric.
+        </div>
+      </div>
+
+      <!-- Q27.C — Composite on Unit Risk tab only (split surface) -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Composite on Unit Risk only · split</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Split surface · score scoped to Unit Risk tab</div>
+          <div class="bxn-frame-sub">Rent Roll unchanged · Unit Risk tab carries the score</div>
+
+          <div class="q27-split-section">
+            <div class="q27-split-label"><b>RENT ROLL UNITS</b> · no risk column</div>
+            <table class="dtbl">
+              <thead>
+                <tr>
+                  <th>Unit</th>
+                  <th>Type</th>
+                  <th>Lease End</th>
+                  <th>Flags</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="unit-id">102</td>
+                  <td>1BR/1BA</td>
+                  <td>06/30/2024</td>
+                  <td><span class="pill crit"><span class="dot"></span>1 crit</span></td>
+                </tr>
+                <tr>
+                  <td class="unit-id">411</td>
+                  <td>2BR/2BA</td>
+                  <td>09/15/2024</td>
+                  <td><span class="pill crit"><span class="dot"></span>2 crit</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="q27-split-section">
+            <div class="q27-split-label"><b>UNIT RISK</b> · with composite</div>
+            <table class="dtbl">
+              <thead>
+                <tr>
+                  <th>Unit</th>
+                  <th>Flags</th>
+                  <th>Risk</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="unit-id">411</td>
+                  <td><span class="pill crit"><span class="dot"></span>2 crit</span></td>
+                  <td class="num">
+                    <span class="q27-risk-score high">
+                      <span class="score-dot"></span><span class="score-num">91</span>
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="unit-id">102</td>
+                  <td><span class="pill crit"><span class="dot"></span>1 crit</span></td>
+                  <td class="num">
+                    <span class="q27-risk-score high">
+                      <span class="score-dot"></span><span class="score-num">78</span>
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="opt-note">
+          Composite lives only on the Unit Risk tab; Rent Roll Units stays clean. <b>Benefit:</b> isolates the score from the canonical surface. <b>Cost:</b> two sources of truth on per-unit risk — the same unit reads "1 crit flag" on Rent Roll and "78" on Unit Risk, with no clear relationship between them. The fourth severity vocabulary still exists; it's just contained.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>A.</b> No composite. Three reasons: (1) <i>flag count + severity already encodes risk transparently</i> — every flag traces to a defined underwriting condition with a defined severity tier (<code>--success</code>/<code>--warning</code>/<code>--danger</code>); a 0–100 composite obscures that traceability behind a rubric users can't audit; (2) <i>fourth severity vocabulary cost</i> — adding "78" alongside "1 crit / 2 warn" forces reviewers to reconcile two ordinal systems on the same row, with no clear mapping; (3) <i>Brixton fold</i> — the blueprint flagged the unit-risk surface as Brixton-driven (data-availability, not derived score). Adding a composite re-centers the surface on a metric Basis would have to defend.
+        <br/><br/>
+        Honest read on B/C: B is the institutional "give me one number to sort by" answer; if Terry's ICs explicitly want it, B is correct and C is wrong (split-surface is worse than co-located). My read is that punt-to-v1.1 wins now — composite needs a tunable rubric, user feedback on which signals weight how, and a defense against gaming. Ship without it; add when demand surfaces.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q27 LOCKED:</strong> A · S60</div>
+  </section>
+
+
+  <!-- ============================================================
+       Q28 — Lease expirations + projected turnover · dual-metric viz (Studio → Turnover)
+       ============================================================ -->
+  <section class="q-block">
+    <div class="q-header"><span class="q-num">Q28</span><h2 class="q-title">Lease expirations + projected turnover · dual-metric viz</h2></div>
+    <p class="q-context">
+      Old Q28 framing (count vs percent vs hybrid threshold on a single turnover bar) presumed turnover was the primary metric. <i>Wrong frame.</i> Lease expirations is the precise observable signal from the rent roll (baseline ≈8.33%/mo if expirations were evenly distributed across 12 months). Projected turnover is a derived estimate — <code>expirations × (1 − retention) + mid-lease attrition</code> — useful for capex/renovation cadence but undefended at threshold-cutpoint precision pending a retention-rate-assumption owner. New question: <i>how to viz both metrics on a shared time axis so the institutional read — lease concentration vs J-curve attrition — lands at first paint</i>. Bands re-anchored around the 8.33% baseline: <code>Low &lt;5% · Watch 5–12% · Heavy &gt;12%</code> on expirations only; turnover line ships unbanded.
+    </p>
+    <p class="q-where">Appears on: Studio → Turnover · canvas-default 1440px · 200-unit sample property · same dataset across A/B/C</p>
+
+    <div class="drill-inherit">
+      <b>Drill inheritance — defended-vs-derived metric pairing:</b> Bars carry the severity rubric (lease expirations is precise, observable, defended via 8.33% baseline anchor per <code>card-gold §4</code>). Line carries the projection (turnover is derived from a retention-rate assumption with no defended owner yet — Q27 lock applies: <i>any metric without rubric + audit + gaming-defense + traceability ships unbanded</i>). The <i>relationship</i> between the two — line below bar = renewals working, line above bar = J-curve / mid-lease attrition — is the institutional read.
+    </div>
+
+    <p class="scale-caption">Same 12-month dataset across A/B/C (200u · peak Sep '27 at 18 expirations / 9.0% · est. turnover 13 / 6.5% · 50% retention assumed · J-curve Jan-Mar mid-lease attrition 7 / 5 / 3). Decision is on <b>viz layout</b>, not data.</p>
+
+    <div class="opts">
+
+      <!-- Q28.A — Option F: bars + line, single % axis (DEFAULT-LOCK) -->
+      <div class="opt locked">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter rec">A</span><span class="opt-name">Bars + line · single % axis</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease expirations + projected turnover</div>
+          <div class="bxn-frame-sub">12-mo · 200u · expirations bars (banded) + turnover line (neutral) + 8.33% baseline</div>
+          <div class="q28-chart-shell q28-tooltip-wrap">
+            <svg class="q28-chart" viewBox="0 0 280 130" aria-label="Lease expirations bars + turnover line · single percent axis">
+              <!-- y grid lines: 5%, 10% -->
+              <line class="q28-grid" x1="30" y1="38" x2="272" y2="38" />
+              <line class="q28-grid" x1="30" y1="64" x2="272" y2="64" />
+              <text class="q28-y-label" x="4" y="14">15</text>
+              <text class="q28-y-label" x="4" y="42">10</text>
+              <text class="q28-y-label" x="9" y="68">5</text>
+              <text class="q28-y-label" x="9" y="92">0</text>
+              <!-- 8.33% flat-distribution baseline reference line -->
+              <line class="q28-ref-line" x1="30" y1="46.7" x2="272" y2="46.7" />
+              <text class="q28-ref-label" x="208" y="44">FLAT BASELINE · 8.33%</text>
+              <!-- Expirations bars · 200u · severity-banded (Low <5% / Watch 5-12% / Heavy >12%) · 16px wide -->
+              <!-- Heavy band ships demonstrated-in-legend-only on this sample (no bar hits >12% on 200u) -->
+              <!-- J=5 (2.5%) Low -->
+              <rect class="q28-bar-low" x="32"  y="77" width="16" height="13" rx="1" />
+              <text class="q28-bar-val" x="40"  y="74" text-anchor="middle">5</text>
+              <!-- F=6 (3.0%) Low -->
+              <rect class="q28-bar-low" x="52"  y="74" width="16" height="16" rx="1" />
+              <text class="q28-bar-val" x="60"  y="71" text-anchor="middle">6</text>
+              <!-- M=8 (4.0%) Low -->
+              <rect class="q28-bar-low" x="72"  y="69" width="16" height="21" rx="1" />
+              <text class="q28-bar-val" x="80"  y="66" text-anchor="middle">8</text>
+              <!-- A=11 (5.5%) Watch -->
+              <rect class="q28-bar-watch" x="92"  y="61" width="16" height="29" rx="1" />
+              <text class="q28-bar-val" x="100" y="58" text-anchor="middle">11</text>
+              <!-- M=13 (6.5%) Watch -->
+              <rect class="q28-bar-watch" x="112" y="56" width="16" height="34" rx="1" />
+              <text class="q28-bar-val" x="120" y="53" text-anchor="middle">13</text>
+              <!-- J=15 (7.5%) Watch -->
+              <rect class="q28-bar-watch" x="132" y="51" width="16" height="39" rx="1" />
+              <text class="q28-bar-val" x="140" y="48" text-anchor="middle">15</text>
+              <!-- J=14 (7.0%) Watch -->
+              <rect class="q28-bar-watch" x="152" y="54" width="16" height="36" rx="1" />
+              <text class="q28-bar-val" x="160" y="51" text-anchor="middle">14</text>
+              <!-- A=16 (8.0%) Watch -->
+              <rect class="q28-bar-watch" x="172" y="48" width="16" height="42" rx="1" />
+              <text class="q28-bar-val" x="180" y="45" text-anchor="middle">16</text>
+              <!-- S=18 (9.0%) Watch · peak -->
+              <rect class="q28-bar-watch" x="192" y="43" width="16" height="47" rx="1" />
+              <text class="q28-bar-val peak" x="200" y="40" text-anchor="middle">18</text>
+              <!-- O=13 (6.5%) Watch -->
+              <rect class="q28-bar-watch" x="212" y="56" width="16" height="34" rx="1" />
+              <text class="q28-bar-val" x="220" y="53" text-anchor="middle">13</text>
+              <!-- N=10 (5.0%) Watch -->
+              <rect class="q28-bar-watch" x="232" y="64" width="16" height="26" rx="1" />
+              <text class="q28-bar-val" x="240" y="61" text-anchor="middle">10</text>
+              <!-- D=6 (3.0%) Low -->
+              <rect class="q28-bar-low" x="252" y="74" width="16" height="16" rx="1" />
+              <text class="q28-bar-val" x="260" y="71" text-anchor="middle">6</text>
+              <!-- Turnover line (neutral hue, unbanded). 200u · 50% retention · J-curve attrition Jan/Feb/Mar = 7/5/3, baseline 3/mo Apr-Dec, Sep peak 4. -->
+              <!-- Monthly turnover %: 4.75/4.00/3.50/4.25/4.75/5.25/5.00/5.50/6.50/4.75/4.00/3.00 -->
+              <!-- J-curve: Jan +2.25pp above bar (clean punch) · Feb +1.00pp · Mar -0.50pp (transition out). Apr-Nov line below bar (renewals working). -->
+              <path class="q28-line" d="M40,65 L60,69 L80,72 L100,68 L120,65 L140,63 L160,64 L180,61 L200,56 L220,65 L240,69 L260,74" />
+              <circle class="q28-line-pt" cx="40"  cy="65" r="2" />
+              <circle class="q28-line-pt" cx="60"  cy="69" r="2" />
+              <circle class="q28-line-pt" cx="80"  cy="72" r="2" />
+              <circle class="q28-line-pt" cx="100" cy="68" r="2" />
+              <circle class="q28-line-pt" cx="120" cy="65" r="2" />
+              <circle class="q28-line-pt" cx="140" cy="63" r="2" />
+              <circle class="q28-line-pt" cx="160" cy="64" r="2" />
+              <circle class="q28-line-pt" cx="180" cy="61" r="2" />
+              <circle class="q28-line-pt" cx="200" cy="56" r="2" />
+              <circle class="q28-line-pt" cx="220" cy="65" r="2" />
+              <circle class="q28-line-pt" cx="240" cy="69" r="2" />
+              <circle class="q28-line-pt" cx="260" cy="74" r="2" />
+              <!-- x-axis baseline -->
+              <line class="q28-axis" x1="30" y1="90" x2="272" y2="90" />
+              <!-- x labels -->
+              <text class="q28-x-label" x="40"  y="104" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="60"  y="104" text-anchor="middle">F</text>
+              <text class="q28-x-label" x="80"  y="104" text-anchor="middle">M</text>
+              <text class="q28-x-label" x="100" y="104" text-anchor="middle">A</text>
+              <text class="q28-x-label" x="120" y="104" text-anchor="middle">M</text>
+              <text class="q28-x-label" x="140" y="104" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="160" y="104" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="180" y="104" text-anchor="middle">A</text>
+              <text class="q28-x-label" x="200" y="104" text-anchor="middle">S</text>
+              <text class="q28-x-label" x="220" y="104" text-anchor="middle">O</text>
+              <text class="q28-x-label" x="240" y="104" text-anchor="middle">N</text>
+              <text class="q28-x-label" x="260" y="104" text-anchor="middle">D</text>
+            </svg>
+            <!-- Static tooltip pinned to Sep peak (production: on-hover; static here for review) -->
+            <div class="q28-tooltip">
+              <div class="tt-row"><span class="tt-lbl">SEP '27</span><b>peak</b></div>
+              <div class="tt-row"><span class="tt-lbl">Expirations</span><b>18 · 9.0%</b></div>
+              <div class="tt-row"><span class="tt-lbl">Est. turnover</span><b>13 · 6.5%</b></div>
+              <div class="tt-row"><span class="tt-lbl">Retention</span><b>50% (assumed)</b></div>
+              <div class="tt-caption">[hover preview]</div>
+            </div>
+            <div class="q28-legend">
+              <span class="q28-legend-item"><span class="q28-legend-dot low"></span><span class="q28-legend-lbl">Low</span><span class="q28-legend-val">&lt;5%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot watch"></span><span class="q28-legend-lbl">Watch</span><span class="q28-legend-val">5–12%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot heavy"></span><span class="q28-legend-lbl">Heavy</span><span class="q28-legend-val">&gt;12%</span></span>
+              <span class="q28-legend-item"><svg width="14" height="6" style="flex:0 0 14px;"><line x1="0" y1="3" x2="14" y2="3" stroke="var(--text-2)" stroke-width="1.5" /></svg><span class="q28-legend-lbl">Projected turnover · est.</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Single % axis. Bars (lease expirations, severity-banded around 8.33% baseline) carry the rollover-concentration read. Line (projected turnover, neutral hue, unbanded) carries the capex/renovation read. <b>The relationship is the institutional read</b> — line below bar = renewals working; line above bar = J-curve / mid-lease attrition exceeds expiration-driven turnover (Jan: bar 2.5% / line 4.75% — line punches +2.25pp above the bar; Feb mild +1.0pp; Mar transitions out). Tooltip surfaces count + % + retention assumption (50%).
+        </div>
+      </div>
+
+      <!-- Q28.B — Option E: dual-row stacked (vertically aligned) -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">B</span><span class="opt-name">Dual-row stacked · same x-axis</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease expirations + projected turnover</div>
+          <div class="bxn-frame-sub">two charts stacked · same months · same % scale</div>
+          <div class="q28-chart-shell">
+            <div class="q28-row-label"><b>Lease expirations</b> · % of portfolio · severity-banded around 8.33% baseline</div>
+            <svg class="q28-chart" viewBox="0 0 280 80" style="height:80px;" aria-label="Top row: lease expirations bars (severity-banded)">
+              <!-- 8.33% baseline ref · plot from y=8 to y=70, max=15%, scale 1%=4.13px → 8.33% at y=70-34.4=35.6 -->
+              <line class="q28-ref-line" x1="30" y1="35.6" x2="272" y2="35.6" />
+              <text class="q28-ref-label" x="216" y="33">8.33% BASELINE</text>
+              <!-- Expirations bars · 200u dataset · Mar drops from watch→low (4.0%); Sep drops from heavy→watch (9.0%) -->
+              <rect class="q28-bar-low"   x="32"  y="60" width="16" height="10" rx="1" />
+              <rect class="q28-bar-low"   x="52"  y="58" width="16" height="12" rx="1" />
+              <rect class="q28-bar-low"   x="72"  y="53" width="16" height="17" rx="1" />
+              <rect class="q28-bar-watch" x="92"  y="47" width="16" height="23" rx="1" />
+              <rect class="q28-bar-watch" x="112" y="43" width="16" height="27" rx="1" />
+              <rect class="q28-bar-watch" x="132" y="39" width="16" height="31" rx="1" />
+              <rect class="q28-bar-watch" x="152" y="41" width="16" height="29" rx="1" />
+              <rect class="q28-bar-watch" x="172" y="37" width="16" height="33" rx="1" />
+              <rect class="q28-bar-watch" x="192" y="33" width="16" height="37" rx="1" />
+              <rect class="q28-bar-watch" x="212" y="43" width="16" height="27" rx="1" />
+              <rect class="q28-bar-watch" x="232" y="49" width="16" height="21" rx="1" />
+              <rect class="q28-bar-low"   x="252" y="58" width="16" height="12" rx="1" />
+              <line class="q28-axis" x1="30" y1="70" x2="272" y2="70" />
+            </svg>
+            <div class="q28-row-label" style="margin-top:10px;"><b>Projected turnover</b> · % units · 50% retention assumed · unbanded</div>
+            <svg class="q28-chart" viewBox="0 0 280 80" style="height:80px;" aria-label="Bottom row: projected turnover bars (neutral)">
+              <!-- Turnover bars · 200u · 50% retention · J-curve attrition Jan/Feb/Mar=7/5/3, baseline 3/mo Apr-Dec, Sep peak 4 -->
+              <!-- Jan turn 4.75% (above expirations 2.5%); Feb 4.00% (above 3.0%); Mar 3.50% (below 4.0% — transition out of J-curve) -->
+              <rect class="q28-bar-neutral" x="32"  y="50" width="16" height="20" rx="1" />
+              <rect class="q28-bar-neutral" x="52"  y="53" width="16" height="17" rx="1" />
+              <rect class="q28-bar-neutral" x="72"  y="56" width="16" height="14" rx="1" />
+              <rect class="q28-bar-neutral" x="92"  y="52" width="16" height="18" rx="1" />
+              <rect class="q28-bar-neutral" x="112" y="50" width="16" height="20" rx="1" />
+              <rect class="q28-bar-neutral" x="132" y="48" width="16" height="22" rx="1" />
+              <rect class="q28-bar-neutral" x="152" y="49" width="16" height="21" rx="1" />
+              <rect class="q28-bar-neutral" x="172" y="47" width="16" height="23" rx="1" />
+              <rect class="q28-bar-neutral" x="192" y="43" width="16" height="27" rx="1" />
+              <rect class="q28-bar-neutral" x="212" y="50" width="16" height="20" rx="1" />
+              <rect class="q28-bar-neutral" x="232" y="53" width="16" height="17" rx="1" />
+              <rect class="q28-bar-neutral" x="252" y="58" width="16" height="12" rx="1" />
+              <line class="q28-axis" x1="30" y1="70" x2="272" y2="70" />
+              <text class="q28-x-label" x="40"  y="78" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="60"  y="78" text-anchor="middle">F</text>
+              <text class="q28-x-label" x="80"  y="78" text-anchor="middle">M</text>
+              <text class="q28-x-label" x="100" y="78" text-anchor="middle">A</text>
+              <text class="q28-x-label" x="120" y="78" text-anchor="middle">M</text>
+              <text class="q28-x-label" x="140" y="78" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="160" y="78" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="180" y="78" text-anchor="middle">A</text>
+              <text class="q28-x-label" x="200" y="78" text-anchor="middle">S</text>
+              <text class="q28-x-label" x="220" y="78" text-anchor="middle">O</text>
+              <text class="q28-x-label" x="240" y="78" text-anchor="middle">N</text>
+              <text class="q28-x-label" x="260" y="78" text-anchor="middle">D</text>
+            </svg>
+            <div class="q28-legend">
+              <span class="q28-legend-item"><span class="q28-legend-dot low"></span><span class="q28-legend-lbl">Low</span><span class="q28-legend-val">&lt;5%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot watch"></span><span class="q28-legend-lbl">Watch</span><span class="q28-legend-val">5–12%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot heavy"></span><span class="q28-legend-lbl">Heavy</span><span class="q28-legend-val">&gt;12%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot" style="background:var(--text-3);opacity:0.7;"></span><span class="q28-legend-lbl">Turnover · est.</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          Two charts stacked, same x-axis, same % scale. <b>Benefit:</b> clean separation — both metrics readable in parallel without overlay confusion. <b>Cost:</b> the J-curve insight (mid-lease attrition exceeding expirations) translates to <i>"the bottom-row bar at month X is taller than the top-row bar at month X"</i> — visible but requires vertical eye-jumping. The <i>relationship</i> between metrics is implicit, not explicit.
+        </div>
+      </div>
+
+      <!-- Q28.C — Option B: grouped bars per month (24 bars across 12 months) -->
+      <div class="opt">
+        <div class="opt-header">
+          <div class="opt-label"><span class="opt-letter">C</span><span class="opt-name">Grouped bars · 24 bars across 12 months</span></div>
+        </div>
+        <div class="opt-stage">
+          <div class="bxn-frame-title">Lease expirations + projected turnover</div>
+          <div class="bxn-frame-sub">12 months · two bars per group (expirations · turnover)</div>
+          <div class="q28-chart-shell">
+            <svg class="q28-chart" viewBox="0 0 280 130" aria-label="Grouped bars: expirations (banded) + turnover (neutral) side-by-side per month">
+              <line class="q28-grid" x1="30" y1="38" x2="272" y2="38" />
+              <line class="q28-grid" x1="30" y1="64" x2="272" y2="64" />
+              <text class="q28-y-label" x="4" y="14">15</text>
+              <text class="q28-y-label" x="4" y="42">10</text>
+              <text class="q28-y-label" x="9" y="68">5</text>
+              <text class="q28-y-label" x="9" y="92">0</text>
+              <line class="q28-ref-line" x1="30" y1="46.7" x2="272" y2="46.7" />
+              <text class="q28-ref-label" x="208" y="44">FLAT BASELINE · 8.33%</text>
+              <!-- Per month: expirations bar (left, 7px, banded) + turnover bar (right, 7px, neutral) · 200u dataset -->
+              <!-- J: exp 5/2.5% Low · turn 4.75% (J-curve punch) -->
+              <rect class="q28-bar-low"     x="32.5"  y="77" width="7" height="13" rx="1" />
+              <rect class="q28-bar-neutral" x="40.5"  y="65" width="7" height="25" rx="1" />
+              <!-- F: exp 6/3.0% Low · turn 4.00% (mild J-curve) -->
+              <rect class="q28-bar-low"     x="52.5"  y="74" width="7" height="16" rx="1" />
+              <rect class="q28-bar-neutral" x="60.5"  y="69" width="7" height="21" rx="1" />
+              <!-- M: exp 8/4.0% Low · turn 3.50% (transition out) -->
+              <rect class="q28-bar-low"     x="72.5"  y="69" width="7" height="21" rx="1" />
+              <rect class="q28-bar-neutral" x="80.5"  y="72" width="7" height="18" rx="1" />
+              <!-- A: exp 11/5.5% Watch · turn 4.25% -->
+              <rect class="q28-bar-watch"   x="92.5"  y="61" width="7" height="29" rx="1" />
+              <rect class="q28-bar-neutral" x="100.5" y="68" width="7" height="22" rx="1" />
+              <!-- M: exp 13/6.5% Watch · turn 4.75% -->
+              <rect class="q28-bar-watch"   x="112.5" y="56" width="7" height="34" rx="1" />
+              <rect class="q28-bar-neutral" x="120.5" y="65" width="7" height="25" rx="1" />
+              <!-- J: exp 15/7.5% Watch · turn 5.25% -->
+              <rect class="q28-bar-watch"   x="132.5" y="51" width="7" height="39" rx="1" />
+              <rect class="q28-bar-neutral" x="140.5" y="63" width="7" height="27" rx="1" />
+              <!-- J: exp 14/7.0% Watch · turn 5.00% -->
+              <rect class="q28-bar-watch"   x="152.5" y="54" width="7" height="36" rx="1" />
+              <rect class="q28-bar-neutral" x="160.5" y="64" width="7" height="26" rx="1" />
+              <!-- A: exp 16/8.0% Watch · turn 5.50% -->
+              <rect class="q28-bar-watch"   x="172.5" y="48" width="7" height="42" rx="1" />
+              <rect class="q28-bar-neutral" x="180.5" y="61" width="7" height="29" rx="1" />
+              <!-- S: exp 18/9.0% Watch (peak, no longer Heavy on 200u) · turn 6.50% -->
+              <rect class="q28-bar-watch"   x="192.5" y="43" width="7" height="47" rx="1" />
+              <rect class="q28-bar-neutral" x="200.5" y="56" width="7" height="34" rx="1" />
+              <!-- O: exp 13/6.5% Watch · turn 4.75% -->
+              <rect class="q28-bar-watch"   x="212.5" y="56" width="7" height="34" rx="1" />
+              <rect class="q28-bar-neutral" x="220.5" y="65" width="7" height="25" rx="1" />
+              <!-- N: exp 10/5.0% Watch · turn 4.00% -->
+              <rect class="q28-bar-watch"   x="232.5" y="64" width="7" height="26" rx="1" />
+              <rect class="q28-bar-neutral" x="240.5" y="69" width="7" height="21" rx="1" />
+              <!-- D: exp 6/3.0% Low · turn 3.00% -->
+              <rect class="q28-bar-low"     x="252.5" y="74" width="7" height="16" rx="1" />
+              <rect class="q28-bar-neutral" x="260.5" y="74" width="7" height="16" rx="1" />
+              <line class="q28-axis" x1="30" y1="90" x2="272" y2="90" />
+              <text class="q28-x-label" x="40"  y="104" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="60"  y="104" text-anchor="middle">F</text>
+              <text class="q28-x-label" x="80"  y="104" text-anchor="middle">M</text>
+              <text class="q28-x-label" x="100" y="104" text-anchor="middle">A</text>
+              <text class="q28-x-label" x="120" y="104" text-anchor="middle">M</text>
+              <text class="q28-x-label" x="140" y="104" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="160" y="104" text-anchor="middle">J</text>
+              <text class="q28-x-label" x="180" y="104" text-anchor="middle">A</text>
+              <text class="q28-x-label" x="200" y="104" text-anchor="middle">S</text>
+              <text class="q28-x-label" x="220" y="104" text-anchor="middle">O</text>
+              <text class="q28-x-label" x="240" y="104" text-anchor="middle">N</text>
+              <text class="q28-x-label" x="260" y="104" text-anchor="middle">D</text>
+            </svg>
+            <div class="q28-legend">
+              <span class="q28-legend-item"><span class="q28-legend-dot low"></span><span class="q28-legend-lbl">Exp · Low</span><span class="q28-legend-val">&lt;5%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot watch"></span><span class="q28-legend-lbl">Exp · Watch</span><span class="q28-legend-val">5–12%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot heavy"></span><span class="q28-legend-lbl">Exp · Heavy</span><span class="q28-legend-val">&gt;12%</span></span>
+              <span class="q28-legend-item"><span class="q28-legend-dot" style="background:var(--text-3);opacity:0.7;"></span><span class="q28-legend-lbl">Turnover · est.</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="opt-note">
+          12 month groups, two bars per group: expirations (banded) on left, turnover (neutral) on right. Both at same % scale. <b>Cost:</b> 24 bars across 12 months crowds the chart — bars at 7px wide read poorly from a meeting-room distance. The J-curve <i>line-above-bar</i> pattern doesn't translate to grouped form; <i>"right bar of January is taller than left bar"</i> doesn't carry the same institutional weight as a line punching above a bar.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rec-row">
+      <span class="rec-label">Claude's recommendation</span>
+      <span class="rec-text">
+        <b>A · Option F.</b> Single % axis with bars (expirations, severity-banded) and overlay line (turnover, neutral) is the only viz where the <i>relationship</i> between the two metrics is the read. Three reasons it pulls ahead: (1) <i>shared % axis</i> avoids the dual-axis pitfall — both metrics are %s, so a second axis is unjustified; (2) <i>line-bar relationship surfaces J-curve at first paint</i> — January's line punching +2.25pp above its bar (line 4.75% &gt; bar 2.5%) is the exact signal a buyer needs to spot pre-acquisition cleanup attrition; (3) <i>one chart preserves the unity of the rollover/turnover question</i> — they're not two questions, they're one question with two timelines (when leases end vs when units actually leave).
+        <br/><br/>
+        Honest read on B and C: B (dual-row) gives the cleanest separation and the easiest scan, but the J-curve pattern requires vertical eye-jumping to spot — implicit, not explicit. C (grouped bars) is parallel comparison at the cost of crowding the chart and dropping the line-vs-bar relationship entirely. A is the institutional answer; B is the conservative fallback if dual-metric overlay confuses a specific reader; C is rejected — 24 bars across 12 months violates Linear's density-without-clutter principle.
+        <br/><br/>
+        <b>Locked S62 (Q-Studio-Retention=D):</b> the retention rate that anchors this turnover line lives under the Studio assumption precedence chain — <i>global default → property override → scenario override</i>; audit log records which value fired. Grain-agnostic: same precedence applies to recovery rate, vacancy assumption, OpEx inflators, and any future Studio assumption that varies by deal context.
+      </span>
+    </div>
+    <div class="decision-bar locked"><strong>Q28 LOCKED:</strong> A · S61</div>
+  </section>
+
+  <div class="footer-note">
+    Tokens in <code>:root</code> copied verbatim from <code>src/styles/basis-linear.css §1</code>. Card depth ladder per Rule 26 — each option panel = single <code>.bl-card</code> on canvas, no nested surface.
+  </div>
+
+</div>
+</body>
+</html>
