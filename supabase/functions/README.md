@@ -8,6 +8,7 @@ Ingestion + compute jobs that run on Supabase's Deno runtime.
 | ---------------------- | ------ | ----------------- | ------------------------------------------- |
 | `ingest-fundamentals`  | THS-38 | 21:15 UTC Mon-Fri | Pull FMP fundamentals (Q + A) for universe  |
 | `ingest-consensus`     | THS-39 | 21:30 UTC Mon-Fri | Pull consensus + compute revisions deltas   |
+| `ingest-prices`        | THS-40 | 21:00 UTC Mon-Fri | Pull OHLCV + refresh 12-1 momentum view     |
 
 ## Local development
 

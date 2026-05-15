@@ -12,12 +12,14 @@ export function serviceClient(): SupabaseClient {
   );
 }
 
-export async function activeTickers(client: SupabaseClient): Promise<string[]> {
-  const { data, error } = await client
-    .from("universe")
-    .select("ticker")
-    .eq("is_active", true)
-    .order("ticker");
+export async function activeTickers(
+  client: SupabaseClient,
+  options: { kind?: "investable" | "benchmark" | "all" } = {},
+): Promise<string[]> {
+  const kind = options.kind ?? "investable";
+  let query = client.from("universe").select("ticker").eq("is_active", true);
+  if (kind !== "all") query = query.eq("kind", kind);
+  const { data, error } = await query.order("ticker");
   if (error) throw error;
   return (data ?? []).map((r) => r.ticker as string);
 }

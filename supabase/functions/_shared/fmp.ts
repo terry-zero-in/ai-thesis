@@ -239,6 +239,57 @@ export function buildConsensusRow(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Daily OHLCV (THS-40)
+// ---------------------------------------------------------------------------
+
+export interface PriceRow {
+  ticker: string;
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+}
+
+interface FmpHistoricalRow {
+  date: string;
+  open?: number | null;
+  high?: number | null;
+  low?: number | null;
+  close?: number | null;
+  adjClose?: number | null;
+  volume?: number | null;
+}
+
+interface FmpHistoricalResponse {
+  symbol?: string;
+  historical?: FmpHistoricalRow[];
+}
+
+export async function fetchHistoricalPrices(
+  ticker: string,
+  from: string,
+  to: string,
+): Promise<PriceRow[]> {
+  const resp = await fmpGet<FmpHistoricalResponse>(
+    `/historical-price-full/${ticker}`,
+    { from, to, serietype: "line" },
+  );
+  const rows = resp.historical ?? [];
+  return rows.map((r) => ({
+    ticker,
+    date: r.date,
+    open: asNum(r.open),
+    high: asNum(r.high),
+    low: asNum(r.low),
+    // Prefer adjusted close so corp-action distortions don't break momentum.
+    close: asNum(r.adjClose) ?? asNum(r.close),
+    volume: r.volume == null ? null : Math.trunc(r.volume),
+  }));
+}
+
 /**
  * Pulls Q+A statements for one ticker and returns merged fundamentals rows.
  * Period is determined by the (period, limit) tuples passed in.

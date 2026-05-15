@@ -18,12 +18,19 @@ to apply / roll back.
 | 20260515000200   | THS-37 | `20260515000200_e13_seed_universe.sql`              | applied |
 | 20260515000300   | THS-38 | `20260515000300_e14_fundamentals_cron.sql`          | applied |
 | 20260515000400   | THS-39 | `20260515000400_e15_consensus_cron.sql`             | applied |
+| 20260515000500   | THS-40 | `20260515000500_e16_universe_kind_and_spy.sql`      | applied |
+| 20260515000600   | THS-40 | `20260515000600_e16_momentum_view.sql`              | applied |
+| 20260515000700   | THS-40 | `20260515000700_e16_refresh_rpc.sql`                | applied |
+| 20260515000800   | THS-40 | `20260515000800_e16_prices_cron.sql`                | applied |
 
 ## Tables (current)
 
-### `universe` (THS-35)
-Hand-curated 70-name list across 5 layers. PK `ticker`. `layer` is 1..5 with a
-human label. `is_active` lets us soft-retire names without losing history.
+### `universe` (THS-35, extended THS-40)
+Hand-curated list. PK `ticker`. `layer` is **0..5** — investable names use 1..5
+with the human label; benchmark rows (SPY) use layer 0 with `kind='benchmark'`.
+`is_active` soft-retires without losing history. `kind` discriminates
+investable rows from benchmarks so fundamentals/consensus ingestion can skip
+SPY while price ingestion includes it.
 
 ### `fundamentals_raw` (THS-35)
 FMP fundamentals. PK `(ticker, period_end, period_type)` where `period_type` is
@@ -41,6 +48,15 @@ lookbacks and own-history valuation z-scores.
 ### `revisions` (THS-35)
 Derived analyst-revision deltas, computed nightly from `consensus` diffs by the
 THS-39 job. PK `(ticker, as_of)`.
+
+### Materialized view `momentum_12_1` (THS-40)
+Latest 12-1 trailing return per ticker:
+`(close_1m_ago / close_12m_ago) - 1`. Uses at-or-before semantics on calendar
+dates (30d / 365d) so weekends and holidays are handled without a trading-day
+calendar. Unique index on `ticker` lets us `REFRESH MATERIALIZED VIEW
+CONCURRENTLY`. Read access: authenticated + service_role; anon blocked.
+Refresh entrypoint: `public.refresh_momentum_12_1()` RPC, SECURITY DEFINER,
+service_role only.
 
 ### `aiq_rubric` (THS-36)
 Manually scored AIQ rubric across six dimensions (Disclosure 20, Defensibility 20,
