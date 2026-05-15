@@ -148,7 +148,7 @@ This isn't optional. Terry has a global `honesty` skill that applies to every in
 | Visual reference (canvas, secondary) | `design-references/03-canvas-secondary-investment-portal/` |
 | Visual reference (component mining) | `design-references/04-additional-basis-q-series/` |
 | Current visual state (not locked) | `prototype/` |
-| **Reticle source codebase (Epic 4 base)** | **`/Users/terryturner/Hub/reticle-optimizeclaude/`** (on Terry's local Mac — see section below) |
+| **Reticle source codebase (Epic 4 base)** | **https://github.com/terry-zero-in/optimize-claude-docs** (clone via HTTPS — see "Reticle base file" section below) |
 | Tickets | [Linear THS team](https://linear.app/basisuw/team/THS) |
 | Project hub | [AI Thesis v2 project](https://linear.app/basisuw/project/ai-thesis-v2-scoring-engine-and-portfolio-79a38aec2b49) |
 
@@ -160,15 +160,11 @@ This isn't optional. Terry has a global `honesty` skill that applies to every in
 
 ### Where it lives
 
-Source path: `/Users/terryturner/Hub/reticle-optimizeclaude/` — on Terry's local Mac.
+**GitHub:** https://github.com/terry-zero-in/optimize-claude-docs — this is the Reticle baseline file. Clone it at the start of Epic 4 and develop into it.
 
-**Important:** Remote Claude Code sessions (cloud / web app / mobile / GitHub Actions) run in an isolated container and CANNOT read Terry's local filesystem. Before Epic 4 starts, Terry needs to:
+Original local copy lives on Terry's Mac at `/Users/terryturner/Hub/reticle-optimizeclaude/`, but the GitHub repo above is the authoritative source for remote Claude Code sessions.
 
-1. Copy the Reticle folder into this repo (e.g. as `reticle/` at the root) and commit it, OR
-2. Push Reticle to a GitHub repo and tell Claude to clone it, OR
-3. Paste specific Reticle files Claude needs into the session
-
-A local Claude Code session running on Terry's Mac CAN read the path directly.
+**Note:** The GitHub MCP scope for this session is restricted to `terry-zero-in/ai-thesis`, so MCP tools won't reach `optimize-claude-docs` directly — clone via `git clone https://github.com/terry-zero-in/optimize-claude-docs.git` over HTTPS instead. If the repo is private and the clone fails, escalate to Terry for access.
 
 ### What carries over verbatim from Reticle (with Basis re-skin only)
 
@@ -187,7 +183,7 @@ The **canvas** content for every page (Dashboard, Universe, Detail, Portfolio, R
 
 ### Order of operations for Epic 4
 
-1. Confirm Reticle is accessible (in-repo / cloned / pasted). If not, escalate to Terry.
+1. Clone `https://github.com/terry-zero-in/optimize-claude-docs` into this repo (e.g. as a sibling working dir or vendored into `reticle/`). If the clone fails (private repo / auth), escalate to Terry.
 2. Promote Reticle to the new `app/` (Next.js 15 + React 19 + Tailwind v4) — keep its sidebar, right rail, top bar, and tab patterns intact.
 3. Wire Basis-specific routes into the existing nav.
 4. Build each page's canvas from the Tier 2/3/4 references, fed by Supabase data via the Epic 1-3 ingestion + scoring outputs.

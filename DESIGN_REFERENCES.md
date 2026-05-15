@@ -9,7 +9,7 @@ Terry has explicitly ranked design influences. Higher tier wins on conflict. Tre
 ## Tier 1 — BASE (skeleton of the app)
 
 **Visual reference:** `design-references/01-base-reticle-screenshots/` (10 JPGs)
-**Source code (the actual base file to develop in):** `/Users/terryturner/Hub/reticle-optimizeclaude/` — on Terry's local Mac. NOT in this repo. Remote Claude Code sessions cannot read his local filesystem; before any Epic 4 work, Terry must copy Reticle into this repo, push it to GitHub, or paste files. See `CLAUDE.md` → "Reticle base file — frontend foundation" for the full handoff.
+**Source code (the actual base file to develop in):** https://github.com/terry-zero-in/optimize-claude-docs — clone this at the start of Epic 4. (Original local copy: `/Users/terryturner/Hub/reticle-optimizeclaude/` on Terry's Mac.) See `CLAUDE.md` → "Reticle base file — frontend foundation" for the full handoff and order of operations.
 **Status:** Source of truth for app chrome. Sidebar + right rail + top bar + Delegations/Reviews tab patterns carry over verbatim from Reticle; only re-skin for Basis-specific content.
 
 The Reticle reference establishes:

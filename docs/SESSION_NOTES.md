@@ -134,8 +134,9 @@ supabase functions invoke ingest-consensus   --no-verify-jwt --body '{}'
 
 **See `CLAUDE.md` → "Reticle base file" section** for the full handoff. Summary:
 
-- Source path on Terry's Mac: `/Users/terryturner/Hub/reticle-optimizeclaude/`
-- **Remote Claude Code sessions cannot read his local filesystem.** Terry must copy / push / paste before Epic 4 starts.
+- **GitHub (authoritative):** https://github.com/terry-zero-in/optimize-claude-docs — clone this at Epic 4 kickoff.
+- Original local copy on Terry's Mac: `/Users/terryturner/Hub/reticle-optimizeclaude/`.
+- GitHub MCP scope is restricted to `terry-zero-in/ai-thesis`; reach `optimize-claude-docs` via `git clone` over HTTPS, not MCP tools. If clone fails (private/auth), escalate.
 - Reticle provides verbatim (with Basis re-skin only): left sidebar (220px), right rail (280px), top bar (48px), inner-page tab strip ("Delegations" + "Reviews" pattern → reused on Basis tabbed surfaces like the Rent Roll analogue).
 - Canvas content per page (Dashboard, Universe, Detail, Portfolio, Regime, AIQ, Memos, Proforma, Insights) comes from `design-references/02-*`, `03-*`, `04-*`. NOT from Reticle.
 - `prototype/` is the content reference for what AI Thesis canvases should look like. Reticle is the chrome base. Both stay in scope during Epic 4.
@@ -183,4 +184,4 @@ All six are in `~/.claude/skills/` and surface via the Skill tool when Terry typ
 2. Read this file (`docs/SESSION_NOTES.md`)
 3. Check PR #2 status (`subscribe_pr_activity` was set up — events arrive in the thread)
 4. If Terry's ready, mark THS-29 Done and start Epic 2 — Tier-A Scoring Engine (THS-30). First sub-issue under it is the next thing to build.
-5. If Epic 4 is firing, FIRST verify Reticle is accessible (in-repo / cloned / pasted). If not, escalate immediately.
+5. If Epic 4 is firing, FIRST `git clone https://github.com/terry-zero-in/optimize-claude-docs` (Reticle base). If the clone fails (private repo / auth), escalate immediately.
