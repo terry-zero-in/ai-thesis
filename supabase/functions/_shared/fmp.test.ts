@@ -21,6 +21,7 @@ test("mergeStatements joins on date and normalizes capex to magnitude", () => {
       netIncome: 12000,
       incomeBeforeTax: 14000,
       incomeTaxExpense: 2000,
+      researchAndDevelopmentExpenses: 5000,
       weightedAverageShsOutDil: 2480,
     },
   ];
@@ -73,6 +74,7 @@ test("mergeStatements joins on date and normalizes capex to magnitude", () => {
   assert.equal(row.income_tax_expense, 2000);
   assert.equal(row.dividends_paid, 200, "dividends_paid stored as positive magnitude");
   assert.equal(row.common_stock_repurchased, 3000, "buybacks stored as positive magnitude");
+  assert.equal(row.r_and_d_expense, 5000);
 });
 
 test("mergeStatements: QMJ fields null when source missing", () => {
@@ -88,6 +90,7 @@ test("mergeStatements: QMJ fields null when source missing", () => {
   assert.equal(rows[0].income_tax_expense, null);
   assert.equal(rows[0].dividends_paid, null);
   assert.equal(rows[0].common_stock_repurchased, null);
+  assert.equal(rows[0].r_and_d_expense, null);
 });
 
 test("mergeStatements: positive dividends/buybacks from FMP also stored positive", () => {
