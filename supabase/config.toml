@@ -54,3 +54,17 @@ enabled = false
 [edge_runtime]
 enabled = true
 inspector_port = 8083
+
+# Ingestion functions are invoked by pg_cron with a Bearer secret, not a
+# Supabase JWT. Disable the platform's JWT check so requireCronAuth() can do
+# the verification inside the function. (Supabase's `verify_jwt` defaults to
+# true and runs before the function code, so leaving it on would 401 the
+# scheduled calls before our auth helper sees them.)
+[functions.ingest-fundamentals]
+verify_jwt = false
+
+[functions.ingest-consensus]
+verify_jwt = false
+
+[functions.ingest-prices]
+verify_jwt = false

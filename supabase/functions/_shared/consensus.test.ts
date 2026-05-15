@@ -52,6 +52,41 @@ test("falls back to targetMedian when targetConsensus missing", () => {
   assert.equal(row.target_price, 100);
 });
 
+test("rating score: falls back through ratingScore -> overallScore -> rating", () => {
+  const est: FmpAnalystEstimateRow[] = [{ date: "2026-12-31", symbol: "X", estimatedEpsAvg: 1 }];
+
+  // Only ratingScore present (legacy /api/v3 shape)
+  let row = buildConsensusRow("X", "2026-05-15", est, null, { symbol: "X", ratingScore: 4 });
+  assert.equal(row.rating_avg, 2, "ratingScore=4 -> 6-4=2");
+
+  // Only overallScore present (possible /stable/ratings-snapshot shape)
+  row = buildConsensusRow("X", "2026-05-15", est, null, { symbol: "X", overallScore: 3 });
+  assert.equal(row.rating_avg, 3, "overallScore=3 -> 6-3=3");
+
+  // Only `rating` present (third candidate)
+  row = buildConsensusRow("X", "2026-05-15", est, null, { symbol: "X", rating: 5 });
+  assert.equal(row.rating_avg, 1, "rating=5 -> 6-5=1");
+
+  // ratingScore wins when multiple are present
+  row = buildConsensusRow("X", "2026-05-15", est, null, { symbol: "X", ratingScore: 2, overallScore: 4 });
+  assert.equal(row.rating_avg, 4, "ratingScore takes precedence -> 6-2=4");
+});
+
+test("rating score: out-of-band values fall back to null", () => {
+  const est: FmpAnalystEstimateRow[] = [{ date: "2026-12-31", symbol: "X", estimatedEpsAvg: 1 }];
+
+  // Score outside the 1..5 sanity band -> null (defensive: new endpoint may
+  // return a percent or letter we can't interpret yet).
+  let row = buildConsensusRow("X", "2026-05-15", est, null, { symbol: "X", ratingScore: 75 });
+  assert.equal(row.rating_avg, null);
+
+  row = buildConsensusRow("X", "2026-05-15", est, null, { symbol: "X", ratingScore: 0 });
+  assert.equal(row.rating_avg, null);
+
+  row = buildConsensusRow("X", "2026-05-15", est, null, { symbol: "X" });
+  assert.equal(row.rating_avg, null);
+});
+
 test("ignores past fiscal-year estimates", () => {
   const estimates: FmpAnalystEstimateRow[] = [
     { date: "2024-12-31", symbol: "X", estimatedEpsAvg: 3.0 }, // past

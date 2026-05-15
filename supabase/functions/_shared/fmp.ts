@@ -50,7 +50,10 @@ export interface FmpCashRow {
   capitalExpenditure?: number | null;
 }
 
-const FMP_BASE = "https://financialmodelingprep.com/api/v3";
+// FMP migrated to /stable/ in 2025; /api/v3/ is legacy and not available on
+// new accounts. Symbol is a query parameter on every /stable/ endpoint, not
+// a path segment.
+const FMP_BASE = "https://financialmodelingprep.com/stable";
 
 function fmpPeriod(period: Period): "quarter" | "annual" {
   return period === "Q" ? "quarter" : "annual";
@@ -70,21 +73,24 @@ async function fmpGet<T>(path: string, params: Record<string, string>): Promise<
 }
 
 export async function fetchIncome(ticker: string, period: Period, limit: number) {
-  return fmpGet<FmpIncomeRow[]>(`/income-statement/${ticker}`, {
+  return fmpGet<FmpIncomeRow[]>(`/income-statement`, {
+    symbol: ticker,
     period: fmpPeriod(period),
     limit: String(limit),
   });
 }
 
 export async function fetchBalance(ticker: string, period: Period, limit: number) {
-  return fmpGet<FmpBalanceRow[]>(`/balance-sheet-statement/${ticker}`, {
+  return fmpGet<FmpBalanceRow[]>(`/balance-sheet-statement`, {
+    symbol: ticker,
     period: fmpPeriod(period),
     limit: String(limit),
   });
 }
 
 export async function fetchCash(ticker: string, period: Period, limit: number) {
-  return fmpGet<FmpCashRow[]>(`/cash-flow-statement/${ticker}`, {
+  return fmpGet<FmpCashRow[]>(`/cash-flow-statement`, {
+    symbol: ticker,
     period: fmpPeriod(period),
     limit: String(limit),
   });
@@ -175,12 +181,19 @@ export interface FmpPriceTargetConsensus {
 export interface FmpRatingRow {
   symbol: string;
   date?: string;
-  ratingScore?: number | null;        // FMP convention: 1 strong sell, 5 strong buy
+  // FMP's /stable/ratings-snapshot returns a quantitative rating. Field names
+  // weren't fully verified from the docs in this iteration — we read the most
+  // likely candidates and fall back to null. Legacy /api/v3/rating used
+  // `ratingScore` on a 1=sell..5=buy scale.
+  ratingScore?: number | null;
+  overallScore?: number | null;
+  rating?: number | null;
   ratingRecommendation?: string | null;
 }
 
 export async function fetchAnalystEstimates(ticker: string, limit = 4) {
-  return fmpGet<FmpAnalystEstimateRow[]>(`/analyst-estimates/${ticker}`, {
+  return fmpGet<FmpAnalystEstimateRow[]>(`/analyst-estimates`, {
+    symbol: ticker,
     period: "annual",
     limit: String(limit),
   });
@@ -193,10 +206,13 @@ export async function fetchPriceTargetConsensus(ticker: string) {
   return arr[0] ?? null;
 }
 
-export async function fetchRatingConsensus(ticker: string) {
-  const arr = await fmpGet<FmpRatingRow[]>(`/rating/${ticker}`, {});
+export async function fetchRatingSnapshot(ticker: string) {
+  const arr = await fmpGet<FmpRatingRow[]>(`/ratings-snapshot`, { symbol: ticker });
   return arr[0] ?? null;
 }
+
+/** @deprecated use fetchRatingSnapshot. Kept temporarily so callers don't break mid-rename. */
+export const fetchRatingConsensus = fetchRatingSnapshot;
 
 /**
  * Pure helper: given an array of forward analyst estimates and a reference
@@ -221,10 +237,16 @@ export function buildConsensusRow(
   const num_analysts = asNum(fy1?.numberAnalystsEstimatedEps)
     ?? asNum(fy1?.numberAnalystsEstimatedRevenue);
 
-  // Flip FMP's 1=sell..5=buy into the spec's 1=buy..5=sell convention.
+  // FMP's quantitative rating (legacy /api/v3/rating, current
+  // /stable/ratings-snapshot) uses 1=sell..5=buy. The spec stores the inverse
+  // (1=buy..5=sell), so flip the sign. We probe a few likely field names —
+  // the new /stable/ endpoint hasn't been verified against a live response —
+  // and fall back to null when the score is outside the 1..5 sanity band.
   let rating_avg: number | null = null;
-  const score = asNum(rating?.ratingScore);
-  if (score !== null) rating_avg = 6 - score;
+  const score = asNum(rating?.ratingScore)
+    ?? asNum(rating?.overallScore)
+    ?? asNum(rating?.rating);
+  if (score !== null && score >= 1 && score <= 5) rating_avg = 6 - score;
 
   return {
     ticker,
@@ -273,11 +295,17 @@ export async function fetchHistoricalPrices(
   from: string,
   to: string,
 ): Promise<PriceRow[]> {
-  const resp = await fmpGet<FmpHistoricalResponse>(
-    `/historical-price-full/${ticker}`,
-    { from, to, serietype: "line" },
+  // /stable/historical-price-eod-full is the current endpoint. The legacy
+  // /api/v3/historical-price-full wrapped rows in a `{ historical: [...] }`
+  // envelope; the /stable/ form returns the array directly. Handle both
+  // shapes so this works during the deprecation overlap window.
+  const resp = await fmpGet<FmpHistoricalResponse | FmpHistoricalRow[]>(
+    `/historical-price-eod-full`,
+    { symbol: ticker, from, to },
   );
-  const rows = resp.historical ?? [];
+  const rows: FmpHistoricalRow[] = Array.isArray(resp)
+    ? resp
+    : (resp.historical ?? []);
   return rows.map((r) => ({
     ticker,
     date: r.date,

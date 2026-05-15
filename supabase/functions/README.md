@@ -40,11 +40,16 @@ Locally, copy `.env.example` to `.env.local` and fill in.
 ## Deploy
 
 ```bash
-supabase functions deploy ingest-fundamentals
+supabase functions deploy ingest-fundamentals ingest-consensus ingest-prices
 ```
 
-The cron migration (`20260515000300_e14_fundamentals_cron.sql`) wires pg_cron
-to call this function on schedule once it's deployed. Function deploy ≠ cron
+`verify_jwt = false` is set per-function in `supabase/config.toml` so pg_cron's
+custom Bearer-secret invocations aren't rejected by the platform JWT check
+before the function runs. Auth is enforced inside the function by
+`requireCronAuth()`, which verifies the `CRON_INVOKE_SECRET` matches.
+
+The cron migrations (`20260515000300`/`000400`/`000800`) wire pg_cron to call
+the functions on schedule once they're deployed. Function deploy ≠ cron
 deploy — both are required.
 
 ## Tests

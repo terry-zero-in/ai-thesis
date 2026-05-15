@@ -12,8 +12,11 @@ import {
   buildConsensusRow,
   fetchAnalystEstimates,
   fetchPriceTargetConsensus,
-  fetchRatingConsensus,
+  fetchRatingSnapshot,
   type ConsensusRow,
+  type FmpAnalystEstimateRow,
+  type FmpPriceTargetConsensus,
+  type FmpRatingRow,
 } from "../_shared/fmp.ts";
 import { computeRevisionDeltas, type SnapshotPoint } from "../_shared/revisions.ts";
 import { activeTickers, serviceClient } from "../_shared/supabase.ts";
@@ -36,13 +39,25 @@ Deno.serve(async (req: Request): Promise<Response> => {
     let revisionsUpserted = 0;
     const failures: Array<{ ticker: string; error: string }> = [];
 
+    function settledValue<T>(s: PromiseSettledResult<T>): T | null {
+      return s.status === "fulfilled" ? s.value : null;
+    }
+
     for (const ticker of tickers) {
       try {
-        const [estimates, target, rating] = await Promise.all([
+        // allSettled, not all: an FMP outage on one endpoint shouldn't lose
+        // the others. estimates are the only hard requirement — without them
+        // we can't compute FY1/FY2, so treat that as the ticker-level failure.
+        const [estRes, tgtRes, ratRes] = await Promise.allSettled([
           fetchAnalystEstimates(ticker, 4),
           fetchPriceTargetConsensus(ticker),
-          fetchRatingConsensus(ticker),
+          fetchRatingSnapshot(ticker),
         ]);
+
+        if (estRes.status === "rejected") throw estRes.reason;
+        const estimates: FmpAnalystEstimateRow[] = estRes.value;
+        const target: FmpPriceTargetConsensus | null = settledValue(tgtRes);
+        const rating: FmpRatingRow | null = settledValue(ratRes);
 
         const row: ConsensusRow = buildConsensusRow(ticker, today, estimates, target, rating);
 
