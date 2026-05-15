@@ -1,10 +1,15 @@
 -- THS-37 (E1.3) — Seed the universe with the hand-curated investable list
--- Source: THS-37 ticket body. Layer labels match the ticket section headings.
+-- Source: THS-37 ticket body, with ANET reclassified to L1 per the algorithm
+-- spec's deployment-slate table. The "70 names" wording in the ticket title
+-- was a typo; the authoritative count is 50 (Terry-confirmed).
 --
--- The ticket title says "70 names across 5 layers" and the acceptance line says
--- "all 70 rows queryable," but the explicit list in the ticket body enumerates
--- 50 tickers (L1=13, L2=7, L3=10, L4=14, L5=6). We're inserting the explicit
--- 50 here; reconciling the 70-vs-50 discrepancy is queued for Terry.
+-- Layer counts after the ANET fix:
+--   L1 Compute     14  (added ANET — Arista is Ethernet-for-AI hardware, not an app)
+--   L2 Hyperscaler  7
+--   L3 App          9  (lost ANET)
+--   L4 Power       14
+--   L5 Incumbent    6
+--   Total          50
 --
 -- Idempotent: ON CONFLICT DO UPDATE so re-running the seed refreshes name /
 -- layer_label / is_active without disturbing added_at on existing rows.
@@ -12,7 +17,7 @@
 BEGIN;
 
 INSERT INTO public.universe (ticker, name, layer, layer_label) VALUES
-  -- L1 Compute (13)
+  -- L1 Compute (14)
   ('NVDA',  'NVIDIA',                              1, 'Compute'),
   ('AVGO',  'Broadcom',                            1, 'Compute'),
   ('AMD',   'Advanced Micro Devices',              1, 'Compute'),
@@ -36,10 +41,13 @@ INSERT INTO public.universe (ticker, name, layer, layer_label) VALUES
   ('IBM',   'IBM',                                 2, 'Hyperscaler'),
   ('CRM',   'Salesforce',                          2, 'Hyperscaler'),
 
-  -- L3 App (10) — NB: spec deployment table classifies ANET as L1; ticket places it in L3. Following ticket.
+  -- ANET (Arista Networks) lives in L1 with the rest of compute hardware;
+  -- see migration 20260515000900. L3 below is 9 names, not 10.
+  ('ANET',  'Arista Networks',                     1, 'Compute'),
+
+  -- L3 App (9)
   ('PLTR',  'Palantir Technologies',               3, 'App'),
   ('SNOW',  'Snowflake',                           3, 'App'),
-  ('ANET',  'Arista Networks',                     3, 'App'),
   ('CRWD',  'CrowdStrike Holdings',                3, 'App'),
   ('S',     'SentinelOne',                         3, 'App'),
   ('DDOG',  'Datadog',                             3, 'App'),
