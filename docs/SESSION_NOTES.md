@@ -1,4 +1,62 @@
-# Session Notes — last updated 2026-05-15
+# Session Notes — last updated 2026-05-15 (PM session 2)
+
+## PM session 2 (2026-05-15) — Epic 2 sub-issues kickoff
+
+### Shipped this session (all on PR #4 — `claude/epic-2-tier-a-scoring`)
+
+| Ticket | Status | Commits | What |
+|---|---|---|---|
+| THS-44 | **Done** | `79fbb9c` | `stats.ts`: `mean`, `stddev` (sample), `zScoreInCohort`, `percentileRankInCohort`, `percentileFromZ`. NaN-safe; ties get midpoint; 32 unit tests. |
+| THS-41 | **Done** | `fa66d69` + `32b7b75` + `ee673ff` | (a) Schema extension — 8 columns added to `fundamentals_raw` (cash, retained_earnings, current_assets, current_liabilities, income_before_tax, income_tax_expense, dividends_paid, common_stock_repurchased), `mergeStatements` extended with `Math.abs()` on cash outflows. (b) Pure Q math: `metrics.ts` (ROIC w/ effectiveTaxRate, Altman Z, EPS vol, OLS beta, payout yield, 5y delta) + `factor-q.ts` (4-pillar QMJ, layer-aware payout weighting, missing-metric-tolerant pillar aggregation). 39 new tests, 87/87 in `_shared/` pass. (c) `compute-q-scores` edge function loads cohort in 5 queries, writes q_score + factor_breakdown.q to scores_history. Weekly cron Saturday 22:00 UTC. |
+| THS-42 schema | **Partial** | `ec53583` | `ai_segment_overrides` table per Terry's spec (ticker, period_end, ai_revenue, source_url, disclosure_quality, notes; RLS forced; updated_at trigger). Seed for NVDA $39.1B + AVGO $8.4B from spec §Part 3. Math + integration still to ship. |
+
+### Key Terry directives this session
+
+- **Standing directive — schema-expand by default.** When you hit a downstream factor referencing a field/table not in the schema yet, add the column or table without stopping to ask. Surface it in the end-of-session batch only.
+- **PR pattern.** All engineering from THS-36 forward goes through PRs against main. Already followed — PRs #2 (Epic 1) and #4 (Epic 2) are open. Don't push to main directly.
+- **No proxies for Q.** The 8-column schema extension was required because the slim THS-35 schema couldn't support real QMJ. Spec doc on main (`1b8a8bb`) was already updated to match — merged into Epic 2 branch.
+- **AI segment proxy → curated overrides + layer defaults.** Per spec §Fix 4. Do NOT use FMP segment endpoint + string matching.
+- **Forward P/E history → compute from existing prices × consensus.** Materialize a view; don't backfill a vendor endpoint. Graceful degradation for short history.
+
+### Spec deviation flagged in code
+
+- **factor-q.ts safety pillar uses `+altman_z`, not `-altman_z`.** Spec pseudocode reads `-altman_z_score(...)` but negating it inverts the pillar's intent (high Altman Z = safer should contribute *positively*). Flagged in the module header; one-line flip if Terry wants strict pseudocode.
+
+### THS-42 — remaining work for next session
+
+1. **r_and_d_expense column.** L5 capex efficiency formula needs R&D explicitly (`AI ARR / (R&D + infra)`). FMP `/stable/income-statement` exposes `researchAndDevelopmentExpenses`. Add to `fundamentals_raw`, extend `FmpIncomeRow` + `mergeStatements`, add a `fundamentals_raw_addendum` migration.
+2. **`factor-g.ts` pure math.** Three signals: NTM revenue growth (consensus.ntm_revenue vs TTM revenue from fundamentals), AI segment growth (override × layer-default fallback), capex efficiency (layer-specific). Same cohort-z-then-percentile pattern as factor-q.
+3. **`compute-g-scores` edge function.** Mirrors `compute-q-scores`. Writes `g_score` + `factor_breakdown.g`.
+4. **Cron migration.** Saturday 22:15 UTC, 15 min after Q.
+5. **Tests.** ≥20 tests covering each signal and the layer fallback logic.
+
+Acceptance for THS-42 (hand-scored slate ±5) is operator-side; cannot validate in build env without FMP key.
+
+### Migration ledger additions
+
+| 20260515001000 | THS-41 | E2.1 prep: `fundamentals_raw` +8 columns for QMJ |
+| 20260515001100 | THS-41 | E2.1 weekly Q-score cron (Sat 22:00 UTC) |
+| 20260515001200 | THS-42 | E2.2 `ai_segment_overrides` table + RLS + trigger |
+| 20260515001300 | THS-42 | E2.2 seed: NVDA + AVGO explicit AI revenue disclosures |
+
+### Open judgment calls / known gaps (cumulative)
+
+| Where | Status |
+|---|---|
+| L4 capex efficiency formula | Spec asks for "contracted MW pipeline value / capex" — that data isn't in any standard provider. Will fall back to revenue YoY / capex YoY for L4 in v1 and document. |
+| L5 R&D denominator | Needs new `r_and_d_expense` column on fundamentals_raw. See THS-42 remaining-work item 1. |
+| Hand-scored 20-name slate ±5 on Q | Cannot run in container; operator validates on first FMP-key deploy. |
+| AI segment overrides seed | Only 2/20 slate names seeded (NVDA, AVGO). Operator-curated additions land as follow-on inserts. |
+
+---
+
+## Original handoff (PM session 1, 2026-05-15)
+
+The remainder of this file describes Epic 1 completion. Most of it is now historical; refer to it only for FMP endpoint details, ANET classification reasoning, or the original operator first-run steps (which still apply, just add the new compute-q-scores function to the deploy list).
+
+---
+
+# Session Notes — last updated 2026-05-15 (Epic 1 close)
 
 This file is the cold-start handoff doc. A fresh Claude session should be able to read it and immediately know:
 - where the build is
