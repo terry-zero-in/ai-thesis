@@ -1,5 +1,96 @@
 # Session Notes — last updated 2026-05-15 (PM session 2)
 
+## PM session 2 (2026-05-15) — Epic 2 closed end-to-end
+
+### THS-43 (V) + THS-45 (composite) shipped
+
+Continuing from the THS-42 checkpoint above, the rest of Epic 2 landed in two more commits:
+
+- `6037434` — **THS-43 V-score:** schema-expand `fundamentals_raw.depreciation_and_amortization`; `forward_pe_history` matview (prices × consensus, refreshed at the tail of `ingest-consensus`); `depreciation_flags` seed (META −12, ORCL −7); pure V math (PEG-like + adj FCF yield + own-history fwd P/E z with <90/<365/365+ graceful degradation bands + §Fix 5 penalty, clamped to [−12,0]); `compute-v-scores` edge function; weekly cron Sat 22:30 UTC.
+- `643ad68` — **THS-45 composite:** `LAYER_WEIGHTS` per §Part 3; missing-factor-tolerant rescale (drops any null factor and rescales the rest to sum 1.0); §Fix 4 Bayesian macro multiplier; tier cut-points ≥75/≥60/≥45; `macro_gauges` table + `upsert_composite_score` RPC; `compute-composite-scores` edge function; weekly cron Sat 22:45 UTC.
+
+**Epic 2 parent THS-30 marked Done.** Tests 161/161 in `_shared/*.test.ts`.
+
+### Saturday scoring pipeline (final order)
+
+| UTC | Job | Queries | Writes |
+|---|---|---|---|
+| 22:00 | `compute-q-scores` | 5 | `q_score` + `factor_breakdown.q` |
+| 22:15 | `compute-g-scores` | 4 | `g_score` + `factor_breakdown.g` |
+| 22:30 | `compute-v-scores` | 6 | `v_score` + `factor_breakdown.v` |
+| 22:45 | `compute-composite-scores` | 4 | `composite` + `final_score` + `tier` + `macro_*` + `factor_breakdown.composite` |
+
+All four use `upsert_factor_score` or `upsert_composite_score` (both SECURITY DEFINER, service-role only, JSONB-merge-aware) so peer slices in `factor_breakdown` survive. **Critical pattern: any future per-factor or composite writer MUST use these RPCs, never `.upsert()`.**
+
+### Cumulative Epic 2 ledger (migrations 20260515001000–002400)
+
+| Timestamp | Ticket | Purpose |
+|---|---|---|
+| 001000 | THS-41 | fundamentals_raw +8 columns (QMJ) |
+| 001100 | THS-41 | Q cron Sat 22:00 |
+| 001200 | THS-42 | ai_segment_overrides table |
+| 001300 | THS-42 | seed: NVDA + AVGO |
+| 001400 | THS-42 | fundamentals_raw +r_and_d_expense |
+| 001500 | THS-42 | upsert_factor_score RPC (JSONB merge) |
+| 001600 | THS-42 | G cron Sat 22:15 |
+| 001700 | THS-43 | fundamentals_raw +depreciation_and_amortization |
+| 001800 | THS-43 | forward_pe_history matview |
+| 001900 | THS-43 | refresh_forward_pe_history RPC |
+| 002000 | THS-43 | seed: META + ORCL depreciation_flags |
+| 002100 | THS-43 | V cron Sat 22:30 |
+| 002200 | THS-45 | macro_gauges table + seed (May 14 2026) |
+| 002300 | THS-45 | upsert_composite_score RPC |
+| 002400 | THS-45 | Composite cron Sat 22:45 |
+
+### Operator first-run additions (append to existing list)
+
+```bash
+# In addition to ingest-* functions already covered in earlier notes:
+supabase functions deploy compute-q-scores compute-g-scores compute-v-scores compute-composite-scores
+
+# To trigger Tier-A scoring manually before first cron tick:
+supabase functions invoke compute-q-scores         --no-verify-jwt --body '{}'
+supabase functions invoke compute-g-scores         --no-verify-jwt --body '{}'
+supabase functions invoke compute-v-scores         --no-verify-jwt --body '{}'
+supabase functions invoke compute-composite-scores --no-verify-jwt --body '{}'
+
+# v1 macro_gauges is operator-curated — insert a weekly row before composite runs:
+psql "$DATABASE_URL" -c "INSERT INTO macro_gauges (as_of, naaim, aaii_3wk_spread, fear_greed)
+                          VALUES (CURRENT_DATE, <naaim>, <aaii>, <fg>);"
+```
+
+### Spec deviations flagged in code (cumulative)
+
+- `factor-q.ts` safety pillar uses `+altman_z` (not `-altman_z` per pseudocode); negating would invert pillar intent.
+- `factor-g.ts` L4 falls back to overall TTM revenue / TTM capex (contracted MW pipeline data isn't in any provider).
+- `factor-v.ts` only ships `mid` maintenance-capex band; `low` needs 5y pre-AI history we don't have, `high` is one-line addition.
+- `composite.ts` strengthens "Tier-A rescale" to "drop any null factor and rescale remaining" — same behavior in the spec's stated case (M/S null) plus graceful degradation for unexpected single-factor nulls.
+
+### Epic 3 (Overlays) — kickoff plan
+
+Epic 3 is mostly UI + admin surfaces for the data Epic 2 already consumes:
+
+1. **AIQ rubric admin UI.** Score the 50 names manually across 6 dimensions; the rubric table is THS-36 done; we need a write surface. Could be a Next.js page or a Supabase Studio inline form for v1.
+2. **depreciation_flags admin.** Add rows for AMZN/GOOGL/MSFT/AVGO etc. as new disclosures land.
+3. **macro_gauges admin.** Weekly NAAIM/AAII/F&G entry. Could replace with live fetchers later (separate ticket).
+4. **ai_segment_overrides admin.** Seed the rest of the §Part 3 slate (TSM derived, GOOGL/AMZN/ORCL derived per the Q1 disclosures).
+5. **Concentration tax + PC1 loading.** Spec mentions both; concentration tax is a separate factor on top of composite. PC1 loading is a correlation analysis across the universe.
+
+Likely starts with Reticle base clone (see CLAUDE.md "Reticle base file" section) since Epic 4 (Portal UI) and Epic 3 admin pages share the chrome.
+
+### Known operator-side validation gaps
+
+| Gap | Verifies when |
+|---|---|
+| Hand-scored 20-name slate ±5 on Q/G/V | First FMP-key + DB run; iteration on math if off-spec |
+| Weekly pass under 60 seconds | First live cron run; cron timeout set to 60s |
+| `forward_pe_history` confidence bands | ≥90 days of joint price+consensus ingestion |
+| Composite tier classification across cohort | First composite cron run with all four factors populated |
+| `ai_segment_overrides` seed completeness | Operator adds remaining 18 slate names |
+| `depreciation_flags` seed completeness | Operator adds AMZN/GOOGL/MSFT/AVGO if applicable |
+
+---
+
 ## PM session 2 (2026-05-15) — Epic 2 sub-issues, continued
 
 ### Update at 2026-05-15 end-of-day
