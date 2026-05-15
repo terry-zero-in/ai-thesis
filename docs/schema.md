@@ -22,6 +22,8 @@ to apply / roll back.
 | 20260515000600   | THS-40 | `20260515000600_e16_momentum_view.sql`              | applied |
 | 20260515000700   | THS-40 | `20260515000700_e16_refresh_rpc.sql`                | applied |
 | 20260515000800   | THS-40 | `20260515000800_e16_prices_cron.sql`                | applied |
+| 20260515000900   | THS-37 | `20260515000900_e13_reclassify_anet_l1.sql`         | applied |
+| 20260515001000   | THS-41 | `20260515001000_e21_extend_fundamentals_for_qmj.sql`| applied |
 
 ## Tables (current)
 
@@ -32,10 +34,18 @@ with the human label; benchmark rows (SPY) use layer 0 with `kind='benchmark'`.
 investable rows from benchmarks so fundamentals/consensus ingestion can skip
 SPY while price ingestion includes it.
 
-### `fundamentals_raw` (THS-35)
+### `fundamentals_raw` (THS-35, extended THS-41)
 FMP fundamentals. PK `(ticker, period_end, period_type)` where `period_type` is
 `'Q'` or `'A'`. Idempotent ingestion: re-running the same period overwrites the
 same row.
+
+Columns added by migration `20260515001000_e21_extend_fundamentals_for_qmj.sql`
+to support the Q-score (THS-41): `cash_and_equivalents`, `retained_earnings`,
+`current_assets`, `current_liabilities`, `income_before_tax`,
+`income_tax_expense`, `dividends_paid`, `common_stock_repurchased`.
+Sign convention: `dividends_paid` and `common_stock_repurchased` are stored as
+**positive magnitudes** (FMP returns them negative since they are cash
+outflows; `mergeStatements` applies `Math.abs()` before upsert).
 
 ### `consensus` (THS-35)
 Daily analyst consensus snapshot. PK `(ticker, as_of)`. `rating_avg` is FMP

@@ -19,6 +19,8 @@ test("mergeStatements joins on date and normalizes capex to magnitude", () => {
       grossProfit: 22500,
       operatingIncome: 15000,
       netIncome: 12000,
+      incomeBeforeTax: 14000,
+      incomeTaxExpense: 2000,
       weightedAverageShsOutDil: 2480,
     },
   ];
@@ -29,6 +31,10 @@ test("mergeStatements joins on date and normalizes capex to magnitude", () => {
       totalAssets: 90000,
       totalDebt: 11000,
       totalStockholdersEquity: 60000,
+      cashAndCashEquivalents: 25000,
+      retainedEarnings: 40000,
+      totalCurrentAssets: 45000,
+      totalCurrentLiabilities: 15000,
     },
   ];
   const cash: FmpCashRow[] = [
@@ -36,7 +42,9 @@ test("mergeStatements joins on date and normalizes capex to magnitude", () => {
       date: "2026-03-31",
       symbol: "NVDA",
       freeCashFlow: 11500,
-      capitalExpenditure: -1800, // FMP returns capex as negative
+      capitalExpenditure: -1800,        // FMP returns capex as negative
+      dividendsPaid: -200,              // FMP returns dividends as negative
+      commonStockRepurchased: -3000,    // FMP returns buybacks as negative
     },
   ];
 
@@ -56,6 +64,47 @@ test("mergeStatements joins on date and normalizes capex to magnitude", () => {
   assert.equal(row.shareholders_equity, 60000);
   assert.equal(row.capex, 1800, "capex must be stored as positive magnitude");
   assert.equal(row.shares_diluted, 2480);
+  // THS-41 QMJ fields
+  assert.equal(row.cash_and_equivalents, 25000);
+  assert.equal(row.retained_earnings, 40000);
+  assert.equal(row.current_assets, 45000);
+  assert.equal(row.current_liabilities, 15000);
+  assert.equal(row.income_before_tax, 14000);
+  assert.equal(row.income_tax_expense, 2000);
+  assert.equal(row.dividends_paid, 200, "dividends_paid stored as positive magnitude");
+  assert.equal(row.common_stock_repurchased, 3000, "buybacks stored as positive magnitude");
+});
+
+test("mergeStatements: QMJ fields null when source missing", () => {
+  const income: FmpIncomeRow[] = [
+    { date: "2025-12-31", symbol: "X", revenue: 100, netIncome: 10 },
+  ];
+  const rows = mergeStatements("X", "Q", income, [], []);
+  assert.equal(rows[0].cash_and_equivalents, null);
+  assert.equal(rows[0].retained_earnings, null);
+  assert.equal(rows[0].current_assets, null);
+  assert.equal(rows[0].current_liabilities, null);
+  assert.equal(rows[0].income_before_tax, null);
+  assert.equal(rows[0].income_tax_expense, null);
+  assert.equal(rows[0].dividends_paid, null);
+  assert.equal(rows[0].common_stock_repurchased, null);
+});
+
+test("mergeStatements: positive dividends/buybacks from FMP also stored positive", () => {
+  // Defensive — if FMP ever returns these as positive (or we hit a different
+  // provider), abs() is a no-op and we still end up with a positive magnitude.
+  const income: FmpIncomeRow[] = [{ date: "2026-01-01", symbol: "P", revenue: 1 }];
+  const cash: FmpCashRow[] = [
+    {
+      date: "2026-01-01",
+      symbol: "P",
+      dividendsPaid: 500,
+      commonStockRepurchased: 1200,
+    },
+  ];
+  const rows = mergeStatements("P", "Q", income, [], cash);
+  assert.equal(rows[0].dividends_paid, 500);
+  assert.equal(rows[0].common_stock_repurchased, 1200);
 });
 
 test("mergeStatements returns null for missing balance/cash matches", () => {

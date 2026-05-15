@@ -20,6 +20,15 @@ export interface FundamentalsRow {
   shareholders_equity: number | null;
   capex: number | null;
   shares_diluted: number | null;
+  // THS-41 additions — QMJ Q-score support fields.
+  cash_and_equivalents: number | null;
+  retained_earnings: number | null;
+  current_assets: number | null;
+  current_liabilities: number | null;
+  income_before_tax: number | null;
+  income_tax_expense: number | null;
+  dividends_paid: number | null;          // positive magnitude (cash outflow)
+  common_stock_repurchased: number | null; // positive magnitude (cash outflow)
 }
 
 // ---------------------------------------------------------------------------
@@ -32,6 +41,8 @@ export interface FmpIncomeRow {
   grossProfit?: number | null;
   operatingIncome?: number | null;
   netIncome?: number | null;
+  incomeBeforeTax?: number | null;
+  incomeTaxExpense?: number | null;
   weightedAverageShsOutDil?: number | null;
 }
 
@@ -41,6 +52,10 @@ export interface FmpBalanceRow {
   totalAssets?: number | null;
   totalDebt?: number | null;
   totalStockholdersEquity?: number | null;
+  cashAndCashEquivalents?: number | null;
+  retainedEarnings?: number | null;
+  totalCurrentAssets?: number | null;
+  totalCurrentLiabilities?: number | null;
 }
 
 export interface FmpCashRow {
@@ -48,6 +63,8 @@ export interface FmpCashRow {
   symbol: string;
   freeCashFlow?: number | null;
   capitalExpenditure?: number | null;
+  dividendsPaid?: number | null;             // FMP returns negative (outflow)
+  commonStockRepurchased?: number | null;    // FMP returns negative (outflow)
 }
 
 // FMP migrated to /stable/ in 2025; /api/v3/ is legacy and not available on
@@ -141,6 +158,20 @@ export function mergeStatements(
       // magnitude so downstream factor math doesn't have to remember the sign.
       capex: cf?.capitalExpenditure == null ? null : Math.abs(cf.capitalExpenditure),
       shares_diluted: asNum(inc.weightedAverageShsOutDil),
+      // THS-41 QMJ-support fields.
+      cash_and_equivalents: asNum(bal?.cashAndCashEquivalents),
+      retained_earnings: asNum(bal?.retainedEarnings),
+      current_assets: asNum(bal?.totalCurrentAssets),
+      current_liabilities: asNum(bal?.totalCurrentLiabilities),
+      income_before_tax: asNum(inc.incomeBeforeTax),
+      income_tax_expense: asNum(inc.incomeTaxExpense),
+      // Cash outflows: FMP returns negative, we store positive magnitudes.
+      dividends_paid: cf?.dividendsPaid == null
+        ? null
+        : Math.abs(cf.dividendsPaid),
+      common_stock_repurchased: cf?.commonStockRepurchased == null
+        ? null
+        : Math.abs(cf.commonStockRepurchased),
     };
   });
 }
