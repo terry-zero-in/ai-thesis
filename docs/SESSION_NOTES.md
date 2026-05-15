@@ -68,15 +68,28 @@ psql "$DATABASE_URL" -c "INSERT INTO macro_gauges (as_of, naaim, aaii_3wk_spread
 
 ### Epic 3 (Overlays) — kickoff plan
 
-Epic 3 is mostly UI + admin surfaces for the data Epic 2 already consumes:
+**Parent ticket: THS-31 — "EPIC 3 — AIQ Rubric, Depreciation Flags, Macro Gate".**
 
-1. **AIQ rubric admin UI.** Score the 50 names manually across 6 dimensions; the rubric table is THS-36 done; we need a write surface. Could be a Next.js page or a Supabase Studio inline form for v1.
-2. **depreciation_flags admin.** Add rows for AMZN/GOOGL/MSFT/AVGO etc. as new disclosures land.
-3. **macro_gauges admin.** Weekly NAAIM/AAII/F&G entry. Could replace with live fetchers later (separate ticket).
-4. **ai_segment_overrides admin.** Seed the rest of the §Part 3 slate (TSM derived, GOOGL/AMZN/ORCL derived per the Q1 disclosures).
-5. **Concentration tax + PC1 loading.** Spec mentions both; concentration tax is a separate factor on top of composite. PC1 loading is a correlation analysis across the universe.
+**Build order (per THS-31 description):**
 
-Likely starts with Reticle base clone (see CLAUDE.md "Reticle base file" section) since Epic 4 (Portal UI) and Epic 3 admin pages share the chrome.
+| # | Ticket | What | Status after Epic 2 |
+|---|---|---|---|
+| 1 | **THS-46** | AIQ rubric seeded with 20-name slate from §Part 3 | Not started — pure data entry into `aiq_rubric` (table exists from THS-36). Six dimensions per name from the spec's hand-scored AIQ values. |
+| 2 | **THS-48** | Depreciation flags populated for all L2 names | **Partially done** — `depreciation_flags` seeded with META + ORCL in `20260515002000`. Need to add AMZN/GOOGL/MSFT/AVGO if applicable per §Fix 5. |
+| 3 | **THS-49** | Macro gauge ingestion (live NAAIM/AAII/F&G fetchers) | **Table done** — `macro_gauges` table + RLS + operator-curated seed shipped in `20260515002200`. This sub-issue is now specifically about LIVE ingestion: NAAIM XML feed, AAII page scrape or API, CNN F&G. Probably a new daily edge function. |
+| 4 | **THS-50** | Macro multiplier | **Done** — already shipped in `composite.ts` as `macroMultiplier(gauges)` + `countMacroGates`. The composite job applies it to High scores. Mark Done after a sanity check that the live-ingest THS-49 result feeds it correctly. |
+| 5 | **THS-47** | AIQ expansion from 20 → 50 names | Not started — pure data entry; depends on operator scoring the remaining 30 names. |
+
+**Overlap warning:** because Epic 2 shipped graceful-degradation fallbacks for everything Epic 3 was supposed to provide, large portions of Epic 3 are now *data entry* rather than code work. The one substantive code item left is THS-49 (live macro ingestion). Don't redo the macro multiplier math (THS-50) — it's in `composite.ts` and tested.
+
+**Suggested Epic 3 ordering once you start:**
+1. **THS-49 first** (real engineering work) — live macro ingestion edge function, daily cron, hooked into `macro_gauges`.
+2. **THS-46 + THS-47 + THS-48** in parallel — three data-entry tickets that need operator validation more than they need Claude. If there's an admin UI in scope for any of these, that's Epic 4 (Portal UI) territory; Epic 3 v1 might just be raw SQL inserts.
+3. **THS-50** — final sanity check + close-out.
+
+Worth confirming with Terry before starting: is THS-46/47/48 supposed to land via Supabase Studio inline forms (manual), a dedicated admin page (Epic 4 dependency), or seed-only migrations? CLAUDE.md says "Make small design judgment calls in line with the references" — but admin surfaces aren't covered by Reticle/Basis Proforma. This is the kind of question to batch up.
+
+Reticle base clone (see CLAUDE.md "Reticle base file" section) is needed before Epic 4 (Portal UI) but Epic 3 may or may not require it depending on the admin-UI decision above.
 
 ### Known operator-side validation gaps
 
