@@ -24,6 +24,7 @@ to apply / roll back.
 | 20260515000800   | THS-40 | `20260515000800_e16_prices_cron.sql`                | applied |
 | 20260515000900   | THS-37 | `20260515000900_e13_reclassify_anet_l1.sql`         | applied |
 | 20260515001000   | THS-41 | `20260515001000_e21_extend_fundamentals_for_qmj.sql`| applied |
+| 20260515001100   | THS-41 | `20260515001100_e21_q_scores_cron.sql`              | applied |
 
 ## Tables (current)
 

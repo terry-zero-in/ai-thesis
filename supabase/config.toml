@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.ingest-prices]
 verify_jwt = false
+
+[functions.compute-q-scores]
+verify_jwt = false
