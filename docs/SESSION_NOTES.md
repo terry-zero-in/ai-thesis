@@ -1,5 +1,57 @@
 # Session Notes — last updated 2026-05-15 (PM session 2)
 
+## PM session 2 (2026-05-15) — Epic 2 sub-issues, continued
+
+### Update at 2026-05-15 end-of-day
+
+**THS-42 (G-score) shipped end-to-end on PR #4** in three additional commits after the schema piece:
+- `fea294e` — `r_and_d_expense` column added to `fundamentals_raw`; wired through `FmpIncomeRow` + `mergeStatements` (no sign flip needed; R&D is reported positive).
+- `9adecba` — full G ship: `factor-g.ts` pure math (NTM growth + layer-specific AI segment + layer-specific capex efficiency, 29 new tests), `loadGInputsByLayer` (4 queries: universe + 12 trailing quarters + latest consensus + ai_segment_overrides), `compute-g-scores` edge function, weekly cron Saturday 22:15 UTC.
+
+**JSONB merge RPC (key cross-cutting change):**
+- Naive `.upsert()` on `scores_history.factor_breakdown` replaces the column wholesale, so Q-then-G would wipe Q's `q` slice. Migration `20260515001500_e22_upsert_factor_score_rpc.sql` adds `upsert_factor_score(ticker, as_of, factor, score, breakdown)` — SECURITY DEFINER, service_role only, factor-name whitelist. Shallow-merges JSONB with `||` on conflict.
+- `compute-q-scores` rewired to use the same RPC. **Every future per-factor compute function MUST use this RPC** — not `.upsert()` — or it'll silently overwrite peer factors' breakdowns.
+
+**Tests:** 116/116 pass in `supabase/functions/_shared/*.test.ts`.
+
+**Spec deviations flagged in code (cumulative):**
+- `factor-q.ts` safety pillar uses `+altman_z` (not `-altman_z` per pseudocode). Flagged in module header.
+- `factor-g.ts` L4 capex efficiency falls back to overall TTM revenue / TTM capex when the override table doesn't carry MW pipeline data. Flagged in module header.
+- `factor-g.ts` L3/L4/L5 without a curated override row produce correlated AI-segment and capex-efficiency signals (same numerator and denominator). Pillar ranking still correct, just lower variance.
+
+### Migration ledger additions (this session, cumulative)
+
+| 20260515001000 | THS-41 | E2.1 prep: `fundamentals_raw` +8 columns for QMJ |
+| 20260515001100 | THS-41 | E2.1 weekly Q-score cron |
+| 20260515001200 | THS-42 | E2.2 `ai_segment_overrides` table |
+| 20260515001300 | THS-42 | E2.2 seed: NVDA + AVGO |
+| 20260515001400 | THS-42 | E2.2 prep: `r_and_d_expense` column |
+| 20260515001500 | THS-42 | E2.2 `upsert_factor_score` RPC (JSONB merge) |
+| 20260515001600 | THS-42 | E2.2 weekly G-score cron |
+
+### THS-43 (V-score) — what needs to land
+
+Per Terry's directions earlier this session:
+1. **`forward_pe_history` materialized view** = `prices_raw × consensus` joined on `(ticker, date=as_of)`, computing `close / NULLIF(ntm_eps, 0)`. Indexed `(ticker, date DESC)` for fast 5y window scans. Refresh nightly via the same cron pattern as `momentum_12_1`.
+2. **V math** — three sub-signals + penalty:
+   - PEG-like: `ev_ebitda / ntm_revenue_growth` (need EBITDA — operating_income + D&A; we don't ingest D&A. Likely another schema-expand: add `depreciation_and_amortization` column from FMP `/stable/income-statement.depreciationAndAmortization`.)
+   - Adjusted FCF yield: `(fcf + (capex - maintenance_capex)) / ev`. Maintenance capex = 50% of current capex per §Fix 6 "mid" default.
+   - Own-history forward P/E z: `(forward_pe_today - mean_5y) / stdev_5y` with graceful degradation (<90 obs → null, 90-365 → flag low-confidence, 365+ → full).
+   - Penalty: from `depreciation_flags` table (THS-36, empty) — sums per spec §Fix 5 scaled depreciation penalty + named-name Burry penalty (ORCL −5, META −3). Penalty caps at −12.
+3. **Depreciation flags seed.** Per §Fix 5: META gets the largest penalty (two extensions in 12 months, 4→7 yr → −10), ORCL Burry penalty (−5), AMZN/GOOGL flags etc. Operator-side data; ship a seed from the spec's cited disclosures.
+4. **EV computation** — market cap (have) + total_debt (have) − cash_and_equivalents (have). All in existing fundamentals.
+5. **`compute-v-scores` edge function** using the same `upsert_factor_score` RPC pattern. Weekly cron Saturday 22:30 UTC.
+6. **Tests** — ≥25 covering each sub-signal, the maintenance-capex band, the penalty math, and the own-history graceful degradation.
+
+### Known schema-expand items queued for THS-43
+
+- `depreciation_and_amortization` column on `fundamentals_raw` (FMP `depreciationAndAmortization`) — required for EBITDA in PEG-like signal.
+- Possibly `interest_expense` (FMP `interestExpense`) if we want a more accurate EBIT vs operating_income — but spec uses operating_income as the EBIT proxy in Altman Z and the spec doesn't pin down EV/EBITDA's EBIT-vs-EBITDA-vs-operating-income exactly. Default: use operating_income + D&A as EBITDA.
+
+### Original Epic 2 kickoff notes follow ↓↓↓
+
+---
+
 ## PM session 2 (2026-05-15) — Epic 2 sub-issues kickoff
 
 ### Shipped this session (all on PR #4 — `claude/epic-2-tier-a-scoring`)
