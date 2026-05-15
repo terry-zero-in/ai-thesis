@@ -30,6 +30,7 @@ export interface FundamentalsRow {
   dividends_paid: number | null;          // positive magnitude (cash outflow)
   common_stock_repurchased: number | null; // positive magnitude (cash outflow)
   r_and_d_expense: number | null;          // operating expense; positive
+  depreciation_and_amortization: number | null; // positive magnitude
 }
 
 // ---------------------------------------------------------------------------
@@ -45,6 +46,7 @@ export interface FmpIncomeRow {
   incomeBeforeTax?: number | null;
   incomeTaxExpense?: number | null;
   researchAndDevelopmentExpenses?: number | null;
+  depreciationAndAmortization?: number | null;
   weightedAverageShsOutDil?: number | null;
 }
 
@@ -175,6 +177,7 @@ export function mergeStatements(
         ? null
         : Math.abs(cf.commonStockRepurchased),
       r_and_d_expense: asNum(inc.researchAndDevelopmentExpenses),
+      depreciation_and_amortization: asNum(inc.depreciationAndAmortization),
     };
   });
 }

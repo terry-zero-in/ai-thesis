@@ -30,6 +30,11 @@ to apply / roll back.
 | 20260515001400   | THS-42 | `20260515001400_e22_extend_fundamentals_rd.sql`     | applied |
 | 20260515001500   | THS-42 | `20260515001500_e22_upsert_factor_score_rpc.sql`    | applied |
 | 20260515001600   | THS-42 | `20260515001600_e22_g_scores_cron.sql`              | applied |
+| 20260515001700   | THS-43 | `20260515001700_e23_extend_fundamentals_dna.sql`    | applied |
+| 20260515001800   | THS-43 | `20260515001800_e23_forward_pe_history_view.sql`    | applied |
+| 20260515001900   | THS-43 | `20260515001900_e23_refresh_forward_pe_rpc.sql`     | applied |
+| 20260515002000   | THS-43 | `20260515002000_e23_seed_depreciation_flags.sql`    | applied |
+| 20260515002100   | THS-43 | `20260515002100_e23_v_scores_cron.sql`              | applied |
 
 ## Tables (current)
 
@@ -84,6 +89,19 @@ column. PK `(ticker, scored_at)`.
 ### `depreciation_flags` (THS-36)
 Hyperscaler depreciation-extension and Burry-style overstatement flags. Feeds
 `v_penalty` in the V-score. PK `(ticker, flagged_at)`.
+
+### `forward_pe_history` (THS-43)
+Daily forward P/E per ticker, derived from `prices_raw × consensus` joined
+on `(ticker, date = as_of)` with `close / ntm_eps`. Materialized view, not
+a table. Refreshed at the tail of `ingest-consensus` (after the daily
+consensus + price snapshot lands) via the `refresh_forward_pe_history()`
+RPC — SECURITY DEFINER, service_role only. Unique index on
+`(ticker, date)` so `REFRESH MATERIALIZED VIEW CONCURRENTLY` works.
+
+V-score sub-signal 3 uses this with graceful-degradation thresholds
+(< 90 obs → null; 90–365 → low confidence; 365+ → full; window = min(5y,
+available)). History accumulates from the moment ingestion starts; no
+vendor backfill.
 
 ### `ai_segment_overrides` (THS-42)
 Per-ticker AI-segment revenue disclosures used by the G-score's AI pillar

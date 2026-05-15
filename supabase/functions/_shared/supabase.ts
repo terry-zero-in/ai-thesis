@@ -7,6 +7,7 @@ import { dailyReturns } from "./metrics.ts";
 import type { Fundamentals } from "./metrics.ts";
 import type { Layer, QInputs } from "./factor-q.ts";
 import type { GInputs } from "./factor-g.ts";
+import type { VInputs } from "./factor-v.ts";
 
 export function serviceClient(): SupabaseClient {
   return createClient(
@@ -438,5 +439,232 @@ function aggregateTTM(rows: ReadonlyArray<GFundsRow>): {
     capex: sumOrNull("capex"),
     operating_income: sumOrNull("operating_income"),
     r_and_d_expense: sumOrNull("r_and_d_expense"),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// V-score cohort loading (THS-43). Six queries: universe, 12 trailing
+// quarters of fundamentals (TTM aggregates + latest balance-sheet snapshot),
+// latest consensus, latest close (for market cap), depreciation_flags, and
+// the forward_pe_history matview slice.
+// ---------------------------------------------------------------------------
+
+interface VFundsRow {
+  ticker: string;
+  period_end: string;
+  revenue: number | null;
+  operating_income: number | null;
+  fcf: number | null;
+  capex: number | null;
+  total_debt: number | null;
+  cash_and_equivalents: number | null;
+  shares_diluted: number | null;
+  depreciation_and_amortization: number | null;
+}
+
+interface DepFlagRow {
+  ticker: string;
+  flagged_at: string;
+  penalty_v: number | null;
+}
+
+interface PriceCloseRow {
+  ticker: string;
+  date: string;
+  close: number | null;
+}
+
+interface ForwardPeRow {
+  ticker: string;
+  date: string;
+  forward_pe: number | null;
+}
+
+const V_FUNDS_COLUMNS =
+  "ticker, period_end, revenue, operating_income, fcf, capex, total_debt, " +
+  "cash_and_equivalents, shares_diluted, depreciation_and_amortization";
+
+export async function loadVInputsByLayer(
+  client: SupabaseClient,
+  asOf: string,
+  options: { quarterlyHistoryN?: number; forwardPeWindowDays?: number } = {},
+): Promise<Map<Layer, VInputs[]>> {
+  const quartersN = options.quarterlyHistoryN ?? 12;
+  // 5y trading days ≈ 1260, in calendar terms ≈ 1825 days. Pull 1900 to be safe.
+  const pe5yWindow = options.forwardPeWindowDays ?? 1900;
+
+  // Universe.
+  const univ = await client
+    .from("universe")
+    .select("ticker, layer")
+    .eq("is_active", true)
+    .eq("kind", "investable")
+    .order("ticker");
+  if (univ.error) throw univ.error;
+  const universe = (univ.data ?? []) as UniverseRow[];
+  const tickers = universe.map((u) => u.ticker);
+  if (tickers.length === 0) return new Map();
+
+  // Fundamentals (12 trailing quarters per ticker).
+  const fundsRes = await client
+    .from("fundamentals_raw")
+    .select(V_FUNDS_COLUMNS)
+    .eq("period_type", "Q")
+    .lte("period_end", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("period_end", { ascending: false })
+    .limit(tickers.length * quartersN);
+  if (fundsRes.error) throw fundsRes.error;
+  const fundsByTicker = new Map<string, VFundsRow[]>();
+  for (const row of (fundsRes.data ?? []) as VFundsRow[]) {
+    const list = fundsByTicker.get(row.ticker) ?? [];
+    if (list.length < quartersN) list.push(row);
+    fundsByTicker.set(row.ticker, list);
+  }
+
+  // Latest consensus per ticker.
+  const consensusFrom = isoDateMinusDays(asOf, 35);
+  const consensusRes = await client
+    .from("consensus")
+    .select("ticker, as_of, ntm_revenue")
+    .gte("as_of", consensusFrom)
+    .lte("as_of", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("as_of", { ascending: false });
+  if (consensusRes.error) throw consensusRes.error;
+  const consensusLatest = new Map<string, ConsensusRow>();
+  for (const row of (consensusRes.data ?? []) as ConsensusRow[]) {
+    if (!consensusLatest.has(row.ticker)) consensusLatest.set(row.ticker, row);
+  }
+
+  // Latest close per ticker (for market cap).
+  const pricesFrom = isoDateMinusDays(asOf, 14);
+  const pricesRes = await client
+    .from("prices_raw")
+    .select("ticker, date, close")
+    .gte("date", pricesFrom)
+    .lte("date", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("date", { ascending: false });
+  if (pricesRes.error) throw pricesRes.error;
+  const latestClose = new Map<string, PriceCloseRow>();
+  for (const row of (pricesRes.data ?? []) as PriceCloseRow[]) {
+    if (!latestClose.has(row.ticker)) latestClose.set(row.ticker, row);
+  }
+
+  // Depreciation flags — latest per ticker. The penalty IS the stored
+  // value (already includes Burry adjustment per spec §Fix 5).
+  const depFlagsRes = await client
+    .from("depreciation_flags")
+    .select("ticker, flagged_at, penalty_v")
+    .lte("flagged_at", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("flagged_at", { ascending: false });
+  if (depFlagsRes.error) throw depFlagsRes.error;
+  const depFlagLatest = new Map<string, DepFlagRow>();
+  for (const row of (depFlagsRes.data ?? []) as DepFlagRow[]) {
+    if (!depFlagLatest.has(row.ticker)) depFlagLatest.set(row.ticker, row);
+  }
+
+  // Forward P/E history (5y window per ticker, newest first).
+  const peFrom = isoDateMinusDays(asOf, pe5yWindow);
+  const peRes = await client
+    .from("forward_pe_history")
+    .select("ticker, date, forward_pe")
+    .gte("date", peFrom)
+    .lte("date", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("date", { ascending: true });
+  if (peRes.error) throw peRes.error;
+  const peByTicker = new Map<string, ForwardPeRow[]>();
+  for (const row of (peRes.data ?? []) as ForwardPeRow[]) {
+    const list = peByTicker.get(row.ticker) ?? [];
+    list.push(row);
+    peByTicker.set(row.ticker, list);
+  }
+
+  // Build VInputs per ticker.
+  const byLayer = new Map<Layer, VInputs[]>();
+  for (const u of universe) {
+    const layer = u.layer as Layer;
+    if (layer < 1 || layer > 5) continue;
+
+    const quarters = fundsByTicker.get(u.ticker) ?? []; // newest first
+    const ttm = aggregateTTMv(quarters.slice(0, 4));
+    const latestQ = quarters[0] ?? null;
+
+    const consensus = consensusLatest.get(u.ticker) ?? null;
+
+    const lastClose = latestClose.get(u.ticker)?.close ?? null;
+    const sharesDiluted = latestQ?.shares_diluted ?? null;
+    const marketCap = lastClose !== null && sharesDiluted !== null && sharesDiluted > 0
+      ? lastClose * sharesDiluted
+      : null;
+
+    const depPenalty = depFlagLatest.get(u.ticker)?.penalty_v ?? 0;
+
+    const peSeries = peByTicker.get(u.ticker) ?? [];
+    const forwardPeToday = peSeries.length > 0 ? peSeries[peSeries.length - 1].forward_pe : null;
+    const forwardPeHistory = peSeries.map((p) => p.forward_pe);
+
+    const inputs: VInputs = {
+      ticker: u.ticker,
+      layer,
+      ttmRevenue: ttm.revenue,
+      ttmOperatingIncome: ttm.operating_income,
+      ttmDepreciationAmortization: ttm.depreciation_and_amortization,
+      ttmFcf: ttm.fcf,
+      ttmCapex: ttm.capex,
+      latestTotalDebt: latestQ?.total_debt ?? null,
+      latestCash: latestQ?.cash_and_equivalents ?? null,
+      marketCap,
+      ntmRevenue: consensus?.ntm_revenue ?? null,
+      forwardPeToday,
+      forwardPeHistory,
+      depreciationPenalty: depPenalty,
+    };
+
+    const list = byLayer.get(layer) ?? [];
+    list.push(inputs);
+    byLayer.set(layer, list);
+  }
+
+  return byLayer;
+}
+
+// Sum four quarterly rows for the V-side fundamentals shape.
+function aggregateTTMv(rows: ReadonlyArray<VFundsRow>): {
+  revenue: number | null;
+  operating_income: number | null;
+  fcf: number | null;
+  capex: number | null;
+  depreciation_and_amortization: number | null;
+} {
+  if (rows.length < 4) {
+    return {
+      revenue: null, operating_income: null, fcf: null, capex: null,
+      depreciation_and_amortization: null,
+    };
+  }
+  const sumOrNull = (key: keyof VFundsRow): number | null => {
+    let total = 0;
+    for (const r of rows) {
+      const v = r[key];
+      if (typeof v !== "number" || !Number.isFinite(v)) return null;
+      total += v;
+    }
+    return total;
+  };
+  return {
+    revenue: sumOrNull("revenue"),
+    operating_income: sumOrNull("operating_income"),
+    fcf: sumOrNull("fcf"),
+    capex: sumOrNull("capex"),
+    depreciation_and_amortization: sumOrNull("depreciation_and_amortization"),
   };
 }

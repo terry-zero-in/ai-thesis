@@ -96,11 +96,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    // After upserting today's consensus snapshots, refresh the derived
+    // forward_pe_history matview (THS-43). It depends on both prices_raw
+    // (refreshed by the earlier 21:00 UTC ingest-prices job) and consensus
+    // (we just wrote today's row), so this is the right place to trigger
+    // the recompute. Failure here doesn't roll back the consensus writes.
+    let viewRefreshed = false;
+    let refreshError: string | null = null;
+    try {
+      const { error } = await client.rpc("refresh_forward_pe_history");
+      if (error) throw error;
+      viewRefreshed = true;
+    } catch (e) {
+      refreshError = e instanceof Error ? e.message : String(e);
+    }
+
     return Response.json({
       ok: failures.length === 0,
       tickers: tickers.length,
       consensus_upserted: consensusUpserted,
       revisions_upserted: revisionsUpserted,
+      view_refreshed: viewRefreshed,
+      refresh_error: refreshError,
       failures,
       elapsed_ms: Date.now() - startedAt,
     }, { status: failures.length === 0 ? 200 : 207 });

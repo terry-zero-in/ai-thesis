@@ -31,6 +31,8 @@ export interface Fundamentals {
   income_tax_expense: number | null;
   dividends_paid: number | null;
   common_stock_repurchased: number | null;
+  r_and_d_expense?: number | null;            // optional; G + V signals
+  depreciation_and_amortization?: number | null; // optional; V EBITDA
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
