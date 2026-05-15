@@ -1,4 +1,86 @@
-# Session Notes — last updated 2026-05-15 (PM session 2)
+# Session Notes — last updated 2026-05-15 (PM session 3)
+
+## PM session 3 (2026-05-15) — Epic 3 kickoff: THS-49 live macro ingest
+
+### Shipped this session
+
+| Ticket | Commits | What |
+|---|---|---|
+| **THS-49** | _pending_ | Live macro gauges ingest end-to-end. New `_shared/macro.ts` (pure parsers + forward-fill row builder), `_shared/macro-fetchers.ts` (HTTP shells with browser headers), `ingest-macro` edge function (daily + backfill modes), daily cron 21:45 UTC. 20 new tests vs real fixtures, 181/181 in `_shared/*.test.ts`. |
+
+Branch: `claude/epic-3-overlays` (off `claude/epic-2-tier-a-scoring` head — same stacking pattern PR #4 used vs PR #2, since Epic 3 schema depends on Epic 2's `macro_gauges` table).
+
+### Live-feed reality vs spec (THS-49 deviations to flag)
+
+1. **NAAIM** — spec cites `…/wp-content/uploads/2017/04/exposure-index.xml`. That URL now 404s; NAAIM ships a versioned XLSX per week with a date in the path that changes weekly. Switched to scraping the public Exposure Index page's inline HTML data table (Date | Mean | Bearish | Q1 | Q2 | Q3 | Bullish | Deviation). Table carries the 10 most recent weekly readings; that's enough for the daily ingest. Backfilling more than ~10 weeks requires downloading the weekly XLSX and parsing — deferred.
+2. **CNN F&G** — spec says "via Perplexity". Going direct: `https://production.dataviz.cnn.io/index/fearandgreed/graphdata` returns ~252 daily history points; requires `User-Agent`, `Origin: https://www.cnn.com`, `Referer: https://www.cnn.com/` (without them returns HTTP 418 "I'm a teapot"). Strictly better than LLM-mediated scrape: free, no API key, no parse hallucination risk. **Flagged for Terry's confirmation.**
+3. **AAII** — spec wants weekly Thursday cron. AAII's public sentiment page is behind Imperva bot protection (`/sentimentsurvey/sent_results` returns the "Pardon Our Interruption" interstitial regardless of headers — JS challenge). Cannot be fetched headlessly without a paid scraping service or Perplexity dep. **v1 ships AAII as operator-curated forward-fill**: the function reads the most recent `macro_gauges.aaii_3wk_spread` on every daily run and persists it; the operator overrides on Thursdays either by SQL update or by invoking `ingest-macro` with `{"aaii_3wk_spread": <number>}` in the POST body. THS-49 acceptance "weekly AAII cron running" is therefore **partial**: cron infra runs daily but AAII update is manual.
+
+### Saturday/daily pipeline (updated)
+
+| UTC | Cadence | Job | Notes |
+|---|---|---|---|
+| 21:00 | Mon-Fri | `ingest-prices` | Daily OHLCV + momentum view refresh |
+| 21:30 | Mon-Fri | `ingest-consensus` | Daily analyst snapshot + forward_pe_history refresh |
+| 21:45 | **Daily** | **`ingest-macro`** | **NAAIM + F&G live; AAII forward-fill** |
+| 22:00 | Sat | `compute-q-scores` | Q-score |
+| 22:15 | Sat | `compute-g-scores` | G-score |
+| 22:30 | Sat | `compute-v-scores` | V-score |
+| 22:45 | Sat | `compute-composite-scores` | Reads latest `macro_gauges` row written by 21:45 macro job |
+
+### Operator first-run for macro (append)
+
+```bash
+supabase functions deploy ingest-macro
+
+# 12-month backfill (NAAIM + F&G; AAII forward-fills from existing seed):
+supabase functions invoke ingest-macro --no-verify-jwt \
+  --body '{}' \
+  -H "Content-Type: application/json" \
+  -- "?backfill_days=365"
+
+# Thursday flow (operator-curated AAII update — AAII publishes Thursdays):
+supabase functions invoke ingest-macro --no-verify-jwt \
+  --body '{"aaii_3wk_spread": 5.36}'
+```
+
+### Migration ledger additions
+
+| 20260515002500 | THS-49 | `ingest-macro` daily cron 21:45 UTC |
+
+### Queued questions for Terry (batch ask)
+
+1. **CNN F&G — direct vs Perplexity.** Recommendation: direct (free, simpler, in-place). Spec says Perplexity. (Coupled to #2 — if Perplexity gets provisioned for AAII, easy to also route F&G through it.)
+2. **AAII live ingestion strategy.** Three options:
+   - **(rec, status quo)** Keep operator-curated forward-fill. AAII publishes Thursdays; manual `{"aaii_3wk_spread": X}` POST once/week is 60s of work. Avoids a new external dep.
+   - Add Perplexity API as new dep (`PERPLEXITY_API_KEY`). Unblocks both AAII and the spec-literal F&G path. Adds external dep + per-call LLM cost.
+   - Add a headless-browser scraping dep (ScraperAPI/Browserless/Apify). Adds external dep + per-call cost. Pure scrape, no LLM parse.
+3. **THS-46/47/48 admin landing** (carried over from prior session). For per-name data entry (AIQ rubric scoring, depreciation flag updates, AI segment overrides):
+   - **(rec)** Seed-only migrations — versioned in git, no UI dep, slow to update; fine if updates are quarterly.
+   - Supabase Studio inline forms — no code, fast updates, no git audit trail.
+   - Dedicated admin page — Epic 4 dependency; best UX + audit trail but Epic 4 not started.
+
+### Spec deviations flagged in code (cumulative, +1 this session)
+
+- `factor-q.ts` safety pillar uses `+altman_z` (not `-altman_z` per pseudocode).
+- `factor-g.ts` L4 falls back to overall TTM revenue / TTM capex (MW pipeline data unavailable).
+- `factor-v.ts` only ships `mid` maintenance-capex band.
+- `composite.ts` strengthens "Tier-A rescale" to "drop any null factor and rescale remaining."
+- **NEW** `macro.ts` + `ingest-macro` go direct to NAAIM page scrape and CNN F&G JSON instead of Perplexity-mediated. AAII is operator-curated forward-fill in v1.
+
+### Epic 3 status after this session
+
+| # | Ticket | What | Status |
+|---|---|---|---|
+| 1 | THS-46 | AIQ rubric 20-name seed | Not started — data entry, waits on admin landing decision |
+| 2 | THS-48 | Depreciation flags for all L2 names | Partial (META + ORCL seeded; need AMZN/GOOGL/MSFT/AVGO if applicable) |
+| 3 | **THS-49** | **Live macro ingestion** | **Done** (NAAIM + F&G live; AAII operator-curated v1) |
+| 4 | THS-50 | Macro multiplier | Already shipped in `composite.ts` (Epic 2); sanity-check pending |
+| 5 | THS-47 | AIQ expansion 20 → 50 names | Not started — data entry; depends on operator scoring |
+
+**Next ticket:** THS-50 — sanity check + close-out. After that, the three data-entry tickets (THS-46, THS-47, THS-48) wait on Terry's admin-landing decision.
+
+---
 
 ## PM session 2 (2026-05-15) — Epic 2 closed end-to-end
 

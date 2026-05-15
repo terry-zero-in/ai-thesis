@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.compute-composite-scores]
 verify_jwt = false
+
+[functions.ingest-macro]
+verify_jwt = false
