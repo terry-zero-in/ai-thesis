@@ -2,15 +2,17 @@
  * GoToPill — bottom-center hint that surfaces while G-prefix navigation is
  * awaiting a follow-up key. Fade-in 140ms, non-interactive (pointerEvents:none).
  *
- * Verbatim port of GoToPill from stage3-app.jsx.
+ * Mirror of the G-prefix map in `useShellKeyboard.ts`. Keep in sync —
+ * displayed hints must match handler behavior or users press dead keys.
  */
 const ROUTES: [string, string][] = [
   ["D", "Dash"],
-  ["S", "Sessions"],
-  ["R", "Reviews"],
-  ["T", "Tasks"],
-  ["C", "Capture"],
-  ["P", "Prompts"],
+  ["U", "Universe"],
+  ["P", "Portfolio"],
+  ["R", "Regime"],
+  ["A", "AIQ"],
+  ["M", "Memos"],
+  ["X", "Decisions"],
 ];
 
 export function GoToPill({ active }: { active: boolean }) {
