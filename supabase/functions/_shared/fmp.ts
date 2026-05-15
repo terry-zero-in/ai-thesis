@@ -139,6 +139,106 @@ export function mergeStatements(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Consensus / estimates (THS-39)
+// ---------------------------------------------------------------------------
+
+export interface ConsensusRow {
+  ticker: string;
+  as_of: string;             // ISO YYYY-MM-DD
+  ntm_revenue: number | null;
+  ntm_eps: number | null;
+  fy1_eps: number | null;
+  fy2_eps: number | null;
+  num_analysts: number | null;
+  rating_avg: number | null; // spec convention: 1 strong buy, 5 strong sell
+  target_price: number | null;
+}
+
+export interface FmpAnalystEstimateRow {
+  date: string;
+  symbol: string;
+  estimatedRevenueAvg?: number | null;
+  estimatedEpsAvg?: number | null;
+  numberAnalystsEstimatedRevenue?: number | null;
+  numberAnalystsEstimatedEps?: number | null;
+}
+
+export interface FmpPriceTargetConsensus {
+  symbol: string;
+  targetHigh?: number | null;
+  targetLow?: number | null;
+  targetConsensus?: number | null;
+  targetMedian?: number | null;
+}
+
+export interface FmpRatingRow {
+  symbol: string;
+  date?: string;
+  ratingScore?: number | null;        // FMP convention: 1 strong sell, 5 strong buy
+  ratingRecommendation?: string | null;
+}
+
+export async function fetchAnalystEstimates(ticker: string, limit = 4) {
+  return fmpGet<FmpAnalystEstimateRow[]>(`/analyst-estimates/${ticker}`, {
+    period: "annual",
+    limit: String(limit),
+  });
+}
+
+export async function fetchPriceTargetConsensus(ticker: string) {
+  const arr = await fmpGet<FmpPriceTargetConsensus[]>(`/price-target-consensus`, {
+    symbol: ticker,
+  });
+  return arr[0] ?? null;
+}
+
+export async function fetchRatingConsensus(ticker: string) {
+  const arr = await fmpGet<FmpRatingRow[]>(`/rating/${ticker}`, {});
+  return arr[0] ?? null;
+}
+
+/**
+ * Pure helper: given an array of forward analyst estimates and a reference
+ * date, return today's consensus row. The "FY1" estimate is the next fiscal
+ * year-end strictly after `today`; FY2 is the one after. NTM EPS / revenue
+ * are FY1 by default — a deliberate simplification documented in
+ * docs/schema.md (the algorithm spec doesn't pin down a blend).
+ */
+export function buildConsensusRow(
+  ticker: string,
+  today: string,
+  estimates: FmpAnalystEstimateRow[],
+  target: FmpPriceTargetConsensus | null,
+  rating: FmpRatingRow | null,
+): ConsensusRow {
+  const future = estimates
+    .filter((e) => e.date > today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const fy1 = future[0];
+  const fy2 = future[1];
+
+  const num_analysts = asNum(fy1?.numberAnalystsEstimatedEps)
+    ?? asNum(fy1?.numberAnalystsEstimatedRevenue);
+
+  // Flip FMP's 1=sell..5=buy into the spec's 1=buy..5=sell convention.
+  let rating_avg: number | null = null;
+  const score = asNum(rating?.ratingScore);
+  if (score !== null) rating_avg = 6 - score;
+
+  return {
+    ticker,
+    as_of: today,
+    ntm_revenue: asNum(fy1?.estimatedRevenueAvg),
+    ntm_eps: asNum(fy1?.estimatedEpsAvg),
+    fy1_eps: asNum(fy1?.estimatedEpsAvg),
+    fy2_eps: asNum(fy2?.estimatedEpsAvg),
+    num_analysts,
+    rating_avg,
+    target_price: asNum(target?.targetConsensus) ?? asNum(target?.targetMedian),
+  };
+}
+
 /**
  * Pulls Q+A statements for one ticker and returns merged fundamentals rows.
  * Period is determined by the (period, limit) tuples passed in.

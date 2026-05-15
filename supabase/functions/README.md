@@ -7,6 +7,7 @@ Ingestion + compute jobs that run on Supabase's Deno runtime.
 | Function               | Ticket | Schedule          | Purpose                                     |
 | ---------------------- | ------ | ----------------- | ------------------------------------------- |
 | `ingest-fundamentals`  | THS-38 | 21:15 UTC Mon-Fri | Pull FMP fundamentals (Q + A) for universe  |
+| `ingest-consensus`     | THS-39 | 21:30 UTC Mon-Fri | Pull consensus + compute revisions deltas   |
 
 ## Local development
 
