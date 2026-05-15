@@ -6,7 +6,8 @@
 
 | Ticket | Commits | What |
 |---|---|---|
-| **THS-49** | _pending_ | Live macro gauges ingest end-to-end. New `_shared/macro.ts` (pure parsers + forward-fill row builder), `_shared/macro-fetchers.ts` (HTTP shells with browser headers), `ingest-macro` edge function (daily + backfill modes), daily cron 21:45 UTC. 20 new tests vs real fixtures, 181/181 in `_shared/*.test.ts`. |
+| **THS-49** | `facf3e5` + `020c999` | Live macro gauges ingest end-to-end. New `_shared/macro.ts` (pure parsers + forward-fill row builder), `_shared/macro-fetchers.ts` (HTTP shells with browser headers), `ingest-macro` edge function (daily + backfill modes), daily cron 21:45 UTC. Codex PR review caught two bugs: P1 backfill was clobbering the curated May 14 seed; P2 same-week fallback was writing raw single-week spread as a 3-wk MA. Both fixed in `020c999` — buildMacroRow priority is now `live → existing → previousRow → null`. |
+| **THS-50** | _pending_ | Macro multiplier sanity check. Math + integration already shipped in Epic 2 (`composite.ts` + `compute-composite-scores`); this ticket adds the spec-cited May 14 2026 acceptance test (NAAIM 96.67, AAII 5.36, F&G 66 → 0.95), a tier-reclassification test (78 raw × 0.95 = 74.1 → drops High → Medium), and a "<75 never de-rated" invariance test. |
 
 Branch: `claude/epic-3-overlays` (off `claude/epic-2-tier-a-scoring` head — same stacking pattern PR #4 used vs PR #2, since Epic 3 schema depends on Epic 2's `macro_gauges` table).
 
@@ -75,10 +76,10 @@ supabase functions invoke ingest-macro --no-verify-jwt \
 | 1 | THS-46 | AIQ rubric 20-name seed | Not started — data entry, waits on admin landing decision |
 | 2 | THS-48 | Depreciation flags for all L2 names | Partial (META + ORCL seeded; need AMZN/GOOGL/MSFT/AVGO if applicable) |
 | 3 | **THS-49** | **Live macro ingestion** | **Done** (NAAIM + F&G live; AAII operator-curated v1) |
-| 4 | THS-50 | Macro multiplier | Already shipped in `composite.ts` (Epic 2); sanity-check pending |
+| 4 | **THS-50** | **Macro multiplier** | **Done** — spec May 14 acceptance test green; multiplier wires through to `final_score` and tier reclassification correctly. |
 | 5 | THS-47 | AIQ expansion 20 → 50 names | Not started — data entry; depends on operator scoring |
 
-**Next ticket:** THS-50 — sanity check + close-out. After that, the three data-entry tickets (THS-46, THS-47, THS-48) wait on Terry's admin-landing decision.
+**Next ticket:** THS-46/47/48 are data entry that wait on Terry's admin-landing decision. If those are deferred, jump to Epic 5 (Tier-B Scoring: momentum + sentiment) — real engineering work, no blockers.
 
 ---
 

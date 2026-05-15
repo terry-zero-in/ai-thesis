@@ -55,6 +55,49 @@ test("macroMultiplier: spec table", () => {
   assert.equal(macroMultiplier({ naaim: 96, aaii_3wk_spread: 35, fear_greed: 85 }).multiplier, 0.85);
 });
 
+// THS-50 acceptance: the spec-cited May 14 2026 reading exercises the exact
+// "1 gate hit → 0.95" path with the live-ingest-shaped values. NAAIM 96.67
+// trips the > 90 gate; AAII 5.36 is well below 30; F&G 66 is below 80.
+test("macroMultiplier: spec May 14 2026 reading (NAAIM 96.67, AAII 5.36, F&G 66) → 0.95", () => {
+  const { multiplier, gatesHit } = macroMultiplier({
+    naaim: 96.67,
+    aaii_3wk_spread: 5.36,
+    fear_greed: 66,
+  });
+  assert.equal(gatesHit, 1);
+  assert.equal(multiplier, 0.95);
+});
+
+// THS-50 wiring: a High composite under the spec gauges should de-rate by 0.95
+// and the resulting tier should follow the de-rated score, not the raw one.
+test("computeComposite: May 14 gauges de-rate a High name; Medium-borderline drops tier", () => {
+  const gauges: MacroGauges = { naaim: 96.67, aaii_3wk_spread: 5.36, fear_greed: 66 };
+
+  // High name well above 75 stays High after 0.95.
+  const high = computeComposite("X", 1, { q: 90, g: 90, v: 90, aiq: 90, m: null, s: null }, gauges);
+  approx(high.composite!, 90);
+  approx(high.finalScore!, 85.5);
+  assert.equal(high.tier, "High");
+  assert.equal(high.macroGatesHit, 1);
+  assert.equal(high.macroMultiplier, 0.95);
+
+  // Borderline 78 (above 75) de-rates to 74.1, crosses into Medium.
+  const borderline = computeComposite("Y", 1, { q: 78, g: 78, v: 78, aiq: 78, m: null, s: null }, gauges);
+  approx(borderline.composite!, 78);
+  approx(borderline.finalScore!, 78 * 0.95);
+  assert.equal(borderline.tier, "Medium");
+});
+
+// THS-50 invariance: multiplier is only applied to composites ≥ 75; Medium/Low
+// names see no de-rate so their tier is determined entirely by raw composite.
+test("computeComposite: composite < 75 is never de-rated, even with gates hit", () => {
+  const gauges: MacroGauges = { naaim: 96.67, aaii_3wk_spread: 5.36, fear_greed: 66 };
+  const mid = computeComposite("Z", 1, { q: 70, g: 70, v: 70, aiq: 70, m: null, s: null }, gauges);
+  approx(mid.composite!, 70);
+  approx(mid.finalScore!, 70); // unchanged
+  assert.equal(mid.tier, "Medium");
+});
+
 // ─── Tier classifier ───────────────────────────────────────────────────────
 
 test("classifyTier: cut-points (≥75 High, ≥60 Medium, ≥45 Low, <45 Avoid)", () => {
