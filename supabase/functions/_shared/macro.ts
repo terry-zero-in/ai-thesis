@@ -204,9 +204,13 @@ export function pickAtOrBefore<T extends { date: string }>(
 
 // ---------------------------------------------------------------------------
 // Daily merge: build the macro_gauges row for `asOf` from each gauge's series.
-// Forward-fills missing fields from `previousRow` (the latest stored macro_gauges
-// row) so AAII (operator-curated) persists between Thursday updates and so a
-// transient F&G fetch failure on day N doesn't blank the gate state.
+// Per-column priority:
+//   1. Live feed value (NAAIM scrape / F&G JSON / AAII 3-wk MA from supplied weekly obs)
+//   2. The existing macro_gauges row for `asOf` if one is already stored — this
+//      preserves operator-curated values (e.g. the May 14 seed's AAII spread)
+//      when a backfill or daily re-run has no live data for that column.
+//   3. The previous row in the forward-fill chain (`previousRow`)
+//   4. null
 // ---------------------------------------------------------------------------
 
 export interface MacroRow {
@@ -223,6 +227,8 @@ export interface BuildMacroRowInput {
   fearGreed: ReadonlyArray<FearGreedRow>;
   aaiiWeekly: ReadonlyArray<AaiiWeekly>; // operator-curated; usually empty in v1
   previousRow: MacroRow | null;
+  /** Row already stored in macro_gauges for this same as_of, if any. */
+  existingRow?: MacroRow | null;
   sourceNotes?: string;
 }
 
@@ -232,11 +238,12 @@ export function buildMacroRow(input: BuildMacroRowInput): MacroRow {
   const aaiiSpread = computeAaii3WkSpread(input.aaiiWeekly, input.asOf);
 
   const prev = input.previousRow;
+  const existing = input.existingRow;
   return {
     as_of: input.asOf,
-    naaim: naaimRow?.value ?? prev?.naaim ?? null,
-    aaii_3wk_spread: aaiiSpread ?? prev?.aaii_3wk_spread ?? null,
-    fear_greed: fgRow?.value ?? prev?.fear_greed ?? null,
+    naaim: naaimRow?.value ?? existing?.naaim ?? prev?.naaim ?? null,
+    aaii_3wk_spread: aaiiSpread ?? existing?.aaii_3wk_spread ?? prev?.aaii_3wk_spread ?? null,
+    fear_greed: fgRow?.value ?? existing?.fear_greed ?? prev?.fear_greed ?? null,
     source_notes: input.sourceNotes ?? null,
   };
 }

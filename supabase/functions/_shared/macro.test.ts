@@ -271,3 +271,69 @@ test("buildMacroRow: NAAIM uses latest-at-or-before, ignores newer-than-asOf row
   });
   assert.equal(row.naaim, 96.67);
 });
+
+// ─── existingRow priority (P1 regression — preserve curated values) ─────────
+
+const existing: MacroRow = {
+  as_of: "2026-05-14",
+  naaim: 96.67,
+  aaii_3wk_spread: 5.36,
+  fear_greed: 66,
+  source_notes: "May 14 seed",
+};
+
+test("buildMacroRow: existing row's curated AAII is preserved when no live feed supplies it", () => {
+  // Reproduce the backfill scenario: live NAAIM + F&G land, no AAII feed,
+  // previousRow has null AAII (forward-fill chain from a date before the seed).
+  const row = buildMacroRow({
+    asOf: "2026-05-14",
+    naaim: [{ date: "2026-05-13", value: 77.34 }],
+    fearGreed: [{ date: "2026-05-14", value: 70 }],
+    aaiiWeekly: [],
+    previousRow: { ...existing, naaim: null, aaii_3wk_spread: null, fear_greed: null },
+    existingRow: existing,
+  });
+  assert.equal(row.naaim, 77.34); // live wins over existing
+  assert.equal(row.fear_greed, 70); // live wins over existing
+  assert.equal(row.aaii_3wk_spread, 5.36); // existing preserved (no live AAII)
+});
+
+test("buildMacroRow: live feed value still overrides existing", () => {
+  const row = buildMacroRow({
+    asOf: "2026-05-14",
+    naaim: [{ date: "2026-05-14", value: 50 }],
+    fearGreed: [{ date: "2026-05-14", value: 25 }],
+    aaiiWeekly: [aaii("2026-05-07", 10), aaii("2026-04-30", 10), aaii("2026-04-23", 10)],
+    previousRow: null,
+    existingRow: existing,
+  });
+  assert.equal(row.naaim, 50);
+  assert.equal(row.fear_greed, 25);
+  assert.equal(row.aaii_3wk_spread, 10); // live 3-wk MA wins over existing 5.36
+});
+
+test("buildMacroRow: existing row wins over previousRow when both have a value", () => {
+  const row = buildMacroRow({
+    asOf: "2026-05-14",
+    naaim: [],
+    fearGreed: [],
+    aaiiWeekly: [],
+    previousRow: prev, // aaii=5.36
+    existingRow: { ...existing, aaii_3wk_spread: 12.5 },
+  });
+  assert.equal(row.aaii_3wk_spread, 12.5);
+});
+
+test("buildMacroRow: falls back to previousRow when neither live nor existing has the value", () => {
+  const row = buildMacroRow({
+    asOf: "2026-05-14",
+    naaim: [],
+    fearGreed: [],
+    aaiiWeekly: [],
+    previousRow: prev,
+    existingRow: { as_of: "2026-05-14", naaim: null, aaii_3wk_spread: null, fear_greed: null, source_notes: null },
+  });
+  assert.equal(row.naaim, prev.naaim);
+  assert.equal(row.aaii_3wk_spread, prev.aaii_3wk_spread);
+  assert.equal(row.fear_greed, prev.fear_greed);
+});

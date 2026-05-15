@@ -20,7 +20,6 @@ import { HttpError, requireCronAuth } from "../_shared/auth.ts";
 import { fetchFearGreed, fetchNaaim } from "../_shared/macro-fetchers.ts";
 import {
   buildMacroRow,
-  pickAtOrBefore,
   type AaiiWeekly,
   type FearGreedRow,
   type MacroRow,
@@ -93,6 +92,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Load the latest existing macro_gauges row whose as_of < earliest date
     // we're about to write — that's the seed for the forward-fill chain.
     const earliest = dates[0];
+    const latest = dates[dates.length - 1];
     const seedRes = await client
       .from("macro_gauges")
       .select("as_of, naaim, aaii_3wk_spread, fear_greed, source_notes")
@@ -101,6 +101,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .limit(1);
     if (seedRes.error) throw seedRes.error;
     let prev: MacroRow | null = (seedRes.data ?? [])[0] as MacroRow | null;
+
+    // Existing rows inside the write window. We pass these to buildMacroRow so
+    // a re-run (backfill that overlaps the seed, or a daily cron after an
+    // operator already populated today's row) preserves curated columns the
+    // live feed doesn't supply (typically AAII).
+    const existingRes = await client
+      .from("macro_gauges")
+      .select("as_of, naaim, aaii_3wk_spread, fear_greed, source_notes")
+      .gte("as_of", earliest)
+      .lte("as_of", latest);
+    if (existingRes.error) throw existingRes.error;
+    const existingByDate = new Map<string, MacroRow>();
+    for (const row of (existingRes.data ?? []) as MacroRow[]) {
+      existingByDate.set(row.as_of, row);
+    }
 
     // AAII weekly observations available for the run: optionally provided in
     // POST body. Empty in v1 cron path → 3-wk MA stays null and forward-fill
@@ -124,26 +139,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
           fearGreed,
           aaiiWeekly,
           previousRow: prev,
+          existingRow: existingByDate.get(asOf) ?? null,
           sourceNotes:
             backfillDays > 0
               ? "backfill (NAAIM/F&G live, AAII forward-filled)"
               : "daily ingest (NAAIM/F&G live, AAII forward-filled)",
         });
-        // Apply Thursday-flow override if this is today's row.
+        // Apply Thursday-flow override if this is today's row. The override is
+        // the only path that writes a raw operator-supplied value into
+        // aaii_3wk_spread — supplying <3 weekly observations is intentionally
+        // not enough, because the column stores a 3-week average and the
+        // macro gate's > 30 threshold mis-fires on a single noisy week.
         if (asOf === today && aaiiOverride !== null) {
           row.aaii_3wk_spread = aaiiOverride;
           row.source_notes = `${row.source_notes ?? ""} | AAII override`.trim();
-        }
-        // Also pick up any same-date row in the supplied aaiiWeekly that the
-        // 3-wk-MA path may have skipped (e.g., when only 1-2 weekly obs exist).
-        const sameWeek = pickAtOrBefore(aaiiWeekly, asOf);
-        if (
-          asOf === today &&
-          row.aaii_3wk_spread === null &&
-          sameWeek !== null &&
-          Number.isFinite(sameWeek.spread)
-        ) {
-          row.aaii_3wk_spread = sameWeek.spread;
         }
 
         const { error } = await client
