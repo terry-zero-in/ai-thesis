@@ -35,6 +35,9 @@ to apply / roll back.
 | 20260515001900   | THS-43 | `20260515001900_e23_refresh_forward_pe_rpc.sql`     | applied |
 | 20260515002000   | THS-43 | `20260515002000_e23_seed_depreciation_flags.sql`    | applied |
 | 20260515002100   | THS-43 | `20260515002100_e23_v_scores_cron.sql`              | applied |
+| 20260515002200   | THS-45 | `20260515002200_e25_macro_gauges.sql`               | applied |
+| 20260515002300   | THS-45 | `20260515002300_e25_upsert_composite_rpc.sql`       | applied |
+| 20260515002400   | THS-45 | `20260515002400_e25_composite_cron.sql`             | applied |
 
 ## Tables (current)
 
@@ -89,6 +92,14 @@ column. PK `(ticker, scored_at)`.
 ### `depreciation_flags` (THS-36)
 Hyperscaler depreciation-extension and Burry-style overstatement flags. Feeds
 `v_penalty` in the V-score. PK `(ticker, flagged_at)`.
+
+### `macro_gauges` (THS-45)
+Weekly NAAIM / AAII bull-bear spread / CNN Fear & Greed snapshot used by
+the composite job to compute the macro multiplier (spec §Fix 4 Bayesian
+gate). PK `as_of`. v1 is operator-curated; live ingestion is follow-up
+work without algorithmic impact. Seeded with May 14 2026 reading from
+spec §Part 2 (NAAIM 96.67, AAII +5.36, F&G 66 → 1 gate hit → 0.95
+multiplier).
 
 ### `forward_pe_history` (THS-43)
 Daily forward P/E per ticker, derived from `prices_raw × consensus` joined

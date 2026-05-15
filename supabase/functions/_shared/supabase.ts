@@ -8,6 +8,7 @@ import type { Fundamentals } from "./metrics.ts";
 import type { Layer, QInputs } from "./factor-q.ts";
 import type { GInputs } from "./factor-g.ts";
 import type { VInputs } from "./factor-v.ts";
+import type { FactorScores, MacroGauges } from "./composite.ts";
 
 export function serviceClient(): SupabaseClient {
   return createClient(
@@ -667,4 +668,127 @@ function aggregateTTMv(rows: ReadonlyArray<VFundsRow>): {
     capex: sumOrNull("capex"),
     depreciation_and_amortization: sumOrNull("depreciation_and_amortization"),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Composite-score loading (THS-45). Reads scores_history (q/g/v from the
+// per-factor jobs that ran earlier on the same as_of), aiq_rubric (latest
+// row per ticker, manually scored), macro_gauges (latest snapshot), and
+// the universe → layer mapping.
+// ---------------------------------------------------------------------------
+
+export interface CompositeInputs {
+  ticker: string;
+  layer: Layer;
+  scores: FactorScores;
+}
+
+export interface CompositeLoadResult {
+  inputs: CompositeInputs[];
+  gauges: MacroGauges;
+  gaugesAsOf: string | null;
+}
+
+interface ScoresHistoryRow {
+  ticker: string;
+  q_score: number | null;
+  g_score: number | null;
+  v_score: number | null;
+}
+
+interface AiqRubricRow {
+  ticker: string;
+  scored_at: string;
+  total: number | null;
+}
+
+interface MacroGaugesRow {
+  as_of: string;
+  naaim: number | null;
+  aaii_3wk_spread: number | null;
+  fear_greed: number | null;
+}
+
+export async function loadCompositeInputs(
+  client: SupabaseClient,
+  asOf: string,
+): Promise<CompositeLoadResult> {
+  // Universe.
+  const univ = await client
+    .from("universe")
+    .select("ticker, layer")
+    .eq("is_active", true)
+    .eq("kind", "investable")
+    .order("ticker");
+  if (univ.error) throw univ.error;
+  const universe = (univ.data ?? []) as UniverseRow[];
+  if (universe.length === 0) {
+    return { inputs: [], gauges: { naaim: null, aaii_3wk_spread: null, fear_greed: null }, gaugesAsOf: null };
+  }
+  const tickers = universe.map((u) => u.ticker);
+
+  // q/g/v scores for the run's as_of row, written by the per-factor jobs.
+  const shRes = await client
+    .from("scores_history")
+    .select("ticker, q_score, g_score, v_score")
+    .eq("as_of", asOf)
+    .in("ticker", tickers);
+  if (shRes.error) throw shRes.error;
+  const scoresByTicker = new Map<string, ScoresHistoryRow>();
+  for (const row of (shRes.data ?? []) as ScoresHistoryRow[]) {
+    scoresByTicker.set(row.ticker, row);
+  }
+
+  // AIQ — manually scored quarterly. Take the latest scored_at ≤ as_of per
+  // ticker. `total` is GENERATED ALWAYS in the schema, sum of six dims.
+  const aiqRes = await client
+    .from("aiq_rubric")
+    .select("ticker, scored_at, total")
+    .lte("scored_at", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("scored_at", { ascending: false });
+  if (aiqRes.error) throw aiqRes.error;
+  const aiqLatest = new Map<string, AiqRubricRow>();
+  for (const row of (aiqRes.data ?? []) as AiqRubricRow[]) {
+    if (!aiqLatest.has(row.ticker)) aiqLatest.set(row.ticker, row);
+  }
+
+  // Macro gauges — latest as_of ≤ run as_of. Composite uses one global
+  // snapshot per run.
+  const mgRes = await client
+    .from("macro_gauges")
+    .select("as_of, naaim, aaii_3wk_spread, fear_greed")
+    .lte("as_of", asOf)
+    .order("as_of", { ascending: false })
+    .limit(1);
+  if (mgRes.error) throw mgRes.error;
+  const mg = ((mgRes.data ?? []) as MacroGaugesRow[])[0] ?? null;
+  const gauges: MacroGauges = {
+    naaim: mg?.naaim ?? null,
+    aaii_3wk_spread: mg?.aaii_3wk_spread ?? null,
+    fear_greed: mg?.fear_greed ?? null,
+  };
+
+  const inputs: CompositeInputs[] = [];
+  for (const u of universe) {
+    const layer = u.layer as Layer;
+    if (layer < 1 || layer > 5) continue;
+    const sh = scoresByTicker.get(u.ticker);
+    const aiq = aiqLatest.get(u.ticker);
+    inputs.push({
+      ticker: u.ticker,
+      layer,
+      scores: {
+        q: sh?.q_score ?? null,
+        g: sh?.g_score ?? null,
+        v: sh?.v_score ?? null,
+        aiq: aiq?.total ?? null,
+        m: null, // Tier-B (Epic 5)
+        s: null, // Tier-B (Epic 5)
+      },
+    });
+  }
+
+  return { inputs, gauges, gaugesAsOf: mg?.as_of ?? null };
 }
