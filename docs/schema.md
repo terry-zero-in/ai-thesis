@@ -14,6 +14,7 @@ to apply / roll back.
 | Timestamp        | Ticket | File                                                | Status  |
 | ---------------- | ------ | --------------------------------------------------- | ------- |
 | 20260515000000   | THS-35 | `20260515000000_e11_init_core_tables.sql`           | applied |
+| 20260515000100   | THS-36 | `20260515000100_e12_overlay_tables.sql`             | applied |
 
 ## Tables (current)
 
@@ -37,6 +38,26 @@ lookbacks and own-history valuation z-scores.
 ### `revisions` (THS-35)
 Derived analyst-revision deltas, computed nightly from `consensus` diffs by the
 THS-39 job. PK `(ticker, as_of)`.
+
+### `aiq_rubric` (THS-36)
+Manually scored AIQ rubric across six dimensions (Disclosure 20, Defensibility 20,
+Concentration 15, Capex efficiency 15, Independent demand 15, Accounting 15).
+`total` is a `GENERATED ALWAYS AS (...) STORED` column — you cannot write to it
+directly; it always equals the sum of the components, indexable like any other
+column. PK `(ticker, scored_at)`.
+
+### `depreciation_flags` (THS-36)
+Hyperscaler depreciation-extension and Burry-style overstatement flags. Feeds
+`v_penalty` in the V-score. PK `(ticker, flagged_at)`.
+
+### `scores_history` (THS-36)
+Per-ticker composite scores, tier classification, and the full
+`factor_breakdown` JSONB the UI consumes. `tier` is constrained to
+`High | Medium | Low | Avoid`; `macro_gates_hit` is 0..3. Indexed for the three
+hot query patterns:
+- latest snapshot: `(as_of DESC)` and `(as_of DESC, final_score DESC)` for the leaderboard
+- tier filter: partial index `(tier, as_of DESC) WHERE tier IS NOT NULL`
+- JSONB containment lookups: GIN `jsonb_path_ops` on `factor_breakdown` and `layer_weights`
 
 ## Row-Level Security
 
