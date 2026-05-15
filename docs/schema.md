@@ -25,6 +25,8 @@ to apply / roll back.
 | 20260515000900   | THS-37 | `20260515000900_e13_reclassify_anet_l1.sql`         | applied |
 | 20260515001000   | THS-41 | `20260515001000_e21_extend_fundamentals_for_qmj.sql`| applied |
 | 20260515001100   | THS-41 | `20260515001100_e21_q_scores_cron.sql`              | applied |
+| 20260515001200   | THS-42 | `20260515001200_e22_ai_segment_overrides.sql`       | applied |
+| 20260515001300   | THS-42 | `20260515001300_e22_seed_ai_segment_overrides.sql`  | applied |
 
 ## Tables (current)
 
@@ -79,6 +81,15 @@ column. PK `(ticker, scored_at)`.
 ### `depreciation_flags` (THS-36)
 Hyperscaler depreciation-extension and Burry-style overstatement flags. Feeds
 `v_penalty` in the V-score. PK `(ticker, flagged_at)`.
+
+### `ai_segment_overrides` (THS-42)
+Per-ticker AI-segment revenue disclosures used by the G-score's AI pillar
+when a layer-default proxy is too noisy. PK `(ticker, period_end)`.
+`disclosure_quality ∈ ('explicit','derived','none')`: explicit = company-
+disclosed line item with source URL; derived = back-computed from a
+disclosed share × disclosed total; none = checked, not disclosed. Engine
+falls back to layer-specific default formulas (algorithm spec §Fix 4) when
+no override row is present or `ai_revenue` is NULL.
 
 ### `scores_history` (THS-36)
 Per-ticker composite scores, tier classification, and the full
