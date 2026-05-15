@@ -394,19 +394,32 @@ CREATE TABLE universe (
 );
 
 -- raw fundamentals from FMP, one row per ticker per fiscal period
+-- Column set sized to support full QMJ Q-score: profitability (ROIC needs NOPAT inputs),
+-- safety (Altman Z needs retained_earnings + working capital), payout (dividends + buybacks).
 CREATE TABLE fundamentals_raw (
   ticker text REFERENCES universe(ticker),
   period_end date NOT NULL,
   period_type text NOT NULL CHECK (period_type IN ('Q', 'A')),
+  -- income statement
   revenue numeric,
   gross_profit numeric,
   operating_income numeric,
+  income_before_tax numeric,
+  income_tax_expense numeric,
   net_income numeric,
+  -- cash flow
   fcf numeric,
-  total_assets numeric,
-  total_debt numeric,
-  shareholders_equity numeric,
   capex numeric,
+  dividends_paid numeric,              -- cash outflow, stored as positive
+  common_stock_repurchased numeric,    -- cash outflow, stored as positive
+  -- balance sheet
+  total_assets numeric,
+  current_assets numeric,
+  cash_and_equivalents numeric,
+  current_liabilities numeric,
+  total_debt numeric,
+  retained_earnings numeric,
+  shareholders_equity numeric,
   shares_diluted numeric,
   ingested_at timestamptz DEFAULT now(),
   PRIMARY KEY (ticker, period_end, period_type)
