@@ -1,6 +1,75 @@
-# Session Notes — last updated 2026-05-16 (PM session 7 — full burn-through)
+# Session Notes — last updated 2026-05-16 (PM session 7 — full burn-through + next-session directive)
 
-## PM session 7 update (autonomous, post-compaction)
+## NEXT-SESSION COLD-START — READ THIS FIRST
+
+Written immediately before /compact at the end of PM session 7. The session 7 tally lives further down — only the directive Terry needs you to follow on session 8 is here.
+
+### Step 1 (mandatory): verify session 7's work before adding anything new
+
+Terry's instruction verbatim: *"First step of next session is to double check the work you did this session to make sure all looks good, and then get started on what's next."*
+
+Session 7 shipped 11 commits across 5 ticket completions + 4 maintenance items. Branch head is `8ecc0f5` on `claude/epic-4-portal-ui`. Before doing any new work:
+
+1. Run the full suite: `node --test --experimental-strip-types supabase/functions/_shared/*.test.ts` — expect **327 passing**.
+2. Typecheck web: `cd web && npx tsc --noEmit` — expect zero errors.
+3. Walk the 11 session-7 commits with `git log --oneline 1d4fca2..8ecc0f5` and re-read each diff. Look for:
+   - **Spec drift** — did the concentration-tax wiring (`7298b36`) actually match the spec arithmetic, or did I round wrong? Re-derive TSM/NVDA finals from the worked examples in `docs/AI-Thesis-v2-Algorithm-and-Deployment.md §Scoring`.
+   - **JSON-parsing brittleness** in the LLM-output paths (`compute-weekly-ranking`, `generate-aiq-draft`) — the `parseStrictJson` / `parseAiqDraft` paths should be resilient to common Claude output drift (extra whitespace, occasional fences). Confirm.
+   - **Schema mismatches** — did I add columns that the loader/orchestrator reads correctly? Specifically: `concentration_history.tax` read by `loadCompositeInputs` (commit `7298b36`); `options_raw.skew_25d` read by `loadSInputs` (`9c33115`); `aiq_drafts` sources jsonb shape vs DraftCard reads (`a83070d`).
+   - **Cron timing collisions** — Saturday chain is Q 22:00 → composite 22:45 → weekly memo Sun 23:00. Daily memo 13:00 UTC. Options 22:00 Mon-Fri. Insider 22:50 Mon-Fri. No overlaps but worth a re-read.
+   - **Untouched tests in changed code** — `composite.test.ts` got 8 new tax tests; the 22 existing tests still passed at session end, which means the default tax=0 path is preserved, but spot-check that.
+
+If anything looks wrong, fix it before starting new work. The build is at a known-clean state right now; the next session preserves that or fixes it explicitly.
+
+### Step 2: Terry's confirmed answers — apply when picking up THS-48 + universe expansion
+
+Terry resolved the two remaining blocked items in his close-out message. Quoted verbatim:
+
+**(1) Universe expansion** — *"include all 26 names from algorithm doc §Part A, not 20."* Names to add:
+
+```
+AMD, AMAT, KLAC, MRVL, ARM, SNPS, CDNS,
+DDOG, S, MDB, NET, ESTC, AI,
+ETR, NRG, TLN, NEE, AES, PWR, BE,
+EQIX, DLR, ADBE, WDAY, ZS, SAP
+```
+
+Operating principle: *"Universe is for ranking, not filtering. Low-conviction names should be scored low by the engine, not pre-filtered out."* Don't apply quality gates before inclusion — let the composite + tier classifier do the filtering.
+
+Cross-check: 26 names listed, current universe has 50 investables, target is 70+. After this addition the count is ~76 (universe.txt vs aiq_rubric coverage). The AIQ draft pipeline shipped this session (`a83070d`) will need to run against these names too — extend the batch loop in `docs/aiq-drafts-pipeline.md`. The 32-ticker "missing AIQ" list in that doc will jump to ~58 after the universe expansion. Re-list before starting the batch.
+
+**(2) Dep-flag penalties for THS-48** — *"apply per the spec's penalty band verbatim (algorithm doc §Fix 5). No 'freshness window' softening."* Final values:
+
+| Ticker | Extension | Penalty (band) | Burry overstatement |
+|---|---|---|---|
+| **META** | >1.5y total (two extensions, 5→7y range) | **-10** | **-3** |
+| **ORCL** | extension in 10-K FY25 | **-5** (per band) | **-5** |
+| **MSFT** | 6 → 6.5y in FY24 (0.5y) | **-3** (per band) | **none** |
+| **GOOGL** | 4 → 6y in 2023 (2.0y) | **-10** (per band: "extended by >1.5 years") | **none** |
+| **AMZN** | 5 → 6y in 2024 (1.0y) | **-7** (per band: "extended by 1.0-1.5 years") | **none** |
+
+**Crucial verification rule from Terry, verbatim:** *"Confirm the band reads against actual filing language before committing — extension magnitudes are public. Where filings are ambiguous, flag in batch instead of choosing."*
+
+Procedurally: before opening a PR / committing the migration that seeds these, pull each ticker's most recent 10-K (the `sec.ts::fetchLatestFiling` helper shipped this session does exactly this) and verify the extension language and magnitude matches what Terry quoted. If you find a discrepancy — e.g. MSFT actually extended by 1.0y not 0.5y, or the META "two extensions" is actually one bigger extension — **flag it in a single batched message back to Terry**, don't silently choose. He's giving you the spec band; he's telling you to double-check that the spec band actually applies to current filings.
+
+Build the `depreciation_flags` seed migration for the five names above using the spec-band penalty values. Schema is already in place (`supabase/migrations/20260515002000_e23_seed_depreciation_flags.sql` for the existing META/ORCL seeds; this is an extension). Drop a per-ticker `source_url` pointing at the SEC filing URL (the `fetchLatestFiling` helper returns this). The V-score will pick up the new penalties on the next Saturday compute.
+
+### Step 3: pick up the autonomous queue
+
+After verification + THS-48 + universe expansion, the autonomous queue is whatever Terry triggers next. Things I flagged at end of session 7 that don't need his input:
+
+- **Spec ↔ ticket reconciliation pass** (standing maintenance item from PM session 5).
+- **Promote-to-aiq_rubric server action** on /aiq-drafts (replaces the manual SQL snippet in `docs/aiq-drafts-pipeline.md`).
+- **Rich weekly memo render** — `sections.parsed` has structured JSON (high_book table, cross_book_notes, watch_next_week) that the /memos UI isn't using yet.
+- **PR #6 retitle + README refresh** (cosmetic).
+
+Things still requiring Terry's input:
+- **10b5-1 backfill** — parse SEC link footnotes.
+- **`consensus.capex_fy1/fy2`** — make THS-67 check 4 fire on the spec'd signal instead of the TTM proxy.
+
+---
+
+## PM session 7 final tally (autonomous, post-compaction)
 
 Picked up after the PM session 6 handoff. After Terry resolved the
 three blocking decisions (Polygon for options, Claude Sonnet 4.6 /
