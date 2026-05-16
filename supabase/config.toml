@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.compute-weekly-ranking]
 verify_jwt = false
+
+[functions.generate-aiq-draft]
+verify_jwt = false

@@ -356,6 +356,32 @@ export async function fetchHistoricalPrices(
 }
 
 /**
+ * Latest earnings call transcript for a ticker, from FMP's `/stable/earning_call_transcript`
+ * endpoint. Returns the most recent transcript only; empty string if none
+ * available. Used by THS-47 (AIQ drafts) to feed Claude the management
+ * commentary alongside the 10-K.
+ */
+export async function fetchLatestTranscript(ticker: string): Promise<{
+  date: string | null;
+  quarter: string | null;
+  content: string;
+  url: string;
+}> {
+  const resp = await fmpGet<Array<{ date?: string; quarter?: string; year?: number; content?: string }>>(
+    `/earning_call_transcript`,
+    { symbol: ticker, limit: 1 },
+  );
+  const row = Array.isArray(resp) ? resp[0] : undefined;
+  if (!row) return { date: null, quarter: null, content: "", url: `fmp:${ticker}` };
+  return {
+    date: row.date ?? null,
+    quarter: row.quarter && row.year ? `${row.quarter} ${row.year}` : null,
+    content: row.content ?? "",
+    url: `https://financialmodelingprep.com/api/v4/earning_call_transcript/?symbol=${ticker}`,
+  };
+}
+
+/**
  * VIX (^VIX) is an index, not an equity; FMP's `/stable/historical-price-eod-full`
  * endpoint returns sparse / unadjusted data for it. The legacy
  * `/api/v3/historical-price-full/^VIX` endpoint is still served and
