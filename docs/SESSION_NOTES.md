@@ -1,12 +1,15 @@
-# Session Notes — last updated 2026-05-16 (PM session 4)
+# Session Notes — last updated 2026-05-16 (PM session 4 — extended)
 
-## PM session 4 (2026-05-16) — Epic 4 cont'd: THS-52 universe table + THS-53 name detail
+## PM session 4 (2026-05-16) — Epic 4 burn-through: THS-52 / 53 / 68 / 46 / 54
 
 ### Shipped this session
 
 | Ticket | Commit | What |
 |---|---|---|
 | **THS-52** | `59b04ef` | Universe table page (`/universe`). Sortable + filterable table of 50 names. Columns: ticker · name · layer chip · composite · final · tier badge · Q/G/V/AIQ mini-bars · Δw · macro flag. Three filter surfaces (header search + layer chips + tier chips in right rail); rail registers `universe-filter` key via layout effect. Row click → `/universe/[ticker]` (THS-53 stub). Data path: `getLatestUniverseScores()` joins `universe` (active) with latest + prior `scores_history` rows per ticker; deterministic synthesized fixture fallback when env unset or DB empty (clearly labeled). Skipped virtualization — 50 rows native well under the 500ms target. Build + lint clean, `/universe` 200 in 33ms. |
+| **THS-68** | `476e09d` | **NEW SUB-TICKET** — magic-link auth gate. `src/proxy.ts` (Next 16 renamed `middleware` → `proxy`) refreshes Supabase session on every navigation and redirects unauthenticated to `/login?next=<path>`. `/login` server-action sends OTP; `/auth/callback` exchanges code → session cookie; `/logout` signs out. Root layout reads user via `getUser()` (validated, not cookie-only). TopBar shows email chip with click-to-logout. `ConditionalShell` skips chrome on `/login` + `/auth/*` + `/logout`. No-op when env unset so fixture dev still works. Unblocks every write-path screen (THS-54, THS-57, THS-46/47/48 admin entry). |
+| **THS-46** | `166a177` | AIQ rubric seed for 18 of 20 spec hand-scored names. NOW + INTU aren't in the active universe seed (FK rejects) — flagged as open follow-on. 10 names get explicit per-dim breakdowns from spec rationale (TSM, NVDA, AVGO, VST, GEV, GOOGL, ANET, PLTR, ORCL, META). 8 names (CEG, VRT, MSFT, AMZN, CRWD, SNOW, ASML, LRCX) get derived breakdowns proportional to dim caps; rows tagged "approximate". Two source-doc arithmetic discrepancies (GOOGL spec=74 vs dims=75, ORCL spec=60 vs dims=52) — used per-dim sums. End-of-migration assertion DO block raises with offending ticker on drift. |
+| **THS-54** | `bbfae8f` | AIQ rubric editor at `/aiq/[ticker]` + audit history side panel. 6 dim inputs (0-20 / 0-15) with live total, per-dim notes textareas, source URL, general notes. Server-action `saveAiqRubric` UPSERTs on `(ticker, scored_at=today)` — same-day re-save overwrites in-progress; next-day creates new audit row. History panel shows last 20 versions with per-dim delta chips. Schema-expand: `20260516000100_e44_aiq_rubric_extend.sql` adds 6 per-dim note columns + source_url. `/universe/[ticker]` AIQ panel gets an "Edit" chip cross-link. |
 | **THS-53** | `7aa4a24` | Per-name detail page replacing the THS-52 stub. Header (composite / final / tier / macro), Q/G/V/AIQ factor panels reading sub-decomp from `scores_history.factor_breakdown` JSONB, 6-dim AIQ rubric, 12-week composite + final sparkline (pure SVG, no chart lib), depreciation flags list (L2-only per spec). Form 4 / news / sentiment ship as "Data pending" stubs — no ingestion yet, flagged THS-58/59/60 follow-on. Route kept as `/universe/[ticker]` (Terry confirmed) rather than the ticket's `/n/[ticker]`. Extracted shared universe seed into `web/src/lib/universe-fixture.ts`. `/universe/NVDA` 200 in 126ms. |
 
 **Files of note:**
@@ -20,7 +23,18 @@
 1. Skipped virtualization (`<500ms` target met without it on 50 rows; revisit if profiling shows need)
 2. "70 names" in acceptance criteria → 50 (seed universe is 50, Terry-confirmed in migration comments)
 
-### Blocker hit on THS-54 — batched question for Terry
+### Next-session cold-start: THS-55 Portfolio dashboard
+
+THS-54 blocker resolved end-to-end this session — auth + AIQ seed + editor all shipped. Next in build order is **THS-55** (Portfolio dashboard). It's read-only like THS-52/53, so the pattern is well-established:
+
+1. Fetcher in `web/src/lib/portfolio-data.ts` reading `scores_history` joined with whatever position-sizing table the algorithm spec defines (need to grep — may need schema-expand for actual position weights / cash reserve)
+2. Page at `web/src/app/portfolio/page.tsx` replacing the THS-51 stub
+3. Right-rail registers `portfolio-rail` for whatever filters/summary belongs there per spec
+4. Components: position table, allocation chart, cash/reserve summary
+
+Branch: continue on `claude/epic-4-portal-ui` (PR #6). Stack THS-55 onto THS-54 head.
+
+### Resolved blocker (was: THS-54 batched question)
 
 The next ticket in build order is **THS-54** (AIQ rubric editor at `/aiq/[ticker]`). It's a **write path** — saves new rows into `aiq_rubric` for audit history. Two real blockers stop me from shipping it autonomously:
 
