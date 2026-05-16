@@ -78,6 +78,9 @@ verify_jwt = false
 [functions.compute-v-scores]
 verify_jwt = false
 
+[functions.compute-m-scores]
+verify_jwt = false
+
 [functions.compute-composite-scores]
 verify_jwt = false
 

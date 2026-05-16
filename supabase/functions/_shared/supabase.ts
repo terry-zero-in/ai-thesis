@@ -8,6 +8,7 @@ import type { Fundamentals } from "./metrics.ts";
 import type { Layer, QInputs } from "./factor-q.ts";
 import type { GInputs } from "./factor-g.ts";
 import type { VInputs } from "./factor-v.ts";
+import type { MInputs } from "./factor-m.ts";
 import type { FactorScores, MacroGauges } from "./composite.ts";
 
 export function serviceClient(): SupabaseClient {
@@ -671,6 +672,170 @@ function aggregateTTMv(rows: ReadonlyArray<VFundsRow>): {
 }
 
 // ---------------------------------------------------------------------------
+// M-score cohort loading (THS-58). Pulls prices ±13mo and ±1mo per ticker
+// for the 12-1 momentum return, the latest reported quarterly EPS
+// (net_income / shares_diluted), the consensus fy1_eps from the snapshot
+// nearest before that report (proxy for "expected EPS at report"), and
+// the latest revisions row's upward_breadth_pct.
+//
+// Layer-agnostic by design — momentum z-scores across the full
+// investable cohort, not within layer. Returns a flat array.
+// ---------------------------------------------------------------------------
+
+interface MPriceRow {
+  ticker: string;
+  date: string;
+  close: number | null;
+}
+
+interface MFundsRow {
+  ticker: string;
+  period_end: string;
+  net_income: number | null;
+  shares_diluted: number | null;
+}
+
+interface MConsensusRow {
+  ticker: string;
+  as_of: string;
+  fy1_eps: number | null;
+}
+
+interface MRevisionsRow {
+  ticker: string;
+  as_of: string;
+  upward_breadth_pct: number | null;
+}
+
+export async function loadMInputs(client: SupabaseClient, asOf: string): Promise<MInputs[]> {
+  // Investable universe — momentum is computed across L1..L5 together.
+  const univ = await client
+    .from("universe")
+    .select("ticker, layer")
+    .eq("is_active", true)
+    .eq("kind", "investable")
+    .order("ticker");
+  if (univ.error) throw univ.error;
+  const universe = (univ.data ?? []) as UniverseRow[];
+  if (universe.length === 0) return [];
+  const tickers = universe.map((u) => u.ticker);
+
+  // ─── Price snapshots ─────────────────────────────────────────────────
+  // 12-1 window: close at ~-13mo (start) and ~-1mo (end). We pull a band
+  // of dates and pick the closest available trading day inside the band
+  // so weekend/holiday targets don't kill the signal.
+  const target13mo = isoDateMinusDays(asOf, 395); // ~13mo ago
+  const band13mo = isoDateMinusDays(target13mo, -10); // +10d band
+  const target1mo = isoDateMinusDays(asOf, 30);
+  const band1mo = isoDateMinusDays(target1mo, -7);
+
+  const pricesRes = await client
+    .from("prices_raw")
+    .select("ticker, date, close")
+    .in("ticker", tickers)
+    .or(`and(date.gte.${target13mo},date.lte.${band13mo}),and(date.gte.${target1mo},date.lte.${band1mo})`)
+    .order("ticker")
+    .order("date", { ascending: true });
+  if (pricesRes.error) throw pricesRes.error;
+
+  const close13mo = new Map<string, number>();
+  const close1mo = new Map<string, number>();
+  for (const r of (pricesRes.data ?? []) as MPriceRow[]) {
+    if (r.close == null) continue;
+    if (r.date >= target13mo && r.date <= band13mo && !close13mo.has(r.ticker)) {
+      close13mo.set(r.ticker, Number(r.close));
+    }
+    if (r.date >= target1mo && r.date <= band1mo && !close1mo.has(r.ticker)) {
+      close1mo.set(r.ticker, Number(r.close));
+    }
+  }
+
+  // ─── Latest quarterly fundamentals → actual EPS ──────────────────────
+  const fundsRes = await client
+    .from("fundamentals_raw")
+    .select("ticker, period_end, net_income, shares_diluted")
+    .eq("period_type", "Q")
+    .lte("period_end", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("period_end", { ascending: false });
+  if (fundsRes.error) throw fundsRes.error;
+  const latestFunds = new Map<string, MFundsRow>();
+  for (const r of (fundsRes.data ?? []) as MFundsRow[]) {
+    if (!latestFunds.has(r.ticker)) latestFunds.set(r.ticker, r);
+  }
+
+  // ─── Consensus fy1_eps just before each ticker's report ──────────────
+  // Strategy: for each ticker with a known latest period_end, query the
+  // consensus row with as_of < period_end, take the most recent. Batched
+  // by a single OR query — fine for 50-name v1.
+  const expectedEpsByTicker = new Map<string, number>();
+  const periodEnds = Array.from(latestFunds.values()).map((f) => ({ ticker: f.ticker, period_end: f.period_end }));
+  if (periodEnds.length > 0) {
+    // Pull a 45-day pre-report window for every ticker, then resolve
+    // closest-before-report in code.
+    const oldestPe = periodEnds.reduce((m, x) => (x.period_end < m ? x.period_end : m), periodEnds[0].period_end);
+    const consensusFrom = isoDateMinusDays(oldestPe, 60);
+    const consensusRes = await client
+      .from("consensus")
+      .select("ticker, as_of, fy1_eps")
+      .gte("as_of", consensusFrom)
+      .lte("as_of", asOf)
+      .in("ticker", tickers)
+      .order("ticker")
+      .order("as_of", { ascending: false });
+    if (consensusRes.error) throw consensusRes.error;
+    const byTicker = new Map<string, MConsensusRow[]>();
+    for (const r of (consensusRes.data ?? []) as MConsensusRow[]) {
+      const arr = byTicker.get(r.ticker);
+      if (arr) arr.push(r);
+      else byTicker.set(r.ticker, [r]);
+    }
+    for (const { ticker, period_end } of periodEnds) {
+      const rows = byTicker.get(ticker) ?? [];
+      const pre = rows.find((r) => r.as_of < period_end && r.fy1_eps != null);
+      if (pre?.fy1_eps != null) expectedEpsByTicker.set(ticker, Number(pre.fy1_eps));
+    }
+  }
+
+  // ─── Latest revisions row per ticker ─────────────────────────────────
+  const revsRes = await client
+    .from("revisions")
+    .select("ticker, as_of, upward_breadth_pct")
+    .lte("as_of", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("as_of", { ascending: false });
+  if (revsRes.error) throw revsRes.error;
+  const latestRev = new Map<string, MRevisionsRow>();
+  for (const r of (revsRes.data ?? []) as MRevisionsRow[]) {
+    if (!latestRev.has(r.ticker)) latestRev.set(r.ticker, r);
+  }
+
+  // ─── Stitch ──────────────────────────────────────────────────────────
+  const out: MInputs[] = [];
+  for (const u of universe) {
+    const layer = u.layer as Layer;
+    if (layer < 1 || layer > 5) continue;
+    const f = latestFunds.get(u.ticker);
+    const actualEps =
+      f && f.net_income != null && f.shares_diluted != null && f.shares_diluted !== 0
+        ? Number(f.net_income) / Number(f.shares_diluted)
+        : null;
+    out.push({
+      ticker: u.ticker,
+      layer,
+      close_13mo: close13mo.get(u.ticker) ?? null,
+      close_1mo: close1mo.get(u.ticker) ?? null,
+      actual_eps_latest: actualEps,
+      expected_eps_at_report: expectedEpsByTicker.get(u.ticker) ?? null,
+      upward_breadth_pct: latestRev.get(u.ticker)?.upward_breadth_pct ?? null,
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Composite-score loading (THS-45). Reads scores_history (q/g/v from the
 // per-factor jobs that ran earlier on the same as_of), aiq_rubric (latest
 // row per ticker, manually scored), macro_gauges (latest snapshot), and
@@ -694,6 +859,8 @@ interface ScoresHistoryRow {
   q_score: number | null;
   g_score: number | null;
   v_score: number | null;
+  m_score: number | null;
+  s_score: number | null;
 }
 
 interface AiqRubricRow {
@@ -727,10 +894,13 @@ export async function loadCompositeInputs(
   }
   const tickers = universe.map((u) => u.ticker);
 
-  // q/g/v scores for the run's as_of row, written by the per-factor jobs.
+  // q/g/v/m/s scores for the run's as_of row, written by the per-factor
+  // jobs. m and s are null until their compute jobs (THS-58/THS-62) have
+  // run for this as_of; composite.ts handles partial coverage by rescaling
+  // tier-A weights when M and/or S are missing.
   const shRes = await client
     .from("scores_history")
-    .select("ticker, q_score, g_score, v_score")
+    .select("ticker, q_score, g_score, v_score, m_score, s_score")
     .eq("as_of", asOf)
     .in("ticker", tickers);
   if (shRes.error) throw shRes.error;
@@ -784,8 +954,8 @@ export async function loadCompositeInputs(
         g: sh?.g_score ?? null,
         v: sh?.v_score ?? null,
         aiq: aiq?.total ?? null,
-        m: null, // Tier-B (Epic 5)
-        s: null, // Tier-B (Epic 5)
+        m: sh?.m_score ?? null,
+        s: sh?.s_score ?? null,
       },
     });
   }
