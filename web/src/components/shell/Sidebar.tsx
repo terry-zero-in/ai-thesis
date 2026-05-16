@@ -39,12 +39,23 @@ const NAV_TIPS: Record<string, string> = {
 };
 const BADGE_TIPS: Record<string, string> = {};
 
-export function Sidebar({ col, setCol }: { col: boolean; setCol: (v: boolean) => void }) {
+export function Sidebar({
+  col,
+  setCol,
+  unseenAlerts = 0,
+}: {
+  col: boolean;
+  setCol: (v: boolean) => void;
+  unseenAlerts?: number;
+}) {
   const pathname = usePathname();
   const isActive = (id: string) => {
     if (id === "dash") return pathname === "/";
     return pathname.startsWith(`/${id}`);
   };
+  const items = ITEMS.map((it) =>
+    it.id === "decisions" && unseenAlerts > 0 ? { ...it, badge: String(unseenAlerts) } : it,
+  );
 
   return (
     <aside
@@ -129,7 +140,7 @@ export function Sidebar({ col, setCol }: { col: boolean; setCol: (v: boolean) =>
             Operations
           </div>
         )}
-        {ITEMS.slice(0, 4).map((it) => (
+        {items.slice(0, 4).map((it) => (
           <SbItem key={it.id} {...it} active={isActive(it.id)} col={col} />
         ))}
         {!col && (
@@ -147,7 +158,7 @@ export function Sidebar({ col, setCol }: { col: boolean; setCol: (v: boolean) =>
           </div>
         )}
         {col && <div style={{ height: 1, background: "var(--border-subtle)", margin: "6px 4px" }} />}
-        {ITEMS.slice(4).map((it) => (
+        {items.slice(4).map((it) => (
           <SbItem key={it.id} {...it} active={isActive(it.id)} col={col} />
         ))}
       </nav>

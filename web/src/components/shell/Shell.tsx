@@ -24,19 +24,37 @@ import { UniverseFilterProvider } from "@/hooks/universe-filter-context";
  * into TopBar that individual pages will opt into (THS-52 wires it into
  * the Universe table).
  */
-export function Shell({ children, userEmail }: { children: ReactNode; userEmail?: string | null }) {
+export function Shell({
+  children,
+  userEmail,
+  unseenAlerts = 0,
+}: {
+  children: ReactNode;
+  userEmail?: string | null;
+  unseenAlerts?: number;
+}) {
   return (
     <FilterProvider>
       <CtxPanelProvider>
         <UniverseFilterProvider>
-          <ShellInner userEmail={userEmail ?? null}>{children}</ShellInner>
+          <ShellInner userEmail={userEmail ?? null} unseenAlerts={unseenAlerts}>
+            {children}
+          </ShellInner>
         </UniverseFilterProvider>
       </CtxPanelProvider>
     </FilterProvider>
   );
 }
 
-function ShellInner({ children, userEmail }: { children: ReactNode; userEmail: string | null }) {
+function ShellInner({
+  children,
+  userEmail,
+  unseenAlerts,
+}: {
+  children: ReactNode;
+  userEmail: string | null;
+  unseenAlerts: number;
+}) {
   const [col, setCol] = useState(false);
   const [cmd, setCmd] = useState(false);
   const [shortcuts, setShortcuts] = useState(false);
@@ -69,7 +87,7 @@ function ShellInner({ children, userEmail }: { children: ReactNode; userEmail: s
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      <Sidebar col={col} setCol={setCol} />
+      <Sidebar col={col} setCol={setCol} unseenAlerts={unseenAlerts} />
       <div
         style={{
           flex: 1,

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConditionalShell } from "@/components/shell/ConditionalShell";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getUnseenAlertCount } from "@/lib/alerts-data";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,11 +29,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const sb = await getSupabaseServer();
   const { data } = sb ? await sb.auth.getUser() : { data: { user: null } };
   const userEmail = data?.user?.email ?? null;
+  const unseenAlerts = await getUnseenAlertCount();
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <ConditionalShell userEmail={userEmail}>{children}</ConditionalShell>
+        <ConditionalShell userEmail={userEmail} unseenAlerts={unseenAlerts}>
+          {children}
+        </ConditionalShell>
       </body>
     </html>
   );
