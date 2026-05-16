@@ -25,6 +25,13 @@ import type {
   MacroState as MemoMacroState,
   ScoreSnapshot as MemoScoreSnapshot,
 } from "./memo-context.ts";
+import type {
+  WeeklyConcentration,
+  WeeklyDepFlag,
+  WeeklyInsiderSummary,
+  WeeklyRankingInputs,
+  WeeklyScoreSnapshot,
+} from "./weekly-ranking.ts";
 
 export function serviceClient(): SupabaseClient {
   return createClient(
@@ -1503,4 +1510,179 @@ function memoMultiplier(gates: number): number {
   if (gates === 2) return 0.9;
   if (gates === 1) return 0.95;
   return 1.0;
+}
+
+// ---------------------------------------------------------------------------
+// Weekly ranking memo loading (THS-66). Pulls the data the Sunday-evening
+// Opus job needs: full universe scores (current + prior week), recent
+// insider clusters, depreciation flags, and the latest concentration row
+// per ticker. The pure builder in weekly-ranking.ts composes the
+// structured WeeklyContext from these.
+// ---------------------------------------------------------------------------
+
+import {
+  BUY_INSIDER_MIN,
+  BUY_VALUE_MIN,
+  BUY_WINDOW_DAYS,
+  SELL_INSIDER_MIN,
+  SELL_VALUE_MIN,
+  SELL_WINDOW_DAYS,
+  detectClusterOverride as detectInsiderCluster,
+} from "./factor-insider.ts";
+
+export async function loadWeeklyRankingInputs(
+  client: SupabaseClient,
+  asOf: string,
+): Promise<WeeklyRankingInputs> {
+  const univ = await client
+    .from("universe")
+    .select("ticker, layer, layer_label")
+    .eq("is_active", true)
+    .eq("kind", "investable")
+    .order("ticker");
+  if (univ.error) throw univ.error;
+  const universe = (univ.data ?? []) as Array<{
+    ticker: string;
+    layer: number;
+    layer_label: string;
+  }>;
+  if (universe.length === 0) {
+    return {
+      as_of: asOf,
+      current: [],
+      prior: [],
+      insiders: [],
+      depFlags: [],
+      concentration: [],
+    };
+  }
+  const tickers = universe.map((u) => u.ticker);
+  const labelByTicker = new Map(universe.map((u) => [u.ticker, u]));
+
+  // Current + prior week scores. We pull the two most recent distinct as_ofs.
+  const shRes = await client
+    .from("scores_history")
+    .select("ticker, as_of, composite, final_score, tier")
+    .lte("as_of", asOf)
+    .order("as_of", { ascending: false })
+    .limit(tickers.length * 3);
+  if (shRes.error) throw shRes.error;
+  const shRows = (shRes.data ?? []) as Array<{
+    ticker: string;
+    as_of: string;
+    composite: number | null;
+    final_score: number | null;
+    tier: string | null;
+  }>;
+  const distinctAsOfs: string[] = [];
+  for (const r of shRows) {
+    if (!distinctAsOfs.includes(r.as_of)) distinctAsOfs.push(r.as_of);
+    if (distinctAsOfs.length === 2) break;
+  }
+  const currentAsOf = distinctAsOfs[0] ?? null;
+  const priorAsOf = distinctAsOfs[1] ?? null;
+  const toSnap = (r: typeof shRows[number]): WeeklyScoreSnapshot => {
+    const u = labelByTicker.get(r.ticker);
+    return {
+      ticker: r.ticker,
+      layer: u?.layer ?? null,
+      layer_label: u?.layer_label ?? null,
+      composite: r.composite,
+      final_score: r.final_score,
+      tier: r.tier,
+    };
+  };
+  const current = currentAsOf ? shRows.filter((r) => r.as_of === currentAsOf).map(toSnap) : [];
+  const prior = priorAsOf ? shRows.filter((r) => r.as_of === priorAsOf).map(toSnap) : [];
+
+  // Insider clusters in the last 30 days, derived from raw filings via the
+  // THS-61 helper. We don't have a persisted "cluster" record — recompute
+  // on read.
+  const insiderFrom = isoDateMinusDays(asOf, 30);
+  const insRes = await client
+    .from("insider_form4_raw")
+    .select("ticker, transaction_date, insider_name, insider_title, transaction_code, acquired_disposed, shares, price_per_share, transaction_value, is_10b5_1")
+    .gte("transaction_date", insiderFrom)
+    .lte("transaction_date", asOf)
+    .in("ticker", tickers);
+  if (insRes.error) throw insRes.error;
+  const insRows = (insRes.data ?? []) as Array<{
+    ticker: string;
+    transaction_date: string;
+    insider_name: string;
+    insider_title: string | null;
+    transaction_code: string;
+    acquired_disposed: "A" | "D" | null;
+    shares: number | null;
+    price_per_share: number | null;
+    transaction_value: number | null;
+    is_10b5_1: boolean | null;
+  }>;
+  const filingsByTicker = new Map<string, typeof insRows>();
+  for (const r of insRows) {
+    const arr = filingsByTicker.get(r.ticker) ?? [];
+    arr.push(r);
+    filingsByTicker.set(r.ticker, arr);
+  }
+  const insiders: WeeklyInsiderSummary[] = [];
+  for (const ticker of tickers) {
+    const filings = filingsByTicker.get(ticker) ?? [];
+    if (filings.length === 0) continue;
+    // Detect clusters within the same 90/60-day windows the S-score uses.
+    const cluster = detectInsiderCluster(filings, asOf);
+    insiders.push({
+      ticker,
+      buy_30d: cluster.kind === "BUY" ? 1 : 0,
+      sell_30d: cluster.kind === "SELL" ? 1 : 0,
+    });
+  }
+  void BUY_INSIDER_MIN; void BUY_VALUE_MIN; void BUY_WINDOW_DAYS;
+  void SELL_INSIDER_MIN; void SELL_VALUE_MIN; void SELL_WINDOW_DAYS;
+
+  // Depreciation flags from the last 90 days.
+  const depFrom = isoDateMinusDays(asOf, 90);
+  const depRes = await client
+    .from("depreciation_flags")
+    .select("ticker, flagged_at, penalty_v, extension_years")
+    .gte("flagged_at", depFrom)
+    .lte("flagged_at", asOf)
+    .in("ticker", tickers)
+    .order("flagged_at", { ascending: false });
+  if (depRes.error) throw depRes.error;
+  const depFlags = (depRes.data ?? []) as WeeklyDepFlag[];
+
+  // Concentration history — latest row per ticker ≤ asOf, joined with mean_corr.
+  const concRes = await client
+    .from("concentration_history")
+    .select("ticker, as_of, tax, breakdown")
+    .lte("as_of", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("as_of", { ascending: false });
+  if (concRes.error) throw concRes.error;
+  const concentration: WeeklyConcentration[] = [];
+  const seenConc = new Set<string>();
+  for (const r of (concRes.data ?? []) as Array<{
+    ticker: string;
+    as_of: string;
+    tax: number | null;
+    breakdown: { signals?: { mean_corr?: number | null } } | null;
+  }>) {
+    if (seenConc.has(r.ticker)) continue;
+    seenConc.add(r.ticker);
+    concentration.push({
+      ticker: r.ticker,
+      tax: r.tax != null && Number.isFinite(r.tax) ? Number(r.tax) : 0,
+      mean_corr: r.breakdown?.signals?.mean_corr ?? null,
+    });
+  }
+
+  return {
+    as_of: asOf,
+    current,
+    prior,
+    insiders,
+    depFlags,
+    concentration,
+  };
 }

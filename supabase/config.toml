@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.compute-daily-memo]
 verify_jwt = false
+
+[functions.compute-weekly-ranking]
+verify_jwt = false
