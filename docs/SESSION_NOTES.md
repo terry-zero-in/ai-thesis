@@ -1,4 +1,67 @@
-# Session Notes — last updated 2026-05-15 (PM session 3)
+# Session Notes — last updated 2026-05-16 (PM session 4)
+
+## PM session 4 (2026-05-16) — Epic 4 cont'd: THS-52 universe table
+
+### Shipped this session
+
+| Ticket | Commit | What |
+|---|---|---|
+| **THS-52** | `59b04ef` | Universe table page (`/universe`). Sortable + filterable table of 50 names. Columns: ticker · name · layer chip · composite · final · tier badge · Q/G/V/AIQ mini-bars · Δw · macro flag. Three filter surfaces (header search + layer chips + tier chips in right rail); rail registers `universe-filter` key via layout effect. Row click → `/universe/[ticker]` (THS-53 stub). Data path: `getLatestUniverseScores()` joins `universe` (active) with latest + prior `scores_history` rows per ticker; deterministic synthesized fixture fallback when env unset or DB empty (clearly labeled). Skipped virtualization — 50 rows native well under the 500ms target. Build + lint clean, `/universe` 200 in 33ms. |
+
+**Files of note:**
+- `web/src/lib/supabase/{client,server}.ts` — `@supabase/ssr` clients; return `null` when env unset so dev with fixtures works
+- `web/src/lib/universe-data.ts` — fetcher + fixture (the L1/L2/L3/L4/L5 seed keyed off `20260515000200_e13_seed_universe.sql`)
+- `web/src/components/universe/{UniverseTable,UniverseFilterRail,TierBadge,LayerChip,MiniBar}.tsx`
+- `web/src/hooks/universe-filter-context.tsx` — shared filter state across page + rail (lifted to Shell so the right-side CtxPanel and the canvas table reference the same source of truth)
+- `web/src/app/universe/layout.tsx` — registers rail key on mount via `useCtxPanel().setRail("universe-filter")`; restores to `agent` on unmount
+
+**Deviations from THS-52 acceptance criteria:**
+1. Skipped virtualization (`<500ms` target met without it on 50 rows; revisit if profiling shows need)
+2. "70 names" in acceptance criteria → 50 (seed universe is 50, Terry-confirmed in migration comments)
+
+### THS-53 cold-start (next ticket — Urgent priority)
+
+**Goal:** Per-name detail page. Ticket says route is `/n/[ticker]` but I shipped `/universe/[ticker]` stub in THS-52 (the convention `/universe → /universe/[ticker]` matches the rest of the app — judgment call within the references). **Open question — keep `/universe/[ticker]` or move to `/n/[ticker]`?** Recommend keep.
+
+**Sections per spec:**
+1. Header — ticker · layer chip · current composite · tier badge · macro flag
+2. Factor decomposition — Q/G/V/AIQ bars with hover-detail sub-components (drawn from `scores_history.factor_breakdown` JSONB)
+3. AIQ rubric breakdown — 6 dimensions (data: `aiq_rubric_scores` table)
+4. Depreciation flags if applicable (data: `depreciation_flags` table — only L2 names per seed)
+5. Score history sparkline — 12 weeks (data: `scores_history` time series for the ticker)
+6. Insider Form 4 list (data: **no schema yet** — needs new ingestion ticket)
+7. Recent news (data: **no schema yet** — needs new ingestion ticket)
+8. Sentiment timeline stubbed
+
+**Acceptance:** all sections render for any of 20 hand-scored names; loads <800ms.
+
+**Honest data-gap inventory (read first before sizing):**
+- `scores_history.factor_breakdown` exists in schema (`20260515000100_e12_overlay_tables.sql`) — populated by `compute-composite-scores` Saturday cron — empty in dev without a deployed project. **Fixture pattern from THS-52 reuses cleanly.**
+- `aiq_rubric_scores` — **blocked on THS-46** (AIQ seed migration). Can ship the surface against a fixture and wire when THS-46 lands. (Or do THS-46 first — it's a simple seed migration, see queued question #3 in PM session 3 notes.)
+- `depreciation_flags` — partly seeded in THS-43; THS-48 expands the seed to all L2 names. Ship surface against partial seed.
+- Form 4 / news / sentiment — **no schema, no ingestion** yet. Recommend: render as "Data pending" stub blocks with placeholder skeletons; spawn follow-on tickets THS-58 (Form 4) + THS-59 (news) explicitly out of scope here.
+
+**Recommended scope cut for v1:**
+- Header (1) + factor decomposition (2) + AIQ rubric (3) + depreciation flags (4) + sparkline (5) ship real
+- Insider Form 4 (6) + news (7) + sentiment (8) ship as "Data pending" placeholder cards, with notes in the PR description for follow-on tickets
+
+**Implementation plan:**
+1. Fetcher `getNameDetail(ticker)` in `web/src/lib/name-detail-data.ts` — pulls latest `scores_history` row (incl. `factor_breakdown` JSONB) + last 12 weeks of composite (sparkline) + `aiq_rubric_scores` + `depreciation_flags` for ticker. Fixture fallback for each piece.
+2. Page at `web/src/app/universe/[ticker]/page.tsx` (replace the THS-52 stub). Server-side data fetch via `getSupabaseServer()` — fall back to client-side fixture if env unset.
+3. Components in `web/src/components/name/`:
+   - `NameHeader.tsx` — ticker · name · layer chip · final score · tier badge · macro flag (reuses TierBadge / LayerChip)
+   - `FactorPanels.tsx` — Q/G/V/AIQ panels with sub-factor breakdown (rendered from `factor_breakdown` JSONB shape; check `supabase/functions/_shared/composite.ts` for the exact shape)
+   - `AiqRubric.tsx` — 6-dim breakdown
+   - `DepFlagsList.tsx` — only renders if ticker has dep flags
+   - `Sparkline.tsx` — 12-week composite line; tiny SVG, no chart lib (per the "don't add libs casually" rule)
+   - `DataPendingCard.tsx` — reusable stub block for Form 4 / news / sentiment
+4. Right rail registers `name-detail` key — initial content: decision history thread placeholder (drives /decisions, THS-57)
+
+**Files to create/edit list (~10 files); est. 2-3 hours.**
+
+**Branch:** continue on `claude/epic-4-portal-ui` (PR #6). Stack THS-53 commit onto THS-52 head.
+
+---
 
 ## PM session 3 (2026-05-15) — Epic 3 kickoff: THS-49 live macro ingest
 
