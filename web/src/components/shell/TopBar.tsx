@@ -12,11 +12,13 @@ export function TopBar({
   onHelp,
   right,
   themeBtn,
+  userEmail,
 }: {
   onCmd: () => void;
   onHelp: () => void;
   right?: ReactNode;
   themeBtn?: ReactNode;
+  userEmail?: string | null;
 }) {
   const pathname = usePathname();
   const screen = pathToScreen(pathname);
@@ -58,7 +60,53 @@ export function TopBar({
       <Tip label={panelOpen ? "Close context panel" : "Open context panel"} keys={["⌘", "\\"]}>
         <TBBtn onClick={() => setPanelOpen(!panelOpen)}>{I.panel}</TBBtn>
       </Tip>
+      {userEmail && <UserChip email={userEmail} />}
     </header>
+  );
+}
+
+function UserChip({ email }: { email: string }) {
+  const initial = email[0]?.toUpperCase() ?? "?";
+  return (
+    <Tip label={`Sign out ${email}`} keys={[]}>
+      <a
+        href="/logout"
+        title={email}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          marginLeft: 4,
+          padding: "3px 8px 3px 4px",
+          borderRadius: 5,
+          color: "var(--text-2)",
+          border: "1px solid var(--border)",
+          fontSize: 11.5,
+          textDecoration: "none",
+          fontFamily: "var(--m)",
+        }}
+      >
+        <span
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: "50%",
+            background: "var(--accent-soft)",
+            color: "var(--accent)",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 10,
+            fontWeight: 600,
+          }}
+        >
+          {initial}
+        </span>
+        <span style={{ maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {email}
+        </span>
+      </a>
+    </Tip>
   );
 }
 

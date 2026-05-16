@@ -24,19 +24,19 @@ import { UniverseFilterProvider } from "@/hooks/universe-filter-context";
  * into TopBar that individual pages will opt into (THS-52 wires it into
  * the Universe table).
  */
-export function Shell({ children }: { children: ReactNode }) {
+export function Shell({ children, userEmail }: { children: ReactNode; userEmail?: string | null }) {
   return (
     <FilterProvider>
       <CtxPanelProvider>
         <UniverseFilterProvider>
-          <ShellInner>{children}</ShellInner>
+          <ShellInner userEmail={userEmail ?? null}>{children}</ShellInner>
         </UniverseFilterProvider>
       </CtxPanelProvider>
     </FilterProvider>
   );
 }
 
-function ShellInner({ children }: { children: ReactNode }) {
+function ShellInner({ children, userEmail }: { children: ReactNode; userEmail: string | null }) {
   const [col, setCol] = useState(false);
   const [cmd, setCmd] = useState(false);
   const [shortcuts, setShortcuts] = useState(false);
@@ -83,6 +83,7 @@ function ShellInner({ children }: { children: ReactNode }) {
           onCmd={() => setCmd(true)}
           onHelp={() => setShortcuts(true)}
           themeBtn={<ThemeSwitcher palette={palette} onPick={setPalette} />}
+          userEmail={userEmail}
         />
         <div
           style={{

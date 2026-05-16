@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Shell } from "@/components/shell/Shell";
+import { ConditionalShell } from "@/components/shell/ConditionalShell";
+import { getSupabaseServer } from "@/lib/supabase/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,11 +21,18 @@ export const metadata: Metadata = {
   description: "Multi-factor AI investing scoring engine + portfolio dashboard",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Resolve user once at layout level so chrome (TopBar email + logout)
+  // doesn't need to round-trip to Supabase per client component. Bare-page
+  // routes (/login etc.) ignore this.
+  const sb = await getSupabaseServer();
+  const { data } = sb ? await sb.auth.getUser() : { data: { user: null } };
+  const userEmail = data?.user?.email ?? null;
+
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <Shell>{children}</Shell>
+        <ConditionalShell userEmail={userEmail}>{children}</ConditionalShell>
       </body>
     </html>
   );
