@@ -2,9 +2,9 @@
 //
 // Reads scores_history (final_score) + prices_raw across the requested
 // 5-year window, derives monthly rebalance dates from the available
-// data, calls `runBacktest`, and returns a JSON report. Persists nothing
-// — the report is the output. If the operator wants to retain runs, a
-// follow-on can write to a `backtest_runs` table.
+// data, calls `runBacktest`, persists the run to `backtest_runs`, and
+// returns the same JSON report (with the new `id` from the insert).
+// Persistence makes year-over-year calibration drift comparable.
 //
 // Not on a cron — explicitly triggered (sensitive operation, expensive
 // query). Call with `{"start": "2021-01-01", "end": "2026-01-01"}`.
@@ -116,24 +116,44 @@ Deno.serve(async (req: Request): Promise<Response> => {
       costPerSide,
     });
 
+    const params = { top_n: topN, cost_bps: body.cost_bps ?? 10 };
+    const summary = {
+      total_return: result.total_return,
+      sharpe: result.sharpe,
+      max_drawdown: result.max_drawdown,
+      hit_rate: result.hit_rate,
+      avg_turnover: result.avg_turnover,
+      rebalance_count: result.rebalance_count,
+    };
+    const series = {
+      monthly_returns_net: result.monthly_returns_net,
+      turnover: result.turnover_series,
+    };
+    const elapsedMs = Date.now() - startedAt;
+
+    const insertRes = await client
+      .from("backtest_runs")
+      .insert({
+        start_date: start,
+        end_date: end,
+        params,
+        summary,
+        series,
+        elapsed_ms: elapsedMs,
+      })
+      .select("id")
+      .single();
+    if (insertRes.error) throw insertRes.error;
+
     return Response.json({
       ok: true,
+      id: insertRes.data.id,
       start,
       end,
-      config: { top_n: topN, cost_bps: (body.cost_bps ?? 10) },
-      summary: {
-        total_return: result.total_return,
-        sharpe: result.sharpe,
-        max_drawdown: result.max_drawdown,
-        hit_rate: result.hit_rate,
-        avg_turnover: result.avg_turnover,
-        rebalance_count: result.rebalance_count,
-      },
-      series: {
-        monthly_returns_net: result.monthly_returns_net,
-        turnover: result.turnover_series,
-      },
-      elapsed_ms: Date.now() - startedAt,
+      config: params,
+      summary,
+      series,
+      elapsed_ms: elapsedMs,
     });
   } catch (e) {
     const status = e instanceof HttpError ? e.status : 500;
