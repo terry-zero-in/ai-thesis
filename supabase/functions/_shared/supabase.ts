@@ -13,6 +13,12 @@ import type { SInputs } from "./factor-s.ts";
 import type { InsiderFiling } from "./factor-insider.ts";
 import { detectClusterOverride } from "./factor-insider.ts";
 import type { FactorScores, MacroGauges } from "./composite.ts";
+import type {
+  AiqRubricSnap,
+  CapexSnap,
+  DepFlagRow,
+  QuarterlyInputs,
+} from "./quarterly-checklist.ts";
 
 export function serviceClient(): SupabaseClient {
   return createClient(
@@ -1048,6 +1054,188 @@ export async function loadConcentrationInputs(
   }
 
   return { returns, supplyChainDegree };
+}
+
+// ---------------------------------------------------------------------------
+// Quarterly-review loading (THS-67). Pulls everything the checklist needs:
+//   - depreciation_flags rows added in the review window
+//   - latest two aiq_rubric snapshots per ticker
+//   - hyperscaler 90-day returns for current + prior windows
+//   - hyperscaler trailing-12mo capex for current + prior year
+// Output drives `buildQuarterlyChecklist` in quarterly-checklist.ts.
+// ---------------------------------------------------------------------------
+
+const HYPERSCALER_TICKERS = ["MSFT", "GOOGL", "AMZN", "META", "ORCL"] as const;
+const QUARTER_LOOKBACK_DAYS = 90;
+const RETURNS_WINDOW_DAYS = 90;
+const RETURNS_CALENDAR_BUFFER_DAYS = 135; // ~90 trading days + buffer
+
+interface CapexRow {
+  ticker: string;
+  period_end: string;
+  period_type: "Q" | "A";
+  capex: number | null;
+}
+
+export async function loadQuarterlyInputs(
+  client: SupabaseClient,
+  asOf: string,
+): Promise<QuarterlyInputs> {
+  const windowStart = isoDateMinusDays(asOf, QUARTER_LOOKBACK_DAYS);
+
+  // 1. Dep-flag rows in window.
+  const depRes = await client
+    .from("depreciation_flags")
+    .select("ticker, flagged_at, extension_years, penalty_v")
+    .gte("flagged_at", windowStart)
+    .lte("flagged_at", asOf)
+    .order("flagged_at", { ascending: false });
+  if (depRes.error) throw depRes.error;
+  const newDepFlags = (depRes.data ?? []) as DepFlagRow[];
+
+  // 2. AIQ rubric latest two per ticker.
+  const aiqRes = await client
+    .from("aiq_rubric")
+    .select("ticker, scored_at, total")
+    .lte("scored_at", asOf)
+    .order("ticker", { ascending: true })
+    .order("scored_at", { ascending: false });
+  if (aiqRes.error) throw aiqRes.error;
+  const aiqByTicker = new Map<string, AiqRubricSnap[]>();
+  for (const row of (aiqRes.data ?? []) as AiqRubricSnap[]) {
+    const arr = aiqByTicker.get(row.ticker) ?? [];
+    if (arr.length < 2) arr.push(row);
+    aiqByTicker.set(row.ticker, arr);
+  }
+
+  // 3. Hyperscaler returns — two non-overlapping 90-day windows.
+  const priorWindowEnd = isoDateMinusDays(asOf, RETURNS_WINDOW_DAYS);
+  const currentFrom = isoDateMinusDays(asOf, RETURNS_CALENDAR_BUFFER_DAYS);
+  const priorFrom = isoDateMinusDays(priorWindowEnd, RETURNS_CALENDAR_BUFFER_DAYS);
+
+  const [currentPxRes, priorPxRes] = await Promise.all([
+    client
+      .from("prices_raw")
+      .select("ticker,date,close")
+      .gte("date", currentFrom)
+      .lte("date", asOf)
+      .in("ticker", HYPERSCALER_TICKERS as readonly string[])
+      .order("ticker")
+      .order("date", { ascending: true }),
+    client
+      .from("prices_raw")
+      .select("ticker,date,close")
+      .gte("date", priorFrom)
+      .lte("date", priorWindowEnd)
+      .in("ticker", HYPERSCALER_TICKERS as readonly string[])
+      .order("ticker")
+      .order("date", { ascending: true }),
+  ]);
+  if (currentPxRes.error) throw currentPxRes.error;
+  if (priorPxRes.error) throw priorPxRes.error;
+
+  const currentReturns = buildHyperscalerReturns(
+    (currentPxRes.data ?? []) as ConcentrationPriceRow[],
+  );
+  const priorReturns = buildHyperscalerReturns(
+    (priorPxRes.data ?? []) as ConcentrationPriceRow[],
+  );
+
+  // 4. Hyperscaler trailing-12mo capex (current + prior year).
+  // Pull the last ~8 quarters of capex; build TTM for asOf and TTM for asOf-1y.
+  const oneYearAgo = isoDateMinusDays(asOf, 365);
+  const capexFrom = isoDateMinusDays(asOf, 365 + 400); // ~2y back to be safe
+  const capexRes = await client
+    .from("fundamentals_raw")
+    .select("ticker, period_end, period_type, capex")
+    .gte("period_end", capexFrom)
+    .lte("period_end", asOf)
+    .eq("period_type", "Q")
+    .in("ticker", HYPERSCALER_TICKERS as readonly string[])
+    .order("ticker")
+    .order("period_end", { ascending: false });
+  if (capexRes.error) throw capexRes.error;
+  const hyperscalerCapex = buildHyperscalerCapex(
+    (capexRes.data ?? []) as CapexRow[],
+    asOf,
+    oneYearAgo,
+  );
+
+  return {
+    as_of: asOf,
+    window_start: windowStart,
+    newDepFlags,
+    aiqByTicker,
+    hyperscalerReturns: { current: currentReturns, prior: priorReturns },
+    hyperscalerCapex,
+    is_annual_trigger: isAnnualTrigger(asOf),
+  };
+}
+
+function buildHyperscalerReturns(rows: ConcentrationPriceRow[]): Map<string, number[]> {
+  const closes = new Map<string, Array<{ date: string; close: number }>>();
+  for (const r of rows) {
+    if (r.close == null) continue;
+    const arr = closes.get(r.ticker) ?? [];
+    arr.push({ date: r.date, close: Number(r.close) });
+    closes.set(r.ticker, arr);
+  }
+  const out = new Map<string, number[]>();
+  for (const [t, series] of closes) {
+    if (series.length < 10) continue;
+    const r: number[] = [];
+    for (let i = 1; i < series.length; i++) {
+      const a = series[i - 1].close;
+      const b = series[i].close;
+      if (a > 0 && b > 0) r.push((b - a) / a);
+    }
+    if (r.length >= 10) out.set(t, r.slice(-RETURNS_WINDOW_DAYS));
+  }
+  return out;
+}
+
+function buildHyperscalerCapex(
+  rows: CapexRow[],
+  asOf: string,
+  oneYearAgo: string,
+): CapexSnap[] {
+  const byTicker = new Map<string, CapexRow[]>();
+  for (const r of rows) {
+    const arr = byTicker.get(r.ticker) ?? [];
+    arr.push(r);
+    byTicker.set(r.ticker, arr);
+  }
+  const out: CapexSnap[] = [];
+  for (const ticker of HYPERSCALER_TICKERS) {
+    const all = byTicker.get(ticker) ?? []; // already sorted period_end desc
+    const currentSlice = all.filter((r) => r.period_end <= asOf).slice(0, 4);
+    const priorSlice = all
+      .filter((r) => r.period_end <= oneYearAgo)
+      .slice(0, 4);
+    out.push({
+      ticker,
+      current_ttm_capex: sumCapex(currentSlice),
+      prior_ttm_capex: sumCapex(priorSlice),
+    });
+  }
+  return out;
+}
+
+function sumCapex(rows: CapexRow[]): number | null {
+  if (rows.length < 4) return null;
+  let s = 0;
+  let n = 0;
+  for (const r of rows) {
+    if (r.capex == null) continue;
+    s += Number(r.capex);
+    n++;
+  }
+  return n >= 4 ? s : null;
+}
+
+/** True iff `asOf` falls in February (Q1 review fires the annual trigger). */
+function isAnnualTrigger(asOf: string): boolean {
+  return /-02-/.test(asOf);
 }
 
 // ---------------------------------------------------------------------------

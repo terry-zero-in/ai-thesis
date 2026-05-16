@@ -48,6 +48,19 @@ interface AckRow {
   acked_note: string | null;
 }
 
+interface QuarterlyReviewRow {
+  as_of: string;
+  findings: Array<{
+    check_id: string;
+    severity: "info" | "warn" | "high" | "data_gap";
+    summary: string;
+    detail: string;
+  }>;
+  generated_at: string;
+  reviewed_at: string | null;
+  reviewed_note: string | null;
+}
+
 export interface AlertsSnapshot {
   events: AlertEvent[];
   unseen: number;
@@ -59,7 +72,7 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
   const sb = await getSupabaseServer();
   if (!sb) return synthesize(false);
 
-  const [scoresRes, macroRes, acksRes] = await Promise.all([
+  const [scoresRes, macroRes, acksRes, qrRes] = await Promise.all([
     sb
       .from("scores_history")
       .select("ticker,as_of,composite,final_score,aiq_score,tier")
@@ -72,6 +85,11 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
       .order("as_of", { ascending: true })
       .limit(120),
     sb.from("alert_acks").select("alert_key,acked_at,acked_note"),
+    sb
+      .from("quarterly_reviews")
+      .select("as_of,findings,generated_at,reviewed_at,reviewed_note")
+      .order("as_of", { ascending: false })
+      .limit(4),
   ]);
 
   const scores = (scoresRes.data ?? []) as ScoresRow[];
@@ -79,10 +97,12 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
   const acks = new Map<string, AckRow>(
     ((acksRes.data ?? []) as AckRow[]).map((a) => [a.alert_key, a]),
   );
+  const quarterly = (qrRes.data ?? []) as QuarterlyReviewRow[];
 
-  if (scores.length === 0 && macro.length === 0) return synthesize(true);
+  if (scores.length === 0 && macro.length === 0 && quarterly.length === 0) return synthesize(true);
 
   const events = deriveEvents(scores, macro);
+  for (const qr of quarterly) events.push(quarterlyEvent(qr));
   hydrateAcks(events, acks);
 
   events.sort((a, b) => (a.as_of < b.as_of ? 1 : a.as_of > b.as_of ? -1 : 0));
@@ -203,6 +223,32 @@ function deriveEvents(scores: ScoresRow[], macro: MacroRow[]): AlertEvent[] {
   }
 
   return out;
+}
+
+function quarterlyEvent(qr: QuarterlyReviewRow): AlertEvent {
+  const findings = qr.findings ?? [];
+  const high = findings.filter((f) => f.severity === "high").length;
+  const warn = findings.filter((f) => f.severity === "warn").length;
+  const gap = findings.filter((f) => f.severity === "data_gap").length;
+  const severity: AlertEvent["severity"] = high > 0 ? "high" : warn > 0 ? "warn" : "info";
+  const parts: string[] = [];
+  if (high > 0) parts.push(`${high} high`);
+  if (warn > 0) parts.push(`${warn} warn`);
+  if (gap > 0) parts.push(`${gap} data gap`);
+  if (parts.length === 0) parts.push(`${findings.length} check(s) clean`);
+  const lines = findings.map((f) => `  • [${f.severity}] ${f.summary}`);
+  return {
+    key: alertKey("quarterly_review", null, qr.as_of),
+    kind: "quarterly_review",
+    ticker: null,
+    as_of: qr.as_of,
+    prior_as_of: null,
+    title: `Quarterly review ${qr.as_of} — ${parts.join(", ")}`,
+    detail: lines.length > 0 ? lines.join("\n") : "No findings recorded.",
+    severity,
+    acked_at: qr.reviewed_at,
+    acked_note: qr.reviewed_note,
+  };
 }
 
 function countGates(g: MacroRow): number {

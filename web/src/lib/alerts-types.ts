@@ -8,7 +8,13 @@
  * event itself.
  */
 
-export type AlertKind = "tier_change" | "conv_drop" | "aiq_drift" | "macro_flip" | "insider_cluster";
+export type AlertKind =
+  | "tier_change"
+  | "conv_drop"
+  | "aiq_drift"
+  | "macro_flip"
+  | "insider_cluster"
+  | "quarterly_review";
 
 export const ALERT_KIND_LABELS: Record<AlertKind, string> = {
   tier_change: "Tier change",
@@ -16,6 +22,7 @@ export const ALERT_KIND_LABELS: Record<AlertKind, string> = {
   aiq_drift: "AIQ drift > 10pt",
   macro_flip: "Macro gate flip",
   insider_cluster: "Insider cluster",
+  quarterly_review: "Quarterly review",
 };
 
 /** Magnitude thresholds. */

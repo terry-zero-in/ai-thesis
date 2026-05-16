@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.ingest-macro]
 verify_jwt = false
+
+[functions.compute-quarterly-review]
+verify_jwt = false
