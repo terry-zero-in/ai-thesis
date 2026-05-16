@@ -1,4 +1,101 @@
-# Session Notes — last updated 2026-05-16 (PM session 6)
+# Session Notes — last updated 2026-05-16 (PM session 6 — pre-compaction handoff)
+
+## NEXT-SESSION COLD-START — READ THIS FIRST
+
+This block is the handoff written immediately before /compact. The full session log lives below; only the operational summary you need to keep moving is here.
+
+### Where we are
+
+- **Epic 1 Foundation**: Done (prior sessions)
+- **Epic 2 Tier-A scoring**: Done (prior sessions)
+- **Epic 3 AIQ + overlays + macro**: Done except THS-47 (AIQ universe expansion to 50/70 names) and THS-48 (dep-flags expansion to all L2 names). Both are seed-migration follow-ons.
+- **Epic 4 Portal UI (THS-32)**: **Done**. All 7 sub-issues + the auth sub-ticket THS-68 closed.
+- **Epic 5 Tier-B scoring (THS-33)**: **Functionally done** — THS-58 (M), THS-60 (SUSI), THS-61 (insider), THS-62 (S-composite) all shipped. **Only THS-59 remains**, blocked on a vendor decision (Polygon vs Tradier vs broker for options surface).
+- **Epic 6 Maintenance (THS-34)**: Partial. **THS-63 (concentration tax) and THS-64 (backtest harness) shipped this session**. THS-65 (Sonnet daily memo cron), THS-66 (Opus weekly ranking cron), and THS-67 (quarterly review checklist) remain.
+
+### What needs Terry's input before unblocking
+
+Two decisions gate the remaining backlog:
+
+1. **Options vendor for THS-59** — Polygon ($79/mo, vendor-independent), Tradier (free with broker), or broker API (free with broker). Recommended default in PR #6 SESSION_NOTES: **Polygon $79/mo**. Without this, S-composite's `options_skew` signal stays null (partial-coverage rescaling handles it gracefully).
+2. **LLM integration for THS-65 / THS-66** — Anthropic Console API key vs Bedrock vs Vertex. THS-65 = daily 8am CT Sonnet memo cron (top movers + news digest + insider Form 4s + macro state); THS-66 = Sunday-evening Opus ranking cron (full universe + correlation heatmaps + bear-case checks). Both need a single decision on which provider + credential source.
+
+### What next session can do without asking
+
+**THS-67 — Quarterly review checklist automation.** Pure orchestration, no external deps. Acceptance: quarterly job creates checklist row + notification. Surface-level scope from the ticket:
+1. After each earnings cycle, auto-generate a checklist:
+   - any L2 ticker changed useful-life policy?
+   - any AIQ drift > 10 pts?
+   - hyperscaler pairwise correlation moved > 0.20?
+   - consensus 2026/2027 capex moved > 10%?
+   - annual walk-forward re-optimize trigger
+2. Persist as a row in a new `quarterly_reviews` table.
+3. Surface in the UI (likely a card on /regime or a new /maintenance route).
+
+This is autonomous work. Pick it up first if Terry hasn't answered the vendor/LLM questions.
+
+After THS-67, the autonomous queue is empty until Terry decides on vendor + LLM. **Maintenance-list tickets** that could be picked up to bridge:
+- **THS-47** AIQ rubric universe expansion to 50/70 names (adds NOW + INTU among others). Migration only.
+- **THS-48** Depreciation-flag seed expansion to all L2 names. Migration only.
+- **Wire concentration tax into composite** (open follow-on from THS-63) — subtract `concentration_history.tax` in the final score; requires Terry to confirm application semantics (multiplicative / additive / tier-shift).
+- **Surface insider cluster events in /decisions** — THS-57's `insider_cluster` alert kind is stubbed; small follow-on can compute per-week clusters from `insider_form4_raw` and emit them. THS-61's `detectClusterOverride` is reusable.
+- **`backtest_runs` persistence table** (THS-64 follow-on) — `(id, params jsonb, summary jsonb, ran_at)` so runs are comparable over time.
+
+### Where the work lives
+
+- **Branch**: `claude/epic-4-portal-ui` — head commit `2848b59` (THS-64 backtest). The branch name is historical (Epic 4 long since closed); current head includes Epic 5 + Epic 6 work. Consider retitling PR #6 to **"Epics 4–6: portal UI + Tier-B scoring + maintenance"** before merging, or stack the next session's work onto this branch. No functional concern either way.
+- **PR #6** — open against `main`. Linear comments are the canonical per-ticket close-out; commit messages mirror them; SESSION_NOTES is the cross-session narrative.
+
+### Cron schedule (final, after this session)
+
+Saturday weekly:
+- Q-scores: 22:00 UTC
+- G-scores: 22:15
+- V-scores: 22:30
+- Concentration tax: 22:35
+- M-scores: 22:40
+- S-scores: 22:42
+- Composite scores: 22:45
+
+Bi-monthly:
+- Short interest (FMP): 22:30 UTC, 1st + 16th of each month
+
+Daily Mon-Fri:
+- Insider Form 4 (FMP): 22:50 UTC
+
+On-demand (no cron):
+- `run-backtest` — operator-triggered with `{start, end, top_n, cost_bps}`
+
+### Test suite state
+
+- **255 tests passing** across `_shared/`.
+- New this session: factor-m.test.ts (10), susi.test.ts (7), fmp-short-interest.test.ts (4), factor-insider.test.ts (14), fmp-insider.test.ts (4), factor-s.test.ts (10), concentration.test.ts (9), backtest.test.ts (9).
+- Run: `node --test --experimental-strip-types supabase/functions/_shared/*.test.ts` from repo root.
+
+### THS-63 / THS-64 close-out (only landed in Linear + commit messages — not yet captured below)
+
+| Ticket | Commit | Summary |
+|---|---|---|
+| **THS-63** | `a4d0468` | Concentration tax. Pure `computeConcentrationTax`: 40% mean pairwise corr + 40% PC1 (power iteration on cov matrix) + 20% supply-chain degree; percentile-ranked, scaled to [-15, 0]. Schema-expand: `supply_chain_deps` (26 curated edges across the AI stack) + `concentration_history`. Cron Sat 22:35 UTC. 9 tests including NVDA/TSM acceptance. |
+| **THS-64** | `2848b59` | Backtest harness. Pure `runBacktest`: walk-forward, top-N equal-weighted, lookahead-safe, partial-coverage scaling, one-way cost per turnover. Edge function `run-backtest` reads scores_history + prices_raw, derives month-end closes. NOT on cron (explicit trigger, body `{start, end, top_n, cost_bps}`). 9 tests including lookahead-safety + known max-DD sequence. "±10% Sharpe replication of v2 hand-scoring" acceptance bullet can't be tested locally — needs multi-year history. |
+
+**Open follow-ons surfaced by THS-63:**
+- Concentration tax not yet wired into composite/final score — application semantics (multiplicative / additive / tier-shift) needs Terry's call.
+- `supply_chain_deps.edge_weight` column stored but unused (degree-count loader ignores it); weighted-degree is a small change if you want CEG's `weight=2` edge to count double.
+- Fixture universe percentile-rank calibration is coarser than the real 50-name universe; if production calibration falls outside the spec's NVDA=-5 / TSM=-1 target after first cron run, tune `blended/100 × -15` to a softmax or sqrt scaling to compress the extremes.
+
+**Open follow-ons surfaced by THS-64:**
+- No `backtest_runs` persistence — the report is the return value, not stored.
+- "Factor attribution" output is top-line only; per-factor return decomposition would need the per-factor score series.
+- `/weekly` route (mentioned in THS-66 spec) is not wired. Backtest JSON is ready to render there when THS-66 lands.
+
+### Maintenance items carried forward (not addressed this session)
+
+1. **Spec ↔ ticket reconciliation pass** (Terry's standing observation from PM session 5) — two known drifts: reserve target ($30K spec vs $20K ticket), and AIQ table arithmetic (GOOGL/ORCL corrected this session to per-dim sums). Worth a dedicated session to grep every numeric across spec/tickets/code and identify a single authoritative source per fact.
+2. **PR #6 branch retitle** — currently named `claude/epic-4-portal-ui` but includes Epics 4–6 work. Cosmetic only.
+3. **README session-start instructions** still reference build order Epic 1→6 but the build has now consumed most of it. Quick refresh worth doing alongside reconciliation.
+
+---
 
 ## PM session 6 (2026-05-16) — Epic 4 close + Epic 5 burn-through: THS-57 / 58 / 60 / 61 / 62
 
