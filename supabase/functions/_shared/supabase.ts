@@ -19,6 +19,12 @@ import type {
   DepFlagRow,
   QuarterlyInputs,
 } from "./quarterly-checklist.ts";
+import type {
+  BuildContextInputs as MemoBuildContextInputs,
+  InsiderTx as MemoInsiderTx,
+  MacroState as MemoMacroState,
+  ScoreSnapshot as MemoScoreSnapshot,
+} from "./memo-context.ts";
 
 export function serviceClient(): SupabaseClient {
   return createClient(
@@ -1402,4 +1408,99 @@ export async function loadCompositeInputs(
   }
 
   return { inputs, gauges, gaugesAsOf: mg?.as_of ?? null };
+}
+
+// ---------------------------------------------------------------------------
+// Memo context loading (THS-65 / THS-66). Pulls the two scores_history
+// snapshots needed for movers, recent insider filings ≥$1M from the last
+// 24h, and the latest macro_gauges row. The pure builder in memo-context.ts
+// composes the structured context the LLM consumes.
+// ---------------------------------------------------------------------------
+
+export async function loadDailyMemoInputs(
+  client: SupabaseClient,
+  asOf: string,
+): Promise<MemoBuildContextInputs> {
+  // Find the two most recent scores_history snapshots ≤ asOf.
+  const snapRes = await client
+    .from("scores_history")
+    .select("ticker, as_of, composite, final_score, tier")
+    .lte("as_of", asOf)
+    .order("as_of", { ascending: false })
+    .limit(2000);
+  if (snapRes.error) throw snapRes.error;
+  const rows = (snapRes.data ?? []) as Array<MemoScoreSnapshot & { as_of: string }>;
+
+  // Distinct as_of dates, newest first.
+  const distinctAsOf: string[] = [];
+  for (const r of rows) {
+    if (!distinctAsOf.includes(r.as_of)) distinctAsOf.push(r.as_of);
+    if (distinctAsOf.length === 2) break;
+  }
+  const currentAsOf = distinctAsOf[0] ?? null;
+  const priorAsOf = distinctAsOf[1] ?? null;
+  const currentScores = currentAsOf ? rows.filter((r) => r.as_of === currentAsOf) : [];
+  const priorScores = priorAsOf ? rows.filter((r) => r.as_of === priorAsOf) : [];
+
+  // Insider filings from the last 24h (use the last 2 calendar days to be
+  // safe on cron timing — the memo runs at 13:00 UTC = 8am CT).
+  const insiderFrom = isoDateMinusDays(asOf, 1);
+  const insiderRes = await client
+    .from("insider_form4_raw")
+    .select("ticker, transaction_date, insider_name, insider_title, transaction_code, shares, price_per_share, transaction_value, is_10b5_1")
+    .gte("transaction_date", insiderFrom)
+    .lte("transaction_date", asOf)
+    .order("transaction_date", { ascending: false });
+  if (insiderRes.error) throw insiderRes.error;
+  const insiderFilings = (insiderRes.data ?? []) as MemoInsiderTx[];
+
+  // Macro state.
+  const mgRes = await client
+    .from("macro_gauges")
+    .select("as_of, naaim, aaii_3wk_spread, fear_greed")
+    .lte("as_of", asOf)
+    .order("as_of", { ascending: false })
+    .limit(1);
+  if (mgRes.error) throw mgRes.error;
+  const mg = ((mgRes.data ?? []) as Array<{
+    as_of: string;
+    naaim: number | null;
+    aaii_3wk_spread: number | null;
+    fear_greed: number | null;
+  }>)[0] ?? null;
+
+  const macro: MemoMacroState = {
+    as_of: mg?.as_of ?? null,
+    naaim: mg?.naaim ?? null,
+    aaii_3wk_spread: mg?.aaii_3wk_spread ?? null,
+    fear_greed: mg?.fear_greed ?? null,
+    gates_hit: countMemoGates(mg),
+    multiplier: memoMultiplier(countMemoGates(mg)),
+  };
+
+  return {
+    as_of: asOf,
+    currentScores,
+    priorScores,
+    insiderFilings,
+    macro,
+  };
+}
+
+function countMemoGates(
+  mg: { naaim: number | null; aaii_3wk_spread: number | null; fear_greed: number | null } | null,
+): number {
+  if (!mg) return 0;
+  let n = 0;
+  if (mg.naaim != null && mg.naaim > 90) n++;
+  if (mg.aaii_3wk_spread != null && mg.aaii_3wk_spread > 30) n++;
+  if (mg.fear_greed != null && mg.fear_greed > 80) n++;
+  return n;
+}
+
+function memoMultiplier(gates: number): number {
+  if (gates >= 3) return 0.85;
+  if (gates === 2) return 0.9;
+  if (gates === 1) return 0.95;
+  return 1.0;
 }

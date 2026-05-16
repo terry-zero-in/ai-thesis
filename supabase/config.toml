@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.ingest-options]
 verify_jwt = false
+
+[functions.compute-daily-memo]
+verify_jwt = false
