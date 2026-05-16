@@ -93,6 +93,9 @@ verify_jwt = false
 [functions.compute-concentration]
 verify_jwt = false
 
+[functions.run-backtest]
+verify_jwt = false
+
 [functions.compute-composite-scores]
 verify_jwt = false
 
