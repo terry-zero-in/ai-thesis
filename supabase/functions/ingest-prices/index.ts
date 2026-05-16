@@ -7,7 +7,7 @@
 // the matview.
 
 import { HttpError, requireCronAuth } from "../_shared/auth.ts";
-import { fetchHistoricalPrices } from "../_shared/fmp.ts";
+import { fetchHistoricalPrices, fetchVixHistory } from "../_shared/fmp.ts";
 import { activeTickers, serviceClient } from "../_shared/supabase.ts";
 
 declare const Deno: { serve: (h: (req: Request) => Promise<Response>) => void };
@@ -36,7 +36,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     for (const ticker of tickers) {
       try {
-        const rows = await fetchHistoricalPrices(ticker, isoDate(from), isoDate(to));
+        // ^-prefixed symbols (e.g. ^VIX) are indices — FMP's stable EOD
+        // endpoint returns sparse data for them; use the legacy
+        // historical-price-full endpoint instead.
+        const rows = ticker.startsWith("^")
+          ? await fetchVixHistory(isoDate(from), isoDate(to))
+          : await fetchHistoricalPrices(ticker, isoDate(from), isoDate(to));
         if (rows.length === 0) continue;
         const { error } = await client
           .from("prices_raw")

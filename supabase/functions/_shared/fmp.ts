@@ -356,6 +356,40 @@ export async function fetchHistoricalPrices(
 }
 
 /**
+ * VIX (^VIX) is an index, not an equity; FMP's `/stable/historical-price-eod-full`
+ * endpoint returns sparse / unadjusted data for it. The legacy
+ * `/api/v3/historical-price-full/^VIX` endpoint is still served and
+ * returns the standard `{symbol, historical: [...]}` envelope. We hit
+ * the legacy path explicitly for VIX (and any future ^-prefixed macro
+ * symbols) so the daily ingest doesn't silently drop the row.
+ *
+ * Returns `PriceRow[]` shaped identically to `fetchHistoricalPrices` so
+ * the prices ingest can mix them.
+ */
+export async function fetchVixHistory(from: string, to: string): Promise<PriceRow[]> {
+  const apikey = requireEnv("FMP_API_KEY");
+  const url = new URL(`https://financialmodelingprep.com/api/v3/historical-price-full/%5EVIX`);
+  url.searchParams.set("from", from);
+  url.searchParams.set("to", to);
+  url.searchParams.set("apikey", apikey);
+  const resp = await fetch(url.toString());
+  if (!resp.ok) {
+    throw new Error(`FMP VIX request failed: ${resp.status} ${resp.statusText}`);
+  }
+  const body = (await resp.json()) as FmpHistoricalResponse | FmpHistoricalRow[];
+  const rows: FmpHistoricalRow[] = Array.isArray(body) ? body : (body.historical ?? []);
+  return rows.map((r) => ({
+    ticker: "^VIX",
+    date: r.date,
+    open: asNum(r.open),
+    high: asNum(r.high),
+    low: asNum(r.low),
+    close: asNum(r.adjClose) ?? asNum(r.close),
+    volume: r.volume == null ? null : Math.trunc(r.volume),
+  }));
+}
+
+/**
  * Pulls Q+A statements for one ticker and returns merged fundamentals rows.
  * Period is determined by the (period, limit) tuples passed in.
  */

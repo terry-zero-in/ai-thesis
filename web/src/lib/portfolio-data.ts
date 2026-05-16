@@ -25,6 +25,7 @@ import { FIXTURE_INDEX, FIXTURE_UNIVERSE } from "./universe-fixture";
 import {
   POSITION_DRAWDOWN_TRIGGER,
   SPY_DAILY_DROP_TRIGGER,
+  VIX_LEVEL_TRIGGER,
   type MarketTrigger,
   type PortfolioSnapshot,
   type PositionRow,
@@ -71,8 +72,8 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
 
   if (positionDbRows.length === 0) {
     // Settings exist but no positions yet — render empty state with real settings.
-    const spySnap = await fetchSpySnapshot(sb);
-    return finalizeSnapshot([], settings, spySnap, true, false);
+    const [spySnap, vixSnap] = await Promise.all([fetchSpySnapshot(sb), fetchVixSnapshot(sb)]);
+    return finalizeSnapshot([], settings, spySnap, vixSnap, true, false);
   }
 
   const tickers = positionDbRows.map((p) => p.ticker);
@@ -112,9 +113,9 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
     };
   });
 
-  const spySnap = await fetchSpySnapshot(sb);
+  const [spySnap, vixSnap] = await Promise.all([fetchSpySnapshot(sb), fetchVixSnapshot(sb)]);
 
-  return finalizeSnapshot(positions, settings, spySnap, true, false);
+  return finalizeSnapshot(positions, settings, spySnap, vixSnap, true, false);
 }
 
 /** Fixture-mode universe options for the position-add select. */
@@ -146,6 +147,12 @@ interface SpySnap {
   spy_as_of: string | null;
 }
 
+interface VixSnap {
+  /** Last 3 daily closes, ordered newest → oldest. */
+  recent_closes: number[];
+  vix_as_of: string | null;
+}
+
 async function fetchSpySnapshot(sb: NonNullable<Awaited<ReturnType<typeof getSupabaseServer>>>): Promise<SpySnap> {
   const { data } = await sb
     .from("prices_raw")
@@ -162,10 +169,26 @@ async function fetchSpySnapshot(sb: NonNullable<Awaited<ReturnType<typeof getSup
   };
 }
 
+async function fetchVixSnapshot(sb: NonNullable<Awaited<ReturnType<typeof getSupabaseServer>>>): Promise<VixSnap> {
+  const { data } = await sb
+    .from("prices_raw")
+    .select("date,close")
+    .eq("ticker", "^VIX")
+    .order("date", { ascending: false })
+    .limit(3);
+  const rows = (data ?? []) as { date: string; close: number | null }[];
+  if (rows.length === 0) return { recent_closes: [], vix_as_of: null };
+  return {
+    recent_closes: rows.map((r) => (r.close != null ? Number(r.close) : Number.NaN)).filter((n) => Number.isFinite(n)),
+    vix_as_of: rows[0].date,
+  };
+}
+
 function finalizeSnapshot(
   positions: PositionRow[],
   settings: { total_capital: number; target_reserve: number },
   spy: SpySnap,
+  vix: VixSnap,
   envConfigured: boolean,
   synthetic_prices: boolean,
 ): PortfolioSnapshot {
@@ -198,7 +221,7 @@ function finalizeSnapshot(
   const total_pl = total_market_value - total_deployed;
   const total_pl_pct = total_deployed > 0 ? total_pl / total_deployed : 0;
   const reserve_actual = settings.total_capital - total_deployed;
-  const market_triggers = computeMarketTriggers(spy);
+  const market_triggers = computeMarketTriggers(spy, vix);
 
   return {
     positions,
@@ -219,7 +242,7 @@ function finalizeSnapshot(
   };
 }
 
-function computeMarketTriggers(spy: SpySnap): MarketTrigger[] {
+function computeMarketTriggers(spy: SpySnap, vix: VixSnap): MarketTrigger[] {
   const triggers: MarketTrigger[] = [];
 
   // Trigger 2a — SPY single-day drop ≥ 5%.
@@ -241,12 +264,27 @@ function computeMarketTriggers(spy: SpySnap): MarketTrigger[] {
     });
   }
 
-  // Trigger 2b — VIX > 25 for 3+ days. Not yet ingested; flagged pending.
-  triggers.push({
-    kind: "vix_sustained",
-    fired: false,
-    detail: "VIX ingestion pending (open follow-on — no prices_raw row for VIX yet).",
-  });
+  // Trigger 2b — VIX ≥ 25 for 3 consecutive days.
+  if (vix.recent_closes.length >= 3) {
+    const [d0, d1, d2] = vix.recent_closes;
+    const fired = d0 >= VIX_LEVEL_TRIGGER && d1 >= VIX_LEVEL_TRIGGER && d2 >= VIX_LEVEL_TRIGGER;
+    triggers.push({
+      kind: "vix_sustained",
+      fired,
+      detail: fired
+        ? `VIX ≥ ${VIX_LEVEL_TRIGGER} for 3 days (${d0.toFixed(1)} / ${d1.toFixed(1)} / ${d2.toFixed(1)}, latest ${vix.vix_as_of}).`
+        : `VIX last 3 closes: ${d0.toFixed(1)} / ${d1.toFixed(1)} / ${d2.toFixed(1)} (need all ≥ ${VIX_LEVEL_TRIGGER}; latest ${vix.vix_as_of}).`,
+    });
+  } else {
+    triggers.push({
+      kind: "vix_sustained",
+      fired: false,
+      detail:
+        vix.recent_closes.length === 0
+          ? "Awaiting VIX price ingestion (no prices_raw rows for ^VIX yet)."
+          : `Awaiting VIX history (need 3 closes; have ${vix.recent_closes.length}, latest ${vix.vix_as_of}).`,
+    });
+  }
 
   return triggers;
 }
