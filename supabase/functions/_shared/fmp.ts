@@ -444,3 +444,108 @@ export function normalizeShortInterest(
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// THS-61 — Insider Form-4 transactions.
+//
+// FMP exposes Form 4 transactions at /stable/insider-trading?symbol=...
+// Returns one entry per transaction (a single Form 4 filing can contain
+// multiple). Field names again drift; the normalizer reads the canonical
+// shape and falls back to known aliases.
+// ---------------------------------------------------------------------------
+
+export interface FmpInsiderRow {
+  symbol?: string;
+  transactionDate?: string;          // canonical
+  filingDate?: string;
+  reportingName?: string;             // canonical insider name
+  typeOfOwner?: string;               // insider role / title
+  transactionType?: string;           // 'P-Purchase', 'S-Sale', 'M-Exempt', etc.
+  acquistionOrDisposition?: "A" | "D"; // FMP spelling, preserved
+  acquisitionOrDisposition?: "A" | "D";
+  securitiesTransacted?: number | null;
+  price?: number | null;
+  securitiesOwned?: number | null;
+  link?: string;
+}
+
+export interface InsiderFilingRow {
+  ticker: string;
+  transaction_date: string;
+  insider_name: string;
+  insider_title: string | null;
+  transaction_code: string;
+  acquired_disposed: "A" | "D" | null;
+  shares: number | null;
+  price_per_share: number | null;
+  transaction_value: number | null;
+  is_10b5_1: boolean | null;
+  source_url: string | null;
+  filing_date: string | null;
+  raw: FmpInsiderRow;
+}
+
+export async function fetchInsiderTrades(ticker: string, limit = 100): Promise<InsiderFilingRow[]> {
+  const arr = await fmpGet<FmpInsiderRow[]>(`/insider-trading`, {
+    symbol: ticker,
+    limit: String(limit),
+  });
+  if (!Array.isArray(arr)) return [];
+  return normalizeInsiderTrades(ticker, arr);
+}
+
+/**
+ * Pure normalizer — extracts the SEC transaction code from FMP's
+ * verbose `transactionType` string. Examples:
+ *   'P-Purchase' → 'P'
+ *   'S-Sale'     → 'S'
+ *   'M-Exempt'   → 'M'
+ *   'F-InKind'   → 'F'
+ * Falls back to the first character if unparseable.
+ *
+ * 10b5-1 detection: FMP doesn't expose this directly. We leave
+ * is_10b5_1 = null (undetermined) — the cluster detector treats null as
+ * "could be either" and includes it conservatively. A future ticket can
+ * fetch the SEC link, parse the form's footnote, and back-fill the flag.
+ */
+export function normalizeInsiderTrades(
+  ticker: string,
+  rows: ReadonlyArray<FmpInsiderRow>,
+): InsiderFilingRow[] {
+  const out: InsiderFilingRow[] = [];
+  for (const r of rows) {
+    const td = r.transactionDate;
+    if (!td) continue;
+    const name = r.reportingName ?? "";
+    if (!name) continue;
+    const code = parseTransactionCode(r.transactionType);
+    if (!code) continue;
+    const shares = asNum(r.securitiesTransacted);
+    const price = asNum(r.price);
+    const value = shares != null && price != null ? shares * price : null;
+    out.push({
+      ticker,
+      transaction_date: td.slice(0, 10),
+      insider_name: name,
+      insider_title: r.typeOfOwner ?? null,
+      transaction_code: code,
+      acquired_disposed:
+        (r.acquisitionOrDisposition ?? r.acquistionOrDisposition ?? null) as "A" | "D" | null,
+      shares,
+      price_per_share: price,
+      transaction_value: value,
+      is_10b5_1: null,
+      source_url: r.link ?? null,
+      filing_date: r.filingDate ? r.filingDate.slice(0, 10) : null,
+      raw: r,
+    });
+  }
+  return out;
+}
+
+function parseTransactionCode(t: string | undefined): string | null {
+  if (!t) return null;
+  // FMP returns 'P-Purchase' — the SEC code is the first char before '-'.
+  const m = t.match(/^([A-Z])/);
+  return m ? m[1] : null;
+}
