@@ -50,7 +50,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     };
 
     for (const inp of inputs) {
-      const result = computeComposite(inp.ticker, inp.layer, inp.scores, gauges);
+      const result = computeComposite(inp.ticker, inp.layer, inp.scores, gauges, inp.concentrationTax);
       tierTallies[result.tier ?? "null"] += 1;
       if (result.composite === null) nullCount += 1;
 
@@ -72,7 +72,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // All tickers in one run share the same macro gauges, so pull
     // gates-hit / multiplier from the first non-null result for the report.
     const sampleResult = inputs.length > 0
-      ? computeComposite(inputs[0].ticker, inputs[0].layer, inputs[0].scores, gauges)
+      ? computeComposite(inputs[0].ticker, inputs[0].layer, inputs[0].scores, gauges, inputs[0].concentrationTax)
       : null;
 
     return Response.json({
@@ -101,9 +101,11 @@ function buildBreakdown(
   return {
     inputs: scores,
     resolved_weights: result.resolvedWeights,
+    concentration_tax: result.concentrationTax,
     macro_gates_hit: result.macroGatesHit,
     macro_multiplier: result.macroMultiplier,
-    pre_multiplier: result.composite,
+    pre_tax: result.composite,
+    pre_multiplier: result.compositeTaxed,
     post_multiplier: result.finalScore,
     tier: result.tier,
   };

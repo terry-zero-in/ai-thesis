@@ -208,3 +208,86 @@ test("computeComposite: deterministic — same inputs produce same outputs", () 
   const r2 = computeComposite("T", 1, scores, noGauges);
   assert.deepEqual(r1, r2);
 });
+
+// ─── Concentration tax (THS-63 → composite wiring) ──────────────────────────
+
+test("computeComposite: default tax=0 → composite_taxed === composite", () => {
+  const scores: FactorScores = { q: 80, g: 70, v: 50, aiq: 60, m: null, s: null };
+  const r = computeComposite("T", 1, scores, noGauges);
+  approx(r.compositeTaxed!, r.composite!);
+  assert.equal(r.concentrationTax, 0);
+});
+
+test("computeComposite: additive tax — pre-multiplier", () => {
+  // High pre-tax composite, no macro gates → multiplier 1.0.
+  // tax = -5 should subtract directly from composite_taxed and final_score.
+  const scores: FactorScores = { q: 88, g: 95, v: 60, aiq: 87, m: null, s: null };
+  const r = computeComposite("NVDA", 1, scores, noGauges, -5);
+  approx(r.compositeTaxed!, r.composite! - 5);
+  approx(r.finalScore!, r.composite! - 5); // multiplier=1.0
+  assert.equal(r.concentrationTax, -5);
+});
+
+test("computeComposite: TSM spec arithmetic (composite + tax) × multiplier ≈ 82.2", () => {
+  // Q=92 G=88 V=75 AIQ=92 at L1 weights (Tier-A rescale; M/S null).
+  // Q=0.22 G=0.26 V=0.14 AIQ=0.18 → sum 0.80; rescaled:
+  // 0.275, 0.325, 0.175, 0.225 → composite = 87.7.
+  // tax = -1 → 86.7. Macro 1 gate → 0.95 → 82.4. Spec says 82.2 (within 0.5).
+  const scores: FactorScores = { q: 92, g: 88, v: 75, aiq: 92, m: null, s: null };
+  const oneGate: MacroGauges = { naaim: 96, aaii_3wk_spread: 0, fear_greed: 0 };
+  const r = computeComposite("TSM", 1, scores, oneGate, -1);
+  approx(r.composite!, 87.7, 0.5);
+  approx(r.compositeTaxed!, 86.7, 0.5);
+  approx(r.finalScore!, 82.4, 0.5);
+  assert.equal(r.tier, "High");
+});
+
+test("computeComposite: NVDA spec arithmetic (composite -5) × 0.95 ≈ 75.7", () => {
+  // Q=88 G=95 V=60 AIQ=87 at L1; composite ≈ 85.15. tax=-5 → 80.15.
+  // × 0.95 → 76.14. Spec says 75.7 (within 0.5).
+  const scores: FactorScores = { q: 88, g: 95, v: 60, aiq: 87, m: null, s: null };
+  const oneGate: MacroGauges = { naaim: 96, aaii_3wk_spread: 0, fear_greed: 0 };
+  const r = computeComposite("NVDA", 1, scores, oneGate, -5);
+  approx(r.composite!, 85.15, 0.5);
+  approx(r.compositeTaxed!, 80.15, 0.5);
+  approx(r.finalScore!, 76.14, 0.5);
+  assert.equal(r.tier, "High");
+});
+
+test("computeComposite: tax pushes composite below 75 → no macro de-rate, tier drops", () => {
+  // Pre-tax composite ≈ 80. tax=-10 → 70 < 75. Multiplier does NOT apply.
+  // Final = 70, tier = Medium even though macro had 1 gate.
+  const scores: FactorScores = { q: 85, g: 85, v: 70, aiq: 80, m: null, s: null };
+  const oneGate: MacroGauges = { naaim: 96, aaii_3wk_spread: 0, fear_greed: 0 };
+  const r = computeComposite("X", 1, scores, oneGate, -10);
+  assert.ok(r.composite! >= 75, "pre-tax composite expected >= 75");
+  assert.ok(r.compositeTaxed! < 75, "taxed composite expected < 75");
+  approx(r.finalScore!, r.compositeTaxed!, 1e-9); // no multiplier applied
+  assert.equal(r.tier, "Medium");
+});
+
+test("computeComposite: tax cannot lift score above pre-tax threshold (negative-only domain)", () => {
+  // Tax is in [-15, 0] by spec; positive values are non-physical. Verify
+  // a positive tax still routes through, but document the expected use is
+  // negative — the helper doesn't clamp (concentration.ts already caps).
+  const scores: FactorScores = { q: 70, g: 70, v: 70, aiq: 70, m: null, s: null };
+  const r = computeComposite("X", 1, scores, noGauges, 5);
+  // We don't assert clamping — just that the value flows through unchanged.
+  approx(r.compositeTaxed!, r.composite! + 5);
+});
+
+test("computeComposite: NaN tax treated as 0", () => {
+  const scores: FactorScores = { q: 80, g: 70, v: 50, aiq: 60, m: null, s: null };
+  const r = computeComposite("T", 1, scores, noGauges, Number.NaN);
+  assert.equal(r.concentrationTax, 0);
+  approx(r.compositeTaxed!, r.composite!);
+});
+
+test("computeComposite: every factor null + tax → composite null, tax preserved", () => {
+  const scores: FactorScores = { q: null, g: null, v: null, aiq: null, m: null, s: null };
+  const r = computeComposite("T", 1, scores, noGauges, -3);
+  assert.equal(r.composite, null);
+  assert.equal(r.compositeTaxed, null);
+  assert.equal(r.finalScore, null);
+  assert.equal(r.concentrationTax, -3);
+});

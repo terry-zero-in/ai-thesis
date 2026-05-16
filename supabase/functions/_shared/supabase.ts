@@ -1249,6 +1249,8 @@ export interface CompositeInputs {
   ticker: string;
   layer: Layer;
   scores: FactorScores;
+  /** Latest concentration_history.tax ≤ asOf, or 0 if none exists. */
+  concentrationTax: number;
 }
 
 export interface CompositeLoadResult {
@@ -1343,6 +1345,25 @@ export async function loadCompositeInputs(
     fear_greed: mg?.fear_greed ?? null,
   };
 
+  // Concentration tax — latest concentration_history row per ticker ≤ asOf.
+  // Falls back to 0 (no tax) when no row exists yet for a ticker. The
+  // concentration cron runs Sat 22:35 UTC, before composite at 22:45,
+  // so by Saturday's compute the tax should be from the same as_of.
+  const taxRes = await client
+    .from("concentration_history")
+    .select("ticker, as_of, tax")
+    .lte("as_of", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("as_of", { ascending: false });
+  if (taxRes.error) throw taxRes.error;
+  const taxLatest = new Map<string, number>();
+  for (const row of (taxRes.data ?? []) as Array<{ ticker: string; tax: number | null }>) {
+    if (!taxLatest.has(row.ticker) && row.tax != null && Number.isFinite(row.tax)) {
+      taxLatest.set(row.ticker, Number(row.tax));
+    }
+  }
+
   const inputs: CompositeInputs[] = [];
   for (const u of universe) {
     const layer = u.layer as Layer;
@@ -1360,6 +1381,7 @@ export async function loadCompositeInputs(
         m: sh?.m_score ?? null,
         s: sh?.s_score ?? null,
       },
+      concentrationTax: taxLatest.get(u.ticker) ?? 0,
     });
   }
 

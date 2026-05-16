@@ -54,9 +54,14 @@ export type Tier = "High" | "Medium" | "Low" | "Avoid";
 export interface CompositeResult {
   ticker: string;
   layer: Layer;
-  // Pre-multiplier composite (weighted average of available factors).
+  // Pre-tax, pre-multiplier composite (weighted average of available factors).
   composite: number | null;
-  // After macro multiplier — multiplier applies only to composites ≥ 75.
+  // Concentration tax applied (negative, in [-15, 0]). 0 when no tax row exists.
+  concentrationTax: number;
+  // composite + concentrationTax. The macro multiplier threshold (≥ 75)
+  // tests against this taxed value, per spec arithmetic.
+  compositeTaxed: number | null;
+  // After macro multiplier — multiplier applies only to taxed composites ≥ 75.
   finalScore: number | null;
   tier: Tier | null;
   macroGatesHit: number;
@@ -143,14 +148,18 @@ export function computeComposite(
   layer: Layer,
   scores: FactorScores,
   gauges: MacroGauges,
+  concentrationTax: number = 0,
 ): CompositeResult {
   const resolved = resolveWeights(scores, layer);
   const macro = macroMultiplier(gauges);
+  const tax = Number.isFinite(concentrationTax) ? concentrationTax : 0;
 
   if (resolved.length === 0) {
     return {
       ticker, layer,
       composite: null,
+      concentrationTax: tax,
+      compositeTaxed: null,
       finalScore: null,
       tier: null,
       macroGatesHit: macro.gatesHit,
@@ -162,16 +171,22 @@ export function computeComposite(
   let composite = 0;
   for (const r of resolved) composite += r.weight * r.value;
 
-  // Macro multiplier de-rates High names only (spec: "only de-rate High").
-  // Apply to the unrounded composite so the High/Medium boundary respects
-  // the de-rating; a 75.4 → 0.95 → 71.6 result correctly drops to Medium.
-  const finalScore = composite >= 75 ? composite * macro.multiplier : composite;
+  // Concentration tax is additive, applied BEFORE the macro multiplier
+  // (spec arithmetic — see docs/AI-Thesis-v2-Algorithm-and-Deployment.md
+  // worked examples for TSM 82.2 / NVDA 75.7). The macro multiplier
+  // "only de-rate High" threshold tests against the taxed value, not the
+  // raw composite: a name with composite=80 / tax=-10 → 70 → no de-rate,
+  // because at 70 it's already Medium.
+  const compositeTaxed = composite + tax;
+  const finalScore = compositeTaxed >= 75 ? compositeTaxed * macro.multiplier : compositeTaxed;
   const tier = classifyTier(finalScore);
 
   const resolvedWeights = Object.fromEntries(resolved.map((r) => [r.key, r.weight]));
   return {
     ticker, layer,
     composite,
+    concentrationTax: tax,
+    compositeTaxed,
     finalScore,
     tier,
     macroGatesHit: macro.gatesHit,
