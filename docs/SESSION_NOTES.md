@@ -1,6 +1,96 @@
-# Session Notes — last updated 2026-05-16 (PM session 7 — autonomous burn-through)
+# Session Notes — last updated 2026-05-16 (PM session 7 — full burn-through)
 
 ## PM session 7 update (autonomous, post-compaction)
+
+Picked up after the PM session 6 handoff. After Terry resolved the
+three blocking decisions (Polygon for options, Claude Sonnet 4.6 /
+Opus 4.7 for memos, FMP+EDGAR+Claude for AIQ expansion), shipped the
+entire blocked backlog in one run plus the queued maintenance items.
+Final tally: **10 commits, 327 tests passing (was 255 at session
+start), branch `claude/epic-4-portal-ui` head `a83070d`.**
+
+### Items shipped this session (in order)
+
+| Commit | Ticket / item | What |
+|---|---|---|
+| `5f2755d` | **THS-67** Quarterly review checklist | Helper + `quarterly_reviews` table + Feb/May/Aug/Nov 5th @ 23:00 UTC cron. /decisions wired with new `quarterly_review` AlertKind. Check 4 (consensus capex) ships as `data_gap` since the consensus table doesn't carry capex. 11 tests. |
+| `01678e5` | **THS-57/61 follow-on** Insider clusters on /decisions | Replaces the stub. 4-week walker, BUY/SELL transitions, fired/cleared semantics. |
+| `b9dd5b5` | **THS-64 follow-on** `backtest_runs` table | One row per `run-backtest` invocation. Response includes the new `id`. |
+| `c993002` | **THS-69** VIX daily ingest + portfolio trigger 2b live | `^VIX` row in universe with `kind='macro'`. FMP legacy endpoint via `fetchVixHistory`. ReservePanel reads last 3 closes from prices_raw. |
+| `1d4fca2` | docs | First mid-session SESSION_NOTES update. |
+| `7298b36` | **THS-63 → composite** Concentration tax wiring | Additive-before-multiplier per spec arithmetic (TSM 82.2 / NVDA 75.7 both reconcile within 0.5). `computeComposite()` accepts optional `concentrationTax`. `factor_breakdown` JSONB exposes `pre_tax`, `pre_multiplier`, `post_multiplier`. 8 new tests. |
+| `9c33115` | **THS-59** Options surface ingest (Polygon) | New `options_raw` table. Pure `options-metrics.ts` computes put_call_ratio, skew_25d (closest-to-25Δ within ±10Δ tolerance, short-dated only), iv_term_slope. Polygon client with `next_url` pagination. Mon-Fri 22:00 UTC cron. `loadSInputs` now reads `options_raw.skew_25d` (no more THS-59-pending stub). Needs `POLYGON_API_KEY` env. 16 tests. |
+| `90fe496` | **THS-65** Sonnet daily memo cron | New `memos` table (kind='daily'/'weekly', UNIQUE per kind+as_of). Pure `memo-context.ts` builder. Anthropic client wraps `/v1/messages` with `cache_control: ephemeral` on the system prompt. Edge fn with 3× retry + fail-row persistence. Mon-Fri 13:00 UTC cron (8am CDT / 7am CST). /memos route with expand-on-click cards. 9 tests. Needs `ANTHROPIC_API_KEY` env. |
+| `cff3d55` | **THS-66** Opus weekly ranking cron | Pure `weekly-ranking.ts` builder (full ranking + High book + bear-case flags + mean pairwise corr). Strict JSON output schema: `{headline, summary, high_book[{ticker, action ∈ add/hold/trim/exit, action_rationale, bear_case}], cross_book_notes, watch_next_week}`. Parse failures persist `parse_error` + raw body for review. Sun 23:00 UTC cron. 13 tests. Uses Opus 4.7. |
+| `a83070d` | **THS-47** AIQ draft pipeline | `aiq_drafts` staging table (NOT writing to aiq_rubric until approved). `generate-aiq-draft` edge fn fetches latest SEC 10-K (EDGAR, public) + FMP earnings transcript per ticker, hands both to Claude Sonnet 4.6 with the 6-dim rubric prompt. /aiq-drafts review surface shows scores + per-dim citations + source links. Pipeline docs at `docs/aiq-drafts-pipeline.md`. 15 tests (10 parser + 5 EDGAR HTML). |
+
+### Final cron schedule
+
+Saturday weekly:
+- Q-scores: 22:00 UTC
+- G-scores: 22:15
+- V-scores: 22:30
+- Concentration tax: 22:35
+- M-scores: 22:40
+- S-scores: 22:42
+- Composite scores: 22:45 (now reads concentration_history.tax)
+
+Sunday:
+- Weekly ranking memo (Opus 4.7): 23:00 UTC
+
+Daily Mon-Fri:
+- Options surface ingest (Polygon): 22:00 UTC
+- Insider Form 4 (FMP): 22:50 UTC
+- Daily memo (Sonnet 4.6): 13:00 UTC (8am CT)
+
+Quarterly:
+- Quarterly review checklist: Feb/May/Aug/Nov 5th @ 23:00 UTC
+
+Bi-monthly:
+- Short interest (FMP): 22:30 UTC, 1st + 16th of each month
+
+On-demand (no cron):
+- `run-backtest` — body `{start, end, top_n, cost_bps}`. Persists to `backtest_runs`.
+- `generate-aiq-draft` — body `{ticker}`. Persists to `aiq_drafts`.
+
+### Test suite state
+
+**327 tests passing across `_shared/`.** Run: `node --test --experimental-strip-types supabase/functions/_shared/*.test.ts` from repo root.
+
+New this session: quarterly-checklist (11), options-metrics (10), polygon (6), composite tax (8), memo-context (9), weekly-ranking (13), aiq-drafts (10), sec (5) — 72 new tests on top of the 255 from prior sessions.
+
+### Required env vars (full list)
+
+- `ANTHROPIC_API_KEY` — daily memo, weekly memo, AIQ drafts
+- `POLYGON_API_KEY` — options ingestion
+- `FMP_API_KEY` — fundamentals, consensus, transcripts, VIX, short interest, insider
+- `SEC_USER_AGENT` — recommended for prod (avoids EDGAR rate limits); format `"Company Name email@example.com"`
+- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — all edge functions
+- `CRON_INVOKE_SECRET` — required to invoke any edge function
+
+### Open follow-ons surfaced this session
+
+1. **CBOE fallback for VIX** — current ingest fails closed if FMP legacy endpoint goes away. Low priority unless FMP coverage proves unreliable.
+2. **Promote-to-aiq_rubric UI button on /aiq-drafts** — SQL snippet in `docs/aiq-drafts-pipeline.md` does it manually for v1.
+3. **`consensus.capex_fy1/fy2` columns + FMP ingestion** — makes THS-67 check 4 fire on the spec'd signal instead of the TTM proxy.
+4. **Weekly memo rich render** — /memos shows raw body for both daily + weekly; structured JSON on `sections.parsed` is unused by the UI. Add a dedicated weekly view that renders the High book table + cross_book_notes + watch_next_week.
+5. **10b5-1 backfill** — same as prior session. Still pending SEC link-footnote parser.
+6. **AIQ chunking** — `generate-aiq-draft` passes raw first 12K chars of 10-K; targeted MD&A + Risk Factors + segment extraction would improve scoring fidelity.
+
+### Maintenance still pending
+
+1. **Spec ↔ ticket reconciliation pass** (Terry's standing observation).
+2. **PR #6 retitle** — currently `claude/epic-4-portal-ui` but spans Epics 3-6 work.
+3. **README session-start instructions** still reference build order Epic 1→6 (now consumed).
+4. **THS-48 dep-flags expansion to all L2 names** — still queued; needs source data (which extensions were actually filed for AMZN, MSFT, etc.).
+
+### What's left in Linear
+
+All originally-queued tickets are now **Done** or blocked on external work the operator must do (universe expansion to 70 names, env-var configuration in prod, manual approval workflows).
+
+---
+
+## (legacy) PM session 7 update (autonomous, post-compaction)
 
 Picked up after the PM session 6 handoff. Shipped THS-67 + three
 maintenance follow-ons + THS-69. Cold-start block below is updated to
