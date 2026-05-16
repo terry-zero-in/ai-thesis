@@ -1,4 +1,64 @@
-# Session Notes — last updated 2026-05-16 (PM session 5)
+# Session Notes — last updated 2026-05-16 (PM session 6)
+
+## PM session 6 (2026-05-16) — Epic 4 close + Epic 5 burn-through: THS-57 / 58 / 60 / 61 / 62
+
+### Shipped this session
+
+| Ticket | Commit | What |
+|---|---|---|
+| **THS-57** | `6cf5858` | Tier movement log + alerts at `/decisions`. Schema-expand `alert_acks(alert_key PK, acked_at, acked_note)` — alerts are derived on read from `scores_history + macro_gauges`, only acks persist. 5 alert kinds (tier_change, conv_drop, aiq_drift, macro_flip, insider_cluster stub). Sidebar unseen-count badge wired via `getUnseenAlertCount()` threaded through ConditionalShell → Shell → Sidebar. Per-row expand + optional ack note. Fixture shows 4 canonical events. |
+| **THS-58** | `2a61ab4` | M-score: 12-1 momentum + SUE + revision breadth per spec §Fix 2 (25/40/35 weights). Cross-sectional cohort. SUE v1 simplification = percentage-surprise instead of stdev-divided (documented; one-line swap when `consensus.fy1_eps_stdev` lands). Cron 22:40 UTC Sat. Composite loader now reads m_score (and s_score for THS-62). |
+| **THS-60** | `df56f04` | Short interest + SUSI. `short_interest_raw` table with `susi_z` stored alongside the raw observation. Pure `computeSusi()` — z-score of latest vs trailing 24mo baseline, calendar-aware cutoff. FMP `/short-interest` fetcher with alias-tolerant normalizer. Bi-monthly cron (1st + 16th of each month). |
+| **THS-61** | `e9d080a` | Insider Form 4 ingestion + cluster override detection. `insider_form4_raw` table. Pure `detectClusterOverride()` — BUY +5 / SELL -3 / neither, per-insider aggregate thresholds, 10b5-1 excluded from SELL count (null = conservatively included). FMP `/insider-trading` fetcher. Daily Mon-Fri cron. 12-month rolling-window acceptance test. |
+| **THS-62** | `2413d64` | S-score: revisions delta + skew + SUSI + insider override (30/25/20/25). Cross-sectional. Bullish-higher convention (skew + SUSI negated). Partial-coverage rescaling — options_skew null until THS-59, so other three carry full weight in v1. Cron 22:42 UTC Sat, between M (22:40) and composite (22:45). |
+
+**Final Saturday scoring lineup:** Q 22:00 · G 22:15 · V 22:30 · M 22:40 · S 22:42 · composite 22:45.
+
+**Test suite:** 237 tests passing across `_shared/`. New tests this session: factor-m.test.ts (10), susi.test.ts (7), fmp-short-interest.test.ts (4), factor-insider.test.ts (14), fmp-insider.test.ts (4), factor-s.test.ts (10).
+
+### Epic state after this session
+
+- **Epic 1 Foundation** — Done (carried over)
+- **Epic 2 Tier-A scoring** — Done (carried over)
+- **Epic 3 AIQ + overlays + macro** — partly done (open: AIQ expand THS-47, dep flags expand THS-48)
+- **Epic 4 Portal UI (THS-32)** — Done. All 7 sub-issues (THS-51..57) + the auth sub-ticket THS-68 closed.
+- **Epic 5 Tier-B scoring** — functionally complete with one vendor-blocked sub-issue (THS-59 options). M, SUSI, insider, S-composite all shipped.
+
+### THS-59 needs Terry's input (vendor decision)
+
+THS-59 (options surface ingestion: 25Δ skew, P/C ratio, IV term) is blocked on choosing **Polygon vs Tradier vs broker API**. Without that pick, options ingestion can't ship and S-score's `options_skew` signal stays null (which is fine — partial-coverage rescaling handles it; the three other signals carry full weight). Decision factors:
+
+| Vendor | Cost | Strengths | Notes |
+|---|---|---|---|
+| **Polygon.io** | $79/mo Starter (options endpoints) | Best coverage, generous rate limit, REST + WebSocket | Standalone — no broker dependency |
+| **Tradier** | Free with funded broker account | Solid options chains, real-time NBBO | Tied to broker; Terry would need a Tradier brokerage relationship |
+| **Broker API** | Free with broker | Direct from execution venue, lowest latency | Schwab/IBKR — varies by broker; some require funded accounts |
+
+Recommended default: **Polygon $79/mo** — vendor-independent, no broker tie-in, simplest to deploy. Schema, fetcher pattern, and cron job all mirror the existing FMP-based ingest functions (1-day implementation once Terry green-lights).
+
+### Open follow-ons surfaced this session (in priority order)
+
+1. **THS-59 options vendor decision** (above) — only Epic 5 sub-issue not yet shipped.
+2. **THS-69 VIX daily ingestion** — already opened last session; unblocks `/portfolio` trigger 2b.
+3. **SUE stdev** — `consensus.fy1_eps_stdev` column + ingestion; would replace M-score's percentage-surprise proxy with classical SUE. One-line swap in `computeSue()`.
+4. **10b5-1 backfill** — fetch SEC link footnotes from `insider_form4_raw.source_url`, parse 10b5-1 indicators, back-fill `is_10b5_1`. Until this lands, real 10b5-1 sales may inflate SELL cluster counts (one-sided over-detection, not missed signal).
+5. **Insider cluster events into /decisions** — THS-57's `insider_cluster` alert kind is wired but stubbed; small follow-on can compute per-week clusters from `insider_form4_raw` and surface them.
+6. **AIQ universe expansion** (THS-47) — adds NOW + INTU among the 50→70 names. One-line migration to start.
+
+### Next-session cold-start: Epic 6 maintenance
+
+Epic 6 sub-issues (THS-34 parent):
+- **THS-63** Concentration tax (correlation matrix + supply-chain + PCA, capped at -15pts) — pure math, no vendor deps. NVDA → -5 test, TSM → -1 test.
+- **THS-64** Backtest harness (walk-forward, 5y window, monthly rebalance, 10bps each side) — depends on enough price history in `prices_raw`.
+- **THS-65** Sonnet daily memo cron 8am CT — **needs LLM integration choice + Anthropic API key**.
+- **THS-66** Opus weekly ranking cron Sun eve — same LLM dependency.
+- **THS-67** Quarterly review checklist — pure orchestration.
+
+**Build order:** THS-63 → THS-64 are pure-math, autonomous. THS-65 / THS-66 need Terry's API-key decision (Anthropic Console key vs Bedrock vs Vertex). THS-67 can land last.
+
+Branch: still on `claude/epic-4-portal-ui` (PR #6) — the branch name is now historical (Epic 4 long since closed); current head includes Epic 5 work. Worth retitling the PR to "Epics 4-5: portal UI + Tier-B scoring" before merge; otherwise no functional concern.
+
+---
 
 ## PM session 5 (2026-05-16) — Epic 4 continuation: THS-55 + THS-56 + spec reconciliation
 
