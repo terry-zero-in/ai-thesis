@@ -961,6 +961,96 @@ export async function loadSInputs(client: SupabaseClient, asOf: string): Promise
 }
 
 // ---------------------------------------------------------------------------
+// Concentration-tax cohort loading (THS-63). Pulls 120 trading days of
+// prices_raw per investable ticker, derives daily simple returns, and
+// joins supply_chain_deps to count per-ticker degrees. Output drives
+// `computeConcentrationTax` in concentration.ts.
+// ---------------------------------------------------------------------------
+
+interface ConcentrationPriceRow {
+  ticker: string;
+  date: string;
+  close: number | null;
+}
+
+interface SupplyChainEdge {
+  dependent_ticker: string;
+  vendor_ticker: string;
+}
+
+export interface ConcentrationLoaded {
+  returns: Map<string, number[]>;
+  supplyChainDegree: Map<string, number>;
+}
+
+export async function loadConcentrationInputs(
+  client: SupabaseClient,
+  asOf: string,
+): Promise<ConcentrationLoaded> {
+  const univ = await client
+    .from("universe")
+    .select("ticker")
+    .eq("is_active", true)
+    .eq("kind", "investable")
+    .order("ticker");
+  if (univ.error) throw univ.error;
+  const universe = (univ.data ?? []) as Array<{ ticker: string }>;
+  const tickers = universe.map((u) => u.ticker);
+  if (tickers.length === 0) {
+    return { returns: new Map(), supplyChainDegree: new Map() };
+  }
+
+  // 120 trading days ≈ 175 calendar days back to be safe.
+  const from = isoDateMinusDays(asOf, 175);
+  const pricesRes = await client
+    .from("prices_raw")
+    .select("ticker,date,close")
+    .gte("date", from)
+    .lte("date", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("date", { ascending: true });
+  if (pricesRes.error) throw pricesRes.error;
+
+  const closeByTicker = new Map<string, Array<{ date: string; close: number }>>();
+  for (const r of (pricesRes.data ?? []) as ConcentrationPriceRow[]) {
+    if (r.close == null) continue;
+    const arr = closeByTicker.get(r.ticker) ?? [];
+    arr.push({ date: r.date, close: Number(r.close) });
+    closeByTicker.set(r.ticker, arr);
+  }
+
+  const returns = new Map<string, number[]>();
+  for (const t of tickers) {
+    const series = closeByTicker.get(t) ?? [];
+    if (series.length < 30) continue;
+    const r: number[] = [];
+    for (let i = 1; i < series.length; i++) {
+      const a = series[i - 1].close;
+      const b = series[i].close;
+      if (a > 0 && b > 0) r.push((b - a) / a);
+    }
+    if (r.length >= 30) returns.set(t, r.slice(-120));
+  }
+
+  // Supply-chain degrees (in + out).
+  const edgesRes = await client
+    .from("supply_chain_deps")
+    .select("dependent_ticker,vendor_ticker")
+    .in("dependent_ticker", tickers)
+    .in("vendor_ticker", tickers);
+  if (edgesRes.error) throw edgesRes.error;
+  const supplyChainDegree = new Map<string, number>();
+  for (const t of tickers) supplyChainDegree.set(t, 0);
+  for (const e of (edgesRes.data ?? []) as SupplyChainEdge[]) {
+    supplyChainDegree.set(e.dependent_ticker, (supplyChainDegree.get(e.dependent_ticker) ?? 0) + 1);
+    supplyChainDegree.set(e.vendor_ticker, (supplyChainDegree.get(e.vendor_ticker) ?? 0) + 1);
+  }
+
+  return { returns, supplyChainDegree };
+}
+
+// ---------------------------------------------------------------------------
 // Composite-score loading (THS-45). Reads scores_history (q/g/v from the
 // per-factor jobs that ran earlier on the same as_of), aiq_rubric (latest
 // row per ticker, manually scored), macro_gauges (latest snapshot), and
