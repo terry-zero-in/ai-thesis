@@ -9,6 +9,9 @@ import type { Layer, QInputs } from "./factor-q.ts";
 import type { GInputs } from "./factor-g.ts";
 import type { VInputs } from "./factor-v.ts";
 import type { MInputs } from "./factor-m.ts";
+import type { SInputs } from "./factor-s.ts";
+import type { InsiderFiling } from "./factor-insider.ts";
+import { detectClusterOverride } from "./factor-insider.ts";
 import type { FactorScores, MacroGauges } from "./composite.ts";
 
 export function serviceClient(): SupabaseClient {
@@ -830,6 +833,128 @@ export async function loadMInputs(client: SupabaseClient, asOf: string): Promise
       actual_eps_latest: actualEps,
       expected_eps_at_report: expectedEpsByTicker.get(u.ticker) ?? null,
       upward_breadth_pct: latestRev.get(u.ticker)?.upward_breadth_pct ?? null,
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// S-score cohort loading (THS-62). Pulls FY1 EPS 30d revisions delta,
+// latest SUSI z, and computes the insider asymmetric override from the
+// last 90 days of Form-4 transactions per ticker. Options skew is null
+// until THS-59 options ingestion ships — the S-composite handles this
+// via partial-coverage rescaling.
+// ---------------------------------------------------------------------------
+
+interface SRevisionsRow {
+  ticker: string;
+  as_of: string;
+  fy1_eps_30d_pct_change: number | null;
+}
+
+interface SSusiRow {
+  ticker: string;
+  settlement_date: string;
+  susi_z: number | null;
+}
+
+interface SInsiderRow {
+  ticker: string;
+  transaction_date: string;
+  insider_name: string;
+  insider_title: string | null;
+  transaction_code: string;
+  acquired_disposed: "A" | "D" | null;
+  shares: number | null;
+  price_per_share: number | null;
+  transaction_value: number | null;
+  is_10b5_1: boolean | null;
+}
+
+export async function loadSInputs(client: SupabaseClient, asOf: string): Promise<SInputs[]> {
+  const univ = await client
+    .from("universe")
+    .select("ticker, layer")
+    .eq("is_active", true)
+    .eq("kind", "investable")
+    .order("ticker");
+  if (univ.error) throw univ.error;
+  const universe = (univ.data ?? []) as UniverseRow[];
+  if (universe.length === 0) return [];
+  const tickers = universe.map((u) => u.ticker);
+
+  // Revisions delta (latest as_of ≤ run as_of per ticker).
+  const revFrom = isoDateMinusDays(asOf, 60);
+  const revRes = await client
+    .from("revisions")
+    .select("ticker, as_of, fy1_eps_30d_pct_change")
+    .gte("as_of", revFrom)
+    .lte("as_of", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("as_of", { ascending: false });
+  if (revRes.error) throw revRes.error;
+  const latestRev = new Map<string, SRevisionsRow>();
+  for (const r of (revRes.data ?? []) as SRevisionsRow[]) {
+    if (!latestRev.has(r.ticker)) latestRev.set(r.ticker, r);
+  }
+
+  // SUSI z (latest per ticker).
+  const susiRes = await client
+    .from("short_interest_raw")
+    .select("ticker, settlement_date, susi_z")
+    .lte("settlement_date", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("settlement_date", { ascending: false });
+  if (susiRes.error) throw susiRes.error;
+  const latestSusi = new Map<string, SSusiRow>();
+  for (const r of (susiRes.data ?? []) as SSusiRow[]) {
+    if (!latestSusi.has(r.ticker)) latestSusi.set(r.ticker, r);
+  }
+
+  // Insider transactions in the last 90 days (BUY cluster window).
+  const insiderFrom = isoDateMinusDays(asOf, 90);
+  const insiderRes = await client
+    .from("insider_form4_raw")
+    .select(
+      "ticker, transaction_date, insider_name, insider_title, transaction_code, acquired_disposed, shares, price_per_share, transaction_value, is_10b5_1",
+    )
+    .gte("transaction_date", insiderFrom)
+    .lte("transaction_date", asOf)
+    .in("ticker", tickers);
+  if (insiderRes.error) throw insiderRes.error;
+  const insidersByTicker = new Map<string, SInsiderRow[]>();
+  for (const r of (insiderRes.data ?? []) as SInsiderRow[]) {
+    const arr = insidersByTicker.get(r.ticker);
+    if (arr) arr.push(r);
+    else insidersByTicker.set(r.ticker, [r]);
+  }
+
+  const out: SInputs[] = [];
+  for (const u of universe) {
+    const layer = u.layer as Layer;
+    if (layer < 1 || layer > 5) continue;
+    const insiders: InsiderFiling[] = (insidersByTicker.get(u.ticker) ?? []).map((r) => ({
+      ticker: r.ticker,
+      transaction_date: r.transaction_date,
+      insider_name: r.insider_name,
+      insider_title: r.insider_title,
+      transaction_code: r.transaction_code,
+      acquired_disposed: r.acquired_disposed,
+      shares: r.shares,
+      price_per_share: r.price_per_share,
+      transaction_value: r.transaction_value,
+      is_10b5_1: r.is_10b5_1,
+    }));
+    const cluster = detectClusterOverride(insiders, asOf);
+    out.push({
+      ticker: u.ticker,
+      layer,
+      revisions_delta: latestRev.get(u.ticker)?.fy1_eps_30d_pct_change ?? null,
+      options_skew: null, // THS-59 pending
+      susi_z: latestSusi.get(u.ticker)?.susi_z ?? null,
+      insider_override: cluster.kind == null ? 0 : cluster.override,
     });
   }
   return out;
