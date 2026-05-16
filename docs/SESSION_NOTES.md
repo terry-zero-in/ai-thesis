@@ -1,4 +1,40 @@
-# Session Notes — last updated 2026-05-16 (PM session 6 — pre-compaction handoff)
+# Session Notes — last updated 2026-05-16 (PM session 7 — autonomous burn-through)
+
+## PM session 7 update (autonomous, post-compaction)
+
+Picked up after the PM session 6 handoff. Shipped THS-67 + three
+maintenance follow-ons + THS-69. Cold-start block below is updated to
+reflect actual state.
+
+| Ticket / item | Commit | What |
+|---|---|---|
+| **THS-67** Quarterly review checklist | `5f2755d` | Helper + `quarterly_reviews` table + edge fn + Feb/May/Aug/Nov 5th 23:00 UTC cron. /decisions wired with new AlertKind `quarterly_review`. Check 4 (consensus capex) ships as `data_gap` — consensus table doesn't carry capex; surfaces TTM proxy and flags the missing column. 11 tests. |
+| **THS-57/61 follow-on** Real insider clusters | `01678e5` | /decisions alerts now derive `insider_cluster` events from `insider_form4_raw` (4-week walker, BUY/SELL transitions). THS-61 helper semantics replicated on web side (factor-insider.ts is Deno-targeted). |
+| **THS-64 follow-on** `backtest_runs` table | `b9dd5b5` | One row per `run-backtest` invocation (id, ran_at, start/end, params jsonb, summary jsonb, series jsonb). API contract unchanged — response includes the new `id`. |
+| **THS-69** VIX daily ingest + trigger 2b live | `c993002` | Loosened `universe.kind` to `'macro'`, seeded `^VIX`. `fetchVixHistory` hits FMP's legacy `/api/v3/historical-price-full/^VIX` (stable EOD endpoint is sparse for indices). ingest-prices special-cases `^`-prefixed tickers. ReservePanel trigger 2b now reads last 3 ^VIX closes from `prices_raw` and fires when all ≥ 25. |
+
+**Test suite:** 266 tests passing (was 255 — added 11 in THS-67).
+
+**Concentration tax → composite wiring (NOT shipped this session):**
+The cold-start handoff flagged this as needing Terry's call. The spec
+arithmetic (TSM 82.2 with Q=92/G=88/V=75/AIQ=92/tax=-1, NVDA 75.7 with
+similar numbers/tax=-5) is only consistent with **additive,
+applied before the macro multiplier**:
+```
+composite        = weighted_avg(Q, G, V, AIQ, M, S)          // pre-tax
+composite_taxed  = composite + concentration_history.tax     // tax is negative
+final_score      = composite_taxed * macro_multiplier        // multiplier only if composite_taxed >= 75
+```
+Verified TSM arithmetic: 87.7 + (-1) = 86.7 × 0.95 = 82.4 (spec 82.2).
+Verified NVDA: 85.15 + (-5) = 80.15 × 0.95 = 76.14 (spec 75.7).
+
+Deferred to next session because the change flips tier classifications
+across the universe and warrants explicit confirmation. One-line decision
+needed from Terry: "yes, additive-before-multiplier per spec" or
+"override to <alternative>". Once confirmed, the wiring is a small
+change in `composite.ts` + `loadCompositeInputs` + a couple of tests.
+
+---
 
 ## NEXT-SESSION COLD-START — READ THIS FIRST
 
