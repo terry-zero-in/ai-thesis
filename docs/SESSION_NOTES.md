@@ -1,12 +1,13 @@
 # Session Notes — last updated 2026-05-16 (PM session 4)
 
-## PM session 4 (2026-05-16) — Epic 4 cont'd: THS-52 universe table
+## PM session 4 (2026-05-16) — Epic 4 cont'd: THS-52 universe table + THS-53 name detail
 
 ### Shipped this session
 
 | Ticket | Commit | What |
 |---|---|---|
 | **THS-52** | `59b04ef` | Universe table page (`/universe`). Sortable + filterable table of 50 names. Columns: ticker · name · layer chip · composite · final · tier badge · Q/G/V/AIQ mini-bars · Δw · macro flag. Three filter surfaces (header search + layer chips + tier chips in right rail); rail registers `universe-filter` key via layout effect. Row click → `/universe/[ticker]` (THS-53 stub). Data path: `getLatestUniverseScores()` joins `universe` (active) with latest + prior `scores_history` rows per ticker; deterministic synthesized fixture fallback when env unset or DB empty (clearly labeled). Skipped virtualization — 50 rows native well under the 500ms target. Build + lint clean, `/universe` 200 in 33ms. |
+| **THS-53** | `7aa4a24` | Per-name detail page replacing the THS-52 stub. Header (composite / final / tier / macro), Q/G/V/AIQ factor panels reading sub-decomp from `scores_history.factor_breakdown` JSONB, 6-dim AIQ rubric, 12-week composite + final sparkline (pure SVG, no chart lib), depreciation flags list (L2-only per spec). Form 4 / news / sentiment ship as "Data pending" stubs — no ingestion yet, flagged THS-58/59/60 follow-on. Route kept as `/universe/[ticker]` (Terry confirmed) rather than the ticket's `/n/[ticker]`. Extracted shared universe seed into `web/src/lib/universe-fixture.ts`. `/universe/NVDA` 200 in 126ms. |
 
 **Files of note:**
 - `web/src/lib/supabase/{client,server}.ts` — `@supabase/ssr` clients; return `null` when env unset so dev with fixtures works
@@ -19,7 +20,29 @@
 1. Skipped virtualization (`<500ms` target met without it on 50 rows; revisit if profiling shows need)
 2. "70 names" in acceptance criteria → 50 (seed universe is 50, Terry-confirmed in migration comments)
 
-### THS-53 cold-start (next ticket — Urgent priority)
+### Blocker hit on THS-54 — batched question for Terry
+
+The next ticket in build order is **THS-54** (AIQ rubric editor at `/aiq/[ticker]`). It's a **write path** — saves new rows into `aiq_rubric` for audit history. Two real blockers stop me from shipping it autonomously:
+
+1. **Auth gate not wired yet.** RLS on `aiq_rubric` is `authenticated`-only (`20260515000100_e12_overlay_tables.sql:118`). An anon browser can't write. Magic-link login was deferred from THS-51 as "follow-on (likely THS-51b)" but never broken out as a ticket.
+2. **AIQ rubric seed not shipped.** THS-46 (AIQ seed migration) is still pending — listed in PM session 3 queued question #3. The editor surface can render against empty state, but until THS-46 lands, the audit-history side panel has nothing prior to diff against.
+
+**Three options, recommended default in brackets:**
+1. **(rec)** Ship **THS-51b: magic-link login** as a one-shot ticket → then THS-46 (15-min seed migration) → then THS-54. Unblocks every write-path screen (THS-54, THS-57 decision log, THS-46/47/48 admin entry).
+2. Skip THS-54 for now; do THS-55 (Portfolio dashboard) + THS-56 (Regime) + THS-57 (Decision log) which are read-only. Come back to THS-54 with auth in a later epic.
+3. Ship THS-54 with a "service-role from admin endpoint" backdoor for v1 single-tenant. Worst option — defers proper auth, ugly bypass pattern.
+
+**Standing recommendation:** option 1.
+
+### Open follow-on tickets surfaced this session (THS-53 deliverables)
+
+- **THS-58** — Insider Form 4 ingestion + display (SEC EDGAR feed, weekly cadence)
+- **THS-59** — News ingestion + display (likely Polygon/FMP news endpoint)
+- **THS-60** — Sentiment timeline (news-derived sentiment over the 12-week window)
+
+Each currently renders as a "Data pending" stub card on `/universe/[ticker]`.
+
+### Prior session: THS-53 cold-start (now done — see commit `7aa4a24`)
 
 **Goal:** Per-name detail page. Ticket says route is `/n/[ticker]` but I shipped `/universe/[ticker]` stub in THS-52 (the convention `/universe → /universe/[ticker]` matches the rest of the app — judgment call within the references). **Open question — keep `/universe/[ticker]` or move to `/n/[ticker]`?** Recommend keep.
 
