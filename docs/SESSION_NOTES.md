@@ -8,7 +8,42 @@
 |---|---|---|
 | **THS-49** | `facf3e5` + `020c999` | Live macro gauges ingest end-to-end. New `_shared/macro.ts` (pure parsers + forward-fill row builder), `_shared/macro-fetchers.ts` (HTTP shells with browser headers), `ingest-macro` edge function (daily + backfill modes), daily cron 21:45 UTC. Codex PR review caught two bugs: P1 backfill was clobbering the curated May 14 seed; P2 same-week fallback was writing raw single-week spread as a 3-wk MA. Both fixed in `020c999` — buildMacroRow priority is now `live → existing → previousRow → null`. |
 | **THS-50** | `8815d01` | Macro multiplier sanity check. Math + integration already shipped in Epic 2 (`composite.ts` + `compute-composite-scores`); this ticket adds the spec-cited May 14 2026 acceptance test (NAAIM 96.67, AAII 5.36, F&G 66 → 0.95), a tier-reclassification test (78 raw × 0.95 = 74.1 → drops High → Medium), and a "<75 never de-rated" invariance test. |
-| **THS-51** | _pending_ | Epic 4 kickoff — `web/` subapp scaffolded by porting Reticle's chrome (Sidebar / TopBar / CtxPanel / CmdPalette / ShortcutsOverlay / GoToPill / ThemeSwitcher / Tip + tweaks panel + primitives + overlays + design tokens) onto AI Thesis. Stack: Next.js 16.2.6 + React 19.2.4 + Tailwind v4 + Supabase SSR + Geist/Geist_Mono. 8 routes mounted (/, /universe, /portfolio, /regime, /aiq, /memos, /decisions, /settings) — each renders a `PageStub` proving the shell boots. Build clean (TS + lint pass, all 8 routes prerender, dev/start serve 200). |
+| **THS-51** | `14314ee` + `f6cf589` | Epic 4 kickoff — `web/` subapp scaffolded by porting Reticle's chrome (Sidebar / TopBar / CtxPanel / CmdPalette / ShortcutsOverlay / GoToPill / ThemeSwitcher / Tip + tweaks panel + primitives + overlays + design tokens) onto AI Thesis. Stack: Next.js 16.2.6 + React 19.2.4 + Tailwind v4 + Supabase SSR + Geist/Geist_Mono. 8 routes mounted (/, /universe, /portfolio, /regime, /aiq, /memos, /decisions, /settings) — each renders a `PageStub` proving the shell boots. Build clean. Codex caught GoToPill still showed Reticle's old G-prefix hints — fixed in `f6cf589`. Branch: `claude/epic-4-portal-ui` → PR #6 (stacked on PR #5). |
+
+### THS-52 cold-start (next ticket — Urgent priority)
+
+**Goal:** Universe table page (`/universe`). Columns: ticker · name · layer · composite · tier badge · Q/G/V/AIQ mini-bars · prior-week delta · macro flag. Sortable + filterable, sticky header, row click → /universe/[ticker]. Acceptance: 50 names < 500ms; sort + filter responsive.
+
+**Visual reference:** Reticle Routines/Delegations row treatment (Terry confirmed in PM session 3). Local screenshots in `design-references/01-base-reticle-screenshots/`. The Reticle web codebase was uploaded as a zip earlier (extracted to `/tmp/reticle/` — gone after container restart). Components to mine if Terry re-uploads: `web/src/components/{routines,delegations}/{Row,Group,ColHead,RowExpansion}.tsx`.
+
+**Implementation plan:**
+1. **Supabase browser client** — `web/src/lib/supabase/client.ts` reading `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Single-tenant; anon role + RLS does the protection. Use `@supabase/ssr` (already in deps).
+2. **Data fetcher** — `getLatestUniverseScores(asOf?)`: join `universe` (active investable) with the latest `scores_history` row per ticker. Returns `{ticker, name, layer, composite, final_score, tier, q, g, v, aiq, prior_composite, macro_gates_hit, macro_multiplier}`. **Note: real scoring data only exists after Saturday cron runs against a deployed project.** Ship with a fixture fallback so the table renders during dev when DB is empty.
+3. **UniverseTable component** at `web/src/components/universe/UniverseTable.tsx`. Sticky header, hairline dividers, hover row-actions, mono tabular figures. Sortable columns via local state.
+4. **Primitives** — `TierBadge` (High/Medium/Low/Avoid + color), `MiniBar` (0-100 horizontal bar for Q/G/V/AIQ), `LayerChip` (L1-L5).
+5. **Filter chips in right rail** — extend `CtxRailKey` with `"universe-filter"`, set on `/universe` mount, render in `CtxPanel`.
+6. **TopBar filter input** — wire `FilterProvider.q` to filter rows by ticker substring.
+7. **Row click → `/universe/[ticker]/page.tsx`** — stub for THS-53; render PageStub for now.
+8. **Skip virtualization** — 50 rows native is well under 500ms target. Add only if profiling shows need.
+
+**Files to create:**
+- `web/src/lib/supabase/{client.ts, server.ts}`
+- `web/src/lib/universe-data.ts` — fetcher + fixture
+- `web/src/components/universe/{UniverseTable.tsx, UniverseFilterRail.tsx, TierBadge.tsx, MiniBar.tsx, LayerChip.tsx}`
+- `web/src/app/universe/[ticker]/page.tsx` — THS-53 stub
+- `web/src/app/universe/layout.tsx` — set right-rail key
+
+**Files to edit:**
+- `web/src/app/universe/page.tsx` — replace stub with real surface
+- `web/src/hooks/ctx-panel-context.tsx` — extend `CtxRailKey` union
+- `web/src/components/shell/CtxPanel.tsx` — branch on rail to render filter when active
+
+**Acceptance check at end:**
+- `cd web && npm run build` clean
+- `next start` → `/universe` renders 50 rows from fixture
+- Sorting toggles work, filter chips work, ticker search filters
+
+Branch: continue on `claude/epic-4-portal-ui` (PR #6) — no need to branch off; stack THS-52 commits onto the THS-51 head.
 
 Branch: `claude/epic-3-overlays` (off `claude/epic-2-tier-a-scoring` head — same stacking pattern PR #4 used vs PR #2, since Epic 3 schema depends on Epic 2's `macro_gauges` table).
 
