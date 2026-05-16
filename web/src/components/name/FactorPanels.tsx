@@ -7,6 +7,7 @@
  *        v_penalty if any
  *   - AIQ: total of the 6 rubric dims (delegated to AiqRubric component)
  */
+import Link from "next/link";
 import type { NameDetail } from "@/lib/name-detail-data";
 
 export function FactorPanels({ d }: { d: NameDetail }) {
@@ -78,7 +79,30 @@ export function FactorPanels({ d }: { d: NameDetail }) {
           <Empty />
         )}
       </Panel>
-      <Panel title="AIQ" score={d.aiq_score} accent="#A78BFA">
+      <Panel
+        title="AIQ"
+        score={d.aiq_score}
+        accent="#A78BFA"
+        action={
+          <Link
+            href={`/aiq/${d.ticker}`}
+            className="lin-hov"
+            style={{
+              fontSize: 10,
+              fontFamily: "var(--m)",
+              color: "var(--text-3)",
+              textDecoration: "none",
+              padding: "2px 7px",
+              border: "1px solid var(--border)",
+              borderRadius: 3,
+              letterSpacing: ".06em",
+              textTransform: "uppercase",
+            }}
+          >
+            Edit
+          </Link>
+        }
+      >
         {d.aiq_rubric ? (
           <PillarList
             rows={[
@@ -92,7 +116,7 @@ export function FactorPanels({ d }: { d: NameDetail }) {
             ptsStyle
           />
         ) : (
-          <Empty hint="No rubric scored yet (THS-46)." />
+          <Empty hint="No rubric scored yet — open the editor to add the first scoring." />
         )}
       </Panel>
     </div>
@@ -103,11 +127,13 @@ function Panel({
   title,
   score,
   accent,
+  action,
   children,
 }: {
   title: string;
   score: number | null;
   accent: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const pct = score == null ? 0 : Math.max(0, Math.min(100, score));
@@ -123,7 +149,7 @@ function Panel({
         gap: 10,
       }}
     >
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
         <span
           style={{
             fontSize: 10.5,
@@ -131,10 +157,13 @@ function Panel({
             color: "var(--text-3)",
             letterSpacing: ".08em",
             textTransform: "uppercase",
+            flex: 1,
+            minWidth: 0,
           }}
         >
           {title}
         </span>
+        {action}
         <span
           style={{
             fontFamily: "var(--m)",
