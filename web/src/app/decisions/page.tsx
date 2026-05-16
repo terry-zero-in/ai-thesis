@@ -163,8 +163,9 @@ export default async function DecisionsPage() {
               borderTop: "1px solid var(--border-subtle)",
             }}
           >
-            Insider-cluster alerts ship when THS-58 Form 4 ingestion lands.
-            Until then, that kind shows 0 even if real clusters exist.
+            Quarterly review fires Feb / May / Aug / Nov on day 5. Insider
+            cluster alerts derive from Form 4 ingestion (THS-61) and fire on
+            BUY / SELL clusters newly qualifying within the past 4 weeks.
           </div>
         </aside>
       </div>

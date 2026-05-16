@@ -10,7 +10,9 @@
  *   - conv_drop:   prior was High and (row.final_score - prior.final_score) ≤ -10
  *   - aiq_drift:   |row.aiq_score - prior.aiq_score| > 10
  *   - macro_flip:  count of gauges crossing thresholds changed week-over-week
- *   - insider_cluster: stub — THS-58 pending (no Form 4 data yet)
+ *   - insider_cluster: BUY/SELL cluster newly fired this week vs prior (THS-61
+ *                      `detectClusterOverride` semantics — replicated here so
+ *                      web doesn't import from the Deno-targeted edge module)
  *
  * Fixture: when env unset OR scores_history empty, synthesizes a handful
  * of canonical events keyed to fixture universe tickers so the page
@@ -48,6 +50,17 @@ interface AckRow {
   acked_note: string | null;
 }
 
+interface Form4Row {
+  ticker: string;
+  transaction_date: string;
+  insider_name: string;
+  transaction_code: string;
+  shares: number | null;
+  price_per_share: number | null;
+  transaction_value: number | null;
+  is_10b5_1: boolean | null;
+}
+
 interface QuarterlyReviewRow {
   as_of: string;
   findings: Array<{
@@ -72,7 +85,9 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
   const sb = await getSupabaseServer();
   if (!sb) return synthesize(false);
 
-  const [scoresRes, macroRes, acksRes, qrRes] = await Promise.all([
+  const insiderFromIso = isoDateMinusDays(new Date().toISOString().slice(0, 10), INSIDER_LOOKBACK_DAYS);
+
+  const [scoresRes, macroRes, acksRes, qrRes, insiderRes] = await Promise.all([
     sb
       .from("scores_history")
       .select("ticker,as_of,composite,final_score,aiq_score,tier")
@@ -90,6 +105,16 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
       .select("as_of,findings,generated_at,reviewed_at,reviewed_note")
       .order("as_of", { ascending: false })
       .limit(4),
+    sb
+      .from("insider_form4_raw")
+      .select(
+        "ticker,transaction_date,insider_name,transaction_code,shares,price_per_share,transaction_value,is_10b5_1",
+      )
+      .gte("transaction_date", insiderFromIso)
+      .in("transaction_code", ["P", "S"])
+      .order("ticker", { ascending: true })
+      .order("transaction_date", { ascending: false })
+      .limit(5000),
   ]);
 
   const scores = (scoresRes.data ?? []) as ScoresRow[];
@@ -98,11 +123,15 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
     ((acksRes.data ?? []) as AckRow[]).map((a) => [a.alert_key, a]),
   );
   const quarterly = (qrRes.data ?? []) as QuarterlyReviewRow[];
+  const insider = (insiderRes.data ?? []) as Form4Row[];
 
-  if (scores.length === 0 && macro.length === 0 && quarterly.length === 0) return synthesize(true);
+  if (scores.length === 0 && macro.length === 0 && quarterly.length === 0 && insider.length === 0) {
+    return synthesize(true);
+  }
 
   const events = deriveEvents(scores, macro);
   for (const qr of quarterly) events.push(quarterlyEvent(qr));
+  for (const e of deriveInsiderClusters(insider)) events.push(e);
   hydrateAcks(events, acks);
 
   events.sort((a, b) => (a.as_of < b.as_of ? 1 : a.as_of > b.as_of ? -1 : 0));
@@ -225,6 +254,143 @@ function deriveEvents(scores: ScoresRow[], macro: MacroRow[]): AlertEvent[] {
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Insider cluster events (THS-61 helper, replicated here for the web side).
+//
+// Walk 4 weekly as-of snapshots over the last ~30 days. For each ticker,
+// detect cluster state at each snapshot. Emit an event when the cluster
+// newly emerges (prior week: none → this week: BUY/SELL) so the alert log
+// shows "fired this week" rather than every active cluster every week.
+// ---------------------------------------------------------------------------
+
+const INSIDER_LOOKBACK_DAYS = 140;
+const INSIDER_WEEK_SNAPSHOTS = 4;
+
+// Mirrors supabase/functions/_shared/factor-insider.ts spec constants.
+const BUY_INSIDER_MIN = 3;
+const BUY_VALUE_MIN = 1_000_000;
+const BUY_WINDOW_DAYS = 90;
+const SELL_INSIDER_MIN = 3;
+const SELL_VALUE_MIN = 5_000_000;
+const SELL_WINDOW_DAYS = 60;
+
+type ClusterKind = "BUY" | "SELL" | null;
+interface ClusterState {
+  kind: ClusterKind;
+  insiders: number;
+  total_value: number;
+  window_start: string;
+}
+
+function deriveInsiderClusters(rows: Form4Row[]): AlertEvent[] {
+  if (rows.length === 0) return [];
+  const today = new Date().toISOString().slice(0, 10);
+  const snapshotDates: string[] = [];
+  for (let i = 0; i < INSIDER_WEEK_SNAPSHOTS; i++) {
+    snapshotDates.push(isoDateMinusDays(today, i * 7));
+  }
+  snapshotDates.reverse(); // oldest → newest
+
+  const byTicker = new Map<string, Form4Row[]>();
+  for (const r of rows) {
+    const arr = byTicker.get(r.ticker) ?? [];
+    arr.push(r);
+    byTicker.set(r.ticker, arr);
+  }
+
+  const events: AlertEvent[] = [];
+  for (const [ticker, filings] of byTicker) {
+    let prior: ClusterState = { kind: null, insiders: 0, total_value: 0, window_start: "" };
+    for (const asOf of snapshotDates) {
+      const state = detectClusterAt(filings, asOf);
+      if (state.kind !== null && state.kind !== prior.kind) {
+        events.push(insiderClusterEvent(ticker, asOf, state));
+      }
+      prior = state;
+    }
+  }
+  return events;
+}
+
+function detectClusterAt(filings: ReadonlyArray<Form4Row>, asOf: string): ClusterState {
+  const buyCutoff = isoDateMinusDays(asOf, BUY_WINDOW_DAYS);
+  const sellCutoff = isoDateMinusDays(asOf, SELL_WINDOW_DAYS);
+
+  const buys = filings.filter(
+    (f) => f.transaction_code === "P" && f.transaction_date >= buyCutoff && f.transaction_date <= asOf,
+  );
+  const buyAgg = aggregateByInsider(buys, BUY_VALUE_MIN);
+  if (buyAgg.insiders >= BUY_INSIDER_MIN) {
+    return { kind: "BUY", insiders: buyAgg.insiders, total_value: buyAgg.total_value, window_start: buyCutoff };
+  }
+
+  const sells = filings.filter(
+    (f) =>
+      f.transaction_code === "S" &&
+      f.is_10b5_1 !== true &&
+      f.transaction_date >= sellCutoff &&
+      f.transaction_date <= asOf,
+  );
+  const sellAgg = aggregateByInsider(sells, SELL_VALUE_MIN);
+  if (sellAgg.insiders >= SELL_INSIDER_MIN) {
+    return { kind: "SELL", insiders: sellAgg.insiders, total_value: sellAgg.total_value, window_start: sellCutoff };
+  }
+
+  return { kind: null, insiders: 0, total_value: 0, window_start: sellCutoff };
+}
+
+function aggregateByInsider(
+  rows: ReadonlyArray<Form4Row>,
+  perInsiderMin: number,
+): { insiders: number; total_value: number } {
+  const byInsider = new Map<string, number>();
+  for (const f of rows) {
+    let v = 0;
+    if (f.transaction_value != null && Number.isFinite(f.transaction_value)) {
+      v = Math.abs(f.transaction_value);
+    } else if (
+      f.shares != null &&
+      f.price_per_share != null &&
+      Number.isFinite(f.shares) &&
+      Number.isFinite(f.price_per_share)
+    ) {
+      v = Math.abs(f.shares * f.price_per_share);
+    }
+    byInsider.set(f.insider_name, (byInsider.get(f.insider_name) ?? 0) + v);
+  }
+  let count = 0;
+  let total = 0;
+  for (const [, v] of byInsider) {
+    if (v >= perInsiderMin) {
+      count += 1;
+      total += v;
+    }
+  }
+  return { insiders: count, total_value: total };
+}
+
+function insiderClusterEvent(ticker: string, asOf: string, state: ClusterState): AlertEvent {
+  const valM = (state.total_value / 1_000_000).toFixed(1);
+  return {
+    key: alertKey("insider_cluster", ticker, asOf),
+    kind: "insider_cluster",
+    ticker,
+    as_of: asOf,
+    prior_as_of: null,
+    title: `${ticker} insider ${state.kind} cluster — ${state.insiders} insiders / $${valM}M`,
+    detail: `${state.insiders} insiders met the ${state.kind === "BUY" ? `$${BUY_VALUE_MIN / 1_000_000}M / ${BUY_WINDOW_DAYS}d` : `$${SELL_VALUE_MIN / 1_000_000}M / ${SELL_WINDOW_DAYS}d`} threshold in window ${state.window_start}..${asOf}. Aggregate qualifying value $${valM}M. ${state.kind === "BUY" ? "+5 override on S-score." : "-3 override on S-score (10b5-1 sales excluded)."}`,
+    severity: state.kind === "BUY" ? "info" : "high",
+    acked_at: null,
+    acked_note: null,
+  };
+}
+
+function isoDateMinusDays(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 function quarterlyEvent(qr: QuarterlyReviewRow): AlertEvent {
   const findings = qr.findings ?? [];
   const high = findings.filter((f) => f.severity === "high").length;
@@ -333,6 +499,31 @@ function synthesize(envConfigured: boolean): AlertsSnapshot {
       prior_as_of: "2026-05-07",
       title: "Macro gates 0 → 1",
       detail: "Gates fired changed 0 → 1. NAAIM 96.7 crossed > 90 threshold this week. Multiplier 1.00 → 0.95.",
+      severity: "high",
+      acked_at: null,
+      acked_note: null,
+    },
+    {
+      key: alertKey("insider_cluster", "NVDA", "2026-05-09"),
+      kind: "insider_cluster",
+      ticker: sample("NVDA"),
+      as_of: "2026-05-09",
+      prior_as_of: null,
+      title: "NVDA insider BUY cluster — 4 insiders / $6.2M",
+      detail: "4 insiders met the $1M / 90d threshold in window 2026-02-08..2026-05-09. Aggregate qualifying value $6.2M. +5 override on S-score.",
+      severity: "info",
+      acked_at: null,
+      acked_note: null,
+    },
+    {
+      key: alertKey("quarterly_review", null, "2026-05-05"),
+      kind: "quarterly_review",
+      ticker: null,
+      as_of: "2026-05-05",
+      prior_as_of: null,
+      title: "Quarterly review 2026-05-05 — 1 high, 1 warn, 1 data gap",
+      detail:
+        "  • [high] 1 ticker(s) flagged this quarter: META\n  • [warn] 1 ticker(s) with AIQ drift > 10pt: GOOGL\n  • [info] No hyperscaler pair correlations moved > 0.2.\n  • [data_gap] Consensus capex column not yet ingested. Trailing-12mo capex proxy stable.",
       severity: "high",
       acked_at: null,
       acked_note: null,
