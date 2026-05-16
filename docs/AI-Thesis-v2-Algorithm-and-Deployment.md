@@ -202,14 +202,14 @@ Scoring methodology: Tier-A factors only (Q, G, V, AIQ + concentration tax + mac
 | 5 | **GEV** | L4 | 82 | 90 | 60 | 78 | **78.6** | ↑ | ↑ | −1 | **77.6** | **High** |
 | 6 | **CEG** | L4 | 80 | 78 | 65 | 78 | **75.6** | → | → | −1 | **74.6** | **Medium** |
 | 7 | **VRT** | L4 | 75 | 88 | 55 | 80 | **75.5** | ↑ | ↑ | −2 | **73.5** | **Medium** |
-| 8 | **GOOGL** | L2 | 90 | 78 | 75 | 74 | **80.7** | ↑ | → | −3 | **77.7** | **High** |
+| 8 | **GOOGL** | L2 | 90 | 78 | 75 | 75 | **80.7** | ↑ | → | −3 | **77.7** | **High** |
 | 9 | **MSFT** | L2 | 92 | 70 | 65 | 71 | **77.3** | → | → | −3 | **74.3** | **Medium** |
 | 10 | **AMZN** | L2 | 85 | 78 | 55 | 70 | **74.0** | ↑ | → | −3 | **71.0** | **Medium** |
 | 11 | **ANET** | L1 | 82 | 92 | 50 | 85 | **78.6** | ↑ | ↑ | −2 | **76.6** | **High** |
 | 12 | **PLTR** | L3 | 70 | 95 | 25 | 69 | **66.4** | ↑↑ | ↑↑ | −2 | **64.4** | **Medium** |
 | 13 | **CRWD** | L3 | 75 | 70 | 50 | 70 | **68.0** | → | → | −1 | **67.0** | **Medium** |
 | 14 | **SNOW** | L3 | 65 | 72 | 55 | 64 | **65.4** | → | → | −1 | **64.4** | **Medium** |
-| 15 | **ORCL** | L2 | 70 | 80 | 35* | 60 | **60.7** | → | ↓ | −2 | **58.7** | **Low** |
+| 15 | **ORCL** | L2 | 70 | 80 | 35* | 52 | **60.7** | → | ↓ | −2 | **58.7** | **Low** |
 | 16 | **META** | L2 | 80 | 70 | 45* | 54 | **64.4** | → | ↓ | −3 | **61.4** | **Medium** |
 | 17 | **ASML** | L1 | 88 | 75 | 70 | 88 | **81.0** | → | → | −2 | **79.0** | **High** |
 | 18 | **LRCX** | L1 | 82 | 75 | 70 | 78 | **76.7** | → | → | −1 | **75.7** | **High** |
@@ -280,7 +280,7 @@ I'll cover the most material ones. Full rationale on the rest available on reque
 - **Q = 90.** Best balance sheet in tech; FCF generation still strong. Margins on Cloud finally inflecting.
 - **G = 78.** Cloud +63% YoY (fastest since segment disclosure began) ([Reuters](https://www.reuters.com/business/alphabets-cloud-unit-beats-quarterly-revenue-estimates-strong-ai-demand-2026-04-29/)). $460B Cloud backlog. Capex $180–190B 2026.
 - **V = 75.** Forward P/E ~20. Cheapest hyperscaler relative to growth profile. The valuation argument is strongest here.
-- **AIQ = 74.** Disclosure: Cloud growth as AI proxy is reasonable but not pure-play = 14. Defensibility (Gemini + TPU + search distribution) = 18. Concentration: highly diversified = 12. Capex efficiency: 50%-mid maintenance assumption shows mid-teens FCF yield = 10. Indep demand strong = 13. Accounting: no useful-life extension in 24 months = 8.
+- **AIQ = 75.** Disclosure: Cloud growth as AI proxy is reasonable but not pure-play = 14. Defensibility (Gemini + TPU + search distribution) = 18. Concentration: highly diversified = 12. Capex efficiency: 50%-mid maintenance assumption shows mid-teens FCF yield = 10. Indep demand strong = 13. Accounting: no useful-life extension in 24 months = 8. (Per-dim sum is the authoritative AIQ value; an earlier draft showed 74 from arithmetic drift.)
 - **Final = 73.8.** The hyperscaler I'd own.
 
 **8. ANET (Arista) — 72.8 final, Medium (post-multiplier)**
@@ -302,7 +302,7 @@ I'll cover the most material ones. Full rationale on the rest available on reque
 - **Q = 70.** Margins solid but accounting questions material.
 - **G = 80.** OCI +84% YoY ([Q3 FY26](https://investor.oracle.com/investor-news/news-details/2026/Oracle-Announces-Fiscal-Year-2026-Third-Quarter-Financial-Results/default.aspx)). $300B OpenAI deal is real but accounting-contested.
 - **V = 35** *(includes Burry overstatement penalty −5, depreciation penalty −5).* Burry estimates 26.9% earnings overstatement by 2028; v2 applies the full penalty.
-- **AIQ = 60.** Disclosure OK but the OpenAI concentration kills the score = 10. Defensibility (OCI's GPU access) = 14. Concentration: OpenAI is potentially 30%+ of OCI revenue = 5. Capex eff = 8. Indep demand: limited beyond OpenAI = 9. Accounting: extended useful life + RPO question = 6.
+- **AIQ = 52.** Disclosure OK but the OpenAI concentration kills the score = 10. Defensibility (OCI's GPU access) = 14. Concentration: OpenAI is potentially 30%+ of OCI revenue = 5. Capex eff = 8. Indep demand: limited beyond OpenAI = 9. Accounting: extended useful life + RPO question = 6. (Per-dim sum is the authoritative AIQ value; an earlier draft showed 60 from arithmetic drift.)
 - **Final = 58.7 Low.** The growth is real but the accounting risk is exactly what the v2 algorithm is designed to catch.
 
 **16. META — 61.4 Medium**

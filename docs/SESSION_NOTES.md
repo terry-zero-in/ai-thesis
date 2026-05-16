@@ -1,4 +1,55 @@
-# Session Notes — last updated 2026-05-16 (PM session 4 — extended)
+# Session Notes — last updated 2026-05-16 (PM session 5)
+
+## PM session 5 (2026-05-16) — Epic 4 continuation: THS-55 + THS-56 + spec reconciliation
+
+### Shipped this session
+
+| Ticket | Commit | What |
+|---|---|---|
+| **THS-55** | `5c88ba9` | Portfolio dashboard `/portfolio`. Schema-expand for `portfolio_settings` (singleton, $100K/$20K seeded) + `portfolio_positions` (PK FK universe; soft-close via `closed_at`). Page: AggregateBar (5 KPIs) · PositionsTable (per-row close + drawdown highlight ≥7%) · ReservePanel (gauge + 3 triggers: position drawdown >7%, SPY -5% single-day, **VIX stub pending**) · AddPositionForm (UPSERT-by-ticker for averaging-in). `revalidate = 300` ISR. RLS `authenticated`-only on both new tables. |
+| **THS-56** | *(this commit)* | Regime panel `/regime`. Reads `macro_gauges` (no migration — uses existing E25 schema). MultiplierBanner (active multiplier + gates-hit count + 0/1/2/3-gate curve). Three GaugeCard tiles (NAAIM, AAII 3wk, F&G) with current reading, 12-month sparkline, threshold dashed line, fired chip if gate currently hit, threshold-crossing summary footer. Fixture mode synthesizes 52 weeks landing on spec §Part 2 May 14 reading (NAAIM 96.67 / AAII 5.36 / F&G 66 → 1 gate → 0.95×). `revalidate = 1800` (weekly cadence makes anything tighter wasted). |
+| **THS-69** | *(Linear-only)* | New sub-issue of E3 macro ingest: VIX daily ingestion (FMP `/historical-price-full/^VIX`, fall back to CBOE). Unblocks portfolio trigger 2b. |
+| **Docs** | *(this commit)* | Algorithm spec §Score table: GOOGL AIQ 74 → 75 and ORCL AIQ 60 → 52 (per-dim sums authoritative; spec table previously had arithmetic drift). Composite column values left alone — they're a doc approximation that doesn't fully reconcile with the published L2 weights either way; recomputation is the live engine's job. Editorial notes added under both rationales. |
+
+### Spec ↔ ticket reconciliation observation (Terry)
+
+> "Items 1 and 4 are signals the algorithm spec doc has drifted from the live tickets. Worth tightening at some point — when you're ready, ask Claude Code to do a 'spec ↔ ticket reconciliation pass' as a separate session, identifying every numeric or scope mismatch and proposing a single authoritative source per fact. Not now, but on the maintenance list."
+
+Two drifts surfaced this session, on the maintenance list:
+1. **Reserve target.** Algorithm spec §Position-construction guardrails says 30% reserve ($30K); THS-55 ticket says $20K. Used $20K (settings row is editable in one SQL). Authoritative source decision pending.
+2. **AIQ table arithmetic.** GOOGL spec table = 74 but per-dim sum = 75; ORCL spec table = 60 but per-dim sum = 52. Per-dim sums are authoritative (more documented rigor). Spec table updated this session for these two; the composite column values were left alone since the L2 weight formula on file (Q=32 G=22 V=14 AIQ=14 rescaled to sum to 1) doesn't reconcile with the published composites cleanly either way — those are doc approximations to begin with and the live engine computes the canonical numbers.
+
+**Future reconciliation session checklist (when Terry triggers it):**
+- Every numeric in the spec doc table (composites, finals, conc-tax, position size $) cross-checked against `compute-composite-scores` outputs
+- $20K vs $30K reserve resolved with one authoritative number
+- Per-name rationale paragraphs cross-checked against per-dim AIQ sums in `20260516000000_e31_aiq_rubric_seed.sql`
+- Output: a `docs/spec-reconciliation.md` listing every fact and its single source of truth
+
+### THS-55 deviations + open follow-ons
+
+1. **VIX trigger 2b** — stubbed as "data pending" in ReservePanel. Live state lands when THS-69 ships.
+2. **No "fundamental news" carve-out on trigger 1** — current behavior fires on any -7% drawdown regardless of news. Confirmed default: keep current, surface as alert with "news context unknown" annotation, revisit when THS-59 news ships.
+3. **Reserve drift** — see reconciliation observation above.
+
+### THS-56 deviations + open follow-ons
+
+1. **No per-gauge hover popover** — the ticket says "hover shows historical instances at each threshold". Shipped as a per-card footer chip showing total-crossings + last-crossing-date instead of a hover popover, which serves the same informational need without the design lift of an absolute-positioned overlay. Revisit if Terry wants the literal hover treatment.
+2. **No live ingestion** — `macro_gauges` is operator-curated weekly per the THS-45 migration. Live NAAIM XML / AAII / CNN F&G ingestion has been a queued open question since PM session 3. Page renders fine on operator-curated rows; live ingestion is a separate Epic 3 ticket.
+3. **Gates calculated UI-side, not from `scores_history.macro_gates_hit`** — the page computes gates from the latest `macro_gauges` row directly so the panel works even when no scores have been computed yet. Cross-check: when a `scores_history` row exists for the same as_of, its `macro_gates_hit` should equal the panel's count (mirrors `composite.ts::countMacroGates`).
+
+### Next-session cold-start: THS-57 Tier movement log + alerts
+
+THS-55 and THS-56 shipped end-to-end this session. Build order next: **THS-57** Tier movement log (and decisions log) at `/decisions`. Acceptance per ticket: shows tier transitions over time (e.g. AVGO moved L1 High → L1 Medium 2026-04-12 on G-score downgrade), with timestamp, factor that drove the move, and a "Mark reviewed" annotation flow.
+
+**Implementation sketch:**
+1. Fetcher reads `scores_history` for all tickers, computes per-week tier transitions (compare each as_of to the prior one for the same ticker)
+2. Schema-expand for an `annotations` table (or `decisions` per the existing `/decisions` route stub): `(id, ticker, as_of, kind, note, created_at)` — kind: "reviewed" / "memo-linked" / "trade-action"
+3. Page at `/decisions` (existing stub) — transitions list filtered by time range + ticker + "needs review" flag, plus an annotation form
+4. Right rail: filter chips (tier-change kind, layer, named-only)
+
+Branch: continue on `claude/epic-4-portal-ui` (PR #6). Stack THS-57 onto THS-56 head.
+
+---
 
 ## PM session 4 (2026-05-16) — Epic 4 burn-through: THS-52 / 53 / 68 / 46 / 54
 
