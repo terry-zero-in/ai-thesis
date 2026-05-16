@@ -919,6 +919,22 @@ export async function loadSInputs(client: SupabaseClient, asOf: string): Promise
     if (!latestSusi.has(r.ticker)) latestSusi.set(r.ticker, r);
   }
 
+  // Options skew (latest per ticker, from THS-59 daily ingest).
+  const optRes = await client
+    .from("options_raw")
+    .select("ticker, as_of, skew_25d")
+    .lte("as_of", asOf)
+    .in("ticker", tickers)
+    .order("ticker")
+    .order("as_of", { ascending: false });
+  if (optRes.error) throw optRes.error;
+  const latestSkew = new Map<string, number>();
+  for (const r of (optRes.data ?? []) as Array<{ ticker: string; skew_25d: number | null }>) {
+    if (!latestSkew.has(r.ticker) && r.skew_25d != null && Number.isFinite(r.skew_25d)) {
+      latestSkew.set(r.ticker, Number(r.skew_25d));
+    }
+  }
+
   // Insider transactions in the last 90 days (BUY cluster window).
   const insiderFrom = isoDateMinusDays(asOf, 90);
   const insiderRes = await client
@@ -958,7 +974,7 @@ export async function loadSInputs(client: SupabaseClient, asOf: string): Promise
       ticker: u.ticker,
       layer,
       revisions_delta: latestRev.get(u.ticker)?.fy1_eps_30d_pct_change ?? null,
-      options_skew: null, // THS-59 pending
+      options_skew: latestSkew.get(u.ticker) ?? null,
       susi_z: latestSusi.get(u.ticker)?.susi_z ?? null,
       insider_override: cluster.kind == null ? 0 : cluster.override,
     });

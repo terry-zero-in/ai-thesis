@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.compute-quarterly-review]
 verify_jwt = false
+
+[functions.ingest-options]
+verify_jwt = false
