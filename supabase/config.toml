@@ -81,6 +81,9 @@ verify_jwt = false
 [functions.compute-m-scores]
 verify_jwt = false
 
+[functions.ingest-short-interest]
+verify_jwt = false
+
 [functions.compute-composite-scores]
 verify_jwt = false
 

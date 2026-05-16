@@ -380,3 +380,67 @@ export async function fetchFundamentals(
     ...mergeStatements(ticker, "A", aInc, aBal, aCash),
   ];
 }
+
+// ---------------------------------------------------------------------------
+// THS-60 — Short interest snapshots.
+//
+// FMP exposes short interest at /stable/short-interest with a `symbol`
+// param. Response is a list of bi-monthly settlement-date observations
+// (settlementDate + short interest + shares outstanding + days to cover).
+// FMP field names drift between docs versions; we read the most common
+// shape and fall back through aliases.
+// ---------------------------------------------------------------------------
+
+export interface FmpShortInterestRow {
+  symbol?: string;
+  settlementDate?: string;     // ISO YYYY-MM-DD
+  date?: string;                // alias seen in some response shapes
+  shortInterest?: number | null;
+  totalShortInterest?: number | null;     // alias
+  sharesOutstanding?: number | null;
+  averageDailyVolume?: number | null;
+  avgDailyVolume?: number | null;
+  daysToCover?: number | null;
+}
+
+export interface ShortInterestRow {
+  ticker: string;
+  settlement_date: string;
+  short_interest: number | null;
+  shares_outstanding: number | null;
+  avg_daily_volume: number | null;
+  days_to_cover: number | null;
+}
+
+export async function fetchShortInterest(ticker: string, limit = 60): Promise<ShortInterestRow[]> {
+  const arr = await fmpGet<FmpShortInterestRow[]>(`/short-interest`, {
+    symbol: ticker,
+    limit: String(limit),
+  });
+  if (!Array.isArray(arr)) return [];
+  return normalizeShortInterest(ticker, arr);
+}
+
+/**
+ * Pure normalizer — read whichever alias FMP returned, prefer the canonical
+ * name. Exported for unit tests.
+ */
+export function normalizeShortInterest(
+  ticker: string,
+  rows: ReadonlyArray<FmpShortInterestRow>,
+): ShortInterestRow[] {
+  const out: ShortInterestRow[] = [];
+  for (const r of rows) {
+    const settlement = r.settlementDate ?? r.date;
+    if (!settlement) continue;
+    out.push({
+      ticker,
+      settlement_date: settlement.slice(0, 10),
+      short_interest: asNum(r.shortInterest ?? r.totalShortInterest),
+      shares_outstanding: asNum(r.sharesOutstanding),
+      avg_daily_volume: asNum(r.averageDailyVolume ?? r.avgDailyVolume),
+      days_to_cover: asNum(r.daysToCover),
+    });
+  }
+  return out;
+}
