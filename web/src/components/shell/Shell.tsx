@@ -12,6 +12,7 @@ import { applyPalette, DEFAULT_PALETTE } from "@/lib/theme";
 import { useShellKeyboard } from "@/hooks/useShellKeyboard";
 import { FilterProvider } from "@/hooks/filter-context";
 import { CtxPanelProvider, useCtxPanel } from "@/hooks/ctx-panel-context";
+import { UniverseFilterProvider } from "@/hooks/universe-filter-context";
 
 /**
  * Shell — top-level client component wrapping every page.
@@ -27,7 +28,9 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <FilterProvider>
       <CtxPanelProvider>
-        <ShellInner>{children}</ShellInner>
+        <UniverseFilterProvider>
+          <ShellInner>{children}</ShellInner>
+        </UniverseFilterProvider>
       </CtxPanelProvider>
     </FilterProvider>
   );

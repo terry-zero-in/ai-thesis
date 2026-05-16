@@ -1,20 +1,24 @@
 "use client";
 
+import { useCtxPanel } from "@/hooks/ctx-panel-context";
+import { useUniverseFilter } from "@/hooks/universe-filter-context";
+import { UniverseFilterRail } from "@/components/universe/UniverseFilterRail";
+
 /**
  * CtxPanel — right-side context panel.
  *
- * In Reticle this hosted six rails (Agent/Routine/Delegation, To-Do, Capture,
- * Log, Notes/Filter). Those were Reticle-domain-specific; AI Thesis pages
- * will register their own contextual rails as they ship (THS-52 universe
- * filter, THS-56 regime gauge timeline, etc.). Until then this is a
- * placeholder that proves the chrome — the panel opens/closes via ⌘\\ and
- * the panel toggle in TopBar — without any rail content.
+ * Pages register their rail key on mount (effect → ctx-panel-context.setRail)
+ * and this component switches the rendered surface on that key. New rails
+ * land here as each page ships:
+ *   - "universe-filter" → Layer / Tier filter chips for /universe (THS-52)
+ *   - "regime-history"  → upcoming for /regime (THS-56)
+ *   - …
  *
- * Placeholder uses the same outer shell as Reticle's CtxPanel (320px,
- * surface bg, rounded border, margin from canvas) so the layout math
- * doesn't change when rails get filled in later.
+ * Default (no key registered, or key not handled) is a 320px placeholder so
+ * the layout math doesn't change when ⌘\\ opens an empty panel during dev.
  */
 export function CtxPanel() {
+  const { rail } = useCtxPanel();
   return (
     <aside
       style={{
@@ -29,6 +33,31 @@ export function CtxPanel() {
         overflow: "hidden",
       }}
     >
+      {rail === "universe-filter" ? <UniverseFilterPanel /> : <Placeholder />}
+    </aside>
+  );
+}
+
+function UniverseFilterPanel() {
+  const f = useUniverseFilter();
+  return (
+    <UniverseFilterRail
+      layers={f.layers}
+      tiers={f.tiers}
+      onToggleLayer={f.toggleLayer}
+      onToggleTier={f.toggleTier}
+      onClear={f.clear}
+      totalRows={f.totalRows}
+      visibleRows={f.visibleRows}
+      asOf={f.asOf}
+      synthetic={f.synthetic}
+    />
+  );
+}
+
+function Placeholder() {
+  return (
+    <>
       <div
         style={{
           padding: "14px 16px",
@@ -53,6 +82,6 @@ export function CtxPanel() {
       >
         Page-level rail content lands here as each surface ships. ⌘\ toggles.
       </div>
-    </aside>
+    </>
   );
 }

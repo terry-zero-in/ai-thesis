@@ -3,12 +3,18 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 /**
- * CtxPanel rail keys. `filter` only renders on /routines (path-conditional in
- * CtxPanel). The page-level "open filter panel" button calls into this
- * context to open the panel AND switch the active rail to `filter` in one
- * step.
+ * CtxPanel rail keys.
+ *
+ * - `filter` is a generic open-the-filter-panel signal (legacy from Reticle's
+ *   /routines); kept so the toggle helper still compiles.
+ * - `universe-filter` is the AI Thesis universe-table filter rail (THS-52).
+ *   Per-page rails like this register themselves via `setRail(...)` on mount
+ *   and the CtxPanel branches on the active key to render the matching surface.
+ *
+ * Pages set their rail on mount (effect) — there is no central registry; each
+ * surface knows its own key.
  */
-export type CtxRailKey = "agent" | "todo" | "capture" | "log" | "notes" | "filter";
+export type CtxRailKey = "agent" | "todo" | "capture" | "log" | "notes" | "filter" | "universe-filter";
 
 interface CtxPanelCtx {
   rail: CtxRailKey;
