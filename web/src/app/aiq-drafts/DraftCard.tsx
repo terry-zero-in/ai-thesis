@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import type { AiqDraftRow } from "@/lib/aiq-drafts-data";
+import { promoteAiqDraft, PROMOTE_INITIAL, type PromoteState } from "./actions";
 
 const DIMENSIONS = [
   { key: "disclosure_pts", note: "disclosure", label: "Disclosure", max: 20 },
@@ -14,6 +15,11 @@ const DIMENSIONS = [
 
 export function DraftCard({ draft }: { draft: AiqDraftRow }) {
   const [expanded, setExpanded] = useState(draft.parse_error != null);
+  const [promoteState, promoteAction, promoting] = useActionState<PromoteState, FormData>(
+    promoteAiqDraft,
+    PROMOTE_INITIAL,
+  );
+  const canPromote = !draft.parse_error && !draft.approved_at;
 
   if (draft.parse_error) {
     return (
@@ -114,7 +120,16 @@ export function DraftCard({ draft }: { draft: AiqDraftRow }) {
             ))}
           </div>
 
-          <div style={{ fontSize: 11.5, color: "var(--text-3)", display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div
+            style={{
+              fontSize: 11.5,
+              color: "var(--text-3)",
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
             {draft.sources?.ten_k_url && (
               <span>
                 {draft.sources.ten_k_form} ({draft.sources.ten_k_filing_date}): {" "}
@@ -130,6 +145,37 @@ export function DraftCard({ draft }: { draft: AiqDraftRow }) {
                   FMP
                 </a>
               </span>
+            )}
+            <div style={{ flex: 1 }} />
+            {canPromote && (
+              <form action={promoteAction} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <input type="hidden" name="id" value={draft.id} />
+                {promoteState.message && !promoteState.ok && (
+                  <span style={{ fontSize: 11, color: "#FB7185" }}>{promoteState.message}</span>
+                )}
+                <button
+                  type="submit"
+                  disabled={promoting}
+                  style={{
+                    height: 24,
+                    padding: "0 12px",
+                    fontSize: 11,
+                    fontFamily: "var(--m)",
+                    color: "var(--canvas)",
+                    background: "var(--accent)",
+                    border: "none",
+                    borderRadius: 3,
+                    cursor: promoting ? "wait" : "pointer",
+                    letterSpacing: ".04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {promoting ? "promoting…" : "Promote to rubric"}
+                </button>
+              </form>
+            )}
+            {promoteState.ok && (
+              <span style={{ fontSize: 11, color: "var(--accent)" }}>{promoteState.message}</span>
             )}
           </div>
         </div>

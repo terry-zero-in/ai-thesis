@@ -93,7 +93,17 @@ Parse failures render with a red accent and the raw error message. Re-invoke the
 
 ## Promoting to `aiq_rubric`
 
-There's no UI promote button yet (one-line follow-on if Terry wants it). For v1, after reviewing on /aiq-drafts:
+Each unreviewed draft card on `/aiq-drafts` has a **"Promote to rubric"** button (server action `promoteAiqDraft` in `web/src/app/aiq-drafts/actions.ts`). Clicking it:
+
+1. Reads the draft row by `id`.
+2. Rejects if `parse_error` is set or the draft is already approved.
+3. Upserts into `aiq_rubric` keyed on `(ticker, scored_at=drafted_at)` — the per-dim jsonb notes flatten into `disclosure_note` / `defensibility_note` / etc., and `aiq_drafts.sources.ten_k_url` becomes `aiq_rubric.source_url`. The transcript URL is appended to the general `notes` field as a secondary citation.
+4. Stamps `aiq_drafts.approved_at = now()` and `approved_by = <user email>`.
+5. Revalidates `/aiq-drafts`, `/aiq/{ticker}`, and `/universe/{ticker}`.
+
+RLS keeps the action authenticated-only — anonymous viewers see drafts but can't promote.
+
+For batch promotion outside the UI (e.g., to recover from a parse-failure re-run), the SQL snippet below still works:
 
 ```sql
 INSERT INTO public.aiq_rubric
