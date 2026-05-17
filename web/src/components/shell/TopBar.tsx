@@ -11,13 +11,11 @@ export function TopBar({
   onCmd,
   onHelp,
   right,
-  themeBtn,
   userEmail,
 }: {
   onCmd: () => void;
   onHelp: () => void;
   right?: ReactNode;
-  themeBtn?: ReactNode;
   userEmail?: string | null;
 }) {
   const pathname = usePathname();
@@ -47,7 +45,6 @@ export function TopBar({
       </div>
       <div style={{ flex: 1 }} />
       {right}
-      {themeBtn}
       <Tip label="Open command palette" keys={["⌘", "K"]}>
         <TBBtn onClick={onCmd}>
           {I.search}
