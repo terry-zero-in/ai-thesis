@@ -245,13 +245,19 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
   const final = Math.round(composite * macroMult * 10) / 10;
   const tier: Tier = final >= 85 ? "High" : final >= 75 ? "Medium" : final >= 60 ? "Low" : "Avoid";
 
+  // Anchor history to the latest fixture date (2026-05-09, the same as
+  // the universe + dashboard fixtures) and walk back 7 days per index.
+  // Prior dates were hardcoded 2026-02-01..04-22, leaving the chart
+  // ending ~25 days before "today" (review §2.3 #7).
   const history: NameSparkPoint[] = [];
+  const anchor = new Date("2026-05-09T00:00:00Z");
   for (let i = 11; i >= 0; i--) {
     const noise = (((h + i) % 7) - 3) * 0.8;
     const c = Math.max(40, Math.min(95, composite + noise));
     const fc = Math.max(40, Math.min(95, final + noise));
+    const d = new Date(anchor.getTime() - i * 7 * 24 * 60 * 60 * 1000);
     history.push({
-      as_of: `2026-${String(2 + Math.floor((11 - i) / 4)).padStart(2, "0")}-${String(((11 - i) % 4) * 7 + 1).padStart(2, "0")}`,
+      as_of: d.toISOString().slice(0, 10),
       composite: Math.round(c * 10) / 10,
       final_score: Math.round(fc * 10) / 10,
     });

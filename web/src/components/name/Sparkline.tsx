@@ -1,10 +1,19 @@
 /**
  * 12-week composite sparkline. Pure SVG — no chart lib per the
- * "don't add libs casually" rule. Renders the composite line in muted text,
- * the final-score line in accent. Bare-bones: no axis, no labels in the
- * chart body; range shown above.
+ * "don't add libs casually" rule.
+ *
+ * Spec §4.9 threshold rules at composite 60 (Medium) and 75 (High) when
+ * they fall within the visible y-domain. Lines are distinct line styles
+ * (review §2.3 #8): Final = solid --accent; Composite = dashed
+ * --text-3 — so they remain visually distinct even when values coincide
+ * (multiplier = 1.0).
  */
 import type { NameSparkPoint } from "@/lib/name-detail-data";
+
+const THRESHOLDS = [
+  { v: 60, label: "Medium" },
+  { v: 75, label: "High" },
+];
 
 export function Sparkline({ history }: { history: NameSparkPoint[] }) {
   if (history.length === 0) {
@@ -15,14 +24,21 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
     );
   }
   const w = 480;
-  const h = 56;
+  const h = 72; // bumped from 56 to give threshold-line labels room
   const padX = 4;
   const padY = 6;
   const compositeVals = history.map((p) => p.composite).filter((v): v is number => v != null);
   const finalVals = history.map((p) => p.final_score).filter((v): v is number => v != null);
+  // Threshold-aware y-domain: ensure 60 and 75 lie inside the visible
+  // window when they're near the data (prevents lines stacking at the
+  // chart edge when the score sits at e.g. 87).
   const all = [...compositeVals, ...finalVals];
-  const min = Math.min(...all);
-  const max = Math.max(...all);
+  let min = Math.min(...all);
+  let max = Math.max(...all);
+  for (const t of THRESHOLDS) {
+    if (Math.abs(t.v - min) < 10) min = Math.min(min, t.v - 2);
+    if (Math.abs(t.v - max) < 10) max = Math.max(max, t.v + 2);
+  }
   const range = max - min || 1;
   const x = (i: number) => padX + (i / Math.max(1, history.length - 1)) * (w - padX * 2);
   const y = (v: number) => h - padY - ((v - min) / range) * (h - padY * 2);
@@ -31,6 +47,10 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
   const finalPath = pathFrom(history.map((p) => p.final_score), x, y);
   const last = history[history.length - 1];
   const first = history[0];
+
+  // Visible thresholds — only render rules that sit inside [min, max]
+  // (otherwise the line clips at the chart edge and reads as noise).
+  const visibleThresholds = THRESHOLDS.filter((t) => t.v >= min && t.v <= max);
 
   return (
     // Mercury decard: format on canvas, no card chrome. Used both standalone
@@ -53,7 +73,43 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
         </span>
       </div>
       <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
-        <path d={compositePath} fill="none" stroke="var(--text-3)" strokeWidth={1} opacity={0.6} />
+        {/* Threshold rules per spec §4.9 — hairlines at 60 + 75 */}
+        {visibleThresholds.map((t) => {
+          const ty = y(t.v);
+          return (
+            <g key={t.v}>
+              <line
+                x1={padX}
+                x2={w - padX}
+                y1={ty}
+                y2={ty}
+                stroke="var(--border-subtle)"
+                strokeWidth={1}
+              />
+              <text
+                x={w - padX - 2}
+                y={ty - 3}
+                fontSize={9}
+                fontFamily="var(--m)"
+                fill="var(--text-4)"
+                textAnchor="end"
+                style={{ fontVariantNumeric: "tabular-nums", letterSpacing: ".04em", textTransform: "uppercase" }}
+              >
+                {t.label.toUpperCase()} {t.v}
+              </text>
+            </g>
+          );
+        })}
+        {/* Composite — dashed, muted */}
+        <path
+          d={compositePath}
+          fill="none"
+          stroke="var(--text-3)"
+          strokeWidth={1}
+          strokeDasharray="2 3"
+          opacity={0.75}
+        />
+        {/* Final — solid, accent */}
         <path d={finalPath} fill="none" stroke="var(--accent)" strokeWidth={1.5} />
         {history.map((p, i) =>
           p.final_score == null ? null : (
@@ -62,8 +118,8 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
         )}
       </svg>
       <div style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--text-3)" }}>
-        <Legend color="var(--accent)" label={`Final · ${last.final_score?.toFixed(1) ?? "—"}`} />
-        <Legend color="var(--text-3)" label={`Composite · ${last.composite?.toFixed(1) ?? "—"}`} />
+        <Legend color="var(--accent)" label={`Final · ${last.final_score?.toFixed(1) ?? "—"}`} dashed={false} />
+        <Legend color="var(--text-3)" label={`Composite · ${last.composite?.toFixed(1) ?? "—"}`} dashed={true} />
         <span style={{ flex: 1 }} />
         <span style={{ fontFamily: "var(--m)" }}>
           {min.toFixed(1)} – {max.toFixed(1)}
@@ -73,10 +129,19 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Legend({ color, label, dashed }: { color: string; label: string; dashed: boolean }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-      <span style={{ width: 8, height: 2, background: color, borderRadius: 1 }} />
+      <span
+        style={{
+          width: 10,
+          height: 2,
+          background: dashed
+            ? `repeating-linear-gradient(90deg, ${color} 0 2px, transparent 2px 4px)`
+            : color,
+          borderRadius: 1,
+        }}
+      />
       <span style={{ fontFamily: "var(--m)" }}>{label}</span>
     </span>
   );
