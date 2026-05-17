@@ -1,0 +1,155 @@
+/**
+ * HeroNumber — the protagonist number on a page, rendered at hero scale.
+ *
+ * Signature pattern per docs/design/lambo-review-2026-05-17.md §4.2 (Pattern #1).
+ * Per /lambo "the most important number on the screen should get at least 60%
+ * empty space around it" and spec §1.7 "the score is the protagonist."
+ *
+ * Composition:
+ *   {label} (optional small-caps header in --text-3)
+ *   {value}{unit} [delta]      ← hero block, 48-56px JetBrains Mono
+ *   {derivation chain}           ← 13px mono --text-3, shows the math
+ *   {attribution}                ← 11px mono --text-4, source/version/timestamp
+ *
+ * Apply to: /universe/[ticker] Composite, /dashboard Portfolio Value,
+ * /portfolio Portfolio Value, /regime Multiplier, /aiq/[ticker] Total.
+ */
+interface Delta {
+  value: number;
+  period: string;        // e.g. "7d", "30d", "wk"
+}
+
+interface HeroNumberProps {
+  value: number | null;
+  /** Suffix glued to value: "%", "×", "x", "". */
+  unit?: string;
+  /** Decimal places. Default 1. Pass 0 for integers, 2 for currency-like. */
+  precision?: number;
+  /** Optional 7-day / week-over-week / etc. delta. */
+  delta?: Delta | null;
+  /** Optional small-caps header above the value (e.g. "Composite", "Portfolio Value"). */
+  label?: string;
+  /**
+   * Pre-formatted derivation chain (caller composes). Renders 13px mono --text-3
+   * directly beneath the hero. Example: "Raw 87.0 · ×0.95 macro · = 82.6 effective".
+   */
+  derivation?: string;
+  /**
+   * Source / version / timestamp attribution. Renders 11px mono --text-4 beneath
+   * derivation. Example: "scored 2026-05-09 · turnover-engine v3.2".
+   */
+  attribution?: string;
+  /**
+   * Hero size step. "lg" = 48px (default), "xl" = 56px, "xxl" = 64px.
+   * /regime 0.95× uses xl; /universe/[ticker] Composite uses lg per spec §5.3.
+   */
+  size?: "lg" | "xl" | "xxl";
+}
+
+const SIZE_PX: Record<NonNullable<HeroNumberProps["size"]>, number> = {
+  lg: 48,
+  xl: 56,
+  xxl: 64,
+};
+
+export function HeroNumber({
+  value,
+  unit = "",
+  precision = 1,
+  delta = null,
+  label,
+  derivation,
+  attribution,
+  size = "lg",
+}: HeroNumberProps) {
+  const valueStr = value == null ? "—" : value.toFixed(precision);
+  const deltaSign = delta == null ? null : delta.value > 0 ? "↑" : delta.value < 0 ? "↓" : "·";
+  const deltaColor =
+    delta == null ? "var(--text-3)" : delta.value > 0 ? "var(--success)" : delta.value < 0 ? "var(--danger)" : "var(--text-3)";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+        // 60% breathing rule from /lambo — generous padding around hero blocks
+        padding: "8px 0",
+      }}
+    >
+      {label && (
+        <div
+          style={{
+            fontSize: 10.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            letterSpacing: ".08em",
+            textTransform: "uppercase",
+          }}
+        >
+          {label}
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
+        <span
+          style={{
+            fontFamily: "var(--m)",
+            fontSize: SIZE_PX[size],
+            fontWeight: 600,
+            color: "var(--text-1)",
+            fontVariantNumeric: "tabular-nums",
+            lineHeight: 1,
+            letterSpacing: "-.018em",
+          }}
+        >
+          {valueStr}
+          {unit && (
+            <span style={{ fontSize: SIZE_PX[size] * 0.55, marginLeft: 2, color: "var(--text-2)", fontWeight: 500 }}>
+              {unit}
+            </span>
+          )}
+        </span>
+        {delta != null && value != null && (
+          <span
+            style={{
+              fontFamily: "var(--m)",
+              fontSize: 14,
+              color: deltaColor,
+              fontVariantNumeric: "tabular-nums",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {deltaSign} {delta.value > 0 ? "+" : ""}
+            {delta.value.toFixed(precision)} ({delta.period})
+          </span>
+        )}
+      </div>
+      {derivation && (
+        <div
+          style={{
+            fontSize: 12.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            fontVariantNumeric: "tabular-nums",
+            marginTop: 2,
+          }}
+        >
+          {derivation}
+        </div>
+      )}
+      {attribution && (
+        <div
+          style={{
+            fontSize: 11,
+            fontFamily: "var(--m)",
+            color: "var(--text-4)",
+            fontVariantNumeric: "tabular-nums",
+            marginTop: -2,
+          }}
+        >
+          {attribution}
+        </div>
+      )}
+    </div>
+  );
+}
