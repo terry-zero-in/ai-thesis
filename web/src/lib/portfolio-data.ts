@@ -129,6 +129,78 @@ export function getUniverseChoices(): UniverseChoice[] {
 }
 
 // ---------------------------------------------------------------------------
+// Fixture-positions seed (lambo review §2.4 #1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Deterministic 12-position demo book spanning all 5 universe layers. Used
+ * only when /portfolio is invoked with `?seed=fixture-positions` so the full
+ * /lambo render (AggregateBar, PositionsTable, ReservePanel, triggers, rail)
+ * can be reviewed without standing up live Supabase data. One position (AMD
+ * at -8%) intentionally fires the position-drawdown trigger so the rail's
+ * trigger surface is exercised in the demo path.
+ *
+ * Composition by layer (matches spec §5.4 mix):
+ *   L1 Compute (3) · L2 Hyperscaler (3) · L3 App (2) · L4 Power (2) · L5 Incumbent (2)
+ *
+ * No DB call — this is pure synthetic data tagged `synthetic_prices: true`
+ * so the empty-state branch + "data pending" affordances stay honest.
+ */
+interface FixtureBookEntry {
+  ticker: string;
+  shares: number;
+  cost_basis: number;
+  current_price: number;
+  opened_at: string;
+  notes: string | null;
+}
+
+const FIXTURE_BOOK: FixtureBookEntry[] = [
+  { ticker: "NVDA",  shares:  30, cost_basis: 110.00, current_price: 145.20, opened_at: "2026-02-04", notes: "Compute spine — sized large; trim at +40%." },
+  { ticker: "TSM",   shares:  60, cost_basis: 160.00, current_price: 178.50, opened_at: "2026-01-22", notes: null },
+  { ticker: "AMD",   shares:  50, cost_basis: 168.00, current_price: 154.30, opened_at: "2026-03-14", notes: "Re-eval thesis if -10% from cost." },
+  { ticker: "MSFT",  shares:  20, cost_basis: 380.00, current_price: 425.10, opened_at: "2026-01-10", notes: null },
+  { ticker: "GOOGL", shares:  40, cost_basis: 175.00, current_price: 192.60, opened_at: "2026-02-18", notes: null },
+  { ticker: "META",  shares:  15, cost_basis: 540.00, current_price: 590.20, opened_at: "2026-02-26", notes: null },
+  { ticker: "CRWD",  shares:  18, cost_basis: 360.00, current_price: 340.50, opened_at: "2026-04-02", notes: null },
+  { ticker: "PLTR",  shares: 120, cost_basis:  28.50, current_price:  35.80, opened_at: "2026-01-08", notes: "L3 App high-conviction." },
+  { ticker: "VST",   shares:  35, cost_basis: 175.00, current_price: 198.40, opened_at: "2026-03-05", notes: null },
+  { ticker: "CEG",   shares:  25, cost_basis: 215.00, current_price: 232.70, opened_at: "2026-03-19", notes: null },
+  { ticker: "AAPL",  shares:  35, cost_basis: 198.00, current_price: 205.40, opened_at: "2026-01-15", notes: null },
+  { ticker: "ADBE",  shares:  10, cost_basis: 520.00, current_price: 488.60, opened_at: "2026-04-21", notes: null },
+];
+
+const FIXTURE_PRICES_AS_OF = "2026-05-17";
+
+export function getFixturePortfolioSnapshot(): PortfolioSnapshot {
+  const settings = DEFAULT_SETTINGS;
+  const positions: PositionRow[] = FIXTURE_BOOK.map((p) => {
+    const u = FIXTURE_INDEX[p.ticker] ?? fallbackUniverseRow(p.ticker);
+    return {
+      ticker: p.ticker,
+      shares: p.shares,
+      cost_basis: p.cost_basis,
+      opened_at: p.opened_at,
+      closed_at: null,
+      notes: p.notes,
+      current_price: p.current_price,
+      current_price_as_of: FIXTURE_PRICES_AS_OF,
+      name: u.name,
+      layer: u.layer,
+      layer_label: u.layer_label,
+    };
+  });
+
+  // Synthetic SPY: prior-close → current-close at -2% (no SPY trigger fired
+  // in demo — keeps the rail honest about which triggers are exercising).
+  // Position-drawdown trigger DOES fire (AMD at -8%).
+  const spy: SpySnap = { spy_close: 524.30, spy_close_prior: 534.80, spy_as_of: FIXTURE_PRICES_AS_OF };
+  const vix: VixSnap = { recent_closes: [18.4, 17.9, 18.1], vix_as_of: FIXTURE_PRICES_AS_OF };
+
+  return finalizeSnapshot(positions, settings, spy, vix, true, true);
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

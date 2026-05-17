@@ -1,4 +1,4 @@
-import { getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
+import { getFixturePortfolioSnapshot, getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
 import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { AddPositionForm } from "./AddPositionForm";
@@ -12,8 +12,16 @@ import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister"
  */
 export const revalidate = 300;
 
-export default async function PortfolioPage() {
-  const snap = await getPortfolioSnapshot();
+export default async function PortfolioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ seed?: string }>;
+}) {
+  // ?seed=fixture-positions populates a 12-position demo book for /lambo
+  // review (lambo §2.4 #1). Empty fixture mode otherwise.
+  const params = await searchParams;
+  const demo = params.seed === "fixture-positions";
+  const snap = demo ? getFixturePortfolioSnapshot() : await getPortfolioSnapshot();
   const choices = getUniverseChoices();
   const taken = snap.positions.map((p) => p.ticker);
   const railData = {
@@ -57,6 +65,26 @@ export default async function PortfolioPage() {
         <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
           Live deployment · single book · manual cost-basis entry
         </span>
+        {demo && (
+          // Honest demo marker — spec §4.5 chip, --warning to signal
+          // "synthetic data, not live." Clears with /portfolio (no seed).
+          <span
+            style={{
+              fontSize: 10,
+              fontFamily: "var(--m)",
+              color: "var(--warning)",
+              background: "var(--warning-soft)",
+              border: "1px solid rgba(221,168,90,.30)",
+              padding: "1px 5px",
+              borderRadius: 3,
+              letterSpacing: ".05em",
+              textTransform: "uppercase",
+            }}
+            title="Synthetic 12-position book seeded via ?seed=fixture-positions for /lambo review."
+          >
+            Demo · fixture book
+          </span>
+        )}
         <div style={{ flex: 1 }} />
         {snap.spy_as_of && (
           <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>

@@ -154,7 +154,7 @@ Severity scale:
 
 | # | Finding | Sev | Fix |
 |---|---|---|---|
-| 1 | Fixture mode shows empty book → page degrades to "No open positions yet" + ADD POSITION form. Spec §5.4's KPI row, positions table, allocation chart, concentration line all hidden. Reasonable empty handling; but for /lambo review we can't see the strongest state | P1 | Provide a `?seed=fixture-positions` flag for review/demo that populates 12 positions per spec §5.4 |
+| 1 | Fixture mode shows empty book → page degrades to "No open positions yet" + ADD POSITION form. Spec §5.4's KPI row, positions table, allocation chart, concentration line all hidden. Reasonable empty handling; but for /lambo review we can't see the strongest state | P1 → ✓ S5 | Shipped: `?seed=fixture-positions` seeds 12 positions (3-3-2-2-2 across L1-L5) with mixed performance + AMD at -8% to fire the drawdown trigger. Demo chip in header for honest provenance. |
 | 2 | RESERVE, TRIGGERS, ADD POSITION panels live in main canvas right side. Spec §5.4 puts RESERVE + TRIGGERS in the right rail. ADD POSITION is reasonable in main | P1 | Move RESERVE + TRIGGERS to the right rail; main canvas keeps positions table + ADD POSITION |
 | 3 | Right rail is empty placeholder while reserve/triggers occupy main — double miss (no rail content + main carrying rail content) | P1 | Resolve via fix #2 |
 | 4 | TRIGGERS list shows 3 triggers (spec mentions 2: Position drawdown > 7%, SPY ≤ −5% / VIX > 25 for 3+ days). Three triggers is fine; flag for verification with spec author | P3 | Confirm with Terry |
