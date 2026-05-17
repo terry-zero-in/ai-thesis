@@ -34,6 +34,7 @@ import { useRouter } from "next/navigation";
  *   G,A  go to /aiq
  *   G,M  go to /memos
  *   G,X  go to /decisions
+ *   G,B  go to /backtest
  */
 
 export interface ShellKeyboardHandlers {
@@ -129,6 +130,7 @@ export function useShellKeyboard(handlers: ShellKeyboardHandlers): { gMode: bool
           a: "/aiq",
           m: "/memos",
           x: "/decisions",
+          b: "/backtest",
         };
         const dest = map[e.key.toLowerCase()];
         if (dest) {

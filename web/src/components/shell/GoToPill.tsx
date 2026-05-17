@@ -13,6 +13,7 @@ const ROUTES: [string, string][] = [
   ["A", "AIQ"],
   ["M", "Memos"],
   ["X", "Decisions"],
+  ["B", "Backtest"],
 ];
 
 export function GoToPill({ active }: { active: boolean }) {
