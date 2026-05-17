@@ -244,10 +244,13 @@ function checkHyperscalerCorrelation(window: HyperscalerReturnsWindow): Finding 
 // ---------------------------------------------------------------------------
 
 function checkConsensusCapex(snaps: CapexSnap[]): Finding {
-  // We don't have consensus capex estimates in the schema. We surface
-  // the closest observable proxy: hyperscaler trailing-12mo capex
-  // year-over-year deltas. Flagged as data_gap regardless so the
-  // operator knows the spec'd check is not the one actually firing.
+  // Trailing-indicator approximation of a leading-indicator signal.
+  // Spec calls for forward consensus capex estimates (FY1/FY2); the
+  // consensus table only carries EPS + rating today. We surface
+  // hyperscaler trailing-12mo capex YoY deltas as the closest proxy
+  // and tag as data_gap so the operator knows the spec'd check is
+  // NOT the one actually firing. See docs/HANDOFF.md item 2 — parked
+  // pending evidence the TTM proxy misses material inflections.
   const observable: Array<{ ticker: string; pct: number; current: number; prior: number }> = [];
   for (const s of snaps) {
     if (s.current_ttm_capex == null || s.prior_ttm_capex == null) continue;
