@@ -22,15 +22,14 @@ export function MultiplierBanner({
   const derivation = `${gatesHit} of 3 gates hit · applied to raw ≥ 75 only`;
   const attribution = asOf ? `snapshot ${asOf} · macro engine` : undefined;
   return (
+    // Mercury decard: top + bottom hairlines define the strip; cells flow
+    // on canvas. Vertical hairline between hero cell and ladder cell.
     <div
       style={{
         display: "flex",
         alignItems: "stretch",
-        gap: 0,
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        background: "var(--surface)",
-        overflow: "hidden",
+        borderTop: "1px solid var(--border-subtle)",
+        borderBottom: "1px solid var(--border-subtle)",
       }}
     >
       <Cell wide>
@@ -73,11 +72,11 @@ function Cell({
     <div
       style={{
         flex: wide ? 1.4 : 1,
-        padding: "14px 18px",
-        borderRight: wide ? "1px solid var(--border)" : undefined,
+        padding: "16px 22px",
+        borderRight: wide ? "1px solid var(--border-subtle)" : undefined,
         display: "flex",
         flexDirection: "column",
-        gap: 4,
+        gap: 6,
         minWidth: 0,
       }}
     >
