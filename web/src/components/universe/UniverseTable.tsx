@@ -22,7 +22,7 @@ const TIER_ORDER: Record<Tier, number> = { High: 0, Medium: 1, Low: 2, Avoid: 3 
 
 export function UniverseTable({ rows, asOf, synthetic }: Props) {
   const { q } = useFilter();
-  const { layers, tiers, setMeta } = useUniverseFilter();
+  const { layers, tiers, aiqMin, flags, setMeta } = useUniverseFilter();
   const [sortKey, setSortKey] = useState<SortKey>("final");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -32,9 +32,15 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
       if (layers.size > 0 && !layers.has(r.layer)) return false;
       if (tiers.size > 0 && (!r.tier || !tiers.has(r.tier))) return false;
       if (qNorm && !r.ticker.includes(qNorm) && !r.name.toUpperCase().includes(qNorm)) return false;
+      if (aiqMin != null && (r.aiq == null || r.aiq < aiqMin)) return false;
+      // Macro flag — only wired flag in fixture; rows must currently have ≥1 gate hit.
+      if (flags.has("macro") && r.macro_gates_hit < 1) return false;
+      // "depr" and "burry" remain unwired (pending THS-46 depreciation_flags
+      // ingestion). They don't restrict the result set yet — the rail-side
+      // toggle disables clicks + shows a pending note to match.
       return true;
     });
-  }, [rows, layers, tiers, q]);
+  }, [rows, layers, tiers, q, aiqMin, flags]);
 
   const sorted = useMemo(() => {
     const out = [...filtered];
@@ -227,9 +233,9 @@ function MacroFlag({ gates, mult }: { gates: number; mult: number }) {
       style={{
         fontFamily: "var(--m)",
         fontSize: 10,
-        color: "#FACC15",
-        background: "rgba(250,204,21,.08)",
-        border: "1px solid rgba(250,204,21,.28)",
+        color: "var(--warning)",
+        background: "var(--warning-soft)",
+        border: "1px solid rgba(221,168,90,.30)",
         borderRadius: 3,
         padding: "1px 5px",
       }}

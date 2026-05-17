@@ -10,12 +10,24 @@ import type { Tier } from "@/lib/universe-data";
  *
  * Page-scoped — no other route reads it. Lives at the shell level only because
  * the right rail is rendered by the shell, not by /universe's page tree.
+ *
+ * Spec §5.2 filter set: Layer chips, Tier chips, AIQ-min slider, FLAGS
+ * (Depr / Burry / Macro). Layer/Tier/AIQ/Macro are wired; Depr and Burry
+ * remain ghost-toggles until depreciation_flags ingestion lands (THS-46).
  */
+export type UniverseFlag = "depr" | "burry" | "macro";
+
 interface UniverseFilterCtx {
   layers: Set<number>;
   tiers: Set<Tier>;
+  /** AIQ floor 0..100. null = no floor. */
+  aiqMin: number | null;
+  /** Active flag-filters. "macro" is wired; "depr"/"burry" are ghosts. */
+  flags: Set<UniverseFlag>;
   toggleLayer: (l: number) => void;
   toggleTier: (t: Tier) => void;
+  setAiqMin: (v: number | null) => void;
+  toggleFlag: (f: UniverseFlag) => void;
   clear: () => void;
   // Stats published by the table so the rail footer can show "N / total names".
   totalRows: number;
@@ -28,8 +40,12 @@ interface UniverseFilterCtx {
 const Ctx = createContext<UniverseFilterCtx>({
   layers: new Set(),
   tiers: new Set(),
+  aiqMin: null,
+  flags: new Set(),
   toggleLayer: () => {},
   toggleTier: () => {},
+  setAiqMin: () => {},
+  toggleFlag: () => {},
   clear: () => {},
   totalRows: 0,
   visibleRows: 0,
@@ -41,11 +57,15 @@ const Ctx = createContext<UniverseFilterCtx>({
 export function UniverseFilterProvider({ children }: { children: ReactNode }) {
   const [layers, setLayers] = useState<Set<number>>(new Set());
   const [tiers, setTiers] = useState<Set<Tier>>(new Set());
+  const [aiqMin, setAiqMin] = useState<number | null>(null);
+  const [flags, setFlags] = useState<Set<UniverseFlag>>(new Set());
   const [meta, setMeta] = useState({ totalRows: 0, visibleRows: 0, asOf: null as string | null, synthetic: false });
   const value = useMemo<UniverseFilterCtx>(
     () => ({
       layers,
       tiers,
+      aiqMin,
+      flags,
       toggleLayer: (l) =>
         setLayers((prev) => {
           const next = new Set(prev);
@@ -60,9 +80,19 @@ export function UniverseFilterProvider({ children }: { children: ReactNode }) {
           else next.add(t);
           return next;
         }),
+      setAiqMin,
+      toggleFlag: (f) =>
+        setFlags((prev) => {
+          const next = new Set(prev);
+          if (next.has(f)) next.delete(f);
+          else next.add(f);
+          return next;
+        }),
       clear: () => {
         setLayers(new Set());
         setTiers(new Set());
+        setAiqMin(null);
+        setFlags(new Set());
       },
       totalRows: meta.totalRows,
       visibleRows: meta.visibleRows,
@@ -70,7 +100,7 @@ export function UniverseFilterProvider({ children }: { children: ReactNode }) {
       synthetic: meta.synthetic,
       setMeta,
     }),
-    [layers, tiers, meta],
+    [layers, tiers, aiqMin, flags, meta],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

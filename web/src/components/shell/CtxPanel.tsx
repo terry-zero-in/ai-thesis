@@ -69,8 +69,12 @@ function UniverseFilterPanel() {
     <UniverseFilterRail
       layers={f.layers}
       tiers={f.tiers}
+      aiqMin={f.aiqMin}
+      flags={f.flags}
       onToggleLayer={f.toggleLayer}
       onToggleTier={f.toggleTier}
+      onSetAiqMin={f.setAiqMin}
+      onToggleFlag={f.toggleFlag}
       onClear={f.clear}
       totalRows={f.totalRows}
       visibleRows={f.visibleRows}
