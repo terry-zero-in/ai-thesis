@@ -1,0 +1,129 @@
+// THS-39 — Daily consensus + revisions ingestion.
+//   1. Pull FMP analyst estimates, price-target, and rating consensus
+//   2. Upsert today's row into `consensus`
+//   3. Query 30d-ago and 90d-ago consensus rows for the same ticker
+//   4. Compute FY1 EPS deltas and upsert into `revisions`
+//
+// upward_breadth_pct is left NULL for now — the FMP upgrade/downgrade-feed
+// integration is a follow-up. Documented in docs/schema.md.
+
+import { HttpError, requireCronAuth } from "../_shared/auth.ts";
+import {
+  buildConsensusRow,
+  fetchAnalystEstimates,
+  fetchPriceTargetConsensus,
+  fetchRatingSnapshot,
+  type ConsensusRow,
+  type FmpAnalystEstimateRow,
+  type FmpPriceTargetConsensus,
+  type FmpRatingRow,
+} from "../_shared/fmp.ts";
+import { computeRevisionDeltas, type SnapshotPoint } from "../_shared/revisions.ts";
+import { activeTickers, serviceClient } from "../_shared/supabase.ts";
+
+declare const Deno: { serve: (h: (req: Request) => Promise<Response>) => void };
+
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+Deno.serve(async (req: Request): Promise<Response> => {
+  const startedAt = Date.now();
+  try {
+    requireCronAuth(req);
+    const client = serviceClient();
+    const tickers = await activeTickers(client);
+    const today = todayISO();
+
+    let consensusUpserted = 0;
+    let revisionsUpserted = 0;
+    const failures: Array<{ ticker: string; error: string }> = [];
+
+    function settledValue<T>(s: PromiseSettledResult<T>): T | null {
+      return s.status === "fulfilled" ? s.value : null;
+    }
+
+    for (const ticker of tickers) {
+      try {
+        // allSettled, not all: an FMP outage on one endpoint shouldn't lose
+        // the others. estimates are the only hard requirement — without them
+        // we can't compute FY1/FY2, so treat that as the ticker-level failure.
+        const [estRes, tgtRes, ratRes] = await Promise.allSettled([
+          fetchAnalystEstimates(ticker, 4),
+          fetchPriceTargetConsensus(ticker),
+          fetchRatingSnapshot(ticker),
+        ]);
+
+        if (estRes.status === "rejected") throw estRes.reason;
+        const estimates: FmpAnalystEstimateRow[] = estRes.value;
+        const target: FmpPriceTargetConsensus | null = settledValue(tgtRes);
+        const rating: FmpRatingRow | null = settledValue(ratRes);
+
+        const row: ConsensusRow = buildConsensusRow(ticker, today, estimates, target, rating);
+
+        const { error: consErr } = await client
+          .from("consensus")
+          .upsert(row, { onConflict: "ticker,as_of" });
+        if (consErr) throw consErr;
+        consensusUpserted += 1;
+
+        // Pull history (~last 120 days) so the 90d-ago snapshot is in scope.
+        // We over-fetch on purpose so weekends/holidays around the cutoff are
+        // handled by pickAtOrBefore in computeRevisionDeltas.
+        const { data: history, error: histErr } = await client
+          .from("consensus")
+          .select("as_of, fy1_eps")
+          .eq("ticker", ticker)
+          .lt("as_of", today)
+          .order("as_of", { ascending: false })
+          .limit(120);
+        if (histErr) throw histErr;
+
+        const todayPoint: SnapshotPoint = { as_of: today, fy1_eps: row.fy1_eps };
+        const deltas = computeRevisionDeltas(todayPoint, (history ?? []) as SnapshotPoint[]);
+
+        const { error: revErr } = await client.from("revisions").upsert({
+          ticker,
+          as_of: today,
+          fy1_eps_30d_pct_change: deltas.fy1_eps_30d_pct_change,
+          fy1_eps_90d_pct_change: deltas.fy1_eps_90d_pct_change,
+          upward_breadth_pct: null,
+        }, { onConflict: "ticker,as_of" });
+        if (revErr) throw revErr;
+        revisionsUpserted += 1;
+      } catch (e) {
+        failures.push({ ticker, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
+    // After upserting today's consensus snapshots, refresh the derived
+    // forward_pe_history matview (THS-43). It depends on both prices_raw
+    // (refreshed by the earlier 21:00 UTC ingest-prices job) and consensus
+    // (we just wrote today's row), so this is the right place to trigger
+    // the recompute. Failure here doesn't roll back the consensus writes.
+    let viewRefreshed = false;
+    let refreshError: string | null = null;
+    try {
+      const { error } = await client.rpc("refresh_forward_pe_history");
+      if (error) throw error;
+      viewRefreshed = true;
+    } catch (e) {
+      refreshError = e instanceof Error ? e.message : String(e);
+    }
+
+    return Response.json({
+      ok: failures.length === 0,
+      tickers: tickers.length,
+      consensus_upserted: consensusUpserted,
+      revisions_upserted: revisionsUpserted,
+      view_refreshed: viewRefreshed,
+      refresh_error: refreshError,
+      failures,
+      elapsed_ms: Date.now() - startedAt,
+    }, { status: failures.length === 0 ? 200 : 207 });
+  } catch (e) {
+    const status = e instanceof HttpError ? e.status : 500;
+    const message = e instanceof Error ? e.message : String(e);
+    return Response.json({ ok: false, error: message }, { status });
+  }
+});

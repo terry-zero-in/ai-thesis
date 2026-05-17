@@ -1,0 +1,117 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getSupabaseServer } from "@/lib/supabase/server";
+
+export interface PromoteState {
+  ok: boolean;
+  message: string;
+}
+
+export const PROMOTE_INITIAL: PromoteState = { ok: false, message: "" };
+
+interface DraftRow {
+  id: string;
+  ticker: string;
+  drafted_at: string;
+  disclosure_pts: number | null;
+  defensibility_pts: number | null;
+  concentration_pts: number | null;
+  capex_eff_pts: number | null;
+  indep_demand_pts: number | null;
+  accounting_pts: number | null;
+  notes: Record<string, string> | null;
+  sources: { ten_k_url: string | null; transcript_url: string | null } | null;
+  parse_error: string | null;
+  approved_at: string | null;
+}
+
+/**
+ * Promote a reviewed aiq_draft into the canonical aiq_rubric.
+ *
+ * Maps the draft's 6 dim scores + per-dim jsonb notes into the
+ * aiq_rubric per-dim note columns. Sets aiq_rubric.source_url to the
+ * draft's 10-K URL (primary source) with the transcript URL appended
+ * as a secondary citation in the general notes field.
+ *
+ * Side effects (in one Supabase round per write):
+ *   1. UPSERT aiq_rubric (ticker, scored_at=drafted_at) with the scores
+ *   2. UPDATE aiq_drafts SET approved_at=now(), approved_by=<user email>
+ *
+ * RLS gate: only `authenticated` users can write to either table. The
+ * proxy redirects unauthenticated callers to /login before this runs.
+ */
+export async function promoteAiqDraft(
+  _prev: PromoteState,
+  formData: FormData,
+): Promise<PromoteState> {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { ok: false, message: "Missing draft id." };
+
+  const sb = await getSupabaseServer();
+  if (!sb) return { ok: false, message: "Supabase env not configured — promotion disabled in fixture mode." };
+
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return { ok: false, message: "Not authenticated." };
+
+  const { data: draft, error: readErr } = await sb
+    .from("aiq_drafts")
+    .select("id, ticker, drafted_at, disclosure_pts, defensibility_pts, concentration_pts, capex_eff_pts, indep_demand_pts, accounting_pts, notes, sources, parse_error, approved_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (readErr) return { ok: false, message: `Load failed: ${readErr.message}` };
+  if (!draft) return { ok: false, message: "Draft not found." };
+
+  const d = draft as DraftRow;
+  if (d.parse_error) return { ok: false, message: "Can't promote a draft with a parse_error." };
+  if (d.approved_at) return { ok: false, message: `Already approved at ${d.approved_at.slice(0, 10)}.` };
+
+  const dims: Array<keyof DraftRow> = [
+    "disclosure_pts", "defensibility_pts", "concentration_pts",
+    "capex_eff_pts", "indep_demand_pts", "accounting_pts",
+  ];
+  for (const k of dims) {
+    if (d[k] == null) return { ok: false, message: `Draft missing ${String(k)}.` };
+  }
+
+  const transcriptCitation = d.sources?.transcript_url
+    ? ` Transcript: ${d.sources.transcript_url}`
+    : "";
+  const generalNotes = `Promoted from aiq_draft ${d.id} on ${new Date().toISOString().slice(0, 10)}.${transcriptCitation}`;
+
+  const rubricRow = {
+    ticker: d.ticker,
+    scored_at: d.drafted_at,
+    disclosure_pts: d.disclosure_pts,
+    defensibility_pts: d.defensibility_pts,
+    concentration_pts: d.concentration_pts,
+    capex_eff_pts: d.capex_eff_pts,
+    indep_demand_pts: d.indep_demand_pts,
+    accounting_pts: d.accounting_pts,
+    notes: generalNotes,
+    disclosure_note:    d.notes?.disclosure    ?? null,
+    defensibility_note: d.notes?.defensibility ?? null,
+    concentration_note: d.notes?.concentration ?? null,
+    capex_eff_note:     d.notes?.capex_eff     ?? null,
+    indep_demand_note:  d.notes?.indep_demand  ?? null,
+    accounting_note:    d.notes?.accounting    ?? null,
+    source_url:         d.sources?.ten_k_url   ?? null,
+  };
+
+  const { error: upsertErr } = await sb
+    .from("aiq_rubric")
+    .upsert(rubricRow, { onConflict: "ticker,scored_at" });
+  if (upsertErr) return { ok: false, message: `aiq_rubric upsert failed: ${upsertErr.message}` };
+
+  const approver = user.email ?? user.id;
+  const { error: updateErr } = await sb
+    .from("aiq_drafts")
+    .update({ approved_at: new Date().toISOString(), approved_by: approver })
+    .eq("id", id);
+  if (updateErr) return { ok: false, message: `aiq_drafts approval-stamp failed: ${updateErr.message}` };
+
+  revalidatePath("/aiq-drafts");
+  revalidatePath(`/aiq/${d.ticker}`);
+  revalidatePath(`/universe/${d.ticker}`);
+  return { ok: true, message: `Promoted ${d.ticker} (${d.drafted_at}) → aiq_rubric.` };
+}

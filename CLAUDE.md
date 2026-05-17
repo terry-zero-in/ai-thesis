@@ -148,8 +148,46 @@ This isn't optional. Terry has a global `honesty` skill that applies to every in
 | Visual reference (canvas, secondary) | `design-references/03-canvas-secondary-investment-portal/` |
 | Visual reference (component mining) | `design-references/04-additional-basis-q-series/` |
 | Current visual state (not locked) | `prototype/` |
+| **Reticle source codebase (Epic 4 base)** | **https://github.com/terry-zero-in/optimize-claude-docs** (clone via HTTPS — see "Reticle base file" section below) |
 | Tickets | [Linear THS team](https://linear.app/basisuw/team/THS) |
 | Project hub | [AI Thesis v2 project](https://linear.app/basisuw/project/ai-thesis-v2-scoring-engine-and-portfolio-79a38aec2b49) |
+
+---
+
+## Reticle base file — frontend foundation (read before any Epic 4 work)
+
+**Reticle is the working frontend codebase that Epic 4 builds on top of.** Not a Next.js scaffold from scratch — the Reticle app already has the sidebar, right rail, top bar, and several inner-page tab patterns built and styled. The Epic 4 task is to drop into Reticle, swap in AI-Thesis-specific data and pages, and ship.
+
+### Where it lives
+
+**GitHub:** https://github.com/terry-zero-in/optimize-claude-docs — this is the Reticle baseline file. Clone it at the start of Epic 4 and develop into it.
+
+Original local copy lives on Terry's Mac at `/Users/terryturner/Hub/reticle-optimizeclaude/`, but the GitHub repo above is the authoritative source for remote Claude Code sessions.
+
+**Note:** The GitHub MCP scope for this session is restricted to `terry-zero-in/ai-thesis`, so MCP tools won't reach `optimize-claude-docs` directly — clone via `git clone https://github.com/terry-zero-in/optimize-claude-docs.git` over HTTPS instead. If the repo is private and the clone fails, escalate to Terry for access.
+
+### What carries over verbatim from Reticle (with Basis re-skin only)
+
+| Reticle element | Persistence in AI Thesis | Basis re-skin work |
+|---|---|---|
+| **Left sidebar (220px)** | Every page | Re-label nav items to AI Thesis routes (Dashboard, Universe, Portfolio, Regime, AIQ, Memos); keep structure, density, motion, active-state indicator |
+| **Right side panel (280px)** | Every page (contextual) | Swap content per route (filters / activity / reserve / history); keep the `[ICON] CONTEXT LABEL` 11px uppercase header pattern |
+| **Top bar (48px)** | Every page | Keep chrome; swap brand cluster + breadcrumb labels |
+| **Inner-page tab strip — "Delegations" + "Reviews" pattern** | Reused on data-heavy detail surfaces (most likely the per-name detail page, Memos workflow, or any tabbed surface analogous to a Rent Roll tab in Basis) | Re-label tabs; same active-pill treatment, same inactive/disabled states, same density |
+
+**Terry's exact wording (May 2026):** *"delegations and reviews are the two tabs that will carry over into some things, most likely the Rent Roll tab. The left side bar and right side panel will persist on every page and are completely ready to go, just now you need to wire up to be basis specific."*
+
+### What does NOT come from Reticle
+
+The **canvas** content for every page (Dashboard, Universe, Detail, Portfolio, Regime, AIQ, Memos, Proforma, Insights, etc.) comes from the design references in `design-references/02-*`, `03-*`, `04-*` — NOT from Reticle. Reticle gives you the frame; the references give you what goes inside it.
+
+### Order of operations for Epic 4
+
+1. Clone `https://github.com/terry-zero-in/optimize-claude-docs` into this repo (e.g. as a sibling working dir or vendored into `reticle/`). If the clone fails (private repo / auth), escalate to Terry.
+2. Promote Reticle to the new `app/` (Next.js 15 + React 19 + Tailwind v4) — keep its sidebar, right rail, top bar, and tab patterns intact.
+3. Wire Basis-specific routes into the existing nav.
+4. Build each page's canvas from the Tier 2/3/4 references, fed by Supabase data via the Epic 1-3 ingestion + scoring outputs.
+5. The `prototype/` directory is a *content* reference for what each canvas should look like in AI Thesis — Reticle is the *chrome* base. Do not throw `prototype/` away yet; cross-reference both.
 
 ---
 
@@ -157,11 +195,13 @@ This isn't optional. Terry has a global `honesty` skill that applies to every in
 
 ```
 1. Read CLAUDE.md (this file)
-2. Read README.md
-3. Get the next ticket in build order from Linear
-4. Read the ticket's "Sub-issues (build in order)" line
-5. Start the next sub-issue in that chain
-6. Build → test → commit → push → mark Done → next sub-issue
+2. Read docs/SESSION_NOTES.md ← cold-start handoff, where the build actually is
+3. Read README.md (only if SESSION_NOTES.md doesn't cover what you need)
+4. Check Linear for the next ticket in build order
+5. Read the ticket's "Sub-issues (build in order)" line
+6. Start the next sub-issue in that chain
+7. Build → test → commit → push → mark Done → next sub-issue
+8. At end of session, append a dated entry to docs/SESSION_NOTES.md so the next session can pick up cold.
 ```
 
 If you find yourself stuck or unsure for more than ~10 minutes on a single decision, batch the question per "How to ask" above and surface it. Otherwise: keep moving.

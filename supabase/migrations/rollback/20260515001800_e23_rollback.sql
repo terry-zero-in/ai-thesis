@@ -1,0 +1,3 @@
+BEGIN;
+DROP MATERIALIZED VIEW IF EXISTS public.forward_pe_history;
+COMMIT;

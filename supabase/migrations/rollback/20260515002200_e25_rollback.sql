@@ -1,0 +1,3 @@
+BEGIN;
+DROP TABLE IF EXISTS public.macro_gauges CASCADE;
+COMMIT;

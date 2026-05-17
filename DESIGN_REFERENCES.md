@@ -8,8 +8,9 @@ Terry has explicitly ranked design influences. Higher tier wins on conflict. Tre
 
 ## Tier 1 — BASE (skeleton of the app)
 
-**File:** `design-references/01-base-reticle-screenshots/` (10 JPGs)
-**Status:** Source of truth for app chrome. Copy near-verbatim.
+**Visual reference:** `design-references/01-base-reticle-screenshots/` (10 JPGs)
+**Source code (the actual base file to develop in):** https://github.com/terry-zero-in/optimize-claude-docs — clone this at the start of Epic 4. (Original local copy: `/Users/terryturner/Hub/reticle-optimizeclaude/` on Terry's Mac.) See `CLAUDE.md` → "Reticle base file — frontend foundation" for the full handoff and order of operations.
+**Status:** Source of truth for app chrome. Sidebar + right rail + top bar + Delegations/Reviews tab patterns carry over verbatim from Reticle; only re-skin for Basis-specific content.
 
 The Reticle reference establishes:
 
