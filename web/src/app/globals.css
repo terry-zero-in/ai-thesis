@@ -20,12 +20,17 @@
   --text-1:#ECEDEF; --text-2:#CFD3DA; --text-3:#7A818D; --text-4:#5F6571;
   /* Borders — primary + strong + subtle (line/div collapsed onto subtle). */
   --border:#2A2F38; --border-strong:#34353a; --border-subtle:#1F2229;
-  /* Accent — cyan. accent-soft is the selection/tint bg; accent-border is the 1px outline / left-inset cue. */
-  --accent:#22D3EE; --accent-hover:#67E8F9; --accent-pressed:#0EA5C7;
-  --accent-soft:rgba(34,211,238,.10); --accent-border:rgba(34,211,238,.40); --accent-glow:rgba(34,211,238,.32);
-  /* --on-accent = text color when bg is solid accent (Btn primary, avatar, check-mark). Per-theme; defaulted for cyan. */
-  --on-accent:#0a1a1d;
-  --success:#34D399; --warning:#F59E0B; --danger:#EF4444; --info:#A78BFA;
+  /* Accent — Cypher Indigo, locked per AI Thesis Master Design Spec §2.1.
+     accent-soft is the selection/tint bg; accent-border is the 1px outline / left-inset cue.
+     ↑ swapped from Reticle's Plasma Cyan default 2026-05-17 per docs/design/lambo-review-2026-05-17.md */
+  --accent:#4D5BFF; --accent-hover:#6573FF; --accent-pressed:#3D4ECC;
+  --accent-soft:rgba(77,91,255,.10); --accent-border:rgba(77,91,255,.40); --accent-glow:rgba(77,91,255,.18);
+  /* --on-accent = text color when bg is solid accent (Btn primary, avatar, check-mark). White on indigo. */
+  --on-accent:#ffffff;
+  /* Semantic — desaturated per spec §2.1. Reserved for truth states only, never decorative. */
+  --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:#6594E8;
+  --success-soft:rgba(91,184,128,.10); --warning-soft:rgba(221,168,90,.10);
+  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(101,148,232,.07);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);

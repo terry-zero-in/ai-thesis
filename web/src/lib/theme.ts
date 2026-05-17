@@ -1,10 +1,12 @@
 /**
- * Theme presets — verbatim port of THEMES from stage3-app.jsx.
+ * Theme presets — locked to AI Thesis Master Design Spec §2.1 (Cypher Indigo).
  *
- * Each theme bends success/warning/danger/info away from its accent hue so
- * semantic states stay legible. Stored value is the 4-color preview array
- * (accent · success · warning · danger); THEMES is keyed by accent hex
- * (palette[0]) for lookup.
+ * Spec §1.3: "monochrome with one accent. Cypher Indigo #4D5BFF is the only
+ * chromatic accent." Multi-theme support from the Reticle base was stripped
+ * here because spec §13 lists "Themes other than dark" as out-of-scope for v1.
+ * Each entry retains the same shape so applyPalette() can keep its lookup
+ * semantics without conditionals; the multi-theme switcher infrastructure
+ * (ThemeSwitcher, TweaksPanel palette picker) will be removed in a follow-up.
  */
 export interface Theme {
   name: string;
@@ -17,54 +19,18 @@ export interface Theme {
 }
 
 export const THEMES: Record<string, Theme> = {
-  "#22D3EE": {
-    name: "Plasma Cyan",
-    accent: ["#22D3EE", "#67E8F9", "#0EA5C7"],
-    onAccent: "#0a1a1d",
-    success: "#34D399",
-    warning: "#F59E0B",
-    danger: "#EF4444",
-    info: "#A78BFA",
-  },
-  "#A3E635": {
-    name: "Plasma Lime",
-    accent: ["#A3E635", "#BEF264", "#84CC16"],
-    onAccent: "#1a1f0a",
-    success: "#14B8A6",
-    warning: "#F97316",
-    danger: "#E11D48",
-    info: "#38BDF8",
-  },
-  "#00FF88": {
-    name: "Phosphor Green",
-    accent: ["#00FF88", "#5BFFAA", "#00CC66"],
-    onAccent: "#001a0d",
-    success: "#06B6D4",
-    warning: "#FBBF24",
-    danger: "#F43F5E",
-    info: "#A78BFA",
-  },
-  "#FF4D1F": {
-    name: "Lava",
-    accent: ["#FF4D1F", "#FF7A4D", "#D63A0E"],
+  "#4D5BFF": {
+    name: "Cypher Indigo",
+    accent: ["#4D5BFF", "#6573FF", "#3D4ECC"],
     onAccent: "#ffffff",
-    success: "#10B981",
-    warning: "#FBBF24",
-    danger: "#DC2626",
-    info: "#0EA5E9",
-  },
-  "#3E63DD": {
-    name: "Iris Indigo",
-    accent: ["#3E63DD", "#6E8FE8", "#2D4FB8"],
-    onAccent: "#ffffff",
-    success: "#10B981",
-    warning: "#F59E0B",
-    danger: "#EF4444",
-    info: "#06B6D4",
+    success: "#5BB880",
+    warning: "#DDA85A",
+    danger: "#E07878",
+    info: "#6594E8",
   },
 };
 
-export const DEFAULT_PALETTE: [string, string, string, string] = ["#22D3EE", "#34D399", "#F59E0B", "#EF4444"];
+export const DEFAULT_PALETTE: [string, string, string, string] = ["#4D5BFF", "#5BB880", "#DDA85A", "#E07878"];
 
 const hexToRgb = (hex: string) => {
   const m = hex.replace("#", "");
@@ -81,7 +47,7 @@ const hexToRgb = (hex: string) => {
 export function applyPalette(palette: [string, string, string, string] | string[]) {
   if (typeof document === "undefined") return;
   const pal = Array.isArray(palette) ? palette : DEFAULT_PALETTE;
-  const theme = THEMES[pal[0]] || THEMES["#22D3EE"];
+  const theme = THEMES[pal[0]] || THEMES[DEFAULT_PALETTE[0]];
   const [a, h, p] = theme.accent;
   const s = document.documentElement.style;
   s.setProperty("--accent", a);
@@ -89,7 +55,8 @@ export function applyPalette(palette: [string, string, string, string] | string[
   s.setProperty("--accent-pressed", p);
   s.setProperty("--accent-soft", `rgba(${hexToRgb(a)},.10)`);
   s.setProperty("--accent-border", `rgba(${hexToRgb(a)},.40)`);
-  s.setProperty("--accent-glow", `rgba(${hexToRgb(a)},.32)`);
+  // accent-glow alpha .18 per spec §2.1 (was .32 from Reticle base).
+  s.setProperty("--accent-glow", `rgba(${hexToRgb(a)},.18)`);
   s.setProperty("--on-accent", theme.onAccent);
   s.setProperty("--success", theme.success);
   s.setProperty("--warning", theme.warning);
