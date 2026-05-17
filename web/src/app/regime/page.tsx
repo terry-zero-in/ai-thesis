@@ -2,6 +2,8 @@ import { getRegimeSnapshot } from "@/lib/regime-data";
 import { GAUGES } from "@/lib/regime-types";
 import { MultiplierBanner } from "./MultiplierBanner";
 import { GaugeCard } from "./GaugeCard";
+import { RegimeRailRegister } from "@/components/rails/RegimeRailRegister";
+import type { RegimeLegendItem } from "@/components/rails/RegimeLegendRail";
 
 /**
  * Revalidate every 30 minutes so the page picks up new weekly macro_gauges
@@ -12,9 +14,22 @@ export const revalidate = 1800;
 
 export default async function RegimePage() {
   const snap = await getRegimeSnapshot();
+  const items: RegimeLegendItem[] = GAUGES.map((g) => {
+    const v = snap.latest?.[g.key] ?? null;
+    const hit = v != null && v > g.threshold;
+    return { label: g.label, value: v, threshold: g.threshold, hit, blurb: g.blurb };
+  });
+  const railData = {
+    items,
+    gatesHit: snap.gates_hit,
+    multiplier: snap.multiplier,
+    asOf: snap.latest?.as_of ?? null,
+    synthetic: snap.synthetic,
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <RegimeRailRegister data={railData} />
       <header
         style={{
           padding: "18px 28px 14px",
