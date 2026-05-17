@@ -26,6 +26,7 @@ const ITEMS: NavItem[] = [
   { ic: I.sliders, label: "AIQ Editor", id: "aiq",       href: "/aiq",       keys: ["G", "then", "A"] },
   { ic: I.note,    label: "Memos",      id: "memos",     href: "/memos",     keys: ["G", "then", "M"] },
   { ic: I.chk,     label: "Decisions",  id: "decisions", href: "/decisions", keys: ["G", "then", "X"] },
+  { ic: I.refresh, label: "Backtest",   id: "backtest",  href: "/backtest",  keys: ["G", "then", "B"] },
 ];
 
 const NAV_TIPS: Record<string, string> = {
@@ -36,6 +37,7 @@ const NAV_TIPS: Record<string, string> = {
   aiq:       "Hand-scored AIQ rubric — six dimensions per name, edit + audit",
   memos:     "Investment memos — drafts, approvals, archive",
   decisions: "Buy / sell / hold history — tied to memo + composite at decision time",
+  backtest:  "Walk-forward backtest runs — Sharpe, drawdown, turnover, monthly returns",
 };
 const BADGE_TIPS: Record<string, string> = {};
 
