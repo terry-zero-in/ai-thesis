@@ -1,12 +1,14 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getNameDetail, type NameDetail } from "@/lib/name-detail-data";
 import { NameHeader } from "@/components/name/NameHeader";
 import { FactorPanels } from "@/components/name/FactorPanels";
 import { DepFlagsList } from "@/components/name/DepFlagsList";
 import { DataPendingCard } from "@/components/name/DataPendingCard";
+import { NameRailRegister } from "@/components/rails/NameRailRegister";
+import type { NameActivityEvent, NameActivityRailData } from "@/components/rails/NameActivityRail";
 
 interface Params {
   ticker: string;
@@ -24,6 +26,45 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
       alive = false;
     };
   }, [ticker]);
+
+  // Derive rail activity events from the 12-wk history + dep flags. Sorted
+  // most-recent first; capped at 6 to keep the rail glanceable.
+  const railData: NameActivityRailData | null = useMemo(() => {
+    if (!d || !d.found) return null;
+    const events: NameActivityEvent[] = [];
+    // wk/wk composite deltas, oldest→newest, render newest first.
+    for (let i = 1; i < d.history.length; i++) {
+      const prev = d.history[i - 1].composite;
+      const curr = d.history[i].composite;
+      if (prev == null || curr == null) continue;
+      const delta = Math.round((curr - prev) * 10) / 10;
+      if (delta === 0) continue;
+      events.push({
+        date: d.history[i].as_of,
+        kind: "score",
+        label: `Composite ${prev.toFixed(1)} → ${curr.toFixed(1)}`,
+        delta,
+      });
+    }
+    for (const f of d.dep_flags) {
+      events.push({
+        date: f.flagged_at,
+        kind: "depflag",
+        label:
+          f.extension_years != null
+            ? `Depreciation life extended ${f.extension_years.toFixed(1)}y · V penalty ${f.penalty_v ?? 0}`
+            : "Depreciation flag raised",
+        delta: f.penalty_v,
+      });
+    }
+    events.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    return {
+      ticker: d.ticker,
+      events: events.slice(0, 6),
+      asOf: d.as_of,
+      synthetic: d.synthetic,
+    };
+  }, [d]);
 
   if (!d) {
     return (
@@ -50,6 +91,7 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {railData && <NameRailRegister data={railData} />}
       <NameHeader d={d} />
       <div style={{ flex: 1, overflow: "auto", padding: "24px 32px 40px", display: "flex", flexDirection: "column", gap: 28 }}>
         <FactorPanels d={d} />

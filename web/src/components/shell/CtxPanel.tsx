@@ -4,6 +4,7 @@ import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { useUniverseFilter } from "@/hooks/universe-filter-context";
 import { UniverseFilterRail } from "@/components/universe/UniverseFilterRail";
 import { DashboardTodayRail, type DashboardTodayRailData } from "@/components/rails/DashboardTodayRail";
+import { NameActivityRail, type NameActivityRailData } from "@/components/rails/NameActivityRail";
 
 /**
  * CtxPanel — right-side context panel.
@@ -44,6 +45,8 @@ export function CtxPanel() {
         <UniverseFilterPanel />
       ) : rail === "dashboard-today" && payload ? (
         <DashboardTodayRail data={payload as DashboardTodayRailData} />
+      ) : rail === "name-activity" && payload ? (
+        <NameActivityRail data={payload as NameActivityRailData} />
       ) : (
         <Placeholder />
       )}
