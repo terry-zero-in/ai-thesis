@@ -26,11 +26,43 @@ Picked up Terry's session-7 directive. Done so far:
 
   Migration includes per-ticker SEC source URLs and a DO-block assertion on the final penalty_v values. Rollback at `rollback/20260517000000_e24_rollback.sql`.
 
-**Branch**: `claude/epic-4-portal-ui` advances by 1 commit (TBD hash) on top of `3e30aba`.
+**Step 3 — autonomous queue, executed:**
 
-**Tests**: still 327 pass (migration is SQL-only).
+- **`b6adda2` docs: park 10b5-1 parser + forward capex consensus.** Terry deferred both to v1 + documented as known limitations. `docs/HANDOFF.md` created (revisit conditions for each). Inline docstrings updated in `factor-insider.ts` and `quarterly-checklist.ts`.
+- **`7fbbc9b` THS-47 follow-on: promote-to-aiq_rubric server action on /aiq-drafts.** New `web/src/app/aiq-drafts/actions.ts` with `promoteAiqDraft`. DraftCard now has a "Promote to rubric" button visible on unreviewed non-parse-error drafts. Maps the draft's per-dim jsonb notes to the per-dim columns and stamps `approved_at` / `approved_by`. RLS keeps it authenticated-only. Pipeline doc updated.
+- **`3d15054` THS-66 follow-on: rich weekly memo render from sections.parsed.** MemoCard now renders structured weekly memos as a high_book grid (ticker / score / color-coded action / bear-case + rationale), cross-book notes, and watch-next-week. Falls back to body markdown for daily memos. Added a weekly fixture row so dev mode shows the structured layout.
 
-**Next**: autonomous queue per Step 3 below.
+**Spec/ticket reconciliation pass (`Explore` agent audit):**
+
+Audit was very clean. One real drift finding:
+
+> **Sentiment cap missing** (spec line 119): *"A name in bottom-quartile Q with top-quartile S is capped at score = 55 (not 65 as v1). Quality + AIQ are the durable filters; if both fail and sentiment is the only thing carrying a name, that is exactly the failure mode of 2021."*
+>
+> Implementation status: NOT in `composite.ts`. The composite math currently lets a low-Q/high-S name produce a >55 final score with no cap.
+>
+> Cost to implement: small in code (~30 lines + tests). The actual judgment call is **what "score" means** — the cap applies before or after the macro multiplier? before or after the concentration tax? — and Terry has been precise about composite arithmetic ordering before, so this should be batched.
+
+Other findings — all already documented or justified:
+- L4 capex efficiency uses TTM revenue / TTM capex (spec wants contracted MW pipeline value) — documented in `factor-g.ts:18-21` as data gap.
+- ORCL boundary call (1.0y → −5 ext) — documented in `20260517000000_e24_extend_depreciation_flags.sql` header.
+
+Everything else checked cleanly: layer weights, macro gate thresholds + multiplier, composite tier cutoffs, insider cluster constants, momentum sub-weights, S-score weights, dep penalties, concentration tax cap at −15, V-score maintenance capex at 50% mid default.
+
+**Branch state**: `claude/epic-4-portal-ui` advanced 4 commits this session — `22a4ba4 → 3d15054`. 327 tests pass. Web typecheck clean.
+
+**One open question for Terry** (batched per the autonomous-by-default contract):
+
+The sentiment cap (spec line 119). When applied to a name with `Q_score` in the bottom quartile of the universe AND `S_score` in the top quartile, the spec says cap final at 55. Three judgment calls:
+
+1. **Where in the arithmetic does the cap apply?** Pre-tax + pre-multiplier composite? Or final (post-tax, post-multiplier)? My read: post-everything, since the spec calls it the "score" cap and the macro multiplier is a "de-rate" — capping pre-multiplier would let a 96% multiplier push us back above 55.
+
+2. **What quartile reference set?** The whole investable universe (50 names)? Only same-layer peers? Only High-book candidates? My read: whole universe — that's what the spec says and avoids tiny-bucket noise.
+
+3. **Quartile boundaries**: integer cut at the 25th/75th percentile of the current universe snapshot, or fixed thresholds (e.g. Q ≤ 50, S ≥ 70)? My read: percentile-of-universe, computed at score time — matches the spec's distributional framing.
+
+Recommended defaults: 1 → post-everything, 2 → whole universe, 3 → percentile-at-score-time. Confirm or override and I'll ship the cap.
+
+---
 
 ---
 
