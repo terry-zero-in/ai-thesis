@@ -22,6 +22,7 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
   }, [latest]);
   const [vals, setVals] = useState(initial);
   const total = DIMS.reduce((s, d) => s + (vals[d.key] || 0), 0);
+  const dirty = DIMS.some((d) => vals[d.key] !== initial[d.key]);
 
   const set = (k: string, v: number) => setVals((p) => ({ ...p, [k]: v }));
 
@@ -78,7 +79,10 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
         placeholder="Cross-cutting rationale — what changed since the last scoring, key risks to revisit, etc."
       />
 
-      {/* Submit row sits on canvas with breathing room above. */}
+      {/* Submit row sits on canvas with breathing room above.
+          Spec §5.6 line 705: [Discard] ... [Save → 93] — Discard is dirty-only,
+          resets dim numbers + textarea DOM via form.reset() back to `latest`
+          (or zeros when no prior version). */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px 0" }}>
         <button
           type="submit"
@@ -96,7 +100,25 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
             opacity: !envConfigured ? 0.5 : 1,
           }}
         >
-          {pending ? "Saving…" : "Save scoring"}
+          {pending ? "Saving…" : `Save scoring${latest && total !== latest.total ? ` → ${total}` : ""}`}
+        </button>
+        <button
+          type="reset"
+          disabled={pending || !dirty}
+          onClick={() => setVals(initial)}
+          style={{
+            height: 34,
+            padding: "0 14px",
+            fontSize: 12.5,
+            fontWeight: 500,
+            color: dirty ? "var(--text-2)" : "var(--text-4)",
+            background: "transparent",
+            border: "1px solid var(--border)",
+            borderRadius: 5,
+            cursor: dirty && !pending ? "pointer" : "not-allowed",
+          }}
+        >
+          Discard
         </button>
         <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
           Saves as {new Date().toISOString().slice(0, 10)} · same-day re-save overwrites, next day creates a new history row.
