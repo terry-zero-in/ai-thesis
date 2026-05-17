@@ -3,6 +3,8 @@ import { getAiqContext } from "@/lib/aiq-data";
 import { AiqEditor } from "./AiqEditor";
 import { AiqHistory } from "./AiqHistory";
 import { LayerChip } from "@/components/universe/LayerChip";
+import { AiqRailRegister } from "@/components/rails/AiqRailRegister";
+import type { AiqHistoryRailRow } from "@/components/rails/AiqHistoryRail";
 
 interface Params {
   ticker: string;
@@ -27,8 +29,20 @@ export default async function AiqEditorPage({ params }: { params: Promise<Params
     );
   }
 
+  const railRows: AiqHistoryRailRow[] = ctx.history.map((r, i) => {
+    const older = ctx.history[i + 1];
+    const delta = older ? r.total - older.total : null;
+    return { scored_at: r.scored_at, total: r.total, delta, notes: r.notes };
+  });
+  const railData = {
+    ticker: ctx.seed.ticker,
+    rows: railRows,
+    envConfigured: ctx.envConfigured,
+  };
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <AiqRailRegister data={railData} />
       <div
         style={{
           padding: "18px 28px 14px",
