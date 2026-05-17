@@ -124,7 +124,7 @@ export default async function AiqIndexPage() {
                 <Td muted>{r.layer_label}</Td>
                 <Td>
                   {r.total == null ? (
-                    <span style={{ color: "#FB7185" }}>—</span>
+                    <span style={{ color: "var(--danger)" }}>—</span>
                   ) : (
                     <span style={{ color: totalColor(r.total) }}>{r.total}</span>
                   )}
@@ -157,10 +157,10 @@ export default async function AiqIndexPage() {
 }
 
 function totalColor(total: number): string {
-  if (total >= 80) return "#86EFAC";
+  if (total >= 80) return "var(--success)";
   if (total >= 60) return "var(--text-1)";
-  if (total >= 40) return "#FBBF24";
-  return "#FB7185";
+  if (total >= 40) return "var(--warning)";
+  return "var(--danger)";
 }
 
 function Th({ children, align = "right" }: { children?: React.ReactNode; align?: "left" | "right" }) {

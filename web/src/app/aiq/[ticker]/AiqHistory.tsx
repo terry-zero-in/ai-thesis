@@ -106,7 +106,7 @@ function HistoryRow({
                 style={{
                   fontSize: 10,
                   fontFamily: "var(--m)",
-                  color: dlt > 0 ? "#34D399" : "#FB7185",
+                  color: dlt > 0 ? "var(--success)" : "var(--danger)",
                   background: dlt > 0 ? "rgba(52,211,153,.06)" : "rgba(251,113,133,.06)",
                   border: `1px solid ${dlt > 0 ? "rgba(52,211,153,.25)" : "rgba(251,113,133,.25)"}`,
                   padding: "1px 5px",
@@ -142,7 +142,7 @@ function HistoryRow({
 }
 
 function Delta({ n }: { n: number }) {
-  const color = n > 0 ? "#34D399" : "#FB7185";
+  const color = n > 0 ? "var(--success)" : "var(--danger)";
   return (
     <span style={{ fontFamily: "var(--m)", fontSize: 11, color, fontVariantNumeric: "tabular-nums" }}>
       {n > 0 ? "+" : ""}

@@ -80,11 +80,6 @@ export default async function SettingsPage() {
           <CronTable jobs={snap.cron} />
         </Section>
 
-        <Section label="Theme">
-          <div style={{ fontSize: 12.5, color: "var(--text-3)", lineHeight: 1.65 }}>
-            Palette picker lives in the top bar (swatch icon). Choices persist to localStorage; no server roundtrip.
-          </div>
-        </Section>
       </div>
     </div>
   );
@@ -137,10 +132,10 @@ function FreshnessTable({ rows, envConfigured }: { rows: FreshnessRow[]; envConf
           const status = !envConfigured
             ? { color: "var(--text-3)", text: "—" }
             : r.staleHours == null
-              ? { color: "#FB7185", text: "no data" }
+              ? { color: "var(--danger)", text: "no data" }
               : r.staleHours > r.expectedHours
-                ? { color: "#FBBF24", text: "stale" }
-                : { color: "#86EFAC", text: "fresh" };
+                ? { color: "var(--warning)", text: "stale" }
+                : { color: "var(--success)", text: "fresh" };
           return (
             <tr key={r.table} style={{ borderTop: "1px solid var(--border-subtle)" }}>
               <Td align="left">{r.label}</Td>

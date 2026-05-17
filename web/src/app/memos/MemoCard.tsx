@@ -4,10 +4,10 @@ import { useState } from "react";
 import type { MemoAction, MemoRow, WeeklyMemoParsed } from "@/lib/memos-data";
 
 const ACTION_COLORS: Record<MemoAction, string> = {
-  add: "#86EFAC",
+  add: "var(--success)",
   hold: "var(--text-2)",
-  trim: "#FBBF24",
-  exit: "#FB7185",
+  trim: "var(--warning)",
+  exit: "var(--danger)",
 };
 
 const KIND_LABEL: Record<string, string> = {

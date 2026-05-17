@@ -62,7 +62,7 @@ export function LoginForm({ next, envConfigured }: { next: string; envConfigured
             borderRadius: 5,
             fontSize: 12,
             lineHeight: 1.5,
-            color: state.ok ? "#34D399" : "#FB7185",
+            color: state.ok ? "var(--success)" : "var(--danger)",
             background: state.ok ? "rgba(52,211,153,.06)" : "rgba(251,113,133,.06)",
             border: `1px solid ${state.ok ? "rgba(52,211,153,.25)" : "rgba(251,113,133,.25)"}`,
           }}

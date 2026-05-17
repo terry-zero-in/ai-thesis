@@ -129,16 +129,16 @@ function PositionRowView({
       </Td>
       <Td align="right">{fmtUsd(mv)}</Td>
       <Td align="right">
-        <span style={{ color: pl >= 0 ? "#34D399" : "#FB7185" }}>{fmtUsd(pl, true)}</span>
+        <span style={{ color: pl >= 0 ? "var(--success)" : "var(--danger)" }}>{fmtUsd(pl, true)}</span>
       </Td>
       <Td align="right">
-        <span style={{ color: pl >= 0 ? "#34D399" : "#FB7185" }}>{fmtPct(plPct, true)}</span>
+        <span style={{ color: pl >= 0 ? "var(--success)" : "var(--danger)" }}>{fmtPct(plPct, true)}</span>
         {drawdownTriggered && (
           <div
             style={{
               fontSize: 9,
               fontFamily: "var(--m)",
-              color: "#FB7185",
+              color: "var(--danger)",
               letterSpacing: ".08em",
               textTransform: "uppercase",
               marginTop: 2,

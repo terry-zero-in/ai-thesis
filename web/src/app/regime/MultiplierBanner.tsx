@@ -13,7 +13,7 @@ export function MultiplierBanner({
   multiplier: number;
   asOf: string | null;
 }) {
-  const color = gatesHit === 0 ? "var(--text-1)" : gatesHit === 1 ? "#FBBF24" : "#FB7185";
+  const color = gatesHit === 0 ? "var(--text-1)" : gatesHit === 1 ? "var(--warning)" : "var(--danger)";
   return (
     <div
       style={{

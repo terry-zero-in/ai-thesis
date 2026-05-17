@@ -1,7 +1,7 @@
 const COLORS: Record<number, string> = {
-  1: "#7DD3FC", // L1 Compute   — cyan
+  1: "var(--accent)", // L1 Compute   — cyan
   2: "#A78BFA", // L2 Hyperscaler — violet
-  3: "#34D399", // L3 App        — green
+  3: "var(--success)", // L3 App        — green
   4: "#FACC15", // L4 Power      — amber
   5: "#94A3B8", // L5 Incumbent  — slate
 };

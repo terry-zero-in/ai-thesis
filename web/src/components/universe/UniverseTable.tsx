@@ -213,7 +213,7 @@ function Row({ r }: { r: UniverseRow }) {
 function DeltaCell({ d }: { d: number | null }) {
   if (d == null) return <span style={{ color: "var(--text-4)" }}>—</span>;
   const sign = d > 0 ? "+" : "";
-  const color = d > 0 ? "#34D399" : d < 0 ? "#FB7185" : "var(--text-3)";
+  const color = d > 0 ? "var(--success)" : d < 0 ? "var(--danger)" : "var(--text-3)";
   return <span style={{ color }}>{sign}{d.toFixed(1)}</span>;
 }
 

@@ -54,7 +54,7 @@ export function GaugeCard({
             style={{
               fontSize: 9.5,
               fontFamily: "var(--m)",
-              color: "#FB7185",
+              color: "var(--danger)",
               border: "1px solid rgba(251,113,133,.35)",
               background: "rgba(251,113,133,.06)",
               padding: "1px 6px",
@@ -75,7 +75,7 @@ export function GaugeCard({
             fontSize: 28,
             fontWeight: 600,
             fontVariantNumeric: "tabular-nums",
-            color: fired ? "#FB7185" : "var(--text-1)",
+            color: fired ? "var(--danger)" : "var(--text-1)",
             lineHeight: 1,
           }}
         >
@@ -152,14 +152,14 @@ function Trendline({
         x2={w - padX}
         y1={yThresh}
         y2={yThresh}
-        stroke="#FB7185"
+        stroke="var(--danger)"
         strokeWidth={1}
         strokeDasharray="2 3"
         opacity={0.45}
       />
-      <path d={path} fill="none" stroke={fired ? "#FB7185" : "var(--accent)"} strokeWidth={1.5} />
+      <path d={path} fill="none" stroke={fired ? "var(--danger)" : "var(--accent)"} strokeWidth={1.5} />
       {/* Latest dot */}
-      <circle cx={x(lastIdx)} cy={y(lastV)} r={2.5} fill={fired ? "#FB7185" : "var(--accent)"} />
+      <circle cx={x(lastIdx)} cy={y(lastV)} r={2.5} fill={fired ? "var(--danger)" : "var(--accent)"} />
     </svg>
   );
 }

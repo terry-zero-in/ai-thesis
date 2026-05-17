@@ -21,7 +21,7 @@ export function ReservePanel({ snap }: { snap: PortfolioSnapshot }) {
                 fontFamily: "var(--m)",
                 fontSize: 22,
                 fontWeight: 600,
-                color: onTarget ? "var(--text-1)" : "#FB7185",
+                color: onTarget ? "var(--text-1)" : "var(--danger)",
                 fontVariantNumeric: "tabular-nums",
                 lineHeight: 1,
               }}
@@ -37,7 +37,7 @@ export function ReservePanel({ snap }: { snap: PortfolioSnapshot }) {
               style={{
                 width: `${Math.max(0, Math.min(100, reservePct * 100))}%`,
                 height: "100%",
-                background: onTarget ? "var(--accent)" : "#FB7185",
+                background: onTarget ? "var(--accent)" : "var(--danger)",
                 opacity: 0.7,
               }}
             />
@@ -115,7 +115,7 @@ function TriggerRow({
             width: 6,
             height: 6,
             borderRadius: "50%",
-            background: fired ? "#FB7185" : "rgba(255,255,255,.15)",
+            background: fired ? "var(--danger)" : "rgba(255,255,255,.15)",
             flexShrink: 0,
           }}
         />
@@ -127,7 +127,7 @@ function TriggerRow({
             fontFamily: "var(--m)",
             letterSpacing: ".08em",
             textTransform: "uppercase",
-            color: fired ? "#FB7185" : "var(--text-3)",
+            color: fired ? "var(--danger)" : "var(--text-3)",
           }}
         >
           {fired ? "fired" : "clear"}

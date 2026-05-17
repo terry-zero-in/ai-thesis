@@ -16,7 +16,7 @@ export function AlertRow({ event }: { event: AlertEvent }) {
   const [state, formAction, pending] = useActionState<AckState, FormData>(ackAlert, ACK_INITIAL);
   const [open, setOpen] = useState(false);
   const acked = !!event.acked_at;
-  const dot = event.severity === "high" ? "#FB7185" : event.severity === "warn" ? "#FBBF24" : "var(--text-3)";
+  const dot = event.severity === "high" ? "var(--danger)" : event.severity === "warn" ? "var(--warning)" : "var(--text-3)";
 
   return (
     <div
@@ -168,7 +168,7 @@ export function AlertRow({ event }: { event: AlertEvent }) {
             </form>
           )}
           {state.message && !state.ok && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#FB7185" }}>{state.message}</div>
+            <div style={{ marginTop: 6, fontSize: 11, color: "var(--danger)" }}>{state.message}</div>
           )}
         </div>
       )}

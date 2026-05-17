@@ -19,7 +19,7 @@ export function FactorPanels({ d }: { d: NameDetail }) {
         gap: 12,
       }}
     >
-      <Panel title="Q · Quality" score={d.q_score} accent="#7DD3FC">
+      <Panel title="Q · Quality" score={d.q_score} accent="var(--accent)">
         {d.q ? (
           <PillarList
             rows={[
@@ -34,7 +34,7 @@ export function FactorPanels({ d }: { d: NameDetail }) {
           <Empty />
         )}
       </Panel>
-      <Panel title="G · Growth" score={d.g_score} accent="#34D399">
+      <Panel title="G · Growth" score={d.g_score} accent="var(--success)">
         {d.g ? (
           <PillarList
             rows={[
@@ -67,7 +67,7 @@ export function FactorPanels({ d }: { d: NameDetail }) {
                   border: "1px solid rgba(251,113,133,.25)",
                   borderRadius: 4,
                   fontSize: 11,
-                  color: "#FB7185",
+                  color: "var(--danger)",
                   fontFamily: "var(--m)",
                 }}
               >
@@ -216,9 +216,9 @@ function PillarList({
                     ? "var(--text-4)"
                     : zStyle
                     ? (value as number) > 0
-                      ? "#34D399"
+                      ? "var(--success)"
                       : (value as number) < 0
-                      ? "#FB7185"
+                      ? "var(--danger)"
                       : "var(--text-2)"
                     : "var(--text-2)",
                 fontVariantNumeric: "tabular-nums",

@@ -8,11 +8,12 @@ import { getDashboardSnapshot } from "@/lib/dashboard-data";
  */
 export const revalidate = 1800;
 
+/** Tier → token map per spec §2.1: High=accent, Medium=warning, Low=info, Avoid=danger. */
 const TIER_COLORS: Record<string, string> = {
-  High: "#86EFAC",
-  Medium: "var(--text-1)",
-  Low: "#FBBF24",
-  Avoid: "#FB7185",
+  High: "var(--accent)",
+  Medium: "var(--warning)",
+  Low: "var(--info)",
+  Avoid: "var(--danger)",
 };
 
 export default async function DashboardPage() {
@@ -156,7 +157,7 @@ function Section({ label, children, wide }: { label: string; children: React.Rea
 }
 
 function TierCell({ tier, current, prior, delta }: { tier: string; current: number; prior: number; delta: number }) {
-  const deltaColor = delta > 0 ? "#86EFAC" : delta < 0 ? "#FB7185" : "var(--text-3)";
+  const deltaColor = delta > 0 ? "var(--success)" : delta < 0 ? "var(--danger)" : "var(--text-3)";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <div
@@ -194,7 +195,7 @@ function MoversList({ movers, positive }: { movers: Array<{ ticker: string; laye
           <span style={{ color: "var(--text-2)" }}>
             {m.final_score == null ? "—" : m.final_score.toFixed(1)}
           </span>
-          <span style={{ color: positive ? "#86EFAC" : "#FB7185" }}>
+          <span style={{ color: positive ? "var(--success)" : "var(--danger)" }}>
             {m.delta > 0 ? "+" : ""}{m.delta.toFixed(1)}
           </span>
         </Fragment>
@@ -205,7 +206,7 @@ function MoversList({ movers, positive }: { movers: Array<{ ticker: string; laye
 
 function CrossingRow({ c }: { c: { ticker: string; layer_label: string; prior_tier: string | null; current_tier: string | null; delta: number | null; direction: "up" | "down" } }) {
   const arrow = c.direction === "up" ? "↑" : "↓";
-  const color = c.direction === "up" ? "#86EFAC" : "#FB7185";
+  const color = c.direction === "up" ? "var(--success)" : "var(--danger)";
   return (
     <>
       <span style={{ fontWeight: 600 }}>{c.ticker}</span>

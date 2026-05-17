@@ -44,7 +44,7 @@ export default async function DecisionsPage() {
         <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
           Tier movement log + alerts · {snap.events.length} event
           {snap.events.length === 1 ? "" : "s"} ·{" "}
-          <strong style={{ color: snap.unseen > 0 ? "#FB7185" : "var(--text-3)" }}>
+          <strong style={{ color: snap.unseen > 0 ? "var(--danger)" : "var(--text-3)" }}>
             {snap.unseen} unseen
           </strong>
         </span>

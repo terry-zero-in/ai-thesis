@@ -1,10 +1,17 @@
 import type { Tier } from "@/lib/universe-data";
 
+/**
+ * Tier → token mapping per AI Thesis Master Design Spec §2.1, §4.1, §4.6:
+ *   "High conviction tier uses indigo because *we* believe in it;
+ *    Medium = warning amber, Low = info blue, Avoid = danger red."
+ * Previously hardcoded Reticle-derived sky-blue/gray/yellow/pink values
+ * that didn't bind to the spec'd accent system. Swapped 2026-05-17.
+ */
 const STYLES: Record<Tier, { fg: string; bg: string; border: string }> = {
-  High:   { fg: "#7DD3FC", bg: "rgba(125,211,252,.10)", border: "rgba(125,211,252,.30)" },
-  Medium: { fg: "#D6D6D6", bg: "rgba(214,214,214,.06)", border: "rgba(214,214,214,.22)" },
-  Low:    { fg: "#FACC15", bg: "rgba(250,204,21,.08)",  border: "rgba(250,204,21,.30)" },
-  Avoid:  { fg: "#FB7185", bg: "rgba(251,113,133,.10)", border: "rgba(251,113,133,.32)" },
+  High:   { fg: "var(--accent)",  bg: "var(--accent-soft)",  border: "var(--accent-border)" },
+  Medium: { fg: "var(--warning)", bg: "var(--warning-soft)", border: "rgba(221,168,90,.30)" },
+  Low:    { fg: "var(--info)",    bg: "var(--info-soft)",    border: "rgba(101,148,232,.30)" },
+  Avoid:  { fg: "var(--danger)",  bg: "var(--danger-soft)",  border: "rgba(224,120,120,.32)" },
 };
 
 export function TierBadge({ tier }: { tier: Tier | null }) {

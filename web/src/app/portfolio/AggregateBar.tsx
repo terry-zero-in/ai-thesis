@@ -25,14 +25,14 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
       <Kpi
         label="P&L"
         value={fmtUsd(snap.total_pl, true)}
-        valueColor={plPos ? "#34D399" : "#FB7185"}
+        valueColor={plPos ? "var(--success)" : "var(--danger)"}
         sub={`${plPos ? "+" : ""}${(snap.total_pl_pct * 100).toFixed(2)}%`}
       />
       <Kpi
         label="Reserve"
         value={fmtUsd(snap.reserve_actual)}
         sub={`target ${fmtUsd(snap.settings.target_reserve)}`}
-        valueColor={snap.reserve_actual >= snap.settings.target_reserve ? "var(--text-1)" : "#FB7185"}
+        valueColor={snap.reserve_actual >= snap.settings.target_reserve ? "var(--text-1)" : "var(--danger)"}
       />
     </div>
   );

@@ -151,7 +151,7 @@ export function DraftCard({ draft }: { draft: AiqDraftRow }) {
               <form action={promoteAction} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                 <input type="hidden" name="id" value={draft.id} />
                 {promoteState.message && !promoteState.ok && (
-                  <span style={{ fontSize: 11, color: "#FB7185" }}>{promoteState.message}</span>
+                  <span style={{ fontSize: 11, color: "var(--danger)" }}>{promoteState.message}</span>
                 )}
                 <button
                   type="submit"

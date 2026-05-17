@@ -20,7 +20,7 @@ export function DepFlagsList({ flags }: { flags: NameDepFlag[] }) {
         style={{
           fontSize: 10.5,
           fontFamily: "var(--m)",
-          color: "#FB7185",
+          color: "var(--danger)",
           letterSpacing: ".08em",
           textTransform: "uppercase",
           marginBottom: 8,
@@ -76,7 +76,7 @@ function Meta({ label, value, negative }: { label: string; value: string; negati
         style={{
           fontFamily: "var(--m)",
           fontSize: 12,
-          color: negative ? "#FB7185" : "var(--text-1)",
+          color: negative ? "var(--danger)" : "var(--text-1)",
           fontVariantNumeric: "tabular-nums",
         }}
       >
