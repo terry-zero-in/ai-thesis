@@ -46,7 +46,7 @@ Leave that.").
 | 4 | **Hero + supporting cells header (Pic 18 variant)** | Pic 18 b2 (Ops/Payroll) — `CleanShot 2026-05-16 at 18.23.25@2x.png` | `/portfolio` AggregateBar: Market Value as HeroNumber protagonist + 4-cell supporting strip below (Total Capital · Deployed · P&L · Reserve). | **Done** |
 | 5 | **Alert Summary callout** | Pic 11 b2 (Account Security Suggested actions) — `CleanShot 2026-05-16 at 17.52.27@2x.png` | `/dashboard` top AlertCallout component. Thin border, NO bg fill, header row with "N active alerts", two-col rows (notable left, hyperlinked action right with `›` glyph). Fires only when `macroGatesHit > 0`. Surfaces per-gauge threshold breaches with deep-links to `/regime`. | **Done** |
 | 6 | **Faint row dividers on tables** | Pic 7 b1 (Tasks) — `CleanShot 2026-05-16 at 16.41.02@2x.png` | `/dashboard` Score Movers table (`<table>` with `borderBottom: "1px solid var(--border-subtle)"` per row). `/portfolio` PositionsTable already had this pattern. | **Done** |
-| 7 | **Sticky scroll: page chrome hides, table header sticks** | Pic 5 b2 (Advisors) — `CleanShot 2026-05-16 at 17.41.15@2x.png` | `/universe` table — NOT YET APPLIED. Would require sticky-positioning + scroll-listener on the table header. | **Pending** (Task #8 / Task #9) |
+| 7 | **Sticky scroll: page chrome hides, table header sticks** | Pic 5 b2 (Advisors) — `CleanShot 2026-05-16 at 17.41.15@2x.png` | `/universe` table — applied S5. Canvas owns the scroll context (`overflow: auto` on the page-level flex container); UniverseTable wrapper hands scroll back; existing `position: sticky; top: 0` on thead now sticks to viewport top. No scroll-listener needed. | **Done** |
 | 8 | **Sidebar sub-items with left bar** | Pic 14 b2 (Invoicing) — `CleanShot 2026-05-16 at 18.15.00@2x.png` | Speculative — `/portfolio` sub-screens (positions / reserve / triggers / history) OR a future `/insights` surface. NOT YET APPLIED. | **Deferred** — needs nav restructure |
 | 9 | **3-sub-tab + date scrubber + side-by-side cards with internal tabs** | Pics 1-6 b3 (Insights) | Future `/history` or `/memos` surface. NOT YET APPLIED. | **Deferred** — no current surface needs it |
 | 10 | **3-dot menu (Settings / Manage X)** | Pic 7-8 b3 | Future `/settings` enhancement. NOT YET APPLIED. | **Deferred** |
@@ -104,7 +104,6 @@ or there were trade-offs:
 
 Per the §2a status column. Specifically still pending:
 
-- **Pattern #7** — sticky scroll on /universe table (Task #8 territory; Pic 5 b2)
 - **Patterns #8-12** — deferred until corresponding surfaces exist or are
   prioritized. Don't pre-build infrastructure for them.
 

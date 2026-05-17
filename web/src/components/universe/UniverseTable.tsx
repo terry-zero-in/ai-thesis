@@ -68,10 +68,11 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
   };
 
   return (
+    // Mercury #7 — scroll context lives on the parent canvas, not here.
+    // thead sticks to the canvas-scroll viewport top, so the page header
+    // (UniverseHeader) slides away as the table scrolls into focus.
     <div
       style={{
-        flex: 1,
-        overflow: "auto",
         background: "var(--canvas)",
       }}
     >
