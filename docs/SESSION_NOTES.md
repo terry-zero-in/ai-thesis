@@ -1,4 +1,42 @@
-# Session Notes — last updated 2026-05-17 (session 8 — verification + THS-48)
+# Session Notes — last updated 2026-05-17 (session 9 — settings + README)
+
+## SESSION 9 — autonomous polish (2026-05-17, post-compact)
+
+Picked up after session-8 compact with Terry's directive: *"Run autonomously until you need my input on anything or come across mission critical decisions."* Lower-value polish items that didn't need continuous context. No new spec discoveries; no questions for Terry.
+
+**Branch state**: `claude/epic-4-portal-ui` advanced 1 commit — `0acf744 → 31e93a8`. 335 tests pass (unchanged). Web typecheck clean.
+
+**`31e93a8` /settings real implementation + README refresh.**
+
+Replaced the last `PageStub` (`/settings`) with a real operator surface:
+- **Account** — surfaces signed-in email via `getSupabaseServer().auth.getUser()` (same pattern as layout).
+- **Pipeline freshness** — 11 probes against the data tables that drive every UI surface (fundamentals/consensus/prices/macro/options/insider/short-interest/composite/concentration/memos/aiq_drafts). Each probe queries `MAX(timestamp_col)` and computes hours since latest. Status color: green if < SLA, amber if stale, rose if no data. Per-table SLAs match cadence — 30h for daily, 200h for weekly Saturday chain, 400h for bimonthly short interest, 720h for manual AIQ drafts.
+- **Cron registry** — hand-maintained list of 17 cron jobs mirroring `supabase/migrations/*_cron.sql`. Cron job table (`cron.job`) is not queryable from the anon role under RLS, so we keep a static registry. Doc note in the page reminds the next session to keep it in sync if a new cron migration lands.
+- **Theme** — pointer to topbar swatch (no UI duplicated; localStorage palette persists from there).
+
+Files:
+- `web/src/lib/settings-data.ts` (new) — `getSettingsSnapshot()` with fixture-mode fallback; `CRON_REGISTRY` constant + `PROBES` array; column names verified against actual migration schemas (`prices_raw.date`, `insider_form4_raw.filing_date`, `short_interest_raw.settlement_date`, `fundamentals_raw.ingested_at`, others as `as_of`).
+- `web/src/app/settings/page.tsx` — server component, ISR 300s (5-min refresh keeps freshness display useful without DB hammer).
+- `web/src/components/shell/Sidebar.tsx` — Terry Turner avatar block now wraps in a Link to `/settings` with a Tip. Discovery: prior to this, /settings was only reachable from Cmd Palette; settings convention in nearby tools (Linear, Slack) is the user-avatar.
+
+**README rewrite** — replaced session-1-era README with current shipped state:
+- Epic 1-6 completion table (all ✅ except S in prod, which is a credential issue not a code issue).
+- Updated stack lines (Next.js 16, not 15).
+- 15-route surfaces table.
+- Quick-start with fixture-mode fallback explanation.
+- Cold-start guidance points at `docs/SESSION_NOTES.md` (was missing).
+- Removed stale "Epic 4 not yet started" + "`prototype/` is the visual reference" language.
+
+**Migration rollback audit** — verified every forward migration in `supabase/migrations/*.sql` has a matching `rollback/*_rollback.sql`. 49/49 clean.
+
+**Items deferred** (require Terry or external access):
+- PR #6 retitle (would need GitHub MCP auth; not appropriate to initiate without user consent).
+- Production cutover (Terry-only — API key provisioning, Vercel deploy, Epic-6 auth hardening).
+- Per-page visual fidelity polish vs Reticle/Basis Proforma references (needs browser).
+
+**Total session-9 footprint**: 1 commit, 474 insertions, 95 deletions, 1 new file (`web/src/lib/settings-data.ts`), 3 edited (README, settings page, sidebar). No engine changes, no schema changes, no test changes.
+
+---
 
 ## SESSION 8 — completed work (2026-05-17)
 
