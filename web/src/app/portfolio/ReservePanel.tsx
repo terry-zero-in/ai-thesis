@@ -11,10 +11,10 @@ export function ReservePanel({ snap }: { snap: PortfolioSnapshot }) {
   const onTarget = reserve_actual >= settings.target_reserve;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <section style={cardStyle()}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <section style={sectionStyle()}>
         <Header label="Reserve" />
-        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ padding: "12px 0 0", display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <span
               style={{
@@ -63,7 +63,7 @@ export function ReservePanel({ snap }: { snap: PortfolioSnapshot }) {
         </div>
       </section>
 
-      <section style={cardStyle()}>
+      <section style={sectionStyle()}>
         <Header label="Triggers" />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <TriggerRow
@@ -76,6 +76,7 @@ export function ReservePanel({ snap }: { snap: PortfolioSnapshot }) {
                     .map((t) => `${t.ticker} ${(t.pct_drawdown * 100).toFixed(1)}%`)
                     .join(" · ")
             }
+            isFirst
           />
           {market_triggers.map((t) => (
             <MarketTriggerRow key={t.kind} t={t} />
@@ -95,17 +96,23 @@ function TriggerRow({
   label,
   fired,
   detail,
+  isFirst = false,
 }: {
   label: string;
   fired: boolean;
   detail: string;
+  isFirst?: boolean;
 }) {
   return (
     <div
       style={{
-        padding: "10px 14px",
-        borderTop: "1px solid var(--border-subtle)",
-        background: fired ? "rgba(251,113,133,.05)" : undefined,
+        padding: "12px 0",
+        borderTop: isFirst ? undefined : "1px solid var(--border-subtle)",
+        background: fired ? "var(--danger-soft)" : undefined,
+        marginLeft: fired ? -8 : 0,
+        marginRight: fired ? -8 : 0,
+        paddingLeft: fired ? 8 : 0,
+        paddingRight: fired ? 8 : 0,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -139,15 +146,16 @@ function TriggerRow({
 }
 
 function Header({ label }: { label: string }) {
+  // Mercury decard: section label with hairline below, content flows on canvas.
   return (
     <div
       style={{
-        padding: "11px 14px",
-        fontSize: 11,
+        paddingBottom: 10,
+        fontSize: 10.5,
         fontFamily: "var(--m)",
         fontWeight: 500,
         color: "var(--text-3)",
-        letterSpacing: ".06em",
+        letterSpacing: ".08em",
         textTransform: "uppercase",
         borderBottom: "1px solid var(--border-subtle)",
       }}
@@ -157,12 +165,10 @@ function Header({ label }: { label: string }) {
   );
 }
 
-function cardStyle(): React.CSSProperties {
+function sectionStyle(): React.CSSProperties {
   return {
-    background: "var(--surface)",
-    border: "1px solid var(--border)",
-    borderRadius: 6,
-    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
   };
 }
 

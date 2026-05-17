@@ -54,10 +54,10 @@ export default async function PortfolioPage() {
         style={{
           flex: 1,
           overflow: "auto",
-          padding: "20px 28px 32px",
+          padding: "24px 32px 40px",
           display: "flex",
           flexDirection: "column",
-          gap: 18,
+          gap: 32,
         }}
       >
         <AggregateBar snap={snap} />
@@ -66,7 +66,7 @@ export default async function PortfolioPage() {
           style={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1fr) 300px",
-            gap: 18,
+            gap: 32,
             alignItems: "start",
           }}
         >
@@ -74,18 +74,10 @@ export default async function PortfolioPage() {
             <PositionsTable positions={snap.positions} totalDeployed={snap.total_deployed} />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 0 }}>
             <ReservePanel snap={snap} />
-            <section
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 6,
-                padding: 14,
-              }}
-            >
-              <AddPositionForm choices={choices} envConfigured={snap.envConfigured} takenTickers={taken} />
-            </section>
+            {/* AddPositionForm provides its own header (toggles Add/Update). */}
+            <AddPositionForm choices={choices} envConfigured={snap.envConfigured} takenTickers={taken} />
           </div>
         </div>
       </div>

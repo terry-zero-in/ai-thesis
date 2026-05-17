@@ -23,12 +23,12 @@ export function PositionsTable({
     return (
       <div
         style={{
-          padding: "24px",
+          padding: "28px 8px",
           fontSize: 13,
           color: "var(--text-3)",
           textAlign: "center",
-          border: "1px dashed var(--border)",
-          borderRadius: 6,
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
         }}
       >
         No open positions yet. Add the first one using the form on the right.
@@ -36,15 +36,10 @@ export function PositionsTable({
     );
   }
 
+  // Mercury decard: table sits on canvas with top + bottom hairlines, row
+  // separators only. No outer card chrome.
   return (
-    <div
-      style={{
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        background: "var(--surface)",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
         <thead>
           <tr>
@@ -97,9 +92,9 @@ function PositionRowView({
       style={{
         borderTop: "1px solid var(--border-subtle)",
         background: highlight
-          ? "rgba(34,211,238,.06)"
+          ? "var(--accent-soft)"
           : drawdownTriggered
-            ? "rgba(251,113,133,.04)"
+            ? "var(--danger-soft)"
             : undefined,
       }}
     >
@@ -204,7 +199,6 @@ function Th({
         textTransform: "uppercase",
         letterSpacing: ".06em",
         borderBottom: "1px solid var(--border-subtle)",
-        background: "rgba(255,255,255,.015)",
         ...style,
       }}
     >

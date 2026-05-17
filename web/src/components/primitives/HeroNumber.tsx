@@ -21,6 +21,8 @@ interface Delta {
 
 interface HeroNumberProps {
   value: number | null;
+  /** Prefix glued to value: "$", "€", "". Useful for currency hero (/portfolio Market Value). */
+  prefix?: string;
   /** Suffix glued to value: "%", "×", "x", "". */
   unit?: string;
   /** Decimal places. Default 1. Pass 0 for integers, 2 for currency-like. */
@@ -62,6 +64,7 @@ const SIZE_PX: Record<NonNullable<HeroNumberProps["size"]>, number> = {
 
 export function HeroNumber({
   value,
+  prefix = "",
   unit = "",
   precision = 1,
   delta = null,
@@ -71,7 +74,14 @@ export function HeroNumber({
   size = "lg",
   valueColor = "var(--text-1)",
 }: HeroNumberProps) {
-  const valueStr = value == null ? "—" : value.toFixed(precision);
+  // For currency hero (prefix "$") use locale thousands separators.
+  const formatted =
+    value == null
+      ? "—"
+      : prefix === "$" || prefix === "€"
+        ? value.toLocaleString("en-US", { maximumFractionDigits: precision, minimumFractionDigits: precision })
+        : value.toFixed(precision);
+  const valueStr = value == null ? "—" : `${prefix}${formatted}`;
   const deltaSign = delta == null ? null : delta.value > 0 ? "↑" : delta.value < 0 ? "↓" : "·";
   const deltaColor =
     delta == null ? "var(--text-3)" : delta.value > 0 ? "var(--success)" : delta.value < 0 ? "var(--danger)" : "var(--text-3)";
