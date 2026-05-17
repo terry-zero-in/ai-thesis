@@ -112,13 +112,20 @@ export default async function AiqEditorPage({ params }: { params: Promise<Params
           overflow: "auto",
           padding: "20px 28px 32px",
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 320px",
+          // Spec §5.6 grid: editor + 320px HISTORY column. When env-unconfigured
+          // AND history is empty, the HISTORY column shows a single "Connect
+          // Supabase" line and otherwise wastes 320px — collapse to single-col
+          // and let the prior-versions rail surface the same content when it
+          // actually exists. Lambo-review §2.7 #5 (Terry confirmed 2026-05-17).
+          gridTemplateColumns: ctx.history.length === 0 ? "minmax(0, 1fr)" : "minmax(0, 1fr) 320px",
           gap: 20,
           alignItems: "start",
         }}
       >
         <AiqEditor ticker={ctx.seed.ticker} latest={ctx.latest} envConfigured={ctx.envConfigured} />
-        <AiqHistory history={ctx.history} envConfigured={ctx.envConfigured} />
+        {ctx.history.length > 0 && (
+          <AiqHistory history={ctx.history} envConfigured={ctx.envConfigured} />
+        )}
       </div>
     </div>
   );
