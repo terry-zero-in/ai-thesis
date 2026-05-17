@@ -30,6 +30,10 @@ import { AiqHistoryRail, type AiqHistoryRailData } from "@/components/rails/AiqH
  */
 export function CtxPanel() {
   const { rail, payload } = useCtxPanel();
+  // Spec §6: pages without rail content (rail==="none", set by <NoRail/>)
+  // hide the entire aside so the canvas claims the full width. Lambo-review
+  // §2.6 #4 — Terry confirmed 2026-05-17.
+  if (rail === "none") return null;
   return (
     <aside
       style={{
