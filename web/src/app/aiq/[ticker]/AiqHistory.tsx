@@ -58,9 +58,9 @@ function HistoryRow({
   return (
     <div
       style={{
-        padding: "10px 14px",
+        padding: "12px 18px",
         borderBottom: "1px solid var(--border-subtle)",
-        background: latest ? "rgba(34,211,238,.04)" : undefined,
+        background: latest ? "var(--accent-soft)" : undefined,
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -107,8 +107,8 @@ function HistoryRow({
                   fontSize: 10,
                   fontFamily: "var(--m)",
                   color: dlt > 0 ? "var(--success)" : "var(--danger)",
-                  background: dlt > 0 ? "rgba(52,211,153,.06)" : "rgba(251,113,133,.06)",
-                  border: `1px solid ${dlt > 0 ? "rgba(52,211,153,.25)" : "rgba(251,113,133,.25)"}`,
+                  background: dlt > 0 ? "var(--success-soft)" : "var(--danger-soft)",
+                  border: `1px solid ${dlt > 0 ? "rgba(91,184,128,.30)" : "rgba(224,120,120,.30)"}`,
                   padding: "1px 5px",
                   borderRadius: 3,
                 }}
@@ -155,12 +155,12 @@ function Header({ label }: { label: string }) {
   return (
     <div
       style={{
-        padding: "12px 14px",
-        fontSize: 11,
+        padding: "14px 18px 12px",
+        fontSize: 10.5,
         fontFamily: "var(--m)",
         fontWeight: 500,
         color: "var(--text-3)",
-        letterSpacing: ".06em",
+        letterSpacing: ".08em",
         textTransform: "uppercase",
         borderBottom: "1px solid var(--border-subtle)",
       }}
@@ -178,13 +178,14 @@ function Empty({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Mercury decard: aside flows on canvas with top + bottom hairlines; no
+// outer card. History rows below the header keep their own hairline rule.
 const asideStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   height: "100%",
   maxHeight: "calc(100vh - 200px)",
-  background: "var(--surface)",
-  border: "1px solid var(--border)",
-  borderRadius: 6,
+  borderTop: "1px solid var(--border-subtle)",
+  borderBottom: "1px solid var(--border-subtle)",
   overflow: "hidden",
 };

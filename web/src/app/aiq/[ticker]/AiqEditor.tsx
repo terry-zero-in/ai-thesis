@@ -31,17 +31,17 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        gap: 0,
       }}
     >
       <input type="hidden" name="ticker" value={ticker} />
 
+      {/* Mercury decard: hero sits on canvas, framed by top + bottom hairlines. */}
       <div
         style={{
-          padding: "14px 18px",
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
+          padding: "18px 22px",
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
         }}
       >
         <HeroNumber
@@ -78,7 +78,8 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
         placeholder="Cross-cutting rationale — what changed since the last scoring, key risks to revisit, etc."
       />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {/* Submit row sits on canvas with breathing room above. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px 0" }}>
         <button
           type="submit"
           disabled={pending || !envConfigured}
@@ -156,15 +157,14 @@ function DimRow({
 }) {
   const pct = Math.max(0, Math.min(100, (value / cap) * 100));
   return (
+    // Mercury decard: row sits on canvas with bottom hairline separating rows.
     <div
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        padding: "10px 14px",
+        padding: "14px 22px",
+        borderBottom: "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        gap: 10,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -245,15 +245,14 @@ function Field({
   multiline?: boolean;
 }) {
   return (
+    // Mercury decard: Field row on canvas with bottom hairline.
     <div
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        padding: "10px 14px",
+        padding: "14px 22px",
+        borderBottom: "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: 8,
       }}
     >
       <span
