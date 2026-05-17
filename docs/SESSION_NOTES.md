@@ -48,7 +48,21 @@ Other findings — all already documented or justified:
 
 Everything else checked cleanly: layer weights, macro gate thresholds + multiplier, composite tier cutoffs, insider cluster constants, momentum sub-weights, S-score weights, dep penalties, concentration tax cap at −15, V-score maintenance capex at 50% mid default.
 
-**Branch state**: `claude/epic-4-portal-ui` advanced 4 commits this session — `22a4ba4 → 3d15054`. 327 tests pass. Web typecheck clean.
+**Branch state**: `claude/epic-4-portal-ui` advanced 9 commits this session — `22a4ba4 → e6910a7`. 335 tests pass (was 327). Web typecheck clean.
+
+**Session 8 second-half additions** (after the spec-drift batch):
+
+- **`c412170` spec line 119 sentiment cap.** Real drift found by the reconciliation audit: spec says "bottom-quartile Q + top-quartile S → max final 55." Not implemented. Shipped with Terry's three judgment calls — post-everything clamp, whole-universe quartile reference, percentile-at-score-time. No-op until S goes live (Epic 5) because sTopQuartile=false whenever S is null. +8 tests cover the fire case, three no-op cases, ceiling-not-floor semantics, post-multiplier ordering, percentile boundary math, null-S resilience, and small-universe (< 4) safety. New `computeSentimentCapFlags()` helper. New `CompositeResult.sentimentCapApplied` field. New `sentiment_cap_hits` in compute-composite-scores response. New `sentiment_cap_applied` in `scores_history.factor_breakdown`.
+
+- **`4ce322d` /backtest UI.** `run-backtest` persists to `backtest_runs` with no read surface — found by the completion audit. Built page + RunRow with summary stats inline, 200×28 cumulative-return SVG sparkline, expandable per-month return + turnover grid. Wired into sidebar nav with `I.refresh` icon. ISR 30min, fixture fallback with 2 sample runs × 36 months. 
+
+- **`82ed8d3` Dashboard /.** Replaced flagship PageStub. Six sections in 2-col grid: tier distribution (4 cells wide, current + Δ vs prior week), macro gate (multiplier + plain-English explainer), pipeline freshness, top winners, top losers, tier crossings (wide). Wholly derived from `getLatestUniverseScores()` — no new DB query. Prior-tier reconstructed from prior_composite via spec cutpoints (75/60/45/0).
+
+- **`e6910a7` /aiq index.** Replaced editor-stub. Universe-wide rubric table with totals + per-dim cells, sorted by total desc (un-scored names red-accented at bottom). Each ticker links to `/aiq/<ticker>` editor; header has "Drafts queue ↗" jump to `/aiq-drafts`. New `getAiqIndex()` loader joining universe + latest rubric per ticker.
+
+**UI surface delta**: 12 → 15 real pages. Only remaining PageStub is `/settings` (intentionally minimal for v1).
+
+**Completion estimate after this session**: ~83-85% on buildable surface. Remaining ~15-17% is production deploy / API keys / Vercel cutover (Terry-only), per-page visual fidelity polish vs Reticle/Basis Proforma references (needs browser), and Epic-6 auth hardening for production. Engine + UI + data pipelines are functionally complete.
 
 **One open question for Terry** (batched per the autonomous-by-default contract):
 
