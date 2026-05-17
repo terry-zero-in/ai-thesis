@@ -71,6 +71,19 @@ export default async function AiqEditorPage({ params }: { params: Promise<Params
               <LayerChip layer={ctx.seed.layer} label={ctx.seed.layer_label} />
             </span>
           </div>
+          {/* spec §5.6 meta line — "Last scored {date} · {total}/100" */}
+          {ctx.latest ? (
+            <div style={{ fontSize: 12, color: "var(--text-2)", fontFamily: "var(--m)", fontVariantNumeric: "tabular-nums" }}>
+              Last scored <span style={{ color: "var(--text-1)" }}>{ctx.latest.scored_at}</span>
+              <span style={{ color: "var(--text-3)" }}> · </span>
+              <span style={{ color: "var(--text-1)" }}>{ctx.latest.total}</span>
+              <span style={{ color: "var(--text-3)" }}>/100</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "var(--text-3)", fontStyle: "italic" }}>
+              Not yet scored
+            </div>
+          )}
           <div style={{ fontSize: 11, color: "var(--text-3)" }}>
             AIQ rubric editor — six dimensions, 0…20 / 0…15. Save creates a new versioned row (UPSERT on same day).
           </div>
