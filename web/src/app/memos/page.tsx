@@ -1,5 +1,6 @@
 import { getMemosSnapshot } from "@/lib/memos-data";
 import { MemoCard } from "./MemoCard";
+import { NoRail } from "@/components/shell/NoRail";
 
 /**
  * Revalidate hourly. Daily memo lands at 13:00 UTC; weekly memo at
@@ -13,6 +14,7 @@ export default async function MemosPage() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <NoRail />
       <header
         style={{
           padding: "18px 28px 14px",

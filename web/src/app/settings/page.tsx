@@ -1,5 +1,6 @@
 import { getSettingsSnapshot, type CronJob, type FreshnessRow } from "@/lib/settings-data";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { NoRail } from "@/components/shell/NoRail";
 
 /**
  * Read-only operator settings. Refreshes every 5 min — pipeline freshness
@@ -16,6 +17,7 @@ export default async function SettingsPage() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <NoRail />
       <header
         style={{
           padding: "18px 28px 14px",

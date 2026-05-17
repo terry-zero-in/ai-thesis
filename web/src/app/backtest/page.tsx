@@ -1,5 +1,6 @@
 import { getBacktestSnapshot } from "@/lib/backtest-data";
 import { RunRow } from "./RunRow";
+import { NoRail } from "@/components/shell/NoRail";
 
 /**
  * Revalidate every 30 min. Backtest runs are operator-invoked
@@ -13,6 +14,7 @@ export default async function BacktestPage() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <NoRail />
       <header
         style={{
           padding: "18px 28px 14px",

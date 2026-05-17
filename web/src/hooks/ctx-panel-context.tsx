@@ -5,6 +5,9 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 /**
  * CtxPanel rail keys.
  *
+ * - `none` declares "this page has no contextual rail content per spec §6";
+ *   CtxPanel is hidden entirely and main canvas extends to the right edge.
+ *   Use for /settings, /memos, /decisions, /backtest, /aiq, /aiq-drafts.
  * - `filter` is a generic open-the-filter-panel signal (legacy from Reticle's
  *   /routines); kept so the toggle helper still compiles.
  * - `universe-filter` is the AI Thesis universe-table filter rail (THS-52).
@@ -14,7 +17,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  * Pages set their rail on mount (effect) — there is no central registry; each
  * surface knows its own key.
  */
-export type CtxRailKey = "agent" | "todo" | "capture" | "log" | "notes" | "filter" | "universe-filter";
+export type CtxRailKey = "none" | "agent" | "todo" | "capture" | "log" | "notes" | "filter" | "universe-filter";
 
 interface CtxPanelCtx {
   rail: CtxRailKey;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAiqIndex } from "@/lib/aiq-data";
+import { NoRail } from "@/components/shell/NoRail";
 
 /**
  * Revalidate every 30 min. AIQ rubric changes are operator-edited
@@ -27,6 +28,7 @@ export default async function AiqIndexPage() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <NoRail />
       <header
         style={{
           padding: "18px 28px 14px",

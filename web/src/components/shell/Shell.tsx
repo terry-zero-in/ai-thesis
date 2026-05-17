@@ -56,7 +56,7 @@ function ShellInner({
   const [col, setCol] = useState(false);
   const [cmd, setCmd] = useState(false);
   const [shortcuts, setShortcuts] = useState(false);
-  const { open: panel, setOpen: setPanelOpen } = useCtxPanel();
+  const { open: panel, setOpen: setPanelOpen, rail } = useCtxPanel();
 
   const closeChromeOverlays = useCallback(() => {
     setCmd(false);
@@ -109,7 +109,7 @@ function ShellInner({
           {children}
         </div>
       </div>
-      {panel && <CtxPanel />}
+      {panel && rail !== "none" && <CtxPanel />}
 
       <CmdPalette open={cmd} onClose={() => setCmd(false)} />
       <ShortcutsOverlay open={shortcuts} onClose={() => setShortcuts(false)} />

@@ -1,6 +1,7 @@
 import { getAlertsSnapshot } from "@/lib/alerts-data";
 import { AlertRow } from "./AlertRow";
 import { ALERT_KIND_LABELS } from "@/lib/alerts-types";
+import { NoRail } from "@/components/shell/NoRail";
 
 /**
  * Revalidate every 10 minutes so newly-derived alerts (from
@@ -18,6 +19,7 @@ export default async function DecisionsPage() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <NoRail />
       <header
         style={{
           padding: "18px 28px 14px",
