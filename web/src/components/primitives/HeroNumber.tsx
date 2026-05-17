@@ -44,6 +44,14 @@ interface HeroNumberProps {
    * /regime 0.95× uses xl; /universe/[ticker] Composite uses lg per spec §5.3.
    */
   size?: "lg" | "xl" | "xxl";
+  /**
+   * Optional color override for the value glyphs. Defaults to --text-1.
+   * Use for severity-encoded heroes per /lambo "severity colors only at
+   * severity moments" — e.g., /regime multiplier colors --warning when one
+   * gate hit and --danger when two+ hit. The delta keeps its own success /
+   * danger coloring independently.
+   */
+  valueColor?: string;
 }
 
 const SIZE_PX: Record<NonNullable<HeroNumberProps["size"]>, number> = {
@@ -61,6 +69,7 @@ export function HeroNumber({
   derivation,
   attribution,
   size = "lg",
+  valueColor = "var(--text-1)",
 }: HeroNumberProps) {
   const valueStr = value == null ? "—" : value.toFixed(precision);
   const deltaSign = delta == null ? null : delta.value > 0 ? "↑" : delta.value < 0 ? "↓" : "·";
@@ -96,7 +105,7 @@ export function HeroNumber({
             fontFamily: "var(--m)",
             fontSize: SIZE_PX[size],
             fontWeight: 600,
-            color: "var(--text-1)",
+            color: valueColor,
             fontVariantNumeric: "tabular-nums",
             lineHeight: 1,
             letterSpacing: "-.018em",
