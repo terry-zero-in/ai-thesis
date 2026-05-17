@@ -164,50 +164,56 @@ export function Sidebar({
           <SbItem key={it.id} {...it} active={isActive(it.id)} col={col} />
         ))}
       </nav>
-      <div
-        style={{
-          padding: col ? "12px 6px" : "12px 12px",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          justifyContent: col ? "center" : "flex-start",
-        }}
-      >
-        <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              background: "var(--accent)",
-              color: "var(--on-accent)",
-              fontSize: 11,
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            T
+      <Tip label="Settings — cron registry, pipeline freshness, theme" side="right">
+        <Link
+          href="/settings"
+          style={{
+            padding: col ? "12px 6px" : "12px 12px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            justifyContent: col ? "center" : "flex-start",
+            textDecoration: "none",
+            color: "inherit",
+            cursor: "pointer",
+          }}
+        >
+          <div style={{ position: "relative", width: 28, height: 28, flexShrink: 0 }}>
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "var(--accent)",
+                color: "var(--on-accent)",
+                fontSize: 11,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              T
+            </div>
+            <span
+              aria-hidden
+              title="online"
+              style={{
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "var(--success)",
+                boxShadow: "0 0 0 1.5px var(--sidebar)",
+                animation: "onlinePulse 2.4s var(--ease) infinite",
+              }}
+            />
           </div>
-          <span
-            aria-hidden
-            title="online"
-            style={{
-              position: "absolute",
-              right: 0,
-              bottom: 0,
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "var(--success)",
-              boxShadow: "0 0 0 1.5px var(--sidebar)",
-              animation: "onlinePulse 2.4s var(--ease) infinite",
-            }}
-          />
-        </div>
-        {!col && <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}>Terry Turner</span>}
-      </div>
+          {!col && <span style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}>Terry Turner</span>}
+        </Link>
+      </Tip>
     </aside>
   );
 }
