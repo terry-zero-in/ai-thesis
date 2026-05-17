@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAlertsSnapshot } from "@/lib/alerts-data";
 import { AlertRow } from "./AlertRow";
+import { BulkAckButton } from "./BulkAckButton";
 import { ALERT_KIND_LABELS, type AlertKind } from "@/lib/alerts-types";
 import { NoRail } from "@/components/shell/NoRail";
 
@@ -31,6 +32,10 @@ export default async function DecisionsPage({
   for (const e of snap.events) byKind[e.kind] = (byKind[e.kind] ?? 0) + 1;
 
   const visibleEvents = activeKind == null ? snap.events : snap.events.filter((e) => e.kind === activeKind);
+  // Review §2.10 #5 — bulk-ack covers unseen events in the CURRENT view
+  // (respects the active kind filter, so "Mark 4 read" only acks the
+  // tier_change set when filtering to that kind).
+  const unseenKeysInView = visibleEvents.filter((e) => !e.acked_at).map((e) => e.key);
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -98,6 +103,10 @@ export default async function DecisionsPage({
           </span>
         )}
         <div style={{ flex: 1 }} />
+        <BulkAckButton
+          keys={unseenKeysInView}
+          label={activeKind ? `Mark ${unseenKeysInView.length} read` : `Mark all read`}
+        />
         {snap.synthetic && (
           <span
             style={{

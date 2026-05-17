@@ -45,3 +45,47 @@ export async function ackAlert(_prev: AckState, formData: FormData): Promise<Ack
   revalidatePath("/", "layout");
   return { ok: true, message: "Acknowledged.", key };
 }
+
+/**
+ * Bulk-acknowledge multiple alert keys in one upsert. Used by the
+ * "Mark all read" button at the top of /decisions to clear the unseen
+ * inventory (optionally scoped to a kind filter via the page param).
+ * Server action — keys passed as JSON in a hidden FormData field.
+ *
+ * Review §2.10 #5.
+ */
+export interface BulkAckState {
+  ok: boolean;
+  message: string;
+  count: number;
+}
+
+export const BULK_ACK_INITIAL: BulkAckState = { ok: false, message: "", count: 0 };
+
+export async function ackAlerts(_prev: BulkAckState, formData: FormData): Promise<BulkAckState> {
+  const raw = String(formData.get("keys") ?? "");
+  let keys: string[];
+  try {
+    keys = JSON.parse(raw);
+    if (!Array.isArray(keys) || keys.some((k) => typeof k !== "string")) throw new Error();
+  } catch {
+    return { ok: false, message: "Invalid keys payload.", count: 0 };
+  }
+  if (keys.length === 0) return { ok: true, message: "Nothing to acknowledge.", count: 0 };
+
+  const sb = await getSupabaseServer();
+  if (!sb) {
+    return {
+      ok: false,
+      message: "Supabase env not configured — bulk acks disabled in dev fixture mode.",
+      count: 0,
+    };
+  }
+
+  const rows = keys.map((k) => ({ alert_key: k, acked_note: null }));
+  const { error } = await sb.from("alert_acks").upsert(rows, { onConflict: "alert_key" });
+  if (error) return { ok: false, message: `Bulk ack failed: ${error.message}`, count: 0 };
+  revalidatePath("/decisions");
+  revalidatePath("/", "layout");
+  return { ok: true, message: `Acknowledged ${keys.length}.`, count: keys.length };
+}
