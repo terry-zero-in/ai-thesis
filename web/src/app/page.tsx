@@ -1,5 +1,9 @@
 import { Fragment } from "react";
 import { getDashboardSnapshot, type DashboardMover } from "@/lib/dashboard-data";
+import { getPortfolioSnapshot } from "@/lib/portfolio-data";
+import { getRegimeSnapshot } from "@/lib/regime-data";
+import { GAUGES, type GaugeKey } from "@/lib/regime-types";
+import { GaugeCard } from "@/app/regime/GaugeCard";
 
 /**
  * Revalidate every 30 min. Scores update on the Saturday chain;
@@ -20,7 +24,12 @@ const TIER_COLORS: Record<string, string> = {
 const SCORE_MOVERS_LIMIT = 8;
 
 export default async function DashboardPage() {
-  const snap = await getDashboardSnapshot();
+  // Parallel fetch — three independent server queries.
+  const [snap, portfolio, regime] = await Promise.all([
+    getDashboardSnapshot(),
+    getPortfolioSnapshot(),
+    getRegimeSnapshot(),
+  ]);
   const { greeting, dateLabel } = currentGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
   const movers = unifyMovers(snap.topWinners, snap.topLosers);
@@ -43,6 +52,10 @@ export default async function DashboardPage() {
           highCurrent={highTier?.current ?? 0}
           highPrior={highTier?.prior ?? 0}
           universeSize={snap.universeSize}
+          portfolioValue={portfolio.total_market_value}
+          portfolioPl={portfolio.total_pl}
+          portfolioPlPct={portfolio.total_pl_pct}
+          portfolioEmpty={portfolio.empty}
         />
 
         <Section label="Score movers · last 7 days">
@@ -61,7 +74,7 @@ export default async function DashboardPage() {
             </span>
           }
         >
-          <GaugeRowStub />
+          <GaugeRow regime={regime} />
         </Section>
       </div>
     </div>
@@ -129,12 +142,24 @@ function KpiRow({
   highCurrent,
   highPrior,
   universeSize,
+  portfolioValue,
+  portfolioPl,
+  portfolioPlPct,
+  portfolioEmpty,
 }: {
   highCurrent: number;
   highPrior: number;
   universeSize: number;
+  portfolioValue: number;
+  portfolioPl: number;
+  portfolioPlPct: number;
+  portfolioEmpty: boolean;
 }) {
   const highDelta = highCurrent - highPrior;
+  const highDeltaLabel =
+    highDelta === 0 ? "no change wk/wk" : `${highDelta > 0 ? "+" : ""}${highDelta} wk/wk`;
+  const plPos = portfolioPl >= 0;
+  const plPctLabel = `${plPos ? "+" : ""}${(portfolioPlPct * 100).toFixed(2)}%`;
   return (
     <div
       style={{
@@ -147,17 +172,39 @@ function KpiRow({
         overflow: "hidden",
       }}
     >
-      <KpiCell label="Portfolio" value="—" sub="portfolio adapter pending" muted />
-      <KpiCell label="Day P&L" value="—" sub="portfolio adapter pending" muted />
-      <KpiCell label="30D return" value="—" sub="portfolio adapter pending" muted />
+      <KpiCell
+        label="Portfolio"
+        value={portfolioEmpty ? "—" : fmtUsd(portfolioValue)}
+        sub={portfolioEmpty ? "no positions yet · open /portfolio to add" : "market value"}
+        muted={portfolioEmpty}
+      />
+      <KpiCell
+        label="P&L"
+        value={portfolioEmpty ? "—" : fmtUsd(portfolioPl, true)}
+        sub={portfolioEmpty ? "no positions yet" : `${plPctLabel} since open`}
+        valueColor={portfolioEmpty ? undefined : plPos ? "var(--success)" : "var(--danger)"}
+        muted={portfolioEmpty}
+      />
+      <KpiCell
+        label="30D return"
+        value="—"
+        sub="ingest daily P&L history to enable"
+        muted
+      />
       <KpiCell
         label="High-tier names"
         value={`${highCurrent}`}
-        sub={`${highCurrent}/${universeSize} · ${highDelta > 0 ? "+" : highDelta < 0 ? "" : "·"}${highDelta !== 0 ? highDelta : ""} wk/wk`.trim()}
+        sub={`${highCurrent}/${universeSize} · ${highDeltaLabel}`}
         valueColor="var(--text-1)"
       />
     </div>
   );
+}
+
+function fmtUsd(n: number, signed = false): string {
+  const sign = n < 0 ? "-" : signed && n > 0 ? "+" : "";
+  const body = Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 });
+  return `${sign}$${body}`;
 }
 
 function KpiCell({
@@ -281,10 +328,9 @@ function MoverRow({ m }: { m: DashboardMover }) {
   );
 }
 
-/* ---------------- gauge row stub (real GaugeCard wire-up next commit) ---------------- */
+/* ---------------- real gauge row (reuses /regime GaugeCard) ---------------- */
 
-function GaugeRowStub() {
-  const labels = ["NAAIM exposure", "AAII bull−bear (3wk)", "CNN Fear & Greed"];
+function GaugeRow({ regime }: { regime: Awaited<ReturnType<typeof getRegimeSnapshot>> }) {
   return (
     <div
       style={{
@@ -293,34 +339,13 @@ function GaugeRowStub() {
         gap: 14,
       }}
     >
-      {labels.map((l) => (
-        <div
-          key={l}
-          style={{
-            border: "1px dashed var(--border)",
-            borderRadius: 6,
-            padding: "16px 14px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            background: "color-mix(in oklab, var(--surface-1) 60%, transparent)",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 10.5,
-              fontFamily: "var(--m)",
-              color: "var(--text-3)",
-              letterSpacing: ".08em",
-              textTransform: "uppercase",
-            }}
-          >
-            {l}
-          </span>
-          <span style={{ fontSize: 11, color: "var(--text-4)", fontFamily: "var(--m)" }}>
-            gauge wire-up pending · see /regime
-          </span>
-        </div>
+      {GAUGES.map((g) => (
+        <GaugeCard
+          key={g.key}
+          gauge={g.key as GaugeKey}
+          history={regime.history}
+          thresholdHistory={regime.threshold_history[g.key as GaugeKey]}
+        />
       ))}
     </div>
   );
