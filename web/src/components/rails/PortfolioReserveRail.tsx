@@ -12,6 +12,14 @@ import { RailHeader, RailSection, RailFooter } from "./RailChrome";
  * shows the reserve number + a single bar + trigger-pill list so an
  * operator can see "are we over-deployed / are any triggers fired" without
  * scrolling.
+ *
+ * Trigger count — spec amendment (Terry-confirmed 2026-05-17, lambo-review §2.4 #4):
+ * Spec §6 says "two pre-committed triggers" (Position drawdown >7%; SPY ≤ −5%
+ * / VIX >25 for 3+ days). Build decomposes the market condition into two
+ * separately-firing kinds (spy_daily_drop + vix_sustained) so an operator
+ * can see WHICH market signal tripped, yielding 1 position + 2 market = 3
+ * total. This is a refinement, not a deviation: union still matches spec
+ * intent; firing granularity is the upgrade.
  */
 export interface PortfolioReserveRailData {
   reserveActual: number;
