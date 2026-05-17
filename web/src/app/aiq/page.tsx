@@ -107,6 +107,15 @@ export default async function AiqIndexPage() {
             {rowsSorted.map((r) => (
               <tr
                 key={r.ticker}
+                // Review §2.6 #2 — surface row affordance: native title hint
+                // explains that the ticker / edit link opens the rubric. No
+                // localStorage first-hover gimmick; the dim row already
+                // signals "needs scoring."
+                title={
+                  r.total == null
+                    ? `${r.ticker} — not yet scored. Click to open the editor.`
+                    : `${r.ticker} — last scored ${r.scored_at ?? "—"} (${r.total}/100). Click to edit.`
+                }
                 style={{
                   borderTop: "1px solid var(--border-subtle)",
                   background: r.total == null ? "rgba(251, 113, 133, .03)" : undefined,
