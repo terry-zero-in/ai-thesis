@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { I } from "@/components/primitives/icons";
-import { CRUMBS, pathToScreen } from "@/lib/screens";
+import { pathToCrumb } from "@/lib/screens";
 import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { Tip } from "./Tip";
 
@@ -19,8 +19,7 @@ export function TopBar({
   userEmail?: string | null;
 }) {
   const pathname = usePathname();
-  const screen = pathToScreen(pathname);
-  const [root, crumb] = CRUMBS[screen] || ["", null];
+  const [root, crumb] = pathToCrumb(pathname);
   const { open: panelOpen, setOpen: setPanelOpen } = useCtxPanel();
   return (
     <header
