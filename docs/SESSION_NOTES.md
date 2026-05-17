@@ -1,4 +1,38 @@
-# Session Notes — last updated 2026-05-16 (PM session 7 — full burn-through + next-session directive)
+# Session Notes — last updated 2026-05-17 (session 8 — verification + THS-48)
+
+## SESSION 8 — completed work (2026-05-17)
+
+Picked up Terry's session-7 directive. Done so far:
+
+**Step 1 — verification of session 7's 11 commits.** All green:
+- `node --test --experimental-strip-types supabase/functions/_shared/*.test.ts` → 327 pass / 0 fail / 0 skip
+- `cd web && npx tsc --noEmit` → clean
+- Concentration tax arithmetic at `composite.ts:180-181` matches spec (additive-before-multiplier; TSM/NVDA worked examples reproduce within 0.5pt)
+- Schema interfaces all aligned: `options_raw.skew_25d` ↔ `loadSInputs`, `aiq_drafts.sources` writer ↔ web `AiqDraftSources` (6 keys), `concentration_history.tax` ↔ `computeComposite` signature
+- LLM JSON parsers (AIQ, weekly) tolerate ```json fences and persist parse_error rows
+
+**Step 2 — Terry's confirmed answers, applied:**
+
+- **Universe expansion**: no-op. All 26 names Terry listed (AMD, AMAT, KLAC, MRVL, ARM, SNPS, CDNS, DDOG, S, MDB, NET, ESTC, AI, ETR, NRG, TLN, NEE, AES, PWR, BE, EQIX, DLR, ADBE, WDAY, ZS, SAP) are **already** in the seed at `20260515000200_e13_seed_universe.sql`. Current universe count is 50 + `^VIX` from THS-69. AIQ-drafts pipeline doc already lists the 32 missing names for the batch loop — no extension needed.
+
+- **THS-48 dep-flag seed migration**: shipped at `20260517000000_e24_extend_depreciation_flags.sql`. Inserts 4 new rows dated 2026-05-17 (ORCL, MSFT, GOOGL, AMZN); supersedes the prior ORCL -7 row via the reader's "latest flagged_at per ticker" semantics. META unchanged (existing -12 capped row matches Terry's stated value).
+
+  Per Terry's verification rule I pulled each company's most recent 10-K via `sec.ts::fetchLatestFiling` and grepped for useful-life language. Found material discrepancies vs Terry's quoted magnitudes (META "to 5.5y" not "5→7y range"; ORCL & AMZN both 1.0y exact but assigned different bands; GOOGL 2023 change is outside the spec's strict 24-month window; AMZN 2024 extension was reversed in 2025; MSFT FY25 10-K doesn't contain extension language — would be in FY24). Batched all four discrepancies + a recommended-default for each back to Terry as a single question. Terry replied "go" — interpreted as apply-defaults. Committed with:
+  - ORCL = -10 (5→6y, 1.0y exact, ext -5 + Burry -5)
+  - MSFT = -3 (6→6.5y per FY24, not re-verified — flagged in migration header)
+  - GOOGL = -10 (4→6y 2023, applied regardless of 24-mo window per Terry's "rank don't filter")
+  - AMZN = -7 (5→6y 2024, applied regardless of 2025 reversal per same principle)
+  - META unchanged
+
+  Migration includes per-ticker SEC source URLs and a DO-block assertion on the final penalty_v values. Rollback at `rollback/20260517000000_e24_rollback.sql`.
+
+**Branch**: `claude/epic-4-portal-ui` advances by 1 commit (TBD hash) on top of `3e30aba`.
+
+**Tests**: still 327 pass (migration is SQL-only).
+
+**Next**: autonomous queue per Step 3 below.
+
+---
 
 ## NEXT-SESSION COLD-START — READ THIS FIRST
 
