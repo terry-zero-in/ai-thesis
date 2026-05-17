@@ -11,13 +11,31 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
  * - `filter` is a generic open-the-filter-panel signal (legacy from Reticle's
  *   /routines); kept so the toggle helper still compiles.
  * - `universe-filter` is the AI Thesis universe-table filter rail (THS-52).
- *   Per-page rails like this register themselves via `setRail(...)` on mount
- *   and the CtxPanel branches on the active key to render the matching surface.
+ * - `dashboard-today` / `name-activity` / `portfolio-reserve` / `regime-legend`
+ *   / `aiq-history` are the per-page rails per Master Design Spec §6.
  *
- * Pages set their rail on mount (effect) — there is no central registry; each
- * surface knows its own key.
+ * Per-page rails register themselves via `setRail(...)` (+ `setPayload(...)` for
+ * data-driven ones) on mount and CtxPanel branches on the active key to render
+ * the matching surface. There is no central registry; each surface knows its
+ * own key.
+ *
+ * Payload is intentionally typed as `unknown` here — CtxPanel casts to the
+ * per-rail type at the branch level, keeping the context generic.
  */
-export type CtxRailKey = "none" | "agent" | "todo" | "capture" | "log" | "notes" | "filter" | "universe-filter";
+export type CtxRailKey =
+  | "none"
+  | "agent"
+  | "todo"
+  | "capture"
+  | "log"
+  | "notes"
+  | "filter"
+  | "universe-filter"
+  | "dashboard-today"
+  | "name-activity"
+  | "portfolio-reserve"
+  | "regime-legend"
+  | "aiq-history";
 
 interface CtxPanelCtx {
   rail: CtxRailKey;
@@ -32,6 +50,9 @@ interface CtxPanelCtx {
    * - If panel was open on another rail → toggling off restores that prior rail.
    */
   toggleFilter: () => void;
+  /** Per-page rail data (server-fetched, passed via the page's <RailRegister/>). */
+  payload: unknown;
+  setPayload: (p: unknown) => void;
 }
 
 const Ctx = createContext<CtxPanelCtx>({
@@ -41,11 +62,14 @@ const Ctx = createContext<CtxPanelCtx>({
   setOpen: () => {},
   openTo: () => {},
   toggleFilter: () => {},
+  payload: null,
+  setPayload: () => {},
 });
 
 export function CtxPanelProvider({ children }: { children: ReactNode }) {
   const [rail, setRail] = useState<CtxRailKey>("agent");
   const [open, setOpen] = useState(true);
+  const [payload, setPayload] = useState<unknown>(null);
   const [filterEntry, setFilterEntry] = useState<{ wasOpen: boolean; priorRail: CtxRailKey } | null>(null);
   const openTo = useCallback((k: CtxRailKey) => {
     setOpen(true);
@@ -67,8 +91,8 @@ export function CtxPanelProvider({ children }: { children: ReactNode }) {
     }
   }, [open, rail, filterEntry]);
   const value = useMemo<CtxPanelCtx>(
-    () => ({ rail, setRail, open, setOpen, openTo, toggleFilter }),
-    [rail, open, openTo, toggleFilter],
+    () => ({ rail, setRail, open, setOpen, openTo, toggleFilter, payload, setPayload }),
+    [rail, open, openTo, toggleFilter, payload],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
