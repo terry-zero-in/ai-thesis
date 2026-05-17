@@ -11,7 +11,7 @@
 // to determine 10b5-1 status, so `is_10b5_1` is often null (undetermined)
 // and some 10b5-1 sales may leak through the SELL cluster. The 3-insider
 // + $5M-each + 60-day threshold filters most routine 10b5-1 noise on its
-// own. Parked for v1 — see docs/HANDOFF.md item 1.
+// own. Parked for v1 — see docs/PARKED.md item 1.
 //
 // Pure module — no DB / SDK imports. Node-runnable tests in factor-insider.test.ts.
 

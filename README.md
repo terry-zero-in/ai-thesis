@@ -23,7 +23,8 @@ ai-thesis/
 ├── DESIGN_REFERENCES.md               ← read BEFORE touching UI
 ├── docs/
 │   ├── SESSION_NOTES.md               ← running build log (read on cold start)
-│   ├── HANDOFF.md                     ← parked items + revisit conditions
+│   ├── HANDOFF.md                     ← Terry's cross-session state (Perplexity-maintained)
+│   ├── PARKED.md                      ← parked items + revisit conditions (code-grounded detail)
 │   ├── AI-Thesis-v2-Algorithm-and-Deployment.md
 │   ├── AI-Thesis-v2-Master-Design-Spec.md
 │   └── aiq-drafts-pipeline.md         ← AIQ draft batch operator runbook

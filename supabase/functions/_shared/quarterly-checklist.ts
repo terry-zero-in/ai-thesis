@@ -249,7 +249,7 @@ function checkConsensusCapex(snaps: CapexSnap[]): Finding {
   // consensus table only carries EPS + rating today. We surface
   // hyperscaler trailing-12mo capex YoY deltas as the closest proxy
   // and tag as data_gap so the operator knows the spec'd check is
-  // NOT the one actually firing. See docs/HANDOFF.md item 2 — parked
+  // NOT the one actually firing. See docs/PARKED.md item 2 — parked
   // pending evidence the TTM proxy misses material inflections.
   const observable: Array<{ ticker: string; pct: number; current: number; prior: number }> = [];
   for (const s of snaps) {
