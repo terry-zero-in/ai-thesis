@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { getDashboardSnapshot, type DashboardMover } from "@/lib/dashboard-data";
 import { getPortfolioSnapshot } from "@/lib/portfolio-data";
 import { getRegimeSnapshot } from "@/lib/regime-data";
@@ -40,13 +39,20 @@ export default async function DashboardPage() {
         style={{
           flex: 1,
           overflow: "auto",
-          padding: "24px 28px 32px",
+          padding: "24px 32px 40px",
           display: "flex",
           flexDirection: "column",
-          gap: 24,
+          gap: 32,
         }}
       >
         <GreetingStrip greeting={greeting} dateLabel={dateLabel} synthetic={snap.synthetic} />
+
+        {snap.macroGatesHit > 0 && regime.latest && (
+          <AlertCallout
+            label="Macro regime"
+            items={alertItemsFromRegime(snap, regime.latest)}
+          />
+        )}
 
         <KpiRow
           highCurrent={highTier?.current ?? 0}
@@ -163,13 +169,12 @@ function KpiRow({
   return (
     <div
       style={{
+        // Mercury KPI strip (Pic 17/19 b2): no outer chrome. Cells separated
+        // by vertical hairlines only; the strip sits on the canvas.
         display: "grid",
         gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-        gap: 1,
-        background: "var(--border)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        overflow: "hidden",
+        borderTop: "1px solid var(--border-subtle)",
+        borderBottom: "1px solid var(--border-subtle)",
       }}
     >
       <KpiCell
@@ -177,6 +182,7 @@ function KpiRow({
         value={portfolioEmpty ? "—" : fmtUsd(portfolioValue)}
         sub={portfolioEmpty ? "no positions yet · open /portfolio to add" : "market value"}
         muted={portfolioEmpty}
+        isFirst
       />
       <KpiCell
         label="P&L"
@@ -213,21 +219,24 @@ function KpiCell({
   sub,
   valueColor,
   muted = false,
+  isFirst = false,
 }: {
   label: string;
   value: string;
   sub?: string;
   valueColor?: string;
   muted?: boolean;
+  isFirst?: boolean;
 }) {
   return (
     <div
       style={{
-        padding: "14px 16px",
-        background: "var(--surface-1)",
+        padding: "18px 22px 18px",
+        borderLeft: isFirst ? undefined : "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: 8,
+        minWidth: 0,
       }}
     >
       <span
@@ -269,62 +278,181 @@ function unifyMovers(winners: DashboardMover[], losers: DashboardMover[]): Dashb
 }
 
 function MoversTable({ movers }: { movers: DashboardMover[] }) {
+  // Mercury Tasks (Pic 7 b1): faint row dividers between rows. No card chrome.
+  return (
+    <table
+      style={{
+        width: "100%",
+        borderCollapse: "collapse",
+        fontSize: 13,
+        fontFamily: "var(--m)",
+      }}
+    >
+      <thead>
+        <tr>
+          <Th align="left">Ticker</Th>
+          <Th align="left">Layer</Th>
+          <Th>Composite</Th>
+          <Th>Δ 7D</Th>
+          <Th align="left">Driver</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {movers.map((m, i) => (
+          <MoverRow key={m.ticker} m={m} isLast={i === movers.length - 1} />
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function Th({ children, align = "right" }: { children?: React.ReactNode; align?: "left" | "right" }) {
+  return (
+    <th
+      style={{
+        textAlign: align,
+        padding: "0 14px 10px 14px",
+        fontSize: 10,
+        textTransform: "uppercase",
+        letterSpacing: ".08em",
+        color: "var(--text-3)",
+        fontWeight: 500,
+        borderBottom: "1px solid var(--border-subtle)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function MoverRow({ m, isLast }: { m: DashboardMover; isLast: boolean }) {
+  const dir = m.delta > 0 ? "↑" : m.delta < 0 ? "↓" : "→";
+  const dirColor = m.delta > 0 ? "var(--success)" : m.delta < 0 ? "var(--danger)" : "var(--text-3)";
+  const td: React.CSSProperties = {
+    padding: "10px 14px",
+    borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
+    whiteSpace: "nowrap",
+  };
+  return (
+    <tr>
+      <td style={{ ...td, fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</td>
+      <td style={{ ...td, color: "var(--text-3)", fontSize: 11 }}>{m.layer_label}</td>
+      <td style={{ ...td, color: "var(--text-1)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+        {m.final_score == null ? "—" : m.final_score.toFixed(1)} <span style={{ color: dirColor }}>{dir}</span>
+      </td>
+      <td style={{ ...td, color: dirColor, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+        {m.delta > 0 ? "+" : ""}{m.delta.toFixed(1)}
+      </td>
+      <td style={{ ...td, color: "var(--text-3)" }}>—</td>
+    </tr>
+  );
+}
+
+/* ---------------- Alert Summary callout (Mercury Pic 11 b2) ---------------- */
+
+interface AlertItem {
+  notable: string;
+  action: { label: string; href: string };
+}
+
+function alertItemsFromRegime(
+  snap: { macroGatesHit: number },
+  latest: { naaim: number | null; aaii_3wk_spread: number | null; fear_greed: number | null }
+): AlertItem[] {
+  const items: AlertItem[] = [];
+  if (latest.naaim != null && latest.naaim > 90) {
+    items.push({
+      notable: `NAAIM exposure at ${latest.naaim.toFixed(1)} — above ${GAUGES.find((g) => g.key === "naaim")?.threshold ?? 90} gate threshold`,
+      action: { label: "Review regime gauges", href: "/regime" },
+    });
+  }
+  if (latest.aaii_3wk_spread != null && latest.aaii_3wk_spread > 30) {
+    items.push({
+      notable: `AAII 3-wk bull-bear spread at +${latest.aaii_3wk_spread.toFixed(1)} — above +30 gate threshold`,
+      action: { label: "Review regime gauges", href: "/regime" },
+    });
+  }
+  if (latest.fear_greed != null && latest.fear_greed > 80) {
+    items.push({
+      notable: `CNN Fear & Greed at ${latest.fear_greed.toFixed(0)} — above 80 gate threshold`,
+      action: { label: "Review regime gauges", href: "/regime" },
+    });
+  }
+  if (items.length === 0 && snap.macroGatesHit > 0) {
+    items.push({
+      notable: `${snap.macroGatesHit} of 3 macro gates currently hit — high-conviction names tightened`,
+      action: { label: "Review regime", href: "/regime" },
+    });
+  }
+  return items;
+}
+
+function AlertCallout({ label, items }: { label: string; items: AlertItem[] }) {
+  if (items.length === 0) return null;
+  // Mercury Pic 11 b2 "Suggested actions": thin border, NO bg fill. Two-col
+  // rows (notable left, hyperlinked action right). No card chrome.
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: "auto 1fr auto auto auto",
-        rowGap: 6,
-        columnGap: 18,
-        fontSize: 12.5,
-        fontFamily: "var(--m)",
-        alignItems: "baseline",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 6,
+        padding: "14px 18px 4px",
       }}
     >
-      <MoversHeader />
-      {movers.map((m) => (
-        <MoverRow key={m.ticker} m={m} />
-      ))}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: 12,
+          paddingBottom: 8,
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--text-1)",
+            fontFamily: "var(--f)",
+          }}
+        >
+          {label}
+        </span>
+        <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
+          {items.length} active alert{items.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {items.map((it, i) => (
+          <div
+            key={i}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
+              gap: 16,
+              alignItems: "baseline",
+              padding: "12px 0",
+              borderBottom: i === items.length - 1 ? undefined : "1px solid var(--border-subtle)",
+            }}
+          >
+            <span style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5 }}>{it.notable}</span>
+            <a
+              href={it.action.href}
+              style={{
+                fontSize: 12.5,
+                color: "var(--accent)",
+                textDecoration: "none",
+                fontFamily: "var(--m)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {it.action.label} ›
+            </a>
+          </div>
+        ))}
+      </div>
     </div>
-  );
-}
-
-function MoversHeader() {
-  const th: React.CSSProperties = {
-    fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: ".08em",
-    color: "var(--text-3)",
-    fontWeight: 500,
-    paddingBottom: 4,
-    borderBottom: "1px solid var(--border-subtle)",
-  };
-  return (
-    <>
-      <span style={th}>Ticker</span>
-      <span style={th}>Layer</span>
-      <span style={{ ...th, textAlign: "right" }}>Composite</span>
-      <span style={{ ...th, textAlign: "right" }}>Δ 7D</span>
-      <span style={th}>Driver</span>
-    </>
-  );
-}
-
-function MoverRow({ m }: { m: DashboardMover }) {
-  const dir = m.delta > 0 ? "↑" : m.delta < 0 ? "↓" : "→";
-  const dirColor = m.delta > 0 ? "var(--success)" : m.delta < 0 ? "var(--danger)" : "var(--text-3)";
-  return (
-    <Fragment>
-      <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</span>
-      <span style={{ color: "var(--text-3)", fontSize: 11 }}>{m.layer_label}</span>
-      <span style={{ color: "var(--text-1)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {m.final_score == null ? "—" : m.final_score.toFixed(1)} <span style={{ color: dirColor }}>{dir}</span>
-      </span>
-      <span style={{ color: dirColor, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {m.delta > 0 ? "+" : ""}{m.delta.toFixed(1)}
-      </span>
-      <span style={{ color: "var(--text-3)" }}>—</span>
-    </Fragment>
   );
 }
 
@@ -362,16 +490,14 @@ function Section({
   children: React.ReactNode;
   right?: React.ReactNode;
 }) {
+  // Mercury "format on canvas" (Pic 12 b2): no card wrapper. Header label
+  // anchors the section with a hairline under it; content flows below.
   return (
     <section
       style={{
-        border: "1px solid var(--border-subtle)",
-        borderRadius: 6,
-        padding: "14px 18px 16px",
-        background: "var(--surface-1)",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 14,
       }}
     >
       <div
@@ -379,6 +505,8 @@ function Section({
           display: "flex",
           alignItems: "baseline",
           gap: 12,
+          paddingBottom: 10,
+          borderBottom: "1px solid var(--border-subtle)",
         }}
       >
         <div
