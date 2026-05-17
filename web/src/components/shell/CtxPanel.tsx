@@ -5,6 +5,9 @@ import { useUniverseFilter } from "@/hooks/universe-filter-context";
 import { UniverseFilterRail } from "@/components/universe/UniverseFilterRail";
 import { DashboardTodayRail, type DashboardTodayRailData } from "@/components/rails/DashboardTodayRail";
 import { NameActivityRail, type NameActivityRailData } from "@/components/rails/NameActivityRail";
+import { PortfolioReserveRail, type PortfolioReserveRailData } from "@/components/rails/PortfolioReserveRail";
+import { RegimeLegendRail, type RegimeLegendRailData } from "@/components/rails/RegimeLegendRail";
+import { AiqHistoryRail, type AiqHistoryRailData } from "@/components/rails/AiqHistoryRail";
 
 /**
  * CtxPanel — right-side context panel.
@@ -47,6 +50,12 @@ export function CtxPanel() {
         <DashboardTodayRail data={payload as DashboardTodayRailData} />
       ) : rail === "name-activity" && payload ? (
         <NameActivityRail data={payload as NameActivityRailData} />
+      ) : rail === "portfolio-reserve" && payload ? (
+        <PortfolioReserveRail data={payload as PortfolioReserveRailData} />
+      ) : rail === "regime-legend" && payload ? (
+        <RegimeLegendRail data={payload as RegimeLegendRailData} />
+      ) : rail === "aiq-history" && payload ? (
+        <AiqHistoryRail data={payload as AiqHistoryRailData} />
       ) : (
         <Placeholder />
       )}

@@ -3,6 +3,7 @@ import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { AddPositionForm } from "./AddPositionForm";
 import { ReservePanel } from "./ReservePanel";
+import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -15,9 +16,23 @@ export default async function PortfolioPage() {
   const snap = await getPortfolioSnapshot();
   const choices = getUniverseChoices();
   const taken = snap.positions.map((p) => p.ticker);
+  const railData = {
+    reserveActual: snap.reserve_actual,
+    reserveTarget: snap.settings.target_reserve,
+    totalCapital: snap.settings.total_capital,
+    positionTriggerCount: snap.position_triggers.length,
+    positionTriggerDetail:
+      snap.position_triggers.length === 0
+        ? "No held position is down ≥7% from cost basis."
+        : snap.position_triggers.map((t) => `${t.ticker} ${(t.pct_drawdown * 100).toFixed(1)}%`).join(" · "),
+    marketTriggers: snap.market_triggers,
+    asOf: snap.spy_as_of,
+    empty: snap.empty,
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <PortfolioRailRegister data={railData} />
       <header
         style={{
           padding: "18px 28px 14px",
