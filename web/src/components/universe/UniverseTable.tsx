@@ -194,16 +194,19 @@ function Row({ r }: { r: UniverseRow }) {
       <Td>
         <TierBadge tier={r.tier} />
       </Td>
-      <Td>
+      {/* Spec §5.2:493 — Q/G/V/AIQ cell bg tinted --accent-soft at score ≥80.
+          MiniBar kept as the analytical upgrade; tint added on top so the
+          row-level scan still surfaces high-conviction names. */}
+      <Td tint={tintScore(r.q)}>
         <MiniBar label="Q" value={r.q} />
       </Td>
-      <Td>
+      <Td tint={tintScore(r.g)}>
         <MiniBar label="G" value={r.g} />
       </Td>
-      <Td>
+      <Td tint={tintScore(r.v)}>
         <MiniBar label="V" value={r.v} />
       </Td>
-      <Td>
+      <Td tint={tintScore(r.aiq)}>
         <MiniBar label="A" value={r.aiq} />
       </Td>
       <Td align="right" mono>
@@ -299,11 +302,13 @@ function Td({
   align,
   mono,
   strong,
+  tint,
 }: {
   children: React.ReactNode;
   align?: "left" | "right" | "center";
   mono?: boolean;
   strong?: boolean;
+  tint?: boolean;
 }) {
   return (
     <td
@@ -315,6 +320,7 @@ function Td({
         fontFamily: mono ? "var(--m)" : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
         fontWeight: strong ? 600 : undefined,
+        background: tint ? "var(--accent-soft)" : undefined,
         verticalAlign: "middle",
         whiteSpace: "nowrap",
       }}
@@ -322,6 +328,10 @@ function Td({
       {children}
     </td>
   );
+}
+
+function tintScore(v: number | null): boolean {
+  return v != null && v >= 80;
 }
 
 function fmt1(n: number | null) {
