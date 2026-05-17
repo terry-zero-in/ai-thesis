@@ -120,22 +120,56 @@ function HistoryRow({
           })}
         </div>
       )}
-      {row.source_url && (
-        <div style={{ marginTop: 6 }}>
-          <a
-            href={row.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontSize: 10.5, color: "var(--accent)", textDecoration: "none", fontFamily: "var(--m)" }}
-          >
-            source ↗
-          </a>
-        </div>
-      )}
+      <SourcesLine sources={row.sources} />
+
       {row.notes && (
         <div style={{ marginTop: 6, fontSize: 11, color: "var(--text-3)", lineHeight: 1.5 }}>
           {row.notes}
         </div>
+      )}
+    </div>
+  );
+}
+
+// Renders per-dim sources from the JSONB column. Primary anchor = first
+// available URL (disclosure preferred, falling back to dim order). Extra
+// dims surface as a "+N more" count chip — quiet, honest, no crowding.
+function SourcesLine({ sources }: { sources: { [k: string]: string } | null }) {
+  if (!sources) return null;
+  const entries = DIMS.map((d) => {
+    const slug = d.key.replace(/_pts$/, "");
+    const url = sources[slug];
+    return url ? { slug, url } : null;
+  }).filter((x): x is { slug: string; url: string } => x != null);
+  if (entries.length === 0) return null;
+  const primary = entries[0];
+  const extra = entries.length - 1;
+  return (
+    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+      <a
+        href={primary.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ fontSize: 10.5, color: "var(--accent)", textDecoration: "none", fontFamily: "var(--m)" }}
+      >
+        {primary.slug} ↗
+      </a>
+      {extra > 0 && (
+        <span
+          style={{
+            fontSize: 9.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            background: "var(--surface-2)",
+            padding: "1px 5px",
+            borderRadius: 3,
+            letterSpacing: ".05em",
+            textTransform: "uppercase",
+          }}
+          title={entries.slice(1).map((e) => e.slug).join(", ")}
+        >
+          +{extra} more
+        </span>
       )}
     </div>
   );

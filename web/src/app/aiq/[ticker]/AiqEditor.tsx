@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { DIMS, type AiqRow, type DimKey, type NoteKey } from "@/lib/aiq-types";
+import { DIMS, dimSlug, sourceFieldName, type AiqRow, type DimKey, type NoteKey } from "@/lib/aiq-types";
 import { saveAiqRubric, SAVE_INITIAL, type SaveState } from "./actions";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
 
@@ -57,20 +57,24 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
         />
       </div>
 
-      {DIMS.map((d) => (
-        <DimRow
-          key={d.key}
-          label={d.label}
-          dimKey={d.key}
-          noteKey={d.note}
-          cap={d.cap}
-          value={vals[d.key]}
-          onChange={(v) => set(d.key, v)}
-          initialNote={(latest?.[d.note as NoteKey] as string | null) ?? ""}
-        />
-      ))}
+      {DIMS.map((d) => {
+        const slug = dimSlug(d.key);
+        return (
+          <DimRow
+            key={d.key}
+            label={d.label}
+            dimKey={d.key}
+            noteKey={d.note}
+            cap={d.cap}
+            value={vals[d.key]}
+            onChange={(v) => set(d.key, v)}
+            initialNote={(latest?.[d.note as NoteKey] as string | null) ?? ""}
+            sourceFieldName={sourceFieldName(slug)}
+            initialSource={latest?.sources?.[slug] ?? ""}
+          />
+        );
+      })}
 
-      <Field label="Source URL" name="source_url" defaultValue={latest?.source_url ?? ""} placeholder="https://investor.example.com/2026-q1.pdf" />
       <Field
         label="General notes"
         name="notes"
@@ -168,6 +172,8 @@ function DimRow({
   value,
   onChange,
   initialNote,
+  sourceFieldName,
+  initialSource,
 }: {
   label: string;
   dimKey: string;
@@ -176,6 +182,8 @@ function DimRow({
   value: number;
   onChange: (v: number) => void;
   initialNote: string;
+  sourceFieldName: string;
+  initialSource: string;
 }) {
   const pct = Math.max(0, Math.min(100, (value / cap) * 100));
   return (
@@ -233,7 +241,7 @@ function DimRow({
         name={noteKey}
         defaultValue={initialNote}
         rows={2}
-        placeholder="Rationale + sources (e.g. 10-K segment data citation)"
+        placeholder="Rationale (e.g. 10-K segment data, IR release quote)"
         style={{
           marginTop: 2,
           padding: "8px 10px",
@@ -249,6 +257,40 @@ function DimRow({
           lineHeight: 1.5,
         }}
       />
+      {/* Spec §5.6 line 689+696: per-dimension Source URL beneath each
+          rationale block. Quiet label inline with input; empty = no source. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span
+          style={{
+            fontSize: 10,
+            fontFamily: "var(--m)",
+            color: "var(--text-4)",
+            textTransform: "uppercase",
+            letterSpacing: ".08em",
+            flexShrink: 0,
+          }}
+        >
+          Source URL
+        </span>
+        <input
+          name={sourceFieldName}
+          type="url"
+          defaultValue={initialSource}
+          placeholder="https://investor.example.com/q1-2026.pdf"
+          style={{
+            flex: 1,
+            height: 24,
+            padding: "0 8px",
+            fontSize: 11.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-1)",
+            background: "rgba(255,255,255,.02)",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            outline: "none",
+          }}
+        />
+      </div>
     </div>
   );
 }

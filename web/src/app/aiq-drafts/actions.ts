@@ -30,9 +30,11 @@ interface DraftRow {
  * Promote a reviewed aiq_draft into the canonical aiq_rubric.
  *
  * Maps the draft's 6 dim scores + per-dim jsonb notes into the
- * aiq_rubric per-dim note columns. Sets aiq_rubric.source_url to the
- * draft's 10-K URL (primary source) with the transcript URL appended
- * as a secondary citation in the general notes field.
+ * aiq_rubric per-dim note columns. The draft's 10-K URL lands in
+ * aiq_rubric.sources.disclosure (post-migration shape — the rubric
+ * sources column is per-dim JSONB; 10-K maps semantically to the
+ * Disclosure dim). Transcript URL is appended to the general notes
+ * field as a secondary citation.
  *
  * Side effects (in one Supabase round per write):
  *   1. UPSERT aiq_rubric (ticker, scored_at=drafted_at) with the scores
@@ -79,6 +81,12 @@ export async function promoteAiqDraft(
     : "";
   const generalNotes = `Promoted from aiq_draft ${d.id} on ${new Date().toISOString().slice(0, 10)}.${transcriptCitation}`;
 
+  // aiq_drafts.sources is a single 10-K/transcript pair (legacy shape).
+  // aiq_rubric.sources is per-dim JSONB (post-migration). 10-K filings map
+  // most directly to the Disclosure dimension; operator can fan-out via the
+  // editor afterward. Transcript URL stays in `notes` as a secondary citation.
+  const rubricSources = d.sources?.ten_k_url ? { disclosure: d.sources.ten_k_url } : null;
+
   const rubricRow = {
     ticker: d.ticker,
     scored_at: d.drafted_at,
@@ -95,7 +103,7 @@ export async function promoteAiqDraft(
     capex_eff_note:     d.notes?.capex_eff     ?? null,
     indep_demand_note:  d.notes?.indep_demand  ?? null,
     accounting_note:    d.notes?.accounting    ?? null,
-    source_url:         d.sources?.ten_k_url   ?? null,
+    sources:            rubricSources,
   };
 
   const { error: upsertErr } = await sb

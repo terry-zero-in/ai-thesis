@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { DIMS } from "@/lib/aiq-types";
+import { DIMS, dimSlug, sourceFieldName, type AiqSources, type DimSlug } from "@/lib/aiq-types";
 
 export interface SaveState {
   ok: boolean;
@@ -41,6 +41,18 @@ export async function saveAiqRubric(_prev: SaveState, formData: FormData): Promi
   const sb = await getSupabaseServer();
   if (!sb) return { ok: false, message: "Supabase env not configured — saves disabled in dev fixture mode." };
 
+  // Per-dim source URLs land in a JSONB column. Form fields are named
+  // `source_<slug>` (e.g. source_disclosure) per sourceFieldName(). Only
+  // populated dims show up in the JSONB; null when every dim is empty so
+  // the column stays clean.
+  const sources: AiqSources = {};
+  for (const d of DIMS) {
+    const slug = dimSlug(d.key) as DimSlug;
+    const url = strOrNull(formData.get(sourceFieldName(slug)));
+    if (url) sources[slug] = url;
+  }
+  const sourcesValue: AiqSources | null = Object.keys(sources).length > 0 ? sources : null;
+
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
   const row = {
     ticker,
@@ -53,7 +65,7 @@ export async function saveAiqRubric(_prev: SaveState, formData: FormData): Promi
     capex_eff_note:     strOrNull(formData.get("capex_eff_note")),
     indep_demand_note:  strOrNull(formData.get("indep_demand_note")),
     accounting_note:    strOrNull(formData.get("accounting_note")),
-    source_url:         strOrNull(formData.get("source_url")),
+    sources:            sourcesValue,
   };
 
   // UPSERT on the (ticker, scored_at) PK: a same-day re-save overwrites
