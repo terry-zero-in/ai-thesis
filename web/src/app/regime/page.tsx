@@ -3,6 +3,7 @@ import { GAUGES } from "@/lib/regime-types";
 import { MultiplierBanner } from "./MultiplierBanner";
 import { GaugeCard } from "./GaugeCard";
 import { RegimeTrendChart } from "./RegimeTrendChart";
+import { GateHistory } from "./GateHistory";
 import { RegimeRailRegister } from "@/components/rails/RegimeRailRegister";
 import type { RegimeLegendItem } from "@/components/rails/RegimeLegendRail";
 
@@ -109,6 +110,9 @@ export default async function RegimePage() {
         {/* 12-month trend chart per spec §5.5 — 3 thin lines (NAAIM/AAII/F&G)
             with per-gauge threshold dashes + today marker. */}
         <RegimeTrendChart history={snap.history} />
+
+        {/* "Last 5 gate-state changes" history per spec §5.5 — receipts list. */}
+        <GateHistory changes={snap.gate_changes} />
 
         {/* Mercury decard prose section — label + hairline + canvas-flow prose. */}
         <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
