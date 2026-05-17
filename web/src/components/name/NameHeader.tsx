@@ -1,6 +1,7 @@
 import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
+import { Sparkline } from "@/components/name/Sparkline";
 import type { NameDetail } from "@/lib/name-detail-data";
 
 export function NameHeader({ d }: { d: NameDetail }) {
@@ -28,56 +29,66 @@ export function NameHeader({ d }: { d: NameDetail }) {
     : undefined;
 
   return (
+    // Mercury Pic 19 b2 (Credit Card): big metric block on left + chart on
+    // right, side-by-side header. Bottom hairline divides header from canvas.
     <div
       style={{
-        padding: "20px 28px 20px",
+        padding: "22px 32px 22px",
         borderBottom: "1px solid var(--border-subtle)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1.35fr) minmax(0, 1fr)",
+        gap: 36,
+        alignItems: "start",
         flexShrink: 0,
       }}
     >
-      {/* Top strip — ticker + name + meta */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-            <h1
-              style={{
-                fontSize: 22,
-                fontWeight: 600,
-                letterSpacing: "-.014em",
-                color: "var(--text-1)",
-                fontFamily: "var(--m)",
-              }}
-            >
-              {d.ticker}
-            </h1>
-            <span style={{ fontSize: 14, color: "var(--text-2)" }}>{d.name}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+        {/* Top strip — ticker + name + meta + tier badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <h1
+                style={{
+                  fontSize: 22,
+                  fontWeight: 600,
+                  letterSpacing: "-.014em",
+                  color: "var(--text-1)",
+                  fontFamily: "var(--m)",
+                }}
+              >
+                {d.ticker}
+              </h1>
+              <span style={{ fontSize: 14, color: "var(--text-2)" }}>{d.name}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
+              <LayerChip layer={d.layer} label={d.layer_label} />
+              {d.as_of && (
+                <span style={{ color: "var(--text-3)", fontFamily: "var(--m)" }}>
+                  as of {d.as_of}
+                  {d.synthetic ? " · fixture" : ""}
+                </span>
+              )}
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11 }}>
-            <LayerChip layer={d.layer} label={d.layer_label} />
-            {d.as_of && (
-              <span style={{ color: "var(--text-3)", fontFamily: "var(--m)" }}>
-                as of {d.as_of}
-                {d.synthetic ? " · fixture" : ""}
-              </span>
-            )}
-          </div>
+          <div style={{ flex: 1 }} />
+          <TierBadge tier={d.tier} />
         </div>
-        <div style={{ flex: 1 }} />
-        <TierBadge tier={d.tier} />
+
+        {/* Hero — Final is the protagonist per spec §1.7 + §5.3 */}
+        <HeroNumber
+          label="Final score"
+          value={d.final_score}
+          delta={delta}
+          derivation={derivation}
+          attribution={attribution}
+          size="lg"
+        />
       </div>
 
-      {/* Hero block — Final is the protagonist per spec §1.7 + §5.3 */}
-      <HeroNumber
-        label="Final score"
-        value={d.final_score}
-        delta={delta}
-        derivation={derivation}
-        attribution={attribution}
-        size="lg"
-      />
+      {/* Right — 12-week sparkline */}
+      <div style={{ paddingTop: 22, minWidth: 0 }}>
+        <Sparkline history={d.history} />
+      </div>
     </div>
   );
 }

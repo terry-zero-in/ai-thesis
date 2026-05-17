@@ -11,15 +11,19 @@ import Link from "next/link";
 import type { NameDetail } from "@/lib/name-detail-data";
 
 export function FactorPanels({ d }: { d: NameDetail }) {
+  // Mercury KPI strip (Pic 17 b2): 4 cells with vertical hairline dividers,
+  // top + bottom hairlines on the strip, no outer card chrome. Each cell
+  // shows the factor label, score, progress bar, and pillar decomposition.
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-        gap: 12,
+        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        borderTop: "1px solid var(--border-subtle)",
+        borderBottom: "1px solid var(--border-subtle)",
       }}
     >
-      <Panel title="Q · Quality" score={d.q_score} accent="var(--accent)">
+      <Panel title="Q · Quality" score={d.q_score} accent="var(--accent)" isFirst>
         {d.q ? (
           <PillarList
             rows={[
@@ -47,7 +51,7 @@ export function FactorPanels({ d }: { d: NameDetail }) {
           <Empty />
         )}
       </Panel>
-      <Panel title="V · Value" score={d.v_score} accent="#FACC15">
+      <Panel title="V · Value" score={d.v_score} accent="var(--warning)">
         {d.v ? (
           <>
             <PillarList
@@ -82,7 +86,7 @@ export function FactorPanels({ d }: { d: NameDetail }) {
       <Panel
         title="AIQ"
         score={d.aiq_score}
-        accent="#A78BFA"
+        accent="var(--info)"
         action={
           <Link
             href={`/aiq/${d.ticker}`}
@@ -129,24 +133,25 @@ function Panel({
   accent,
   action,
   children,
+  isFirst = false,
 }: {
   title: string;
   score: number | null;
   accent: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  isFirst?: boolean;
 }) {
   const pct = score == null ? 0 : Math.max(0, Math.min(100, score));
   return (
     <div
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        padding: "12px 14px",
+        padding: "16px 20px",
+        borderLeft: isFirst ? undefined : "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
-        gap: 10,
+        gap: 12,
+        minWidth: 0,
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>

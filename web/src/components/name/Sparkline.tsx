@@ -33,15 +33,10 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
   const first = history[0];
 
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        padding: "12px 14px",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+    // Mercury decard: format on canvas, no card chrome. Used both standalone
+    // and inline within NameHeader as the right-side block (Pic 19 b2 pattern).
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <span
           style={{
             fontSize: 10.5,
@@ -66,7 +61,7 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
           ),
         )}
       </svg>
-      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 11, color: "var(--text-3)" }}>
+      <div style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--text-3)" }}>
         <Legend color="var(--accent)" label={`Final · ${last.final_score?.toFixed(1) ?? "—"}`} />
         <Legend color="var(--text-3)" label={`Composite · ${last.composite?.toFixed(1) ?? "—"}`} />
         <span style={{ flex: 1 }} />

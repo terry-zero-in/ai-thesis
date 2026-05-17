@@ -5,7 +5,6 @@ import Link from "next/link";
 import { getNameDetail, type NameDetail } from "@/lib/name-detail-data";
 import { NameHeader } from "@/components/name/NameHeader";
 import { FactorPanels } from "@/components/name/FactorPanels";
-import { Sparkline } from "@/components/name/Sparkline";
 import { DepFlagsList } from "@/components/name/DepFlagsList";
 import { DataPendingCard } from "@/components/name/DataPendingCard";
 
@@ -52,12 +51,12 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <NameHeader d={d} />
-      <div style={{ flex: 1, overflow: "auto", padding: "20px 28px 32px", display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ flex: 1, overflow: "auto", padding: "24px 32px 40px", display: "flex", flexDirection: "column", gap: 28 }}>
         <FactorPanels d={d} />
-        <Sparkline history={d.history} />
         <DepFlagsList flags={d.dep_flags} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
           <DataPendingCard
+            isFirst
             title="Insider Form 4"
             ticket="THS-58"
             note="Latest insider transactions land here once Form 4 ingestion ships. Source: SEC EDGAR Form 4 feed, weekly cadence."

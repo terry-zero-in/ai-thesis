@@ -8,14 +8,9 @@ import type { NameDepFlag } from "@/lib/name-detail-data";
 export function DepFlagsList({ flags }: { flags: NameDepFlag[] }) {
   if (flags.length === 0) return null;
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        border: "1px solid rgba(251,113,133,.20)",
-        borderRadius: 6,
-        padding: "12px 14px",
-      }}
-    >
+    // Mercury decard: section label + hairline divider, content on canvas.
+    // Danger color stays on the label since these are severity-tagged.
+    <div style={{ display: "flex", flexDirection: "column" }}>
       <div
         style={{
           fontSize: 10.5,
@@ -23,7 +18,9 @@ export function DepFlagsList({ flags }: { flags: NameDepFlag[] }) {
           color: "var(--danger)",
           letterSpacing: ".08em",
           textTransform: "uppercase",
-          marginBottom: 8,
+          paddingBottom: 10,
+          borderBottom: "1px solid var(--border-subtle)",
+          marginBottom: 10,
         }}
       >
         Depreciation flags
