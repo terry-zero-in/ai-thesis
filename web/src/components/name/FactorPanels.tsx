@@ -207,11 +207,8 @@ function PillarList({
         return (
           <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
             <span style={{ color: "var(--text-3)", flex: 1, minWidth: 0 }}>{label}</span>
-            {ptsStyle && cap != null && (
-              <span style={{ fontFamily: "var(--m)", fontSize: 11, color: "var(--text-3)" }}>
-                / {cap}
-              </span>
-            )}
+            {/* Review §2.3 #6: spec format is "18 / 20" (value first). Render
+                value, then "/ {cap}" — was "/ 20 18" before. */}
             <span
               style={{
                 fontFamily: "var(--m)",
@@ -233,6 +230,11 @@ function PillarList({
             >
               {value == null ? "—" : typeof value === "number" ? (zStyle ? formatSigned(value) : value.toString()) : value}
             </span>
+            {ptsStyle && cap != null && (
+              <span style={{ fontFamily: "var(--m)", fontSize: 11, color: "var(--text-3)" }}>
+                / {cap}
+              </span>
+            )}
           </div>
         );
       })}
