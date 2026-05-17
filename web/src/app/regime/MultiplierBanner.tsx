@@ -1,5 +1,6 @@
 import { MULTIPLIER_BY_GATES } from "@/lib/regime-types";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
+import { MultiplierLadder, type LadderStep } from "@/components/primitives/MultiplierLadder";
 
 /**
  * Top-of-page banner: gates hit, active multiplier, and the gate-by-gate
@@ -46,46 +47,18 @@ export function MultiplierBanner({
       </Cell>
 
       <Cell label="Curve">
-        <div style={{ display: "flex", gap: 0, marginTop: 4 }}>
-          {[0, 1, 2, 3].map((g) => {
-            const m = MULTIPLIER_BY_GATES[g as 0 | 1 | 2 | 3];
-            const active = g === gatesHit;
-            return (
-              <div
-                key={g}
-                style={{
-                  flex: 1,
-                  padding: "6px 8px",
-                  textAlign: "center",
-                  background: active ? "var(--accent-soft)" : "transparent",
-                  border: active ? "1px solid var(--accent-border)" : "1px solid var(--border)",
-                  borderRadius: 4,
-                  marginRight: g < 3 ? 4 : 0,
-                }}
-              >
-                <div style={{ fontSize: 10, color: "var(--text-3)", fontFamily: "var(--m)", letterSpacing: ".06em", textTransform: "uppercase" }}>
-                  {g} gate{g === 1 ? "" : "s"}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "var(--m)",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    fontVariantNumeric: "tabular-nums",
-                    color: active ? "var(--accent)" : "var(--text-2)",
-                    marginTop: 2,
-                  }}
-                >
-                  {m.toFixed(2)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <MultiplierLadder steps={GATE_LADDER_STEPS} activeKey={gatesHit} />
       </Cell>
     </div>
   );
 }
+
+/** Gate ladder steps — keyed by gate count, value = multiplier. */
+const GATE_LADDER_STEPS: LadderStep[] = ([0, 1, 2, 3] as const).map((g) => ({
+  key: g,
+  label: `${g} gate${g === 1 ? "" : "s"}`,
+  value: MULTIPLIER_BY_GATES[g].toFixed(2),
+}));
 
 function Cell({
   label,
