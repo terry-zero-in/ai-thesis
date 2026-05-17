@@ -3,6 +3,7 @@ import { getPortfolioSnapshot } from "@/lib/portfolio-data";
 import { getRegimeSnapshot } from "@/lib/regime-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { GaugeCard } from "@/app/regime/GaugeCard";
+import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
 
 /**
  * Revalidate every 30 min. Scores update on the Saturday chain;
@@ -33,8 +34,26 @@ export default async function DashboardPage() {
   const highTier = snap.tiers.find((t) => t.tier === "High");
   const movers = unifyMovers(snap.topWinners, snap.topLosers);
 
+  // Right-rail payload per spec §6. Derive per-gauge hit state from the
+  // latest regime row using the same thresholds as composite.ts.
+  const latest = regime.latest;
+  const gateState: Record<GaugeKey, boolean> = {
+    naaim: latest?.naaim != null && latest.naaim > 90,
+    aaii_3wk_spread: latest?.aaii_3wk_spread != null && latest.aaii_3wk_spread > 30,
+    fear_greed: latest?.fear_greed != null && latest.fear_greed > 80,
+  };
+  const railData = {
+    movers,
+    macroGatesHit: snap.macroGatesHit,
+    macroMultiplier: snap.macroMultiplier,
+    gateState,
+    asOf: snap.asOf,
+    synthetic: snap.synthetic,
+  };
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <DashboardRailRegister data={railData} />
       <div
         style={{
           flex: 1,

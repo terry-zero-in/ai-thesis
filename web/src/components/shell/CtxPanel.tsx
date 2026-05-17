@@ -3,22 +3,29 @@
 import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { useUniverseFilter } from "@/hooks/universe-filter-context";
 import { UniverseFilterRail } from "@/components/universe/UniverseFilterRail";
+import { DashboardTodayRail, type DashboardTodayRailData } from "@/components/rails/DashboardTodayRail";
 
 /**
  * CtxPanel — right-side context panel.
  *
  * Pages register their rail key on mount (effect → ctx-panel-context.setRail)
- * and this component switches the rendered surface on that key. New rails
- * land here as each page ships:
- *   - "universe-filter" → Layer / Tier filter chips for /universe (THS-52)
- *   - "regime-history"  → upcoming for /regime (THS-56)
- *   - …
+ * and this component switches the rendered surface on that key. Data-driven
+ * rails additionally push their payload via setPayload — read here and cast
+ * to the per-rail shape at the branch.
+ *
+ * Wired rails (per Master Design Spec §6):
+ *   - "universe-filter"  → Layer / Tier filter chips for /universe (THS-52)
+ *   - "dashboard-today"  → Top movers + insider ghost + macro gates for /
+ *   - "name-activity"    → upcoming for /universe/[ticker]
+ *   - "portfolio-reserve"→ upcoming for /portfolio
+ *   - "regime-legend"    → upcoming for /regime
+ *   - "aiq-history"      → upcoming for /aiq/[ticker]
  *
  * Default (no key registered, or key not handled) is a 320px placeholder so
  * the layout math doesn't change when ⌘\\ opens an empty panel during dev.
  */
 export function CtxPanel() {
-  const { rail } = useCtxPanel();
+  const { rail, payload } = useCtxPanel();
   return (
     <aside
       style={{
@@ -33,7 +40,13 @@ export function CtxPanel() {
         overflow: "hidden",
       }}
     >
-      {rail === "universe-filter" ? <UniverseFilterPanel /> : <Placeholder />}
+      {rail === "universe-filter" ? (
+        <UniverseFilterPanel />
+      ) : rail === "dashboard-today" && payload ? (
+        <DashboardTodayRail data={payload as DashboardTodayRailData} />
+      ) : (
+        <Placeholder />
+      )}
     </aside>
   );
 }
