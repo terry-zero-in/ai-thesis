@@ -268,7 +268,11 @@ function Th({
   width?: number;
 }) {
   const active = sortable && k != null && sortKey === k;
-  const arrow = active ? (sortDir === "asc" ? "▲" : "▼") : "";
+  // Review §2.2 #7: sortable headers always show a sort affordance.
+  // Active: ▲/▼ in --accent. Sortable-inactive: ⇅ in --text-4 (Linear quiet
+  // pattern — capability visible, doesn't compete with active state).
+  const arrow = active ? (sortDir === "asc" ? "▲" : "▼") : sortable ? "⇅" : "";
+  const arrowColor = active ? "var(--accent)" : "var(--text-4)";
   return (
     <th
       onClick={sortable && k && onSort ? () => onSort(k) : undefined}
@@ -291,7 +295,7 @@ function Th({
     >
       {children}
       {arrow && (
-        <span style={{ marginLeft: 5, fontSize: 8, color: "var(--accent)" }}>{arrow}</span>
+        <span style={{ marginLeft: 5, fontSize: 8, color: arrowColor }}>{arrow}</span>
       )}
     </th>
   );
