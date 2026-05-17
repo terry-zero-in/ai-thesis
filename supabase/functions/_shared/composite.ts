@@ -62,12 +62,88 @@ export interface CompositeResult {
   // tests against this taxed value, per spec arithmetic.
   compositeTaxed: number | null;
   // After macro multiplier — multiplier applies only to taxed composites ≥ 75.
+  // Also reflects the sentiment cap at 55 when both quartile conditions
+  // are met (see SENTIMENT_CAP_MAX).
   finalScore: number | null;
   tier: Tier | null;
   macroGatesHit: number;
   macroMultiplier: number;
+  // True when the bottom-Q-quartile + top-S-quartile cap was applied
+  // (spec line 119). Always false until S goes live in Epic 5.
+  sentimentCapApplied: boolean;
   resolvedWeights: Record<string, number>;  // the rescaled / clamped weights
                                               // actually used, for audit
+}
+
+// ─── Sentiment cap (§spec line 119) ─────────────────────────────────────────
+//
+// A name in bottom-quartile Q AND top-quartile S is capped at score = 55.
+// Applied AFTER composite + tax + macro multiplier, before tier assignment.
+// Tier classification reads off the capped number, so by construction a
+// capped name lands in Medium (60-74) or Low (45-59) — it can't be High.
+//
+// Caller is responsible for computing the per-ticker quartile flags by
+// ranking the current universe snapshot's Q and S distributions and
+// passing them in. See computeSentimentCapFlags() below.
+//
+// Expected hit rate in steady state: ~0-3 names out of ~70 — by design.
+// The cap is a guardrail against 2021-style sentiment-driven rallies of
+// bad-quality names, NOT a filter. If it never fires for several weeks,
+// that's the engine working — don't conclude the cap is broken.
+//
+// Until S is live (Epic 5), `sTopQuartile` is always false → cap is a
+// no-op. Ship-it-now, no-op-until-S-lands keeps the regression surface
+// covered the day S goes online.
+
+export const SENTIMENT_CAP_MAX = 55;
+export const SENTIMENT_CAP_Q_PERCENTILE = 0.25;
+export const SENTIMENT_CAP_S_PERCENTILE = 0.75;
+
+export interface SentimentCapFlags {
+  /** True when this ticker's Q is in the universe's bottom quartile. */
+  qBottomQuartile: boolean;
+  /** True when this ticker's S is in the universe's top quartile. */
+  sTopQuartile: boolean;
+}
+
+/**
+ * Given a universe snapshot of per-ticker Q + S scores, derive each
+ * ticker's quartile flags. Returns an empty Map when there aren't
+ * enough names to define a quartile (< 4 with non-null scores for
+ * either factor).
+ *
+ * Both factor distributions are evaluated independently — a ticker
+ * with null Q gets `qBottomQuartile=false` (can't trigger the cap)
+ * and the same for S.
+ */
+export function computeSentimentCapFlags(
+  universe: Array<{ ticker: string; q: number | null; s: number | null }>,
+): Map<string, SentimentCapFlags> {
+  const out = new Map<string, SentimentCapFlags>();
+  const qVals = universe.map((u) => u.q).filter((v): v is number => v != null && Number.isFinite(v));
+  const sVals = universe.map((u) => u.s).filter((v): v is number => v != null && Number.isFinite(v));
+  // Need at least 4 names per distribution to define a quartile boundary.
+  const qThresh = qVals.length >= 4 ? percentile(qVals, SENTIMENT_CAP_Q_PERCENTILE) : null;
+  const sThresh = sVals.length >= 4 ? percentile(sVals, SENTIMENT_CAP_S_PERCENTILE) : null;
+  for (const u of universe) {
+    out.set(u.ticker, {
+      qBottomQuartile: qThresh != null && u.q != null && Number.isFinite(u.q) && u.q <= qThresh,
+      sTopQuartile:    sThresh != null && u.s != null && Number.isFinite(u.s) && u.s >= sThresh,
+    });
+  }
+  return out;
+}
+
+/** Linear-interpolated quantile (type-7 / Excel-style). */
+function percentile(sorted: number[], p: number): number {
+  const arr = sorted.slice().sort((a, b) => a - b);
+  if (arr.length === 0) return NaN;
+  if (arr.length === 1) return arr[0];
+  const idx = (arr.length - 1) * p;
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return arr[lo];
+  return arr[lo] + (arr[hi] - arr[lo]) * (idx - lo);
 }
 
 // ─── Macro gate (§Fix 4) ────────────────────────────────────────────────────
@@ -149,6 +225,7 @@ export function computeComposite(
   scores: FactorScores,
   gauges: MacroGauges,
   concentrationTax: number = 0,
+  sentimentCap?: SentimentCapFlags,
 ): CompositeResult {
   const resolved = resolveWeights(scores, layer);
   const macro = macroMultiplier(gauges);
@@ -164,6 +241,7 @@ export function computeComposite(
       tier: null,
       macroGatesHit: macro.gatesHit,
       macroMultiplier: macro.multiplier,
+      sentimentCapApplied: false,
       resolvedWeights: {},
     };
   }
@@ -178,7 +256,18 @@ export function computeComposite(
   // raw composite: a name with composite=80 / tax=-10 → 70 → no de-rate,
   // because at 70 it's already Medium.
   const compositeTaxed = composite + tax;
-  const finalScore = compositeTaxed >= 75 ? compositeTaxed * macro.multiplier : compositeTaxed;
+  let finalScore = compositeTaxed >= 75 ? compositeTaxed * macro.multiplier : compositeTaxed;
+
+  // Sentiment cap (spec line 119). Applied LAST, before tier assignment.
+  // No-op until S goes live (Epic 5) — `sTopQuartile` is always false
+  // for a null S, so the cap is unfireable by definition.
+  const sentimentCapApplied =
+    sentimentCap != null &&
+    sentimentCap.qBottomQuartile &&
+    sentimentCap.sTopQuartile &&
+    finalScore > SENTIMENT_CAP_MAX;
+  if (sentimentCapApplied) finalScore = SENTIMENT_CAP_MAX;
+
   const tier = classifyTier(finalScore);
 
   const resolvedWeights = Object.fromEntries(resolved.map((r) => [r.key, r.weight]));
@@ -191,6 +280,7 @@ export function computeComposite(
     tier,
     macroGatesHit: macro.gatesHit,
     macroMultiplier: macro.multiplier,
+    sentimentCapApplied,
     resolvedWeights,
   };
 }

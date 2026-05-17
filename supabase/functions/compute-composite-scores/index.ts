@@ -8,6 +8,7 @@
 import { HttpError, requireCronAuth } from "../_shared/auth.ts";
 import {
   computeComposite,
+  computeSentimentCapFlags,
   LAYER_WEIGHTS,
   type CompositeResult,
 } from "../_shared/composite.ts";
@@ -43,16 +44,32 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const client = serviceClient();
     const { inputs, gauges, gaugesAsOf } = await loadCompositeInputs(client, asOf);
 
+    // Quartile flags computed once over the whole universe snapshot; passed
+    // per-ticker into computeComposite. Cap is a no-op until S goes live —
+    // see SENTIMENT_CAP_MAX docs in composite.ts.
+    const capFlags = computeSentimentCapFlags(
+      inputs.map((i) => ({ ticker: i.ticker, q: i.scores.q, s: i.scores.s })),
+    );
+
     let rowsUpserted = 0;
     let nullCount = 0;
+    let sentimentCapHits = 0;
     const tierTallies: Record<string, number> = {
       High: 0, Medium: 0, Low: 0, Avoid: 0, null: 0,
     };
 
     for (const inp of inputs) {
-      const result = computeComposite(inp.ticker, inp.layer, inp.scores, gauges, inp.concentrationTax);
+      const result = computeComposite(
+        inp.ticker,
+        inp.layer,
+        inp.scores,
+        gauges,
+        inp.concentrationTax,
+        capFlags.get(inp.ticker),
+      );
       tierTallies[result.tier ?? "null"] += 1;
       if (result.composite === null) nullCount += 1;
+      if (result.sentimentCapApplied) sentimentCapHits += 1;
 
       const { error } = await client.rpc("upsert_composite_score", {
         p_ticker: inp.ticker,
@@ -72,7 +89,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // All tickers in one run share the same macro gauges, so pull
     // gates-hit / multiplier from the first non-null result for the report.
     const sampleResult = inputs.length > 0
-      ? computeComposite(inputs[0].ticker, inputs[0].layer, inputs[0].scores, gauges, inputs[0].concentrationTax)
+      ? computeComposite(
+          inputs[0].ticker,
+          inputs[0].layer,
+          inputs[0].scores,
+          gauges,
+          inputs[0].concentrationTax,
+          capFlags.get(inputs[0].ticker),
+        )
       : null;
 
     return Response.json({
@@ -84,6 +108,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       tickers_scored: inputs.length,
       rows_upserted: rowsUpserted,
       null_composites: nullCount,
+      sentiment_cap_hits: sentimentCapHits,
       tiers: tierTallies,
       elapsed_ms: Date.now() - startedAt,
     });
@@ -107,6 +132,7 @@ function buildBreakdown(
     pre_tax: result.composite,
     pre_multiplier: result.compositeTaxed,
     post_multiplier: result.finalScore,
+    sentiment_cap_applied: result.sentimentCapApplied,
     tier: result.tier,
   };
 }

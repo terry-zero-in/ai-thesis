@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   LAYER_WEIGHTS,
+  SENTIMENT_CAP_MAX,
   classifyTier,
   computeComposite,
+  computeSentimentCapFlags,
   countMacroGates,
   macroMultiplier,
   type Layer,
@@ -290,4 +292,122 @@ test("computeComposite: every factor null + tax → composite null, tax preserve
   assert.equal(r.compositeTaxed, null);
   assert.equal(r.finalScore, null);
   assert.equal(r.concentrationTax, -3);
+});
+
+// ─── Sentiment cap (spec line 119: bottom-Q + top-S → cap at 55) ─────────────
+
+test("computeSentimentCapFlags: percentile thresholds at quartile boundaries", () => {
+  const universe = [
+    { ticker: "A", q: 20, s: 90 },
+    { ticker: "B", q: 30, s: 85 },
+    { ticker: "C", q: 40, s: 60 },
+    { ticker: "D", q: 50, s: 55 },
+    { ticker: "E", q: 60, s: 50 },
+    { ticker: "F", q: 70, s: 45 },
+    { ticker: "G", q: 80, s: 30 },
+    { ticker: "H", q: 90, s: 20 },
+  ];
+  const flags = computeSentimentCapFlags(universe);
+  // A has bottom Q (20) and top S (90) → both flags true.
+  assert.equal(flags.get("A")!.qBottomQuartile, true);
+  assert.equal(flags.get("A")!.sTopQuartile, true);
+  // H has top Q and bottom S → both flags false.
+  assert.equal(flags.get("H")!.qBottomQuartile, false);
+  assert.equal(flags.get("H")!.sTopQuartile, false);
+  // D is mid-table.
+  assert.equal(flags.get("D")!.qBottomQuartile, false);
+  assert.equal(flags.get("D")!.sTopQuartile, false);
+});
+
+test("computeSentimentCapFlags: null S in universe doesn't break Q threshold", () => {
+  const universe = [
+    { ticker: "A", q: 10, s: null },
+    { ticker: "B", q: 20, s: null },
+    { ticker: "C", q: 30, s: null },
+    { ticker: "D", q: 40, s: null },
+    { ticker: "E", q: 50, s: null },
+  ];
+  const flags = computeSentimentCapFlags(universe);
+  // A's Q is lowest, so qBottomQuartile=true; sTopQuartile is false because S is null.
+  assert.equal(flags.get("A")!.qBottomQuartile, true);
+  assert.equal(flags.get("A")!.sTopQuartile, false);
+});
+
+test("computeSentimentCapFlags: < 4 names → no thresholds defined", () => {
+  const universe = [
+    { ticker: "A", q: 10, s: 90 },
+    { ticker: "B", q: 90, s: 10 },
+  ];
+  const flags = computeSentimentCapFlags(universe);
+  assert.equal(flags.get("A")!.qBottomQuartile, false);
+  assert.equal(flags.get("A")!.sTopQuartile, false);
+});
+
+test("computeComposite: sentiment cap FIRES when q bottom + s top + final > 55", () => {
+  // Construct a name that would otherwise score ~70: low Q, high S, mid others.
+  const scores: FactorScores = { q: 20, g: 80, v: 80, aiq: 80, m: null, s: 90 };
+  const r = computeComposite("T", 1, scores, noGauges, 0, {
+    qBottomQuartile: true,
+    sTopQuartile: true,
+  });
+  // Without the cap the composite would be in the high-50s/low-60s range.
+  assert.ok(r.composite! > SENTIMENT_CAP_MAX, `unexpected composite ${r.composite}`);
+  assert.equal(r.finalScore, SENTIMENT_CAP_MAX);
+  assert.equal(r.sentimentCapApplied, true);
+  // Tier reflects the capped score: 55 → Low (45-59).
+  assert.equal(r.tier, "Low");
+});
+
+test("computeComposite: sentiment cap NO-OP when only one quartile condition met", () => {
+  const scores: FactorScores = { q: 20, g: 80, v: 80, aiq: 80, m: null, s: 90 };
+  // sTopQuartile=true but qBottomQuartile=false → no cap.
+  const onlyS = computeComposite("T", 1, scores, noGauges, 0, {
+    qBottomQuartile: false,
+    sTopQuartile: true,
+  });
+  assert.equal(onlyS.sentimentCapApplied, false);
+  approx(onlyS.finalScore!, onlyS.composite!);
+
+  // qBottomQuartile=true but sTopQuartile=false (this is the S-is-null case
+  // in production) → no cap.
+  const onlyQ = computeComposite("T", 1, scores, noGauges, 0, {
+    qBottomQuartile: true,
+    sTopQuartile: false,
+  });
+  assert.equal(onlyQ.sentimentCapApplied, false);
+  approx(onlyQ.finalScore!, onlyQ.composite!);
+});
+
+test("computeComposite: sentiment cap NO-OP when flags omitted (S not yet live)", () => {
+  const scores: FactorScores = { q: 20, g: 80, v: 80, aiq: 80, m: null, s: null };
+  const r = computeComposite("T", 1, scores, noGauges, 0);
+  assert.equal(r.sentimentCapApplied, false);
+  approx(r.finalScore!, r.composite!);
+});
+
+test("computeComposite: sentiment cap is a CEILING, not a floor (score below 55 unchanged)", () => {
+  // A low-Q + high-S name whose composite happens to already be below 55.
+  const scores: FactorScores = { q: 10, g: 40, v: 40, aiq: 40, m: null, s: 90 };
+  const r = computeComposite("T", 1, scores, noGauges, 0, {
+    qBottomQuartile: true,
+    sTopQuartile: true,
+  });
+  assert.ok(r.composite! < SENTIMENT_CAP_MAX, `composite ${r.composite} should be below cap`);
+  // Cap is a no-op when finalScore is already below the cap value.
+  assert.equal(r.sentimentCapApplied, false);
+  approx(r.finalScore!, r.composite!);
+});
+
+test("computeComposite: sentiment cap applies AFTER macro multiplier", () => {
+  // High composite + 1-gate macro multiplier (0.95). Cap must still fire if both quartiles match.
+  const scores: FactorScores = { q: 20, g: 95, v: 95, aiq: 95, m: null, s: 95 };
+  const gauges: MacroGauges = { naaim: 95, aaii_3wk_spread: null, fear_greed: null };
+  const r = computeComposite("T", 1, scores, gauges, 0, {
+    qBottomQuartile: true,
+    sTopQuartile: true,
+  });
+  // composite > 75 → multiplier applies (0.95×). Then cap forces to 55.
+  assert.equal(r.macroMultiplier, 0.95);
+  assert.equal(r.sentimentCapApplied, true);
+  assert.equal(r.finalScore, SENTIMENT_CAP_MAX);
 });
