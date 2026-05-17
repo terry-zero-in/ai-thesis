@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Tier, UniverseRow } from "@/lib/universe-data";
 import { useFilter } from "@/hooks/filter-context";
 import { useUniverseFilter } from "@/hooks/universe-filter-context";
@@ -22,7 +22,7 @@ const TIER_ORDER: Record<Tier, number> = { High: 0, Medium: 1, Low: 2, Avoid: 3 
 
 export function UniverseTable({ rows, asOf, synthetic }: Props) {
   const { q } = useFilter();
-  const { layers, tiers, aiqMin, flags, setMeta } = useUniverseFilter();
+  const { layers, tiers, aiqMin, flags } = useUniverseFilter();
   const [sortKey, setSortKey] = useState<SortKey>("final");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -56,11 +56,6 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
     });
     return out;
   }, [filtered, sortKey, sortDir]);
-
-  // Publish row counts + provenance to the rail footer.
-  useEffect(() => {
-    setMeta({ totalRows: rows.length, visibleRows: sorted.length, asOf, synthetic });
-  }, [rows.length, sorted.length, asOf, synthetic, setMeta]);
 
   const handleSort = (k: SortKey) => {
     if (k === sortKey) {
@@ -141,6 +136,30 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
           ))}
         </tbody>
       </table>
+      {/* Review §2.2 #6 — footer count lives UNDER the table per spec, not in
+          the rail. Quiet line; mono numerics; provenance + fixture flag. */}
+      <div
+        style={{
+          padding: "10px 18px 16px",
+          fontSize: 11,
+          color: "var(--text-3)",
+          display: "flex",
+          gap: 10,
+          alignItems: "baseline",
+          fontFamily: "var(--m)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <span style={{ color: "var(--text-2)" }}>
+          Showing {sorted.length} of {rows.length} · click row for detail
+        </span>
+        {asOf && (
+          <span>
+            · as of <span style={{ color: "var(--text-2)" }}>{asOf}</span>
+            {synthetic ? " (fixture)" : ""}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

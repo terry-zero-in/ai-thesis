@@ -29,10 +29,6 @@ interface Props {
   onSetAiqMin: (v: number | null) => void;
   onToggleFlag: (f: UniverseFlag) => void;
   onClear: () => void;
-  totalRows: number;
-  visibleRows: number;
-  asOf: string | null;
-  synthetic: boolean;
 }
 
 export function UniverseFilterRail(props: Props) {
@@ -46,10 +42,6 @@ export function UniverseFilterRail(props: Props) {
     onSetAiqMin,
     onToggleFlag,
     onClear,
-    totalRows,
-    visibleRows,
-    asOf,
-    synthetic,
   } = props;
   const hasFilter = layers.size > 0 || tiers.size > 0 || aiqMin != null || flags.size > 0;
   return (
@@ -92,7 +84,6 @@ export function UniverseFilterRail(props: Props) {
           </div>
         </Section>
       </div>
-      <Footer asOf={asOf} synthetic={synthetic} visibleRows={visibleRows} totalRows={totalRows} />
     </div>
   );
 }
@@ -322,38 +313,3 @@ function FilterChip({
   );
 }
 
-function Footer({
-  asOf,
-  synthetic,
-  visibleRows,
-  totalRows,
-}: {
-  asOf: string | null;
-  synthetic: boolean;
-  visibleRows: number;
-  totalRows: number;
-}) {
-  return (
-    <div
-      style={{
-        padding: "12px 16px",
-        borderTop: "1px solid var(--border-subtle)",
-        fontSize: 11,
-        color: "var(--text-3)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-      }}
-    >
-      <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>
-        {visibleRows} / {totalRows} names
-      </span>
-      {asOf && (
-        <span>
-          As of <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>{asOf}</span>
-          {synthetic ? " (fixture)" : ""}
-        </span>
-      )}
-    </div>
-  );
-}

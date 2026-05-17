@@ -80,10 +80,6 @@ function UniverseFilterPanel() {
       onSetAiqMin={f.setAiqMin}
       onToggleFlag={f.toggleFlag}
       onClear={f.clear}
-      totalRows={f.totalRows}
-      visibleRows={f.visibleRows}
-      asOf={f.asOf}
-      synthetic={f.synthetic}
     />
   );
 }

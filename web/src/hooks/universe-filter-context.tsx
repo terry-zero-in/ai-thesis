@@ -29,12 +29,6 @@ interface UniverseFilterCtx {
   setAiqMin: (v: number | null) => void;
   toggleFlag: (f: UniverseFlag) => void;
   clear: () => void;
-  // Stats published by the table so the rail footer can show "N / total names".
-  totalRows: number;
-  visibleRows: number;
-  asOf: string | null;
-  synthetic: boolean;
-  setMeta: (meta: { totalRows: number; visibleRows: number; asOf: string | null; synthetic: boolean }) => void;
 }
 
 const Ctx = createContext<UniverseFilterCtx>({
@@ -47,11 +41,6 @@ const Ctx = createContext<UniverseFilterCtx>({
   setAiqMin: () => {},
   toggleFlag: () => {},
   clear: () => {},
-  totalRows: 0,
-  visibleRows: 0,
-  asOf: null,
-  synthetic: false,
-  setMeta: () => {},
 });
 
 export function UniverseFilterProvider({ children }: { children: ReactNode }) {
@@ -59,7 +48,6 @@ export function UniverseFilterProvider({ children }: { children: ReactNode }) {
   const [tiers, setTiers] = useState<Set<Tier>>(new Set());
   const [aiqMin, setAiqMin] = useState<number | null>(null);
   const [flags, setFlags] = useState<Set<UniverseFlag>>(new Set());
-  const [meta, setMeta] = useState({ totalRows: 0, visibleRows: 0, asOf: null as string | null, synthetic: false });
   const value = useMemo<UniverseFilterCtx>(
     () => ({
       layers,
@@ -94,13 +82,8 @@ export function UniverseFilterProvider({ children }: { children: ReactNode }) {
         setAiqMin(null);
         setFlags(new Set());
       },
-      totalRows: meta.totalRows,
-      visibleRows: meta.visibleRows,
-      asOf: meta.asOf,
-      synthetic: meta.synthetic,
-      setMeta,
     }),
-    [layers, tiers, aiqMin, flags, meta],
+    [layers, tiers, aiqMin, flags],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
