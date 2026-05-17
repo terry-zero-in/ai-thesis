@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { DIMS, type AiqRow, type DimKey, type NoteKey } from "@/lib/aiq-types";
 import { saveAiqRubric, SAVE_INITIAL, type SaveState } from "./actions";
+import { HeroNumber } from "@/components/primitives/HeroNumber";
 
 interface Props {
   ticker: string;
@@ -37,37 +38,22 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
 
       <div
         style={{
-          display: "flex",
-          alignItems: "baseline",
-          gap: 12,
-          padding: "10px 14px",
+          padding: "14px 18px",
           background: "var(--surface)",
           border: "1px solid var(--border)",
           borderRadius: 6,
         }}
       >
-        <span style={{ fontSize: 11, fontFamily: "var(--m)", color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".08em" }}>
-          Total
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--m)",
-            fontSize: 24,
-            fontWeight: 600,
-            fontVariantNumeric: "tabular-nums",
-            color: total === 0 ? "var(--text-4)" : "var(--text-1)",
-            lineHeight: 1,
-          }}
-        >
-          {total}
-        </span>
-        <span style={{ fontSize: 12, color: "var(--text-3)", fontFamily: "var(--m)" }}>/ 100</span>
-        <div style={{ flex: 1 }} />
-        {latest && (
-          <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-            last saved {latest.scored_at} · was {latest.total}
-          </span>
-        )}
+        <HeroNumber
+          label="Total"
+          value={total}
+          unit=" / 100"
+          precision={0}
+          size="lg"
+          valueColor={total === 0 ? "var(--text-4)" : "var(--text-1)"}
+          delta={latest && total !== latest.total ? { value: total - latest.total, period: "vs saved" } : null}
+          attribution={latest ? `last saved ${latest.scored_at} · was ${latest.total}` : "no prior version"}
+        />
       </div>
 
       {DIMS.map((d) => (
