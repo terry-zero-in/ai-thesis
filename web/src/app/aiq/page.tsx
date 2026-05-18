@@ -97,7 +97,7 @@ export default async function AiqIndexPage({
           <MonoMetaSpine
             segments={[
               { label: "scored", value: `${snap.scoredCount}/${snap.rows.length}` },
-              { label: "latest", value: snap.asOf ?? "—" },
+              { label: "as_of", value: snap.asOf ?? "—" },
               { label: "cadence", value: "manual · quarterly" },
             ]}
           />

@@ -111,11 +111,12 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 function fmtDate(as_of: string): string {
-  // 2026-05-14 → "May 14"
+  // 2026-05-14 → "May 14, 2026" (year included per THS-83 — long history lists
+  // can span multiple years; ambiguity hurts trust)
   const m = as_of.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!m) return as_of;
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const mo = months[parseInt(m[2], 10) - 1] ?? m[2];
   const day = parseInt(m[3], 10);
-  return `${mo} ${day}`;
+  return `${mo} ${day}, ${m[1]}`;
 }

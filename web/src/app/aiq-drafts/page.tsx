@@ -39,7 +39,6 @@ export default async function AiqDraftsPage() {
         </h1>
         <span style={{ fontSize: 12, color: "var(--text-3)" }}>
           {unreviewed.length} pending · {reviewed.length} reviewed
-          {snap.synthetic ? " · fixture mode" : ""}
         </span>
       </header>
 

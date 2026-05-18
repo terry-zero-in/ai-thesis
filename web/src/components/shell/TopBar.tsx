@@ -6,6 +6,7 @@ import { I } from "@/components/primitives/icons";
 import { pathToCrumb } from "@/lib/screens";
 import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { Tip } from "./Tip";
+import { DemoBadge } from "./DemoBadge";
 
 export function TopBar({
   onCmd,
@@ -43,6 +44,7 @@ export function TopBar({
         )}
       </div>
       <div style={{ flex: 1 }} />
+      <DemoBadge isDemo={!userEmail} />
       {right}
       <Tip label="Open command palette" keys={["⌘", "K"]}>
         <TBBtn onClick={onCmd}>

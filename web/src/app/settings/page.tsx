@@ -41,7 +41,6 @@ export default async function SettingsPage() {
         </h1>
         <span style={{ fontSize: 12, color: "var(--text-3)" }}>
           Operator view · cron registry + pipeline freshness
-          {!snap.envConfigured ? " · fixture mode" : ""}
         </span>
       </header>
 

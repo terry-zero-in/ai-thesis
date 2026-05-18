@@ -81,7 +81,6 @@ export default async function MemosPage({
         </h1>
         <span style={{ fontSize: 12, color: "var(--text-3)" }}>
           Daily 8am CT · Weekly Sun PM · {snap.rows.length} most recent
-          {snap.synthetic ? " · fixture mode" : ""}
         </span>
       </header>
 

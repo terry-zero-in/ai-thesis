@@ -38,7 +38,6 @@ export default async function BacktestPage() {
         </h1>
         <span style={{ fontSize: 12, color: "var(--text-3)" }}>
           {snap.rows.length} run{snap.rows.length === 1 ? "" : "s"} · operator-invoked
-          {snap.synthetic ? " · fixture mode" : ""}
         </span>
       </header>
 
