@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 /**
  * CtxPanel rail keys.
@@ -68,7 +68,20 @@ const Ctx = createContext<CtxPanelCtx>({
 
 export function CtxPanelProvider({ children }: { children: ReactNode }) {
   const [rail, setRail] = useState<CtxRailKey>("agent");
+  // Default rail-open is true on wide monitors (≥1600px) where the rail
+  // sits as a flex sibling with room to spare, and false on narrower
+  // viewports where the rail floats as an overlay (see .ctx-panel-aside
+  // in globals.css). The narrow default avoids a first-impression hit
+  // where the rail covers the right side of the canvas table on page
+  // load — operator opens it explicitly via ⌘\ or the filter button.
+  // SSR-safe: starts true, useEffect corrects on mount when window is
+  // available so authenticated server renders don't flicker.
   const [open, setOpen] = useState(true);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1599px)").matches) {
+      setOpen(false);
+    }
+  }, []);
   const [payload, setPayload] = useState<unknown>(null);
   const [filterEntry, setFilterEntry] = useState<{ wasOpen: boolean; priorRail: CtxRailKey } | null>(null);
   const openTo = useCallback((k: CtxRailKey) => {

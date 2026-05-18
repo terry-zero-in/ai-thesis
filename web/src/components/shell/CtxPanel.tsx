@@ -34,8 +34,16 @@ export function CtxPanel() {
   // hide the entire aside so the canvas claims the full width. Lambo-review
   // §2.6 #4 — Terry confirmed 2026-05-17.
   if (rail === "none") return null;
+  // ctx-panel-aside class enables a responsive shape switch defined in
+  // globals.css. Above 1600px viewport (large monitors), the panel stays
+  // as a flex sibling that takes 320px of horizontal space. Below 1600px
+  // it becomes a floating overlay (position:fixed, slides over the right
+  // edge of the canvas) so wide canvas tables — Universe table needs
+  // ~1500px alone — never get squeezed by the rail. Linear peek-pane
+  // pattern. Cross-page fix; Universe is the primary beneficiary.
   return (
     <aside
+      className="ctx-panel-aside"
       style={{
         width: 320,
         background: "var(--surface)",
