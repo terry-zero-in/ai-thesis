@@ -62,6 +62,25 @@ export default async function RegimePage() {
         <MonoMetaSpine
           segments={[
             { label: "as_of", value: snap.latest?.as_of ?? "—" },
+            {
+              label: "mode",
+              value: (
+                <span
+                  style={{
+                    color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                    fontWeight: 600,
+                    letterSpacing: ".02em",
+                  }}
+                  title={
+                    snap.synthetic
+                      ? "Stubbed: synthesized fixture data — macro_gauges table not yet populated by ingestion."
+                      : "Live: macro gauge readings from public.macro_gauges, refreshed by the Tue 22:00 UTC chain."
+                  }
+                >
+                  {snap.synthetic ? "Stubbed" : "Live"}
+                </span>
+              ),
+            },
             { label: "gates", value: `${snap.gates_hit}/3` },
             { label: "multiplier", value: `${snap.multiplier.toFixed(2)}×` },
             { label: "macro chain", value: "Tue 22:00 UTC weekly" },

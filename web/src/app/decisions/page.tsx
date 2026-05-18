@@ -81,6 +81,25 @@ export default async function DecisionsPage({
               { label: "events", value: snap.events.length },
               { label: "kinds", value: Object.keys(byKind).length },
               { label: "engine", value: "alerts v1.0" },
+              {
+                label: "mode",
+                value: (
+                  <span
+                    style={{
+                      color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                      fontWeight: 600,
+                      letterSpacing: ".02em",
+                    }}
+                    title={
+                      snap.synthetic
+                        ? "Stubbed: synthesized fixture alerts — derived from a fixture universe + macro state."
+                        : "Live: alerts derived from public.scores_history + public.macro_gauges."
+                    }
+                  >
+                    {snap.synthetic ? "Stubbed" : "Live"}
+                  </span>
+                ),
+              },
             ]}
           />
           <div style={{ flex: 1 }} />
