@@ -15,6 +15,7 @@ import { getSupabaseServer } from "./supabase/server";
 import {
   GAUGES,
   MULTIPLIER_BY_GATES,
+  type GateChange,
   type GaugeKey,
   type MacroGaugeRow,
   type RegimeSnapshot,
@@ -57,7 +58,86 @@ function finalize(rows: MacroGaugeRow[], envConfigured: boolean, synthetic: bool
     fear_greed: scanThreshold(history, "fear_greed"),
   };
 
-  return { history, latest, gates_hit, multiplier, threshold_history, synthetic, envConfigured };
+  return {
+    history,
+    latest,
+    gates_hit,
+    multiplier,
+    threshold_history,
+    gate_changes: computeGateChanges(history),
+    synthetic,
+    envConfigured,
+  };
+}
+
+/**
+ * Walk the 52w history and emit one GateChange per week where the gate count
+ * differs from the prior week. Most-recent first, capped at 8 entries (UI
+ * shows 5; tail kept for footer tooltips).
+ */
+function computeGateChanges(history: MacroGaugeRow[]): GateChange[] {
+  const out: GateChange[] = [];
+  if (history.length < 2) return out;
+  let prior = countGates(history[0]);
+  let priorState = gateState(history[0]);
+  for (let i = 1; i < history.length; i++) {
+    const row = history[i];
+    const current = countGates(row);
+    const currentState = gateState(row);
+    if (current !== prior) {
+      // Identify cause: first gauge whose hit-state flipped this row.
+      let cause: GaugeKey = "naaim";
+      let causeLabel = "";
+      for (const g of GAUGES) {
+        if (currentState[g.key] !== priorState[g.key]) {
+          cause = g.key;
+          const v = row[g.key];
+          const direction = currentState[g.key] ? `crossed ${g.threshold}` : `dropped below ${g.threshold}`;
+          const reading = v != null ? ` (${fmtReading(v, g.key)})` : "";
+          causeLabel = `${shortLabel(g.key)} ${direction}${reading}`;
+          break;
+        }
+      }
+      out.push({
+        as_of: row.as_of,
+        cause,
+        cause_label: causeLabel,
+        prior_gates: prior,
+        current_gates: current,
+        prior_multiplier: MULTIPLIER_BY_GATES[Math.min(3, prior) as 0 | 1 | 2 | 3] ?? 1,
+        current_multiplier: MULTIPLIER_BY_GATES[Math.min(3, current) as 0 | 1 | 2 | 3] ?? 1,
+      });
+    }
+    prior = current;
+    priorState = currentState;
+  }
+  return out.reverse().slice(0, 8);
+}
+
+function countGates(r: MacroGaugeRow): number {
+  let c = 0;
+  if (r.naaim != null && r.naaim > 90) c += 1;
+  if (r.aaii_3wk_spread != null && r.aaii_3wk_spread > 30) c += 1;
+  if (r.fear_greed != null && r.fear_greed > 80) c += 1;
+  return c;
+}
+
+function gateState(r: MacroGaugeRow): Record<GaugeKey, boolean> {
+  return {
+    naaim: r.naaim != null && r.naaim > 90,
+    aaii_3wk_spread: r.aaii_3wk_spread != null && r.aaii_3wk_spread > 30,
+    fear_greed: r.fear_greed != null && r.fear_greed > 80,
+  };
+}
+
+function shortLabel(key: GaugeKey): string {
+  return key === "naaim" ? "NAAIM" : key === "aaii_3wk_spread" ? "AAII spread" : "F&G";
+}
+
+function fmtReading(n: number, key: GaugeKey): string {
+  if (key === "naaim") return n.toFixed(1);
+  if (key === "aaii_3wk_spread") return (n > 0 ? "+" : "") + n.toFixed(1);
+  return n.toFixed(0);
 }
 
 function scanThreshold(history: MacroGaugeRow[], key: GaugeKey): ThresholdHistory {

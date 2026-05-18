@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { I } from "@/components/primitives/icons";
-import { CRUMBS, pathToScreen } from "@/lib/screens";
+import { pathToCrumb } from "@/lib/screens";
 import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { Tip } from "./Tip";
 
@@ -11,18 +11,15 @@ export function TopBar({
   onCmd,
   onHelp,
   right,
-  themeBtn,
   userEmail,
 }: {
   onCmd: () => void;
   onHelp: () => void;
   right?: ReactNode;
-  themeBtn?: ReactNode;
   userEmail?: string | null;
 }) {
   const pathname = usePathname();
-  const screen = pathToScreen(pathname);
-  const [root, crumb] = CRUMBS[screen] || ["", null];
+  const [root, crumb] = pathToCrumb(pathname);
   const { open: panelOpen, setOpen: setPanelOpen } = useCtxPanel();
   return (
     <header
@@ -47,7 +44,6 @@ export function TopBar({
       </div>
       <div style={{ flex: 1 }} />
       {right}
-      {themeBtn}
       <Tip label="Open command palette" keys={["⌘", "K"]}>
         <TBBtn onClick={onCmd}>
           {I.search}

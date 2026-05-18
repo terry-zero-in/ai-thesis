@@ -22,7 +22,7 @@ const COLUMNS =
   "ticker,scored_at,disclosure_pts,defensibility_pts,concentration_pts,capex_eff_pts," +
   "indep_demand_pts,accounting_pts,total,notes," +
   "disclosure_note,defensibility_note,concentration_note,capex_eff_note,indep_demand_note,accounting_note," +
-  "source_url";
+  "sources";
 
 export async function getAiqContext(ticker: string): Promise<AiqContext> {
   const t = ticker.toUpperCase();

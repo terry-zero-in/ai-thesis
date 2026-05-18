@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { CtxPanel } from "./CtxPanel";
 import { CmdPalette } from "./CmdPalette";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
-import { ThemeSwitcher, type Palette } from "./ThemeSwitcher";
 import { GoToPill } from "./GoToPill";
-import { applyPalette, DEFAULT_PALETTE } from "@/lib/theme";
 import { useShellKeyboard } from "@/hooks/useShellKeyboard";
 import { FilterProvider } from "@/hooks/filter-context";
 import { CtxPanelProvider, useCtxPanel } from "@/hooks/ctx-panel-context";
@@ -58,12 +56,7 @@ function ShellInner({
   const [col, setCol] = useState(false);
   const [cmd, setCmd] = useState(false);
   const [shortcuts, setShortcuts] = useState(false);
-  const [palette, setPalette] = useState<Palette>(DEFAULT_PALETTE);
-  const { open: panel, setOpen: setPanelOpen } = useCtxPanel();
-
-  useEffect(() => {
-    applyPalette(palette);
-  }, [palette]);
+  const { open: panel, setOpen: setPanelOpen, rail } = useCtxPanel();
 
   const closeChromeOverlays = useCallback(() => {
     setCmd(false);
@@ -100,7 +93,6 @@ function ShellInner({
         <TopBar
           onCmd={() => setCmd(true)}
           onHelp={() => setShortcuts(true)}
-          themeBtn={<ThemeSwitcher palette={palette} onPick={setPalette} />}
           userEmail={userEmail}
         />
         <div
@@ -117,7 +109,7 @@ function ShellInner({
           {children}
         </div>
       </div>
-      {panel && <CtxPanel />}
+      {panel && rail !== "none" && <CtxPanel />}
 
       <CmdPalette open={cmd} onClose={() => setCmd(false)} />
       <ShortcutsOverlay open={shortcuts} onClose={() => setShortcuts(false)} />

@@ -3,22 +3,37 @@
 import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { useUniverseFilter } from "@/hooks/universe-filter-context";
 import { UniverseFilterRail } from "@/components/universe/UniverseFilterRail";
+import { DashboardTodayRail, type DashboardTodayRailData } from "@/components/rails/DashboardTodayRail";
+import { NameActivityRail, type NameActivityRailData } from "@/components/rails/NameActivityRail";
+import { PortfolioReserveRail, type PortfolioReserveRailData } from "@/components/rails/PortfolioReserveRail";
+import { RegimeLegendRail, type RegimeLegendRailData } from "@/components/rails/RegimeLegendRail";
+import { AiqHistoryRail, type AiqHistoryRailData } from "@/components/rails/AiqHistoryRail";
 
 /**
  * CtxPanel — right-side context panel.
  *
  * Pages register their rail key on mount (effect → ctx-panel-context.setRail)
- * and this component switches the rendered surface on that key. New rails
- * land here as each page ships:
- *   - "universe-filter" → Layer / Tier filter chips for /universe (THS-52)
- *   - "regime-history"  → upcoming for /regime (THS-56)
- *   - …
+ * and this component switches the rendered surface on that key. Data-driven
+ * rails additionally push their payload via setPayload — read here and cast
+ * to the per-rail shape at the branch.
+ *
+ * Wired rails (per Master Design Spec §6):
+ *   - "universe-filter"  → Layer / Tier filter chips for /universe (THS-52)
+ *   - "dashboard-today"  → Top movers + insider ghost + macro gates for /
+ *   - "name-activity"    → upcoming for /universe/[ticker]
+ *   - "portfolio-reserve"→ upcoming for /portfolio
+ *   - "regime-legend"    → upcoming for /regime
+ *   - "aiq-history"      → upcoming for /aiq/[ticker]
  *
  * Default (no key registered, or key not handled) is a 320px placeholder so
  * the layout math doesn't change when ⌘\\ opens an empty panel during dev.
  */
 export function CtxPanel() {
-  const { rail } = useCtxPanel();
+  const { rail, payload } = useCtxPanel();
+  // Spec §6: pages without rail content (rail==="none", set by <NoRail/>)
+  // hide the entire aside so the canvas claims the full width. Lambo-review
+  // §2.6 #4 — Terry confirmed 2026-05-17.
+  if (rail === "none") return null;
   return (
     <aside
       style={{
@@ -33,7 +48,21 @@ export function CtxPanel() {
         overflow: "hidden",
       }}
     >
-      {rail === "universe-filter" ? <UniverseFilterPanel /> : <Placeholder />}
+      {rail === "universe-filter" ? (
+        <UniverseFilterPanel />
+      ) : rail === "dashboard-today" && payload ? (
+        <DashboardTodayRail data={payload as DashboardTodayRailData} />
+      ) : rail === "name-activity" && payload ? (
+        <NameActivityRail data={payload as NameActivityRailData} />
+      ) : rail === "portfolio-reserve" && payload ? (
+        <PortfolioReserveRail data={payload as PortfolioReserveRailData} />
+      ) : rail === "regime-legend" && payload ? (
+        <RegimeLegendRail data={payload as RegimeLegendRailData} />
+      ) : rail === "aiq-history" && payload ? (
+        <AiqHistoryRail data={payload as AiqHistoryRailData} />
+      ) : (
+        <Placeholder />
+      )}
     </aside>
   );
 }
@@ -44,13 +73,13 @@ function UniverseFilterPanel() {
     <UniverseFilterRail
       layers={f.layers}
       tiers={f.tiers}
+      aiqMin={f.aiqMin}
+      flags={f.flags}
       onToggleLayer={f.toggleLayer}
       onToggleTier={f.toggleTier}
+      onSetAiqMin={f.setAiqMin}
+      onToggleFlag={f.toggleFlag}
       onClear={f.clear}
-      totalRows={f.totalRows}
-      visibleRows={f.visibleRows}
-      asOf={f.asOf}
-      synthetic={f.synthetic}
     />
   );
 }

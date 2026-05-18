@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { DIMS, type AiqRow, type DimKey, type NoteKey } from "@/lib/aiq-types";
+import { DIMS, dimSlug, sourceFieldName, type AiqRow, type DimKey, type NoteKey } from "@/lib/aiq-types";
 import { saveAiqRubric, SAVE_INITIAL, type SaveState } from "./actions";
+import { HeroNumber } from "@/components/primitives/HeroNumber";
 
 interface Props {
   ticker: string;
@@ -21,6 +22,7 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
   }, [latest]);
   const [vals, setVals] = useState(initial);
   const total = DIMS.reduce((s, d) => s + (vals[d.key] || 0), 0);
+  const dirty = DIMS.some((d) => vals[d.key] !== initial[d.key]);
 
   const set = (k: string, v: number) => setVals((p) => ({ ...p, [k]: v }));
 
@@ -30,60 +32,49 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        gap: 0,
       }}
     >
       <input type="hidden" name="ticker" value={ticker} />
 
+      {/* Mercury decard: hero sits on canvas, framed by top + bottom hairlines. */}
       <div
         style={{
-          display: "flex",
-          alignItems: "baseline",
-          gap: 12,
-          padding: "10px 14px",
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
+          padding: "18px 22px",
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <span style={{ fontSize: 11, fontFamily: "var(--m)", color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".08em" }}>
-          Total
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--m)",
-            fontSize: 24,
-            fontWeight: 600,
-            fontVariantNumeric: "tabular-nums",
-            color: total === 0 ? "var(--text-4)" : "var(--text-1)",
-            lineHeight: 1,
-          }}
-        >
-          {total}
-        </span>
-        <span style={{ fontSize: 12, color: "var(--text-3)", fontFamily: "var(--m)" }}>/ 100</span>
-        <div style={{ flex: 1 }} />
-        {latest && (
-          <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-            last saved {latest.scored_at} · was {latest.total}
-          </span>
-        )}
+        <HeroNumber
+          label="Total"
+          value={total}
+          unit=" / 100"
+          precision={0}
+          size="lg"
+          valueColor={total === 0 ? "var(--text-4)" : "var(--text-1)"}
+          delta={latest && total !== latest.total ? { value: total - latest.total, period: "vs saved" } : null}
+          attribution={latest ? `last saved ${latest.scored_at} · was ${latest.total}` : "no prior version"}
+        />
       </div>
 
-      {DIMS.map((d) => (
-        <DimRow
-          key={d.key}
-          label={d.label}
-          dimKey={d.key}
-          noteKey={d.note}
-          cap={d.cap}
-          value={vals[d.key]}
-          onChange={(v) => set(d.key, v)}
-          initialNote={(latest?.[d.note as NoteKey] as string | null) ?? ""}
-        />
-      ))}
+      {DIMS.map((d) => {
+        const slug = dimSlug(d.key);
+        return (
+          <DimRow
+            key={d.key}
+            label={d.label}
+            dimKey={d.key}
+            noteKey={d.note}
+            cap={d.cap}
+            value={vals[d.key]}
+            onChange={(v) => set(d.key, v)}
+            initialNote={(latest?.[d.note as NoteKey] as string | null) ?? ""}
+            sourceFieldName={sourceFieldName(slug)}
+            initialSource={latest?.sources?.[slug] ?? ""}
+          />
+        );
+      })}
 
-      <Field label="Source URL" name="source_url" defaultValue={latest?.source_url ?? ""} placeholder="https://investor.example.com/2026-q1.pdf" />
       <Field
         label="General notes"
         name="notes"
@@ -92,7 +83,11 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
         placeholder="Cross-cutting rationale — what changed since the last scoring, key risks to revisit, etc."
       />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {/* Submit row sits on canvas with breathing room above.
+          Spec §5.6 line 705: [Discard] ... [Save → 93] — Discard is dirty-only,
+          resets dim numbers + textarea DOM via form.reset() back to `latest`
+          (or zeros when no prior version). */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px 0" }}>
         <button
           type="submit"
           disabled={pending || !envConfigured}
@@ -109,7 +104,25 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
             opacity: !envConfigured ? 0.5 : 1,
           }}
         >
-          {pending ? "Saving…" : "Save scoring"}
+          {pending ? "Saving…" : `Save scoring${latest && total !== latest.total ? ` → ${total}` : ""}`}
+        </button>
+        <button
+          type="reset"
+          disabled={pending || !dirty}
+          onClick={() => setVals(initial)}
+          style={{
+            height: 34,
+            padding: "0 14px",
+            fontSize: 12.5,
+            fontWeight: 500,
+            color: dirty ? "var(--text-2)" : "var(--text-4)",
+            background: "transparent",
+            border: "1px solid var(--border)",
+            borderRadius: 5,
+            cursor: dirty && !pending ? "pointer" : "not-allowed",
+          }}
+        >
+          Discard
         </button>
         <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
           Saves as {new Date().toISOString().slice(0, 10)} · same-day re-save overwrites, next day creates a new history row.
@@ -123,7 +136,7 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
             borderRadius: 5,
             fontSize: 12,
             lineHeight: 1.5,
-            color: state.ok ? "#34D399" : "#FB7185",
+            color: state.ok ? "var(--success)" : "var(--danger)",
             background: state.ok ? "rgba(52,211,153,.06)" : "rgba(251,113,133,.06)",
             border: `1px solid ${state.ok ? "rgba(52,211,153,.25)" : "rgba(251,113,133,.25)"}`,
           }}
@@ -159,6 +172,8 @@ function DimRow({
   value,
   onChange,
   initialNote,
+  sourceFieldName,
+  initialSource,
 }: {
   label: string;
   dimKey: string;
@@ -167,18 +182,19 @@ function DimRow({
   value: number;
   onChange: (v: number) => void;
   initialNote: string;
+  sourceFieldName: string;
+  initialSource: string;
 }) {
   const pct = Math.max(0, Math.min(100, (value / cap) * 100));
   return (
+    // Mercury decard: row sits on canvas with bottom hairline separating rows.
     <div
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        padding: "10px 14px",
+        padding: "14px 22px",
+        borderBottom: "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        gap: 10,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -225,7 +241,7 @@ function DimRow({
         name={noteKey}
         defaultValue={initialNote}
         rows={2}
-        placeholder="Rationale + sources (e.g. 10-K segment data citation)"
+        placeholder="Rationale (e.g. 10-K segment data, IR release quote)"
         style={{
           marginTop: 2,
           padding: "8px 10px",
@@ -241,6 +257,40 @@ function DimRow({
           lineHeight: 1.5,
         }}
       />
+      {/* Spec §5.6 line 689+696: per-dimension Source URL beneath each
+          rationale block. Quiet label inline with input; empty = no source. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span
+          style={{
+            fontSize: 10,
+            fontFamily: "var(--m)",
+            color: "var(--text-4)",
+            textTransform: "uppercase",
+            letterSpacing: ".08em",
+            flexShrink: 0,
+          }}
+        >
+          Source URL
+        </span>
+        <input
+          name={sourceFieldName}
+          type="url"
+          defaultValue={initialSource}
+          placeholder="https://investor.example.com/q1-2026.pdf"
+          style={{
+            flex: 1,
+            height: 24,
+            padding: "0 8px",
+            fontSize: 11.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-1)",
+            background: "rgba(255,255,255,.02)",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            outline: "none",
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -259,15 +309,14 @@ function Field({
   multiline?: boolean;
 }) {
   return (
+    // Mercury decard: Field row on canvas with bottom hairline.
     <div
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-        borderRadius: 6,
-        padding: "10px 14px",
+        padding: "14px 22px",
+        borderBottom: "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: 8,
       }}
     >
       <span

@@ -7,21 +7,25 @@ export function DataPendingCard({
   title,
   ticket,
   note,
+  isFirst = false,
 }: {
   title: string;
   ticket: string;
   note: string;
+  isFirst?: boolean;
 }) {
   return (
+    // Mercury decard: ghost surface for unbuilt features. Vertical hairline
+    // dividers when laid out in a row (page provides borderTop, cells get
+    // borderLeft to make a strip).
     <div
       style={{
-        background: "var(--surface)",
-        border: "1px dashed var(--border)",
-        borderRadius: 6,
-        padding: "12px 14px",
+        padding: "16px 20px",
+        borderLeft: isFirst ? undefined : "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
         gap: 8,
+        minWidth: 0,
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>

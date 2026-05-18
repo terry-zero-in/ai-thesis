@@ -58,9 +58,9 @@ function HistoryRow({
   return (
     <div
       style={{
-        padding: "10px 14px",
+        padding: "12px 18px",
         borderBottom: "1px solid var(--border-subtle)",
-        background: latest ? "rgba(34,211,238,.04)" : undefined,
+        background: latest ? "var(--accent-soft)" : undefined,
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -106,9 +106,9 @@ function HistoryRow({
                 style={{
                   fontSize: 10,
                   fontFamily: "var(--m)",
-                  color: dlt > 0 ? "#34D399" : "#FB7185",
-                  background: dlt > 0 ? "rgba(52,211,153,.06)" : "rgba(251,113,133,.06)",
-                  border: `1px solid ${dlt > 0 ? "rgba(52,211,153,.25)" : "rgba(251,113,133,.25)"}`,
+                  color: dlt > 0 ? "var(--success)" : "var(--danger)",
+                  background: dlt > 0 ? "var(--success-soft)" : "var(--danger-soft)",
+                  border: `1px solid ${dlt > 0 ? "rgba(91,184,128,.30)" : "rgba(224,120,120,.30)"}`,
                   padding: "1px 5px",
                   borderRadius: 3,
                 }}
@@ -120,18 +120,8 @@ function HistoryRow({
           })}
         </div>
       )}
-      {row.source_url && (
-        <div style={{ marginTop: 6 }}>
-          <a
-            href={row.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontSize: 10.5, color: "var(--accent)", textDecoration: "none", fontFamily: "var(--m)" }}
-          >
-            source ↗
-          </a>
-        </div>
-      )}
+      <SourcesLine sources={row.sources} />
+
       {row.notes && (
         <div style={{ marginTop: 6, fontSize: 11, color: "var(--text-3)", lineHeight: 1.5 }}>
           {row.notes}
@@ -141,8 +131,52 @@ function HistoryRow({
   );
 }
 
+// Renders per-dim sources from the JSONB column. Primary anchor = first
+// available URL (disclosure preferred, falling back to dim order). Extra
+// dims surface as a "+N more" count chip — quiet, honest, no crowding.
+function SourcesLine({ sources }: { sources: { [k: string]: string } | null }) {
+  if (!sources) return null;
+  const entries = DIMS.map((d) => {
+    const slug = d.key.replace(/_pts$/, "");
+    const url = sources[slug];
+    return url ? { slug, url } : null;
+  }).filter((x): x is { slug: string; url: string } => x != null);
+  if (entries.length === 0) return null;
+  const primary = entries[0];
+  const extra = entries.length - 1;
+  return (
+    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+      <a
+        href={primary.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ fontSize: 10.5, color: "var(--accent)", textDecoration: "none", fontFamily: "var(--m)" }}
+      >
+        {primary.slug} ↗
+      </a>
+      {extra > 0 && (
+        <span
+          style={{
+            fontSize: 9.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            background: "var(--surface-2)",
+            padding: "1px 5px",
+            borderRadius: 3,
+            letterSpacing: ".05em",
+            textTransform: "uppercase",
+          }}
+          title={entries.slice(1).map((e) => e.slug).join(", ")}
+        >
+          +{extra} more
+        </span>
+      )}
+    </div>
+  );
+}
+
 function Delta({ n }: { n: number }) {
-  const color = n > 0 ? "#34D399" : "#FB7185";
+  const color = n > 0 ? "var(--success)" : "var(--danger)";
   return (
     <span style={{ fontFamily: "var(--m)", fontSize: 11, color, fontVariantNumeric: "tabular-nums" }}>
       {n > 0 ? "+" : ""}
@@ -155,12 +189,12 @@ function Header({ label }: { label: string }) {
   return (
     <div
       style={{
-        padding: "12px 14px",
-        fontSize: 11,
+        padding: "14px 18px 12px",
+        fontSize: 10.5,
         fontFamily: "var(--m)",
         fontWeight: 500,
         color: "var(--text-3)",
-        letterSpacing: ".06em",
+        letterSpacing: ".08em",
         textTransform: "uppercase",
         borderBottom: "1px solid var(--border-subtle)",
       }}
@@ -178,13 +212,14 @@ function Empty({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Mercury decard: aside flows on canvas with top + bottom hairlines; no
+// outer card. History rows below the header keep their own hairline rule.
 const asideStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   height: "100%",
   maxHeight: "calc(100vh - 200px)",
-  background: "var(--surface)",
-  border: "1px solid var(--border)",
-  borderRadius: 6,
+  borderTop: "1px solid var(--border-subtle)",
+  borderBottom: "1px solid var(--border-subtle)",
   overflow: "hidden",
 };

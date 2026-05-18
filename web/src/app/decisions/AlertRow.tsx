@@ -16,7 +16,7 @@ export function AlertRow({ event }: { event: AlertEvent }) {
   const [state, formAction, pending] = useActionState<AckState, FormData>(ackAlert, ACK_INITIAL);
   const [open, setOpen] = useState(false);
   const acked = !!event.acked_at;
-  const dot = event.severity === "high" ? "#FB7185" : event.severity === "warn" ? "#FBBF24" : "var(--text-3)";
+  const dot = event.severity === "high" ? "var(--danger)" : event.severity === "warn" ? "var(--warning)" : "var(--text-3)";
 
   return (
     <div
@@ -56,34 +56,43 @@ export function AlertRow({ event }: { event: AlertEvent }) {
         >
           {event.title}
         </button>
+        {/* Spec §4.5 tag chip: --surface-2 bg, --text-2 color, 1px 5px,
+            radius 3px, 10px mono uppercase 0.05em tracking. NEVER for
+            actions — neutral metadata only. */}
         <span
           style={{
             fontSize: 10,
             fontFamily: "var(--m)",
-            color: "var(--text-3)",
-            letterSpacing: ".06em",
+            color: "var(--text-2)",
+            background: "var(--surface-2)",
+            letterSpacing: ".05em",
             textTransform: "uppercase",
-            padding: "1px 6px",
-            border: "1px solid var(--border)",
+            padding: "1px 5px",
             borderRadius: 3,
           }}
         >
           {ALERT_KIND_LABELS[event.kind]}
         </span>
         {event.ticker && (
+          // Review §2.10 #3 + spec §4.5 — detail-link is an action, not a
+          // chip. Quiet text-button at --text-3, lin-hov promotes to
+          // --accent on hover. Replaces the prior accent-bordered "chip
+          // pretending to be a button" treatment.
           <Link
             href={`/universe/${event.ticker}`}
+            className="lin-hov"
             style={{
               fontSize: 10.5,
               fontFamily: "var(--m)",
-              color: "var(--accent)",
+              color: "var(--text-3)",
               textDecoration: "none",
-              padding: "1px 6px",
-              border: "1px solid var(--accent-border)",
+              padding: "1px 5px",
               borderRadius: 3,
+              letterSpacing: ".05em",
+              textTransform: "uppercase",
             }}
           >
-            ↗ detail
+            Detail ↗
           </Link>
         )}
         <div style={{ flex: 1 }} />
@@ -91,6 +100,9 @@ export function AlertRow({ event }: { event: AlertEvent }) {
         <form action={formAction} style={{ display: "inline-flex", gap: 6 }}>
           <input type="hidden" name="key" value={event.key} />
           {acked && <input type="hidden" name="remove" value="1" />}
+          {/* Review §2.10 #3 — unified button style. Primary action (ack)
+              gets solid accent fill; re-open of an already-acked row drops
+              to ghost outline to keep undo visually quieter than do. */}
           <button
             type="submit"
             disabled={pending}
@@ -99,9 +111,9 @@ export function AlertRow({ event }: { event: AlertEvent }) {
               padding: "0 10px",
               fontSize: 10.5,
               fontFamily: "var(--m)",
-              color: acked ? "var(--text-3)" : "var(--accent)",
-              background: "transparent",
-              border: `1px solid ${acked ? "var(--border)" : "var(--accent-border)"}`,
+              color: acked ? "var(--text-3)" : "var(--canvas)",
+              background: acked ? "transparent" : "var(--accent)",
+              border: acked ? "1px solid var(--border)" : "none",
               borderRadius: 3,
               cursor: pending ? "wait" : "pointer",
             }}
@@ -168,7 +180,7 @@ export function AlertRow({ event }: { event: AlertEvent }) {
             </form>
           )}
           {state.message && !state.ok && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#FB7185" }}>{state.message}</div>
+            <div style={{ marginTop: 6, fontSize: 11, color: "var(--danger)" }}>{state.message}</div>
           )}
         </div>
       )}

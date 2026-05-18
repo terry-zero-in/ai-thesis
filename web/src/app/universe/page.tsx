@@ -26,8 +26,11 @@ export default function UniversePage() {
     );
   }
 
+  // Mercury pattern #7 (Pic 5 b2, Advisors): page chrome scrolls away,
+  // table thead sticks to viewport top. Canvas owns the scroll context
+  // (overflow: auto here); table inner wrapper hands scroll back to us.
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto", minWidth: 0 }}>
       <UniverseHeader snap={snap} />
       <UniverseTable rows={snap.rows} asOf={snap.asOf} synthetic={snap.synthetic} />
     </div>

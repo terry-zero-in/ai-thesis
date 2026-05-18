@@ -63,6 +63,22 @@ export interface ThresholdHistory {
   last_hit_at: string | null;
 }
 
+/**
+ * Single change in the gate-count between two consecutive weekly rows.
+ * Drives spec §5.5 "last 5 gate-state changes" list.
+ */
+export interface GateChange {
+  as_of: string;
+  /** Which gauge caused the change in that week (first one to flip is recorded). */
+  cause: GaugeKey;
+  /** Cause display label, e.g. "NAAIM crossed 90" / "F&G dropped <80". */
+  cause_label: string;
+  prior_gates: number;
+  current_gates: number;
+  prior_multiplier: number;
+  current_multiplier: number;
+}
+
 export interface RegimeSnapshot {
   history: MacroGaugeRow[];
   latest: MacroGaugeRow | null;
@@ -70,6 +86,8 @@ export interface RegimeSnapshot {
   multiplier: number;
   /** Per-gauge threshold-crossing summaries, used for hover detail. */
   threshold_history: Record<GaugeKey, ThresholdHistory>;
+  /** Most-recent-first chronicle of gate-count changes across the 52w window. */
+  gate_changes: GateChange[];
   synthetic: boolean;
   envConfigured: boolean;
 }

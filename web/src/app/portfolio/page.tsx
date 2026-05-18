@@ -1,8 +1,9 @@
-import { getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
+import { getFixturePortfolioSnapshot, getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
 import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { AddPositionForm } from "./AddPositionForm";
 import { ReservePanel } from "./ReservePanel";
+import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -11,13 +12,35 @@ import { ReservePanel } from "./ReservePanel";
  */
 export const revalidate = 300;
 
-export default async function PortfolioPage() {
-  const snap = await getPortfolioSnapshot();
+export default async function PortfolioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ seed?: string }>;
+}) {
+  // ?seed=fixture-positions populates a 12-position demo book for /lambo
+  // review (lambo §2.4 #1). Empty fixture mode otherwise.
+  const params = await searchParams;
+  const demo = params.seed === "fixture-positions";
+  const snap = demo ? getFixturePortfolioSnapshot() : await getPortfolioSnapshot();
   const choices = getUniverseChoices();
   const taken = snap.positions.map((p) => p.ticker);
+  const railData = {
+    reserveActual: snap.reserve_actual,
+    reserveTarget: snap.settings.target_reserve,
+    totalCapital: snap.settings.total_capital,
+    positionTriggerCount: snap.position_triggers.length,
+    positionTriggerDetail:
+      snap.position_triggers.length === 0
+        ? "No held position is down ≥7% from cost basis."
+        : snap.position_triggers.map((t) => `${t.ticker} ${(t.pct_drawdown * 100).toFixed(1)}%`).join(" · "),
+    marketTriggers: snap.market_triggers,
+    asOf: snap.spy_as_of,
+    empty: snap.empty,
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <PortfolioRailRegister data={railData} />
       <header
         style={{
           padding: "18px 28px 14px",
@@ -42,6 +65,26 @@ export default async function PortfolioPage() {
         <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
           Live deployment · single book · manual cost-basis entry
         </span>
+        {demo && (
+          // Honest demo marker — spec §4.5 chip, --warning to signal
+          // "synthetic data, not live." Clears with /portfolio (no seed).
+          <span
+            style={{
+              fontSize: 10,
+              fontFamily: "var(--m)",
+              color: "var(--warning)",
+              background: "var(--warning-soft)",
+              border: "1px solid rgba(221,168,90,.30)",
+              padding: "1px 5px",
+              borderRadius: 3,
+              letterSpacing: ".05em",
+              textTransform: "uppercase",
+            }}
+            title="Synthetic 12-position book seeded via ?seed=fixture-positions for /lambo review."
+          >
+            Demo · fixture book
+          </span>
+        )}
         <div style={{ flex: 1 }} />
         {snap.spy_as_of && (
           <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
@@ -54,10 +97,10 @@ export default async function PortfolioPage() {
         style={{
           flex: 1,
           overflow: "auto",
-          padding: "20px 28px 32px",
+          padding: "24px 32px 40px",
           display: "flex",
           flexDirection: "column",
-          gap: 18,
+          gap: 32,
         }}
       >
         <AggregateBar snap={snap} />
@@ -66,7 +109,7 @@ export default async function PortfolioPage() {
           style={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1fr) 300px",
-            gap: 18,
+            gap: 32,
             alignItems: "start",
           }}
         >
@@ -74,18 +117,10 @@ export default async function PortfolioPage() {
             <PositionsTable positions={snap.positions} totalDeployed={snap.total_deployed} />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 0 }}>
             <ReservePanel snap={snap} />
-            <section
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--border)",
-                borderRadius: 6,
-                padding: 14,
-              }}
-            >
-              <AddPositionForm choices={choices} envConfigured={snap.envConfigured} takenTickers={taken} />
-            </section>
+            {/* AddPositionForm provides its own header (toggles Add/Update). */}
+            <AddPositionForm choices={choices} envConfigured={snap.envConfigured} takenTickers={taken} />
           </div>
         </div>
       </div>

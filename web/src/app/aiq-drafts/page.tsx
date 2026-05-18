@@ -1,5 +1,6 @@
 import { getAiqDraftsSnapshot } from "@/lib/aiq-drafts-data";
 import { DraftCard } from "./DraftCard";
+import { NoRail } from "@/components/shell/NoRail";
 
 /**
  * Revalidate every 15 minutes. Drafts trickle in as the per-ticker
@@ -14,6 +15,7 @@ export default async function AiqDraftsPage() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <NoRail />
       <header
         style={{
           padding: "18px 28px 14px",

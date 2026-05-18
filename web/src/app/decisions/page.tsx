@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { getAlertsSnapshot } from "@/lib/alerts-data";
 import { AlertRow } from "./AlertRow";
-import { ALERT_KIND_LABELS } from "@/lib/alerts-types";
+import { BulkAckButton } from "./BulkAckButton";
+import { ALERT_KIND_LABELS, type AlertKind } from "@/lib/alerts-types";
+import { NoRail } from "@/components/shell/NoRail";
 
 /**
  * Revalidate every 10 minutes so newly-derived alerts (from
@@ -9,15 +12,34 @@ import { ALERT_KIND_LABELS } from "@/lib/alerts-types";
  */
 export const revalidate = 600;
 
-export default async function DecisionsPage() {
-  const snap = await getAlertsSnapshot();
+function isAlertKind(v: string | undefined): v is AlertKind {
+  return v != null && v in ALERT_KIND_LABELS;
+}
 
-  // Group by kind for the rail summary; events array stays time-sorted.
+export default async function DecisionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kind?: string }>;
+}) {
+  const snap = await getAlertsSnapshot();
+  const params = await searchParams;
+  const activeKind: AlertKind | null = isAlertKind(params.kind) ? params.kind : null;
+
+  // Group by kind (over the FULL event set, before filtering) so the
+  // counts in the BY KIND panel show inventory, not "what survived the
+  // filter you just applied."
   const byKind: Record<string, number> = {};
   for (const e of snap.events) byKind[e.kind] = (byKind[e.kind] ?? 0) + 1;
 
+  const visibleEvents = activeKind == null ? snap.events : snap.events.filter((e) => e.kind === activeKind);
+  // Review §2.10 #5 — bulk-ack covers unseen events in the CURRENT view
+  // (respects the active kind filter, so "Mark 4 read" only acks the
+  // tier_change set when filtering to that kind).
+  const unseenKeysInView = visibleEvents.filter((e) => !e.acked_at).map((e) => e.key);
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <NoRail />
       <header
         style={{
           padding: "18px 28px 14px",
@@ -42,11 +64,49 @@ export default async function DecisionsPage() {
         <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
           Tier movement log + alerts · {snap.events.length} event
           {snap.events.length === 1 ? "" : "s"} ·{" "}
-          <strong style={{ color: snap.unseen > 0 ? "#FB7185" : "var(--text-3)" }}>
+          <strong style={{ color: snap.unseen > 0 ? "var(--danger)" : "var(--text-3)" }}>
             {snap.unseen} unseen
           </strong>
         </span>
+        {activeKind && (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontFamily: "var(--m)",
+                color: "var(--accent)",
+                background: "var(--accent-soft)",
+                border: "1px solid var(--accent-border)",
+                padding: "2px 8px",
+                borderRadius: 3,
+                letterSpacing: ".04em",
+              }}
+            >
+              {ALERT_KIND_LABELS[activeKind]} · {visibleEvents.length}
+            </span>
+            <Link
+              href="/decisions"
+              style={{
+                fontSize: 11,
+                fontFamily: "var(--m)",
+                color: "var(--text-3)",
+                textDecoration: "none",
+                border: "1px solid var(--border)",
+                padding: "2px 8px",
+                borderRadius: 3,
+                letterSpacing: ".04em",
+                textTransform: "uppercase",
+              }}
+            >
+              Clear
+            </Link>
+          </span>
+        )}
         <div style={{ flex: 1 }} />
+        <BulkAckButton
+          keys={unseenKeysInView}
+          label={activeKind ? `Mark ${unseenKeysInView.length} read` : `Mark all read`}
+        />
         {snap.synthetic && (
           <span
             style={{
@@ -96,8 +156,23 @@ export default async function DecisionsPage() {
               No events yet. Tier transitions and macro flips will land here as
               the Saturday composite cron writes new scores_history rows.
             </div>
+          ) : visibleEvents.length === 0 ? (
+            <div
+              style={{
+                padding: "32px 18px",
+                fontSize: 13,
+                color: "var(--text-3)",
+                textAlign: "center",
+              }}
+            >
+              No {activeKind ? ALERT_KIND_LABELS[activeKind].toLowerCase() : ""} events.{" "}
+              <Link href="/decisions" style={{ color: "var(--accent)" }}>
+                Clear filter
+              </Link>
+              .
+            </div>
           ) : (
-            snap.events.map((e) => <AlertRow key={e.key} event={e} />)
+            visibleEvents.map((e) => <AlertRow key={e.key} event={e} />)
           )}
         </section>
 
@@ -129,28 +204,55 @@ export default async function DecisionsPage() {
           </div>
           {(Object.keys(ALERT_KIND_LABELS) as (keyof typeof ALERT_KIND_LABELS)[]).map((k) => {
             const n = byKind[k] ?? 0;
-            return (
-              <div
-                key={k}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  fontSize: 12,
-                  color: n > 0 ? "var(--text-1)" : "var(--text-3)",
-                }}
-              >
-                <span>{ALERT_KIND_LABELS[k]}</span>
+            const active = activeKind === k;
+            const clickable = n > 0;
+            const href = active ? "/decisions" : `/decisions?kind=${k}`;
+            const content = (
+              <>
+                <span style={{ flex: 1, minWidth: 0 }}>{ALERT_KIND_LABELS[k]}</span>
                 <span
                   style={{
                     fontFamily: "var(--m)",
                     fontVariantNumeric: "tabular-nums",
-                    color: n > 0 ? "var(--text-1)" : "var(--text-4)",
+                    color: active ? "var(--accent)" : n > 0 ? "var(--text-1)" : "var(--text-4)",
                   }}
                 >
                   {n}
                 </span>
-              </div>
+              </>
+            );
+            const baseStyle: React.CSSProperties = {
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "4px 6px",
+              margin: "0 -6px",
+              borderRadius: 3,
+              fontSize: 12,
+              color: active ? "var(--accent)" : n > 0 ? "var(--text-1)" : "var(--text-3)",
+              background: active ? "var(--accent-soft)" : "transparent",
+              border: active ? "1px solid var(--accent-border)" : "1px solid transparent",
+              textDecoration: "none",
+              fontFamily: "var(--f)",
+              cursor: clickable ? "pointer" : "default",
+            };
+            if (!clickable) {
+              return (
+                <div key={k} style={baseStyle}>
+                  {content}
+                </div>
+              );
+            }
+            return (
+              <Link
+                key={k}
+                href={href}
+                className="lin-hov"
+                style={baseStyle}
+                aria-pressed={active}
+              >
+                {content}
+              </Link>
             );
           })}
           <div style={{ flex: 1 }} />

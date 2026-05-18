@@ -18,6 +18,22 @@ export const DIMS = [
 export type DimKey = (typeof DIMS)[number]["key"];
 export type NoteKey = (typeof DIMS)[number]["note"];
 
+/** Slug used inside the `sources` JSONB column (DimKey with `_pts` stripped). */
+export type DimSlug = "disclosure" | "defensibility" | "concentration" | "capex_eff" | "indep_demand" | "accounting";
+
+/** Per-dimension public-filings source URLs. All keys optional. */
+export type AiqSources = Partial<Record<DimSlug, string>>;
+
+/** Strip the `_pts` suffix from a DimKey to get its sources-JSONB slug. */
+export function dimSlug(k: DimKey): DimSlug {
+  return k.replace(/_pts$/, "") as DimSlug;
+}
+
+/** Per-dim form-field name for the per-dim source URL input (e.g. "source_disclosure"). */
+export function sourceFieldName(slug: DimSlug): string {
+  return `source_${slug}`;
+}
+
 export interface AiqRow {
   ticker: string;
   scored_at: string;
@@ -35,5 +51,5 @@ export interface AiqRow {
   capex_eff_note: string | null;
   indep_demand_note: string | null;
   accounting_note: string | null;
-  source_url: string | null;
+  sources: AiqSources | null;
 }

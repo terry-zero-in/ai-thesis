@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Tier, UniverseRow } from "@/lib/universe-data";
 import { useFilter } from "@/hooks/filter-context";
 import { useUniverseFilter } from "@/hooks/universe-filter-context";
@@ -22,7 +22,7 @@ const TIER_ORDER: Record<Tier, number> = { High: 0, Medium: 1, Low: 2, Avoid: 3 
 
 export function UniverseTable({ rows, asOf, synthetic }: Props) {
   const { q } = useFilter();
-  const { layers, tiers, setMeta } = useUniverseFilter();
+  const { layers, tiers, aiqMin, flags } = useUniverseFilter();
   const [sortKey, setSortKey] = useState<SortKey>("final");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -32,9 +32,15 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
       if (layers.size > 0 && !layers.has(r.layer)) return false;
       if (tiers.size > 0 && (!r.tier || !tiers.has(r.tier))) return false;
       if (qNorm && !r.ticker.includes(qNorm) && !r.name.toUpperCase().includes(qNorm)) return false;
+      if (aiqMin != null && (r.aiq == null || r.aiq < aiqMin)) return false;
+      // Macro flag — only wired flag in fixture; rows must currently have ≥1 gate hit.
+      if (flags.has("macro") && r.macro_gates_hit < 1) return false;
+      // "depr" and "burry" remain unwired (pending THS-46 depreciation_flags
+      // ingestion). They don't restrict the result set yet — the rail-side
+      // toggle disables clicks + shows a pending note to match.
       return true;
     });
-  }, [rows, layers, tiers, q]);
+  }, [rows, layers, tiers, q, aiqMin, flags]);
 
   const sorted = useMemo(() => {
     const out = [...filtered];
@@ -51,11 +57,6 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
     return out;
   }, [filtered, sortKey, sortDir]);
 
-  // Publish row counts + provenance to the rail footer.
-  useEffect(() => {
-    setMeta({ totalRows: rows.length, visibleRows: sorted.length, asOf, synthetic });
-  }, [rows.length, sorted.length, asOf, synthetic, setMeta]);
-
   const handleSort = (k: SortKey) => {
     if (k === sortKey) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -67,10 +68,11 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
   };
 
   return (
+    // Mercury #7 — scroll context lives on the parent canvas, not here.
+    // thead sticks to the canvas-scroll viewport top, so the page header
+    // (UniverseHeader) slides away as the table scrolls into focus.
     <div
       style={{
-        flex: 1,
-        overflow: "auto",
         background: "var(--canvas)",
       }}
     >
@@ -135,6 +137,30 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
           ))}
         </tbody>
       </table>
+      {/* Review §2.2 #6 — footer count lives UNDER the table per spec, not in
+          the rail. Quiet line; mono numerics; provenance + fixture flag. */}
+      <div
+        style={{
+          padding: "10px 18px 16px",
+          fontSize: 11,
+          color: "var(--text-3)",
+          display: "flex",
+          gap: 10,
+          alignItems: "baseline",
+          fontFamily: "var(--m)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <span style={{ color: "var(--text-2)" }}>
+          Showing {sorted.length} of {rows.length} · click row for detail
+        </span>
+        {asOf && (
+          <span>
+            · as of <span style={{ color: "var(--text-2)" }}>{asOf}</span>
+            {synthetic ? " (fixture)" : ""}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -188,16 +214,19 @@ function Row({ r }: { r: UniverseRow }) {
       <Td>
         <TierBadge tier={r.tier} />
       </Td>
-      <Td>
+      {/* Spec §5.2:493 — Q/G/V/AIQ cell bg tinted --accent-soft at score ≥80.
+          MiniBar kept as the analytical upgrade; tint added on top so the
+          row-level scan still surfaces high-conviction names. */}
+      <Td tint={tintScore(r.q)}>
         <MiniBar label="Q" value={r.q} />
       </Td>
-      <Td>
+      <Td tint={tintScore(r.g)}>
         <MiniBar label="G" value={r.g} />
       </Td>
-      <Td>
+      <Td tint={tintScore(r.v)}>
         <MiniBar label="V" value={r.v} />
       </Td>
-      <Td>
+      <Td tint={tintScore(r.aiq)}>
         <MiniBar label="A" value={r.aiq} />
       </Td>
       <Td align="right" mono>
@@ -213,7 +242,7 @@ function Row({ r }: { r: UniverseRow }) {
 function DeltaCell({ d }: { d: number | null }) {
   if (d == null) return <span style={{ color: "var(--text-4)" }}>—</span>;
   const sign = d > 0 ? "+" : "";
-  const color = d > 0 ? "#34D399" : d < 0 ? "#FB7185" : "var(--text-3)";
+  const color = d > 0 ? "var(--success)" : d < 0 ? "var(--danger)" : "var(--text-3)";
   return <span style={{ color }}>{sign}{d.toFixed(1)}</span>;
 }
 
@@ -227,9 +256,9 @@ function MacroFlag({ gates, mult }: { gates: number; mult: number }) {
       style={{
         fontFamily: "var(--m)",
         fontSize: 10,
-        color: "#FACC15",
-        background: "rgba(250,204,21,.08)",
-        border: "1px solid rgba(250,204,21,.28)",
+        color: "var(--warning)",
+        background: "var(--warning-soft)",
+        border: "1px solid rgba(221,168,90,.30)",
         borderRadius: 3,
         padding: "1px 5px",
       }}
@@ -259,7 +288,11 @@ function Th({
   width?: number;
 }) {
   const active = sortable && k != null && sortKey === k;
-  const arrow = active ? (sortDir === "asc" ? "▲" : "▼") : "";
+  // Review §2.2 #7: sortable headers always show a sort affordance.
+  // Active: ▲/▼ in --accent. Sortable-inactive: ⇅ in --text-4 (Linear quiet
+  // pattern — capability visible, doesn't compete with active state).
+  const arrow = active ? (sortDir === "asc" ? "▲" : "▼") : sortable ? "⇅" : "";
+  const arrowColor = active ? "var(--accent)" : "var(--text-4)";
   return (
     <th
       onClick={sortable && k && onSort ? () => onSort(k) : undefined}
@@ -282,7 +315,7 @@ function Th({
     >
       {children}
       {arrow && (
-        <span style={{ marginLeft: 5, fontSize: 8, color: "var(--accent)" }}>{arrow}</span>
+        <span style={{ marginLeft: 5, fontSize: 8, color: arrowColor }}>{arrow}</span>
       )}
     </th>
   );
@@ -293,11 +326,13 @@ function Td({
   align,
   mono,
   strong,
+  tint,
 }: {
   children: React.ReactNode;
   align?: "left" | "right" | "center";
   mono?: boolean;
   strong?: boolean;
+  tint?: boolean;
 }) {
   return (
     <td
@@ -309,6 +344,7 @@ function Td({
         fontFamily: mono ? "var(--m)" : undefined,
         fontVariantNumeric: mono ? "tabular-nums" : undefined,
         fontWeight: strong ? 600 : undefined,
+        background: tint ? "var(--accent-soft)" : undefined,
         verticalAlign: "middle",
         whiteSpace: "nowrap",
       }}
@@ -316,6 +352,10 @@ function Td({
       {children}
     </td>
   );
+}
+
+function tintScore(v: number | null): boolean {
+  return v != null && v >= 80;
 }
 
 function fmt1(n: number | null) {

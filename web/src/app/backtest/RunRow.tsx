@@ -57,7 +57,7 @@ export function RunRow({ run }: { run: BacktestRun }) {
         <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
           <Stat label="Total return" value={pct(s.total_return)} accent={signColor(s.total_return)} />
           <Stat label="Sharpe" value={num(s.sharpe, 2)} />
-          <Stat label="Max DD" value={pct(s.max_drawdown)} accent="#FB7185" />
+          <Stat label="Max DD" value={pct(s.max_drawdown)} accent="var(--danger)" />
           <Stat label="Hit rate" value={pct(s.hit_rate)} />
           <Stat label="Avg turnover" value={pct(s.avg_turnover)} />
           <Stat label="Rebalances" value={num(s.rebalance_count, 0)} />
@@ -198,7 +198,7 @@ function num(v: number | null, dp = 2): string {
 
 function signColor(v: number | null): string {
   if (v == null) return "var(--text-1)";
-  if (v > 0) return "#86EFAC";
-  if (v < 0) return "#FB7185";
+  if (v > 0) return "var(--success)";
+  if (v < 0) return "var(--danger)";
   return "var(--text-1)";
 }

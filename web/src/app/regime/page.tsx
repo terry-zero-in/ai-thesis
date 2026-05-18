@@ -2,6 +2,10 @@ import { getRegimeSnapshot } from "@/lib/regime-data";
 import { GAUGES } from "@/lib/regime-types";
 import { MultiplierBanner } from "./MultiplierBanner";
 import { GaugeCard } from "./GaugeCard";
+import { RegimeTrendChart } from "./RegimeTrendChart";
+import { GateHistory } from "./GateHistory";
+import { RegimeRailRegister } from "@/components/rails/RegimeRailRegister";
+import type { RegimeLegendItem } from "@/components/rails/RegimeLegendRail";
 
 /**
  * Revalidate every 30 minutes so the page picks up new weekly macro_gauges
@@ -12,9 +16,22 @@ export const revalidate = 1800;
 
 export default async function RegimePage() {
   const snap = await getRegimeSnapshot();
+  const items: RegimeLegendItem[] = GAUGES.map((g) => {
+    const v = snap.latest?.[g.key] ?? null;
+    const hit = v != null && v > g.threshold;
+    return { label: g.label, value: v, threshold: g.threshold, hit, blurb: g.blurb };
+  });
+  const railData = {
+    items,
+    gatesHit: snap.gates_hit,
+    multiplier: snap.multiplier,
+    asOf: snap.latest?.as_of ?? null,
+    synthetic: snap.synthetic,
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <RegimeRailRegister data={railData} />
       <header
         style={{
           padding: "18px 28px 14px",
@@ -62,15 +79,17 @@ export default async function RegimePage() {
         style={{
           flex: 1,
           overflow: "auto",
-          padding: "20px 28px 32px",
+          padding: "24px 32px 40px",
           display: "flex",
           flexDirection: "column",
-          gap: 18,
+          gap: 28,
           maxWidth: 1200,
         }}
       >
         <MultiplierBanner gatesHit={snap.gates_hit} multiplier={snap.multiplier} asOf={snap.latest?.as_of ?? null} />
 
+        {/* GaugeCards keep their card chrome — multi-part instruments earn
+            their boundary per /lambo "earn its place." */}
         <div
           style={{
             display: "grid",
@@ -88,17 +107,15 @@ export default async function RegimePage() {
           ))}
         </div>
 
-        <section
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-            borderRadius: 6,
-            padding: "14px 18px",
-            fontSize: 12,
-            color: "var(--text-3)",
-            lineHeight: 1.6,
-          }}
-        >
+        {/* 12-month trend chart per spec §5.5 — 3 thin lines (NAAIM/AAII/F&G)
+            with per-gauge threshold dashes + today marker. */}
+        <RegimeTrendChart history={snap.history} />
+
+        {/* "Last 5 gate-state changes" history per spec §5.5 — receipts list. */}
+        <GateHistory changes={snap.gate_changes} />
+
+        {/* Mercury decard prose section — label + hairline + canvas-flow prose. */}
+        <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div
             style={{
               fontSize: 10.5,
@@ -106,16 +123,19 @@ export default async function RegimePage() {
               color: "var(--text-3)",
               letterSpacing: ".08em",
               textTransform: "uppercase",
-              marginBottom: 8,
+              paddingBottom: 10,
+              borderBottom: "1px solid var(--border-subtle)",
             }}
           >
             How the multiplier applies
           </div>
-          The multiplier is applied to composite scores ≥ 75 only — names below
-          the High-conviction cut-off are never further de-rated by macro state
-          (composite.ts §Fix 4). One de-rated tier shift is the typical
-          behavioral consequence: a 78 raw → 0.95 → 74.1 final drops from High
-          to Medium and changes its position cap accordingly.
+          <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.65, maxWidth: 760, margin: 0 }}>
+            The multiplier is applied to composite scores ≥ 75 only — names
+            below the High-conviction cut-off are never further de-rated by
+            macro state (composite.ts §Fix 4). One de-rated tier shift is the
+            typical behavioral consequence: a 78 raw → 0.95 → 74.1 final drops
+            from High to Medium and changes its position cap accordingly.
+          </p>
         </section>
       </div>
     </div>

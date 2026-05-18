@@ -17,7 +17,7 @@ interface NavItem {
 }
 
 const ITEMS: NavItem[] = [
-  // Operations
+  // Command center
   { ic: I.grid, label: "Dashboard",  id: "dash",      href: "/",          keys: ["G", "then", "D"] },
   { ic: I.bot,  label: "Universe",   id: "universe",  href: "/universe",  keys: ["G", "then", "U"] },
   { ic: I.log,  label: "Portfolio",  id: "portfolio", href: "/portfolio", keys: ["G", "then", "P"] },
@@ -139,7 +139,7 @@ export function Sidebar({
               textTransform: "uppercase",
             }}
           >
-            Operations
+            Command Center
           </div>
         )}
         {items.slice(0, 4).map((it) => (

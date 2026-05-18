@@ -3,6 +3,8 @@ import { getAiqContext } from "@/lib/aiq-data";
 import { AiqEditor } from "./AiqEditor";
 import { AiqHistory } from "./AiqHistory";
 import { LayerChip } from "@/components/universe/LayerChip";
+import { AiqRailRegister } from "@/components/rails/AiqRailRegister";
+import type { AiqHistoryRailRow } from "@/components/rails/AiqHistoryRail";
 
 interface Params {
   ticker: string;
@@ -27,8 +29,20 @@ export default async function AiqEditorPage({ params }: { params: Promise<Params
     );
   }
 
+  const railRows: AiqHistoryRailRow[] = ctx.history.map((r, i) => {
+    const older = ctx.history[i + 1];
+    const delta = older ? r.total - older.total : null;
+    return { scored_at: r.scored_at, total: r.total, delta, notes: r.notes };
+  });
+  const railData = {
+    ticker: ctx.seed.ticker,
+    rows: railRows,
+    envConfigured: ctx.envConfigured,
+  };
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <AiqRailRegister data={railData} />
       <div
         style={{
           padding: "18px 28px 14px",
@@ -57,6 +71,19 @@ export default async function AiqEditorPage({ params }: { params: Promise<Params
               <LayerChip layer={ctx.seed.layer} label={ctx.seed.layer_label} />
             </span>
           </div>
+          {/* spec §5.6 meta line — "Last scored {date} · {total}/100" */}
+          {ctx.latest ? (
+            <div style={{ fontSize: 12, color: "var(--text-2)", fontFamily: "var(--m)", fontVariantNumeric: "tabular-nums" }}>
+              Last scored <span style={{ color: "var(--text-1)" }}>{ctx.latest.scored_at}</span>
+              <span style={{ color: "var(--text-3)" }}> · </span>
+              <span style={{ color: "var(--text-1)" }}>{ctx.latest.total}</span>
+              <span style={{ color: "var(--text-3)" }}>/100</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "var(--text-3)", fontStyle: "italic" }}>
+              Not yet scored
+            </div>
+          )}
           <div style={{ fontSize: 11, color: "var(--text-3)" }}>
             AIQ rubric editor — six dimensions, 0…20 / 0…15. Save creates a new versioned row (UPSERT on same day).
           </div>
@@ -85,13 +112,20 @@ export default async function AiqEditorPage({ params }: { params: Promise<Params
           overflow: "auto",
           padding: "20px 28px 32px",
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) 320px",
+          // Spec §5.6 grid: editor + 320px HISTORY column. When env-unconfigured
+          // AND history is empty, the HISTORY column shows a single "Connect
+          // Supabase" line and otherwise wastes 320px — collapse to single-col
+          // and let the prior-versions rail surface the same content when it
+          // actually exists. Lambo-review §2.7 #5 (Terry confirmed 2026-05-17).
+          gridTemplateColumns: ctx.history.length === 0 ? "minmax(0, 1fr)" : "minmax(0, 1fr) 320px",
           gap: 20,
           alignItems: "start",
         }}
       >
         <AiqEditor ticker={ctx.seed.ticker} latest={ctx.latest} envConfigured={ctx.envConfigured} />
-        <AiqHistory history={ctx.history} envConfigured={ctx.envConfigured} />
+        {ctx.history.length > 0 && (
+          <AiqHistory history={ctx.history} envConfigured={ctx.envConfigured} />
+        )}
       </div>
     </div>
   );
