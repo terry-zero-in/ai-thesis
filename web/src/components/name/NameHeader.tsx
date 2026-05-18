@@ -67,6 +67,25 @@ export function NameHeader({ d }: { d: NameDetail }) {
                 segments={[
                   { label: "as_of", value: d.as_of ?? "—" },
                   { label: "engine", value: "composite v1.0" },
+                  {
+                    label: "mode",
+                    value: (
+                      <span
+                        style={{
+                          color: d.synthetic ? "var(--warning)" : "var(--success)",
+                          fontWeight: 600,
+                          letterSpacing: ".02em",
+                        }}
+                        title={
+                          d.synthetic
+                            ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
+                            : "Live: scores read from public.scores_history populated by the Saturday chain."
+                        }
+                      >
+                        {d.synthetic ? "Stubbed" : "Live"}
+                      </span>
+                    ),
+                  },
                   { label: "macro", value: `${d.macro_multiplier.toFixed(2)}× (${d.macro_gates_hit}/3)` },
                 ]}
               />
