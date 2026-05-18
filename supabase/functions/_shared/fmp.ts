@@ -332,12 +332,13 @@ export async function fetchHistoricalPrices(
   from: string,
   to: string,
 ): Promise<PriceRow[]> {
-  // /stable/historical-price-eod-full is the current endpoint. The legacy
-  // /api/v3/historical-price-full wrapped rows in a `{ historical: [...] }`
-  // envelope; the /stable/ form returns the array directly. Handle both
-  // shapes so this works during the deprecation overlap window.
+  // /stable/historical-price-eod/full is the current endpoint (FMP renamed
+  // from hyphenated `historical-price-eod-full` to slashed `historical-price-eod/full`
+  // around their 2025 stable-API migration). The /stable/ form returns the array
+  // directly; the legacy /api/v3 form wrapped rows in `{ historical: [...] }`.
+  // Handle both shapes for safety.
   const resp = await fmpGet<FmpHistoricalResponse | FmpHistoricalRow[]>(
-    `/historical-price-eod-full`,
+    `/historical-price-eod/full`,
     { symbol: ticker, from, to },
   );
   const rows: FmpHistoricalRow[] = Array.isArray(resp)
@@ -546,7 +547,10 @@ export interface InsiderFilingRow {
 }
 
 export async function fetchInsiderTrades(ticker: string, limit = 100): Promise<InsiderFilingRow[]> {
-  const arr = await fmpGet<FmpInsiderRow[]>(`/insider-trading`, {
+  // FMP renamed insider endpoints around 2025: `/insider-trading/latest` is the
+  // global activity feed (ignores symbol param) and `/insider-trading/search`
+  // is the symbol-filtered endpoint. Use search for per-ticker queries.
+  const arr = await fmpGet<FmpInsiderRow[]>(`/insider-trading/search`, {
     symbol: ticker,
     limit: String(limit),
   });
