@@ -383,28 +383,26 @@ export async function fetchLatestTranscript(ticker: string): Promise<{
 }
 
 /**
- * VIX (^VIX) is an index, not an equity; FMP's `/stable/historical-price-eod-full`
- * endpoint returns sparse / unadjusted data for it. The legacy
- * `/api/v3/historical-price-full/^VIX` endpoint is still served and
- * returns the standard `{symbol, historical: [...]}` envelope. We hit
- * the legacy path explicitly for VIX (and any future ^-prefixed macro
- * symbols) so the daily ingest doesn't silently drop the row.
+ * VIX (^VIX) is an index, not an equity. The legacy
+ * `/api/v3/historical-price-full/^VIX` endpoint that this used to call
+ * returns 403 deprecated as of 2026. The stable
+ * `/historical-price-eod/full` endpoint serves ^VIX correctly when the
+ * caret is URL-encoded (`%5E` — the URL constructor does this for us via
+ * searchParams). Verified 2026-05-18: returns standard FMP price row
+ * shape (symbol/date/open/high/low/close/volume/change/changePercent/vwap),
+ * no `historical` envelope.
  *
  * Returns `PriceRow[]` shaped identically to `fetchHistoricalPrices` so
  * the prices ingest can mix them.
  */
 export async function fetchVixHistory(from: string, to: string): Promise<PriceRow[]> {
-  const apikey = requireEnv("FMP_API_KEY");
-  const url = new URL(`https://financialmodelingprep.com/api/v3/historical-price-full/%5EVIX`);
-  url.searchParams.set("from", from);
-  url.searchParams.set("to", to);
-  url.searchParams.set("apikey", apikey);
-  const resp = await fetch(url.toString());
-  if (!resp.ok) {
-    throw new Error(`FMP VIX request failed: ${resp.status} ${resp.statusText}`);
-  }
-  const body = (await resp.json()) as FmpHistoricalResponse | FmpHistoricalRow[];
-  const rows: FmpHistoricalRow[] = Array.isArray(body) ? body : (body.historical ?? []);
+  const resp = await fmpGet<FmpHistoricalResponse | FmpHistoricalRow[]>(
+    `/historical-price-eod/full`,
+    { symbol: "^VIX", from, to },
+  );
+  const rows: FmpHistoricalRow[] = Array.isArray(resp)
+    ? resp
+    : (resp.historical ?? []);
   return rows.map((r) => ({
     ticker: "^VIX",
     date: r.date,

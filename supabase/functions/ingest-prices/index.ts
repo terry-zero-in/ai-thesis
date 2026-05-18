@@ -36,9 +36,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     for (const ticker of tickers) {
       try {
-        // ^-prefixed symbols (e.g. ^VIX) are indices — FMP's stable EOD
-        // endpoint returns sparse data for them; use the legacy
-        // historical-price-full endpoint instead.
+        // ^-prefixed symbols (e.g. ^VIX) are indices — caret must be
+        // URL-encoded for FMP. fetchVixHistory wraps that detail.
         const rows = ticker.startsWith("^")
           ? await fetchVixHistory(isoDate(from), isoDate(to))
           : await fetchHistoricalPrices(ticker, isoDate(from), isoDate(to));
