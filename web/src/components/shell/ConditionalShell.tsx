@@ -8,6 +8,11 @@ import { Shell } from "./Shell";
  * Wraps children in the authenticated app `Shell` except on bare-page
  * routes (login, auth callback, logout). Those routes should render
  * fullscreen without the Sidebar / TopBar / CtxPanel chrome.
+ *
+ * Marketing-landing case: root "/" rendered to an UNAUTHED visitor is
+ * also bare — the landing page is the front door for prospective users
+ * and shouldn't expose the operator chrome. Authed users at "/" still
+ * get the dashboard inside Shell as before.
  */
 const BARE_PREFIXES = ["/login", "/auth", "/logout"];
 
@@ -22,7 +27,8 @@ export function ConditionalShell({
 }) {
   const pathname = usePathname();
   const bare = BARE_PREFIXES.some((p) => pathname.startsWith(p));
-  if (bare) return <>{children}</>;
+  const landingUnauthed = pathname === "/" && !userEmail;
+  if (bare || landingUnauthed) return <>{children}</>;
   return (
     <Shell userEmail={userEmail} unseenAlerts={unseenAlerts}>
       {children}

@@ -12,6 +12,8 @@ import { computeGreeting } from "@/app/greeting-compute";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
 import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { MarketingLanding } from "@/components/marketing/MarketingLanding";
 
 /**
  * Revalidate every 30 min. Scores update on the Saturday chain;
@@ -32,6 +34,16 @@ const TIER_COLORS: Record<string, string> = {
 const SCORE_MOVERS_LIMIT = 8;
 
 export default async function DashboardPage() {
+  // Marketing-landing gate (THS-84): unauthenticated visitors to "/" see
+  // the paid-beta wedge; authed users get the dashboard below. The
+  // ConditionalShell sibling suppresses the operator Shell on the
+  // unauthed branch so the landing renders fullscreen without sidebar.
+  const sb = await getSupabaseServer();
+  const auth = sb ? await sb.auth.getUser() : { data: { user: null } };
+  if (!auth.data?.user) {
+    return <MarketingLanding />;
+  }
+
   // Parallel fetch — five independent server queries.
   const [snap, portfolio, regime, recentInsider, morningBrief] = await Promise.all([
     getDashboardSnapshot(),

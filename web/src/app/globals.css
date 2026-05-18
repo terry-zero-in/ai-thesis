@@ -297,3 +297,12 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
   .portfolio-grid{grid-template-columns:minmax(0,1fr) 320px;gap:32px}
   .portfolio-form-col{position:sticky;top:0}
 }
+
+/* Marketing landing — Score Math proof grid (THS-84).
+   At ≥960px the prose column and the static derivation ladder sit side
+   by side. Below that the ladder stacks under the prose so it remains
+   readable without horizontal scroll on tablet/mobile. */
+.score-math-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:32px;align-items:start}
+@media (min-width:960px){
+  .score-math-grid{grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:40px}
+}
