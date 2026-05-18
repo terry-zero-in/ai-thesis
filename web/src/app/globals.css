@@ -293,8 +293,15 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
        overlapping the rightmost columns of the positions table. */
 .portfolio-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
 .portfolio-form-col{display:flex;flex-direction:column;gap:24px;min-width:0}
-@media (min-width:1280px){
-  .portfolio-grid{grid-template-columns:minmax(0,1fr) 320px;gap:32px}
+/* Breakpoint pushed from 1280 → 1600 to match .ctx-panel-aside floor.
+   Below 1600, positions table claims full canvas width and the add-
+   position form stacks below — prevents the form from crowding the
+   right edge of the 10-column table (Ticker/Layer/Shares/Cost/Mark/
+   Mkt Value/P&L $/P&L %/ %Book/edit). Above 1600 the form returns
+   to the right column with a wider 48px gap so the edit column and
+   form fields don't visually touch. */
+@media (min-width:1600px){
+  .portfolio-grid{grid-template-columns:minmax(0,1fr) 320px;gap:48px}
   .portfolio-form-col{position:sticky;top:0}
 }
 
