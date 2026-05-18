@@ -93,15 +93,16 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
           disabled={pending || !envConfigured}
           style={{
             height: 34,
-            padding: "0 16px",
+            padding: "0 20px",
             fontSize: 12.5,
-            fontWeight: 500,
-            color: "var(--canvas)",
-            background: pending ? "color-mix(in oklab, var(--accent) 60%, transparent)" : "var(--accent)",
+            fontWeight: 600,
+            color: "var(--voltage-ink)",
+            background: pending ? "color-mix(in oklab, var(--voltage) 60%, transparent)" : "var(--voltage)",
             border: "none",
-            borderRadius: 5,
+            borderRadius: 9999,
             cursor: pending ? "wait" : envConfigured ? "pointer" : "not-allowed",
             opacity: !envConfigured ? 0.5 : 1,
+            transition: "background var(--dur-instant) var(--ease-out)",
           }}
         >
           {pending ? "Saving…" : `Save scoring${latest && total !== latest.total ? ` → ${total}` : ""}`}

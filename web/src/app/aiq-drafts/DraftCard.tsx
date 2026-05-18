@@ -158,17 +158,19 @@ export function DraftCard({ draft }: { draft: AiqDraftRow }) {
                   type="submit"
                   disabled={promoting}
                   style={{
-                    height: 24,
-                    padding: "0 12px",
+                    height: 26,
+                    padding: "0 14px",
                     fontSize: 11,
                     fontFamily: "var(--m)",
-                    color: "var(--canvas)",
-                    background: "var(--accent)",
+                    fontWeight: 600,
+                    color: "var(--voltage-ink)",
+                    background: promoting ? "color-mix(in oklab, var(--voltage) 60%, transparent)" : "var(--voltage)",
                     border: "none",
-                    borderRadius: 3,
+                    borderRadius: 9999,
                     cursor: promoting ? "wait" : "pointer",
                     letterSpacing: ".04em",
                     textTransform: "uppercase",
+                    transition: "background var(--dur-instant) var(--ease-out)",
                   }}
                 >
                   {promoting ? "promoting…" : "Promote to rubric"}

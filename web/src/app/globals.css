@@ -1,10 +1,25 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   RETICLE — Stage 3 token system + global rules
-   Source of truth: Reticle Stage 3 - Standalone.html (style block)
-   Extracted verbatim 2026-05-11. DO NOT mutate values silently — pixel parity
-   with the standalone mockup is the contract.
+   AI Thesis — Iris × Voltage v1.0 color system
+   Locked 2026-05-18 (S4). Supersedes Apex Blue (S2 2026-05-18) and Reticle
+   Stage 3 Plasma Cyan tokens. Source of truth: AI-Thesis Color System spec.
+
+   Three roles, three families:
+     • Iris   = the signal     (conviction ≥ 75, active-state arc, focus rings,
+                                links, selection, charts, multiplier glow).
+                                Never decorative — if a page is loud with Iris,
+                                something important is happening.
+     • Voltage= the verb       (the ONE primary CTA per page. Pill radius 9999px,
+                                voltage-ink text on voltage fill. Never on data,
+                                labels, or icons. The eye finds it instantly.)
+     • Frost  = the vocabulary (text + borders + quiet UI on the dark canvas).
+
+   Migration shape: NEW palette tokens (--iris-*, --voltage*, --frost-*, --jet,
+   --onyx, --carbon, --steel) are the source of truth. Existing semantic names
+   (--canvas, --surface, --text-1, --accent, etc.) survive as aliases so the
+   ~682 component refs don't move. Only primary-CTA buttons are migrated to
+   use --voltage directly.
    ============================================================================ */
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -13,8 +28,8 @@
    controls (checkboxes / radios / progress / sliders), and the native date /
    time / color pickers. `color-scheme: dark` flips Chrome / Edge / Safari to
    their dark calendar UI; `accent-color` colors the selected-day highlight
-   and any focus ring with our locked Apex blue. */
-html{color-scheme:dark;accent-color:#3560F3}
+   and any focus ring with the Iris-300 signal violet. */
+html{color-scheme:dark;accent-color:#A87DFE}
 
 /* Calendar glyph inside <input type="date|time|month|week"> renders as a
    black icon on dark backgrounds by default in Chromium. Invert it so it
@@ -36,28 +51,91 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 }
 
 :root{
-  /* Surfaces — Plasma Cyan palette (was Apex Blue). Sidebar deeper than canvas. */
-  --canvas:#0B0C0F; --sidebar:#06070A; --surface:#15171C; --surface-2:#1B1E25; --elevated:#22262E;
-  --hover-lift:#232730;
-  --hover-tint:rgba(255,255,255,.035);
-  --hover-tint-strong:rgba(255,255,255,.06);
-  --press-tint:rgba(255,255,255,.085);
-  /* Text — 4-level scale (dropped the very-faint #56595f tier; text-4 lifted to #74787f for legibility). */
-  --text-1:#ECEDEF; --text-2:#CFD3DA; --text-3:#7A818D; --text-4:#5F6571;
-  /* Borders — primary + strong + subtle (line/div collapsed onto subtle). */
-  --border:#2A2F38; --border-strong:#34353a; --border-subtle:#1F2229;
-  /* Accent — Apex-adjacent royal blue (#3560F3), locked 2026-05-18 per Terry.
-     accent-soft is the selection/tint bg; accent-border is the 1px outline / left-inset cue.
-     Hover/pressed derived: hover lifts +30 R/G with B clamp; pressed darkens proportionally.
-     Soft/border/glow re-anchored to RGB(53,96,243). Prior value was Cypher Indigo #4D5BFF. */
-  --accent:#3560F3; --accent-hover:#4F78F5; --accent-pressed:#2A4DC2;
-  --accent-soft:rgba(53,96,243,.10); --accent-border:rgba(53,96,243,.40); --accent-glow:rgba(53,96,243,.18);
-  /* --on-accent = text color when bg is solid accent (Btn primary, avatar, check-mark). White on indigo. */
-  --on-accent:#ffffff;
-  /* Semantic — desaturated per spec §2.1. Reserved for truth states only, never decorative. */
-  --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:#6594E8;
+  /* ─── PALETTE SOURCE OF TRUTH ─────────────────────────────────────────── */
+
+  /* Atmosphere — 7-stop vertical gradient (defined for marketing/onboarding
+     surfaces ONLY; never applied to data pages, never used as UI fill). */
+  --void:        #000000;
+  --pitch:       #07080C;
+  --atm-carbon:  #14171F;
+  --atm-graphite:#2A2F3E;
+  --atm-steel:   #5C637A;
+  --mist:        #A8AFC0;
+  --frost-bg:    #D6DAE4;
+
+  /* Surfaces — four solid elevation steps. Hover/popover/modal = next step up.
+     Never reach for shadows on a dark theme. */
+  --jet:    #000000;  /* L0 · canvas base */
+  --onyx:   #0A0B10;  /* L1 · card */
+  --carbon: #14171F;  /* L2 · elevated / hover / popover */
+  --steel:  #2A2F3E;  /* L3 · input / picker */
+
+  /* Iris — the brand violet. Conviction signals only (composite ≥75, active-state
+     arc, focus rings, links, selection, score bars, multiplier glow). Never decorative. */
+  --iris-50:  #F5EEFF;
+  --iris-100: #E4D2FF;
+  --iris-200: #C7A6FF;  /* highlight (top of arc) */
+  --iris-300: #A87DFE;  /* mid arc — vivid · default brand mark */
+  --iris-500: #8B5CF6;  /* brand base */
+  --iris-600: #7C3FE8;
+  --iris-700: #5B2EB8;  /* pressed */
+  --iris-900: #2E1166;
+
+  /* Voltage — the single neon CTA per page. Pill radius 9999px. Voltage-ink
+     text on voltage fill. Never on data, labels, or icons. */
+  --voltage:     #CCFF33;  /* base · primary CTA */
+  --voltage-hi:  #E2FF73;  /* hover · brighter */
+  --voltage-lo:  #A4D016;  /* active · pressed */
+  --voltage-ink: #0B0C0F;  /* text on voltage · near-black */
+
+  /* Frost — text + neutrals against the dark. Five steps from pure white
+     down to dividing-line gray. Entire vocabulary for type, borders, quiet UI. */
+  --white:    #FFFFFF;
+  --frost-100:#ECEEF3;
+  --frost-300:#B6BCC8;
+  --frost-500:#6E7689;
+  --frost-700:#3C4151;
+
+  /* ─── SEMANTIC ALIASES (consumer interface, do not move) ──────────────── */
+
+  --canvas:        var(--jet);     /* was #0B0C0F */
+  --sidebar:       var(--onyx);    /* one-step lift from canvas (was #06070A) */
+  --surface:       var(--onyx);    /* card surface (was #15171C) */
+  --surface-2:     var(--carbon);  /* (was #1B1E25) */
+  --elevated:      var(--carbon);  /* hover/popover surface (was #22262E) */
+  --hover-lift:    var(--steel);   /* (was #232730) */
+  --hover-tint:        rgba(255,255,255,.035);
+  --hover-tint-strong: rgba(255,255,255,.06);
+  --press-tint:        rgba(255,255,255,.085);
+
+  /* Text — 4-level scale mapped onto Frost. */
+  --text-1: var(--white);      /* display + headlines (was #ECEDEF) */
+  --text-2: var(--frost-100);  /* body (was #CFD3DA) */
+  --text-3: var(--frost-300);  /* secondary (was #7A818D) */
+  --text-4: var(--frost-500);  /* muted (was #5F6571) */
+
+  /* Borders — subtle → default → strong; rises into Frost on the strong end. */
+  --border-subtle: #1F2229;          /* hairline (kept literal — sits between onyx and carbon) */
+  --border:        var(--steel);     /* default divider (was #2A2F38) */
+  --border-strong: var(--frost-700); /* high-visibility / input focus edge (was #34353A) */
+
+  /* Accent — Iris-300 is the SIGNAL accent (interaction states, links, focus
+     rings, score arcs, selection). The PRIMARY CTA per page uses --voltage
+     directly, NOT --accent. Severity (success/warning/danger) is its own
+     ladder and is never replaced by Iris. */
+  --accent:         var(--iris-300);
+  --accent-hover:   var(--iris-200);
+  --accent-pressed: var(--iris-700);
+  --accent-soft:    rgba(168,125,254,.12);
+  --accent-border:  rgba(168,125,254,.40);
+  --accent-glow:    rgba(168,125,254,.22);
+  --on-accent:      var(--white);
+
+  /* Semantic — truth states only, never decorative. Severity ladder is
+     INDEPENDENT of Iris (Iris is brand/signal, not severity). */
+  --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:var(--iris-300);
   --success-soft:rgba(91,184,128,.10); --warning-soft:rgba(221,168,90,.10);
-  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(101,148,232,.07);
+  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(168,125,254,.08);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);

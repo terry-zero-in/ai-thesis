@@ -41,7 +41,7 @@ export function CtxPanel() {
         background: "var(--surface)",
         margin: "8px 8px 8px 0",
         borderRadius: 8,
-        border: "1px solid #1A1B1E",
+        border: "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
         flexShrink: 0,

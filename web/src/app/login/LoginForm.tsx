@@ -40,13 +40,13 @@ export function LoginForm({ next, envConfigured }: { next: string; envConfigured
         disabled={pending || !envConfigured}
         style={{
           height: 36,
-          padding: "0 14px",
+          padding: "0 18px",
           fontSize: 13,
-          fontWeight: 500,
-          color: "var(--canvas)",
-          background: pending ? "color-mix(in oklab, var(--accent) 60%, transparent)" : "var(--accent)",
+          fontWeight: 600,
+          color: "var(--voltage-ink)",
+          background: pending ? "color-mix(in oklab, var(--voltage) 60%, transparent)" : "var(--voltage)",
           border: "none",
-          borderRadius: 5,
+          borderRadius: 9999,
           cursor: pending ? "wait" : "pointer",
           opacity: !envConfigured ? 0.5 : 1,
           transition: "background var(--dur-instant) var(--ease-out)",

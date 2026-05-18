@@ -231,15 +231,17 @@ export function AddPositionForm({
         disabled={submitDisabled}
         style={{
           height: 32,
-          padding: "0 14px",
+          padding: "0 18px",
           fontSize: 12,
-          fontWeight: 500,
-          color: "var(--canvas)",
-          background: pending ? "color-mix(in oklab, var(--accent) 60%, transparent)" : "var(--accent)",
+          fontWeight: 600,
+          color: "var(--voltage-ink)",
+          background: pending ? "color-mix(in oklab, var(--voltage) 60%, transparent)" : "var(--voltage)",
           border: "none",
-          borderRadius: 4,
+          borderRadius: 9999,
           cursor: submitDisabled ? (pending ? "wait" : "not-allowed") : "pointer",
           opacity: !envConfigured ? 0.5 : 1,
+          transition: "background var(--dur-instant) var(--ease-out)",
+          alignSelf: "flex-start",
         }}
       >
         {pending ? "Saving…" : isEdit ? "Update position" : mode === "dollar" ? "Buy" : "Add position"}

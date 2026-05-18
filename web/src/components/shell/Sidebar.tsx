@@ -57,7 +57,7 @@ export function Sidebar({
       style={{
         width: col ? 56 : 240,
         background: "var(--sidebar)",
-        borderRight: "1px solid #1A1B1E",
+        borderRight: "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
         flexShrink: 0,
@@ -230,7 +230,7 @@ function SbItem({ ic, label, active, col, badge, href, keys, external }: NavItem
         borderRadius: 6,
         justifyContent: col ? "center" : "flex-start",
         color: active ? "var(--text-1)" : hov ? "var(--text-2)" : "var(--text-3)",
-        background: active ? "var(--surface-2)" : hov ? "#141516" : "transparent",
+        background: active ? "var(--surface-2)" : hov ? "var(--hover-tint)" : "transparent",
         fontWeight: active ? 500 : 400,
         fontSize: 13,
         transition: "background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out)",

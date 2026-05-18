@@ -88,7 +88,7 @@ export function Tip({ label, keys, children, side = "bottom", delay = 500, style
               position: "fixed",
               left: coords.left,
               top: coords.top,
-              background: "#1a1b1d",
+              background: "var(--surface)",
               border: "1px solid var(--border)",
               padding: "4px 8px",
               borderRadius: 5,
