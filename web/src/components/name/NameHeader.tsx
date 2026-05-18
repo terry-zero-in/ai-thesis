@@ -2,6 +2,7 @@ import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
 import { Sparkline } from "@/components/name/Sparkline";
+import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 import type { NameDetail } from "@/lib/name-detail-data";
 
 export function NameHeader({ d }: { d: NameDetail }) {
@@ -62,12 +63,13 @@ export function NameHeader({ d }: { d: NameDetail }) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
               <LayerChip layer={d.layer} label={d.layer_label} />
-              {d.as_of && (
-                <span style={{ color: "var(--text-3)", fontFamily: "var(--m)" }}>
-                  as of {d.as_of}
-                  {d.synthetic ? " · fixture" : ""}
-                </span>
-              )}
+              <MonoMetaSpine
+                segments={[
+                  { label: "as_of", value: d.as_of ?? "—" },
+                  { label: "engine", value: "composite v1.0" },
+                  { label: "macro", value: `${d.macro_multiplier.toFixed(2)}× (${d.macro_gates_hit}/3)` },
+                ]}
+              />
             </div>
           </div>
           <div style={{ flex: 1 }} />

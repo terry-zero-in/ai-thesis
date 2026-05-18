@@ -76,6 +76,19 @@ export interface NameDepFlag {
   source_url: string | null;
 }
 
+export interface NameForm4Row {
+  transaction_date: string;
+  insider_name: string;
+  insider_title: string | null;
+  transaction_code: string; // P=Purchase, S=Sale, A=Award, M=Exempt, F=InKind, etc.
+  acquired_disposed: string; // "A" or "D"
+  shares: number | null;
+  price_per_share: number | null;
+  transaction_value: number | null;
+  is_10b5_1: boolean | null;
+  source_url: string | null;
+}
+
 export interface NameDetail {
   ticker: string;
   name: string;
@@ -97,6 +110,7 @@ export interface NameDetail {
   history: NameSparkPoint[];
   aiq_rubric: NameAiqRubric | null;
   dep_flags: NameDepFlag[];
+  form4_recent: NameForm4Row[];
   synthetic: boolean;
   found: boolean;
 }
@@ -128,7 +142,7 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
   const sb = getSupabaseBrowser();
   if (!sb) return fixtureDetail(t);
 
-  const [universeRes, historyRes, aiqRes, depRes] = await Promise.all([
+  const [universeRes, historyRes, aiqRes, depRes, form4Res] = await Promise.all([
     sb.from("universe").select("ticker,name,layer,layer_label").eq("ticker", t).maybeSingle(),
     sb
       .from("scores_history")
@@ -152,13 +166,28 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
       .select("flagged_at,extension_years,penalty_v,burry_overstatement_pct,source_url")
       .eq("ticker", t)
       .order("flagged_at", { ascending: false }),
+    sb
+      .from("insider_form4_raw")
+      .select(
+        "transaction_date,insider_name,insider_title,transaction_code,acquired_disposed,shares,price_per_share,transaction_value,is_10b5_1,source_url",
+      )
+      .eq("ticker", t)
+      .order("transaction_date", { ascending: false })
+      .limit(8),
   ]);
 
   const universe = universeRes.data as UniverseRow | null;
   const history = (historyRes.data ?? []) as ScoresRow[];
   if (!universe || history.length === 0) return fixtureDetail(t, universe);
 
-  return buildDetail(universe, history, aiqRes.data ?? null, (depRes.data ?? []) as NameDepFlag[], false);
+  return buildDetail(
+    universe,
+    history,
+    aiqRes.data ?? null,
+    (depRes.data ?? []) as NameDepFlag[],
+    (form4Res.data ?? []) as NameForm4Row[],
+    false,
+  );
 }
 
 function buildDetail(
@@ -166,6 +195,7 @@ function buildDetail(
   history: ScoresRow[],
   aiq: NameAiqRubric | null,
   depFlags: NameDepFlag[],
+  form4: NameForm4Row[],
   synthetic: boolean,
 ): NameDetail {
   const latest = history[0];
@@ -194,6 +224,7 @@ function buildDetail(
       .map((h) => ({ as_of: h.as_of, composite: h.composite, final_score: h.final_score })),
     aiq_rubric: aiq,
     dep_flags: depFlags,
+    form4_recent: form4,
     synthetic,
     found: true,
   };
@@ -228,6 +259,7 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
       history: [],
       aiq_rubric: null,
       dep_flags: [],
+      form4_recent: [],
       synthetic: true,
       found: false,
     };
@@ -347,6 +379,7 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
     history,
     aiq_rubric: aiqRubric,
     dep_flags: depFlags,
+    form4_recent: [],
     synthetic: true,
     found: true,
   };

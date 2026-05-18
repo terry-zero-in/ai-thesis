@@ -23,6 +23,7 @@ export interface DashboardMover {
   prior_composite: number | null;
   delta: number;
   tier: Tier | null;
+  driver: { factor: "Q" | "G" | "V" | "AIQ"; delta: number } | null;
 }
 
 export interface DashboardCrossing {
@@ -86,6 +87,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       prior_composite: r.prior_composite,
       delta: r.delta,
       tier: r.tier,
+      driver: deriveDriver(r),
     });
   }
   const topWinners = moves.filter((m) => m.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, MOVERS_LIMIT);
@@ -124,6 +126,31 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     universeSize: rows.length,
     scoredCount,
   };
+}
+
+/**
+ * Pick the factor (Q / G / V / AIQ) whose 7-day delta is largest in
+ * magnitude — answers "why did composite move?" inline on the dashboard
+ * mover row. Skips factors where either current or prior is null.
+ * Returns null if no factor has a usable delta.
+ */
+function deriveDriver(r: UniverseRow): DashboardMover["driver"] {
+  const factors: { factor: "Q" | "G" | "V" | "AIQ"; curr: number | null; prior: number | null }[] = [
+    { factor: "Q", curr: r.q, prior: r.prior_q },
+    { factor: "G", curr: r.g, prior: r.prior_g },
+    { factor: "V", curr: r.v, prior: r.prior_v },
+    { factor: "AIQ", curr: r.aiq, prior: r.prior_aiq },
+  ];
+  let best: { factor: "Q" | "G" | "V" | "AIQ"; delta: number } | null = null;
+  for (const f of factors) {
+    if (f.curr == null || f.prior == null) continue;
+    const delta = Number((f.curr - f.prior).toFixed(1));
+    if (delta === 0) continue;
+    if (best == null || Math.abs(delta) > Math.abs(best.delta)) {
+      best = { factor: f.factor, delta };
+    }
+  }
+  return best;
 }
 
 function derivePriorTier(composite: number | null): Tier | null {

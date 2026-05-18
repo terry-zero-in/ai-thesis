@@ -4,6 +4,7 @@ import { AlertRow } from "./AlertRow";
 import { BulkAckButton } from "./BulkAckButton";
 import { ALERT_KIND_LABELS, type AlertKind } from "@/lib/alerts-types";
 import { NoRail } from "@/components/shell/NoRail";
+import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 
 /**
  * Revalidate every 10 minutes so newly-derived alerts (from
@@ -45,29 +46,45 @@ export default async function DecisionsPage({
           padding: "18px 28px 14px",
           borderBottom: "1px solid var(--border-subtle)",
           display: "flex",
-          alignItems: "baseline",
-          gap: 12,
+          flexDirection: "column",
+          gap: 6,
           flexShrink: 0,
         }}
       >
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: "-.014em",
-            color: "var(--text-1)",
-            fontFamily: "var(--m)",
-          }}
-        >
-          Decisions
-        </h1>
-        <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
-          Tier movement log + alerts · {snap.events.length} event
-          {snap.events.length === 1 ? "" : "s"} ·{" "}
-          <strong style={{ color: snap.unseen > 0 ? "var(--danger)" : "var(--text-3)" }}>
-            {snap.unseen} unseen
-          </strong>
-        </span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+          <h1
+            style={{
+              fontSize: 20,
+              fontWeight: 600,
+              letterSpacing: "-.014em",
+              color: "var(--text-1)",
+              fontFamily: "var(--m)",
+            }}
+          >
+            Decisions
+          </h1>
+          <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
+            Tier movement log + alerts ·{" "}
+            <strong style={{ color: snap.unseen > 0 ? "var(--danger)" : "var(--text-3)" }}>
+              {snap.unseen} unseen
+            </strong>
+          </span>
+          <div style={{ flex: 1 }} />
+          <BulkAckButton
+            keys={unseenKeysInView}
+            label={activeKind ? `Mark ${unseenKeysInView.length} read` : `Mark all read`}
+          />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <MonoMetaSpine
+            segments={[
+              { label: "events", value: snap.events.length },
+              { label: "kinds", value: Object.keys(byKind).length },
+              { label: "engine", value: "alerts v1.0" },
+            ]}
+          />
+          <div style={{ flex: 1 }} />
+        </div>
         {activeKind && (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <span
@@ -100,27 +117,6 @@ export default async function DecisionsPage({
             >
               Clear
             </Link>
-          </span>
-        )}
-        <div style={{ flex: 1 }} />
-        <BulkAckButton
-          keys={unseenKeysInView}
-          label={activeKind ? `Mark ${unseenKeysInView.length} read` : `Mark all read`}
-        />
-        {snap.synthetic && (
-          <span
-            style={{
-              fontSize: 10.5,
-              fontFamily: "var(--m)",
-              letterSpacing: ".06em",
-              textTransform: "uppercase",
-              color: "var(--text-3)",
-              border: "1px dashed var(--border)",
-              padding: "2px 8px",
-              borderRadius: 3,
-            }}
-          >
-            fixture
           </span>
         )}
       </header>

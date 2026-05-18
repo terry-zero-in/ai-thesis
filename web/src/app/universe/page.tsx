@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getLatestUniverseScores, type UniverseSnapshot } from "@/lib/universe-data";
 import { useFilter } from "@/hooks/filter-context";
 import { UniverseTable } from "@/components/universe/UniverseTable";
+import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 
 export default function UniversePage() {
   const [snap, setSnap] = useState<UniverseSnapshot | null>(null);
@@ -39,28 +40,32 @@ export default function UniversePage() {
 
 function UniverseHeader({ snap }: { snap: UniverseSnapshot }) {
   const { q, setQ, registerInput } = useFilter();
+  const sample = snap.rows.find((r) => r.macro_gates_hit != null);
   return (
     <div
       style={{
         padding: "16px 20px 12px",
         display: "flex",
-        alignItems: "center",
-        gap: 14,
+        flexDirection: "column",
+        gap: 6,
         flexShrink: 0,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <h1 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-.014em", color: "var(--text-1)" }}>
           Universe
         </h1>
-        <div style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-          {snap.rows.length} names
-          {snap.asOf ? ` · as of ${snap.asOf}` : ""}
-          {snap.synthetic ? " · fixture" : ""}
-        </div>
+        <div style={{ flex: 1 }} />
+        <SearchInput value={q} onChange={setQ} register={registerInput} />
       </div>
-      <div style={{ flex: 1 }} />
-      <SearchInput value={q} onChange={setQ} register={registerInput} />
+      <MonoMetaSpine
+        segments={[
+          { label: "names", value: snap.rows.length },
+          { label: "as_of", value: snap.asOf ?? "—" },
+          { label: "engine", value: "composite v1.0" },
+          { label: "macro", value: sample ? `${sample.macro_multiplier.toFixed(2)}× (${sample.macro_gates_hit}/3)` : "—" },
+        ]}
+      />
     </div>
   );
 }

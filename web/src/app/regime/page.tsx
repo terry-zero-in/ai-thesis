@@ -6,6 +6,7 @@ import { RegimeTrendChart } from "./RegimeTrendChart";
 import { GateHistory } from "./GateHistory";
 import { RegimeRailRegister } from "@/components/rails/RegimeRailRegister";
 import type { RegimeLegendItem } from "@/components/rails/RegimeLegendRail";
+import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 
 /**
  * Revalidate every 30 minutes so the page picks up new weekly macro_gauges
@@ -37,42 +38,35 @@ export default async function RegimePage() {
           padding: "18px 28px 14px",
           borderBottom: "1px solid var(--border-subtle)",
           display: "flex",
-          alignItems: "baseline",
-          gap: 12,
+          flexDirection: "column",
+          gap: 6,
           flexShrink: 0,
         }}
       >
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: "-.014em",
-            color: "var(--text-1)",
-            fontFamily: "var(--m)",
-          }}
-        >
-          Regime
-        </h1>
-        <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
-          NAAIM · AAII 3wk spread · CNN Fear &amp; Greed · macro multiplier applied at composite
-        </span>
-        <div style={{ flex: 1 }} />
-        {snap.synthetic && (
-          <span
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+          <h1
             style={{
-              fontSize: 10.5,
+              fontSize: 20,
+              fontWeight: 600,
+              letterSpacing: "-.014em",
+              color: "var(--text-1)",
               fontFamily: "var(--m)",
-              letterSpacing: ".06em",
-              textTransform: "uppercase",
-              color: "var(--text-3)",
-              border: "1px dashed var(--border)",
-              padding: "2px 8px",
-              borderRadius: 3,
             }}
           >
-            fixture
+            Regime
+          </h1>
+          <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
+            NAAIM · AAII 3wk spread · CNN Fear &amp; Greed · macro multiplier applied at composite
           </span>
-        )}
+        </div>
+        <MonoMetaSpine
+          segments={[
+            { label: "as_of", value: snap.latest?.as_of ?? "—" },
+            { label: "gates", value: `${snap.gates_hit}/3` },
+            { label: "multiplier", value: `${snap.multiplier.toFixed(2)}×` },
+            { label: "macro chain", value: "Tue 22:00 UTC weekly" },
+          ]}
+        />
       </header>
 
       <div

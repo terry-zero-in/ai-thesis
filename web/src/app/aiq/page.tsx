@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { getAiqIndex } from "@/lib/aiq-data";
 import { NoRail } from "@/components/shell/NoRail";
+import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+
+type ShowFilter = "scored" | "unscored" | "all";
+const SHOW_FILTERS: { key: ShowFilter; label: string }[] = [
+  { key: "scored", label: "Scored" },
+  { key: "unscored", label: "Unscored" },
+  { key: "all", label: "All" },
+];
 
 /**
  * Revalidate every 30 min. AIQ rubric changes are operator-edited
@@ -17,14 +25,30 @@ const DIM_COLS: Array<{ key: keyof import("@/lib/aiq-data").AiqIndexRow; label: 
   { key: "accounting_pts",    label: "Acct", cap: 15 },
 ];
 
-export default async function AiqIndexPage() {
+function isShowFilter(v: string | undefined): v is ShowFilter {
+  return v === "scored" || v === "unscored" || v === "all";
+}
+
+export default async function AiqIndexPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ show?: string }>;
+}) {
   const snap = await getAiqIndex();
-  const rowsSorted = [...snap.rows].sort((a, b) => {
+  const params = await searchParams;
+  const show: ShowFilter = isShowFilter(params.show) ? params.show : "scored";
+  const filtered = snap.rows.filter((r) => {
+    if (show === "all") return true;
+    if (show === "scored") return r.total != null;
+    return r.total == null;
+  });
+  const rowsSorted = [...filtered].sort((a, b) => {
     if (a.total == null && b.total == null) return a.ticker.localeCompare(b.ticker);
     if (a.total == null) return 1;
     if (b.total == null) return -1;
     return b.total - a.total;
   });
+  const unscoredCount = snap.rows.length - snap.scoredCount;
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -34,44 +58,80 @@ export default async function AiqIndexPage() {
           padding: "18px 28px 14px",
           borderBottom: "1px solid var(--border-subtle)",
           display: "flex",
-          alignItems: "baseline",
-          gap: 12,
+          flexDirection: "column",
+          gap: 8,
           flexShrink: 0,
         }}
       >
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: "-.014em",
-            color: "var(--text-1)",
-            fontFamily: "var(--m)",
-          }}
-        >
-          AIQ Editor
-        </h1>
-        <span style={{ fontSize: 12, color: "var(--text-3)" }}>
-          {snap.scoredCount} / {snap.rows.length} scored
-          {snap.asOf ? ` · latest ${snap.asOf}` : ""}
-          {snap.synthetic ? " · fixture mode" : ""}
-        </span>
-        <div style={{ flex: 1 }} />
-        <Link
-          href="/aiq-drafts"
-          style={{
-            fontSize: 11,
-            fontFamily: "var(--m)",
-            color: "var(--accent)",
-            textDecoration: "none",
-            padding: "4px 10px",
-            border: "1px solid var(--accent-border)",
-            borderRadius: 3,
-            letterSpacing: ".04em",
-            textTransform: "uppercase",
-          }}
-        >
-          Drafts queue ↗
-        </Link>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+          <h1
+            style={{
+              fontSize: 20,
+              fontWeight: 600,
+              letterSpacing: "-.014em",
+              color: "var(--text-1)",
+              fontFamily: "var(--m)",
+            }}
+          >
+            AIQ Editor
+          </h1>
+          <div style={{ flex: 1 }} />
+          <Link
+            href="/aiq-drafts"
+            style={{
+              fontSize: 11,
+              fontFamily: "var(--m)",
+              color: "var(--accent)",
+              textDecoration: "none",
+              padding: "4px 10px",
+              border: "1px solid var(--accent-border)",
+              borderRadius: 3,
+              letterSpacing: ".04em",
+              textTransform: "uppercase",
+            }}
+          >
+            Drafts queue ›
+          </Link>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <MonoMetaSpine
+            segments={[
+              { label: "scored", value: `${snap.scoredCount}/${snap.rows.length}` },
+              { label: "latest", value: snap.asOf ?? "—" },
+              { label: "cadence", value: "manual · quarterly" },
+            ]}
+          />
+          <div style={{ flex: 1 }} />
+          <div style={{ display: "inline-flex", gap: 0, border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
+            {SHOW_FILTERS.map((f, i) => {
+              const active = f.key === show;
+              const count =
+                f.key === "scored" ? snap.scoredCount :
+                f.key === "unscored" ? unscoredCount :
+                snap.rows.length;
+              return (
+                <Link
+                  key={f.key}
+                  href={f.key === "scored" ? "/aiq" : `/aiq?show=${f.key}`}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    fontFamily: "var(--m)",
+                    letterSpacing: ".04em",
+                    textTransform: "uppercase",
+                    textDecoration: "none",
+                    background: active ? "var(--hover-tint)" : "transparent",
+                    color: active ? "var(--text-1)" : "var(--text-3)",
+                    borderLeft: i === 0 ? undefined : "1px solid var(--border)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {f.label} <span style={{ color: active ? "var(--text-2)" : "var(--text-4)" }}>{count}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
       </header>
 
       <div style={{ flex: 1, overflow: "auto" }}>
@@ -153,7 +213,7 @@ export default async function AiqIndexPage() {
                       fontSize: 11,
                     }}
                   >
-                    edit ↗
+                    Edit ›
                   </Link>
                 </Td>
               </tr>

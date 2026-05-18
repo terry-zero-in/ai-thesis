@@ -7,6 +7,7 @@ import { NameHeader } from "@/components/name/NameHeader";
 import { FactorPanels } from "@/components/name/FactorPanels";
 import { DepFlagsList } from "@/components/name/DepFlagsList";
 import { DataPendingCard } from "@/components/name/DataPendingCard";
+import { Form4Section } from "@/components/name/Form4Section";
 import { NameRailRegister } from "@/components/rails/NameRailRegister";
 import type { NameActivityEvent, NameActivityRailData } from "@/components/rails/NameActivityRail";
 
@@ -97,22 +98,9 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
         <FactorPanels d={d} />
         <DepFlagsList flags={d.dep_flags} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
-          <DataPendingCard
-            isFirst
-            title="Insider Form 4"
-            ticket="THS-58"
-            note="Latest insider transactions land here once Form 4 ingestion ships. Source: SEC EDGAR Form 4 feed, weekly cadence."
-          />
-          <DataPendingCard
-            title="Recent news"
-            ticket="THS-59"
-            note="Headlines + sentiment land here once news ingestion ships. Source TBD — likely a Polygon/FMP news endpoint."
-          />
-          <DataPendingCard
-            title="Sentiment timeline"
-            ticket="THS-60"
-            note="Stubbed per ticket spec. Will plot news-derived sentiment over the same 12-week window as the score sparkline."
-          />
+          <Form4Section rows={d.form4_recent} isFirst />
+          <DataPendingCard title="Recent news" note="Headlines + sentiment will surface here once a news source is wired." />
+          <DataPendingCard title="Sentiment timeline" note="Will plot news-derived sentiment over the same 12-week window as the score sparkline." />
         </div>
       </div>
     </div>

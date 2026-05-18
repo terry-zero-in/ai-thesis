@@ -32,6 +32,10 @@ export interface UniverseRow {
   g: number | null;
   v: number | null;
   aiq: number | null;
+  prior_q: number | null;
+  prior_g: number | null;
+  prior_v: number | null;
+  prior_aiq: number | null;
   prior_composite: number | null;
   delta: number | null;
   macro_gates_hit: number;
@@ -115,6 +119,10 @@ function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): Universe
       g: latest?.g_score ?? null,
       v: latest?.v_score ?? null,
       aiq: latest?.aiq_score ?? null,
+      prior_q: prior?.q_score ?? null,
+      prior_g: prior?.g_score ?? null,
+      prior_v: prior?.v_score ?? null,
+      prior_aiq: prior?.aiq_score ?? null,
       prior_composite: prior?.composite ?? null,
       delta:
         latest?.composite != null && prior?.composite != null
@@ -158,6 +166,10 @@ function fixtureSnapshot(): UniverseSnapshot {
       g: baseG,
       v: baseV,
       aiq: baseAiq,
+      prior_q: baseQ - ((i % 5) - 2),
+      prior_g: baseG - ((i % 4) - 1),
+      prior_v: baseV - ((i % 3) - 1),
+      prior_aiq: baseAiq,
       prior_composite: prior,
       delta: Math.round((composite - prior) * 10) / 10,
       macro_gates_hit: gates,

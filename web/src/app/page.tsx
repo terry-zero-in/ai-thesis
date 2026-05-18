@@ -4,7 +4,9 @@ import { getRegimeSnapshot } from "@/lib/regime-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { GaugeCard } from "@/app/regime/GaugeCard";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
+import Link from "next/link";
 import { GreetingStrip, getServerGreeting } from "@/app/GreetingStrip";
+import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 
 /**
  * Revalidate every 30 min. Scores update on the Saturday chain;
@@ -66,6 +68,15 @@ export default async function DashboardPage() {
         }}
       >
         <GreetingStrip initialGreeting={greeting} initialDateLabel={dateLabel} />
+
+        <MonoMetaSpine
+          segments={[
+            { label: "as_of", value: snap.asOf ?? "—" },
+            { label: "engine", value: "composite v1.0" },
+            { label: "macro", value: `${snap.macroMultiplier.toFixed(2)}× (${snap.macroGatesHit}/3)` },
+            { label: "weekly chain", value: "Sat 22:00–22:45 UTC" },
+          ]}
+        />
 
         {snap.macroGatesHit > 0 && regime.latest && (
           <AlertCallout
@@ -242,75 +253,87 @@ function unifyMovers(winners: DashboardMover[], losers: DashboardMover[]): Dashb
     .slice(0, SCORE_MOVERS_LIMIT);
 }
 
+/**
+ * Grid-row movers list. Restructured from <table> so the whole row can
+ * be a single <Link> — Linear discipline: any row whose content is the
+ * detail page for a record is itself the navigation surface.
+ *
+ * Grid template:
+ *   [ticker 92px][layer 1fr][composite 96px][Δ7D 80px][driver 110px]
+ */
+const MOVERS_GRID = "92px minmax(0, 1fr) 96px 80px 110px";
+
 function MoversTable({ movers }: { movers: DashboardMover[] }) {
-  // Mercury Tasks (Pic 7 b1): faint row dividers between rows. No card chrome.
   return (
-    <table
-      style={{
-        width: "100%",
-        borderCollapse: "collapse",
-        fontSize: 13,
-        fontFamily: "var(--m)",
-      }}
-    >
-      <thead>
-        <tr>
-          <Th align="left">Ticker</Th>
-          <Th align="left">Layer</Th>
-          <Th>Composite</Th>
-          <Th>Δ 7D</Th>
-          <Th align="left">Driver</Th>
-        </tr>
-      </thead>
-      <tbody>
+    <div style={{ fontSize: 13, fontFamily: "var(--m)" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: MOVERS_GRID,
+          padding: "0 14px 10px",
+          fontSize: 10,
+          textTransform: "uppercase",
+          letterSpacing: ".08em",
+          color: "var(--text-3)",
+          fontWeight: 500,
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
+      >
+        <span>Ticker</span>
+        <span>Layer</span>
+        <span style={{ textAlign: "right" }}>Composite</span>
+        <span style={{ textAlign: "right" }}>Δ 7D</span>
+        <span>Driver</span>
+      </div>
+      <div>
         {movers.map((m, i) => (
           <MoverRow key={m.ticker} m={m} isLast={i === movers.length - 1} />
         ))}
-      </tbody>
-    </table>
-  );
-}
-
-function Th({ children, align = "right" }: { children?: React.ReactNode; align?: "left" | "right" }) {
-  return (
-    <th
-      style={{
-        textAlign: align,
-        padding: "0 14px 10px 14px",
-        fontSize: 10,
-        textTransform: "uppercase",
-        letterSpacing: ".08em",
-        color: "var(--text-3)",
-        fontWeight: 500,
-        borderBottom: "1px solid var(--border-subtle)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </th>
+      </div>
+    </div>
   );
 }
 
 function MoverRow({ m, isLast }: { m: DashboardMover; isLast: boolean }) {
   const dir = m.delta > 0 ? "↑" : m.delta < 0 ? "↓" : "→";
   const dirColor = m.delta > 0 ? "var(--success)" : m.delta < 0 ? "var(--danger)" : "var(--text-3)";
-  const td: React.CSSProperties = {
-    padding: "10px 14px",
-    borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
-    whiteSpace: "nowrap",
-  };
   return (
-    <tr>
-      <td style={{ ...td, fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</td>
-      <td style={{ ...td, color: "var(--text-3)", fontSize: 11 }}>{m.layer_label}</td>
-      <td style={{ ...td, color: "var(--text-1)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+    <Link
+      href={`/universe/${m.ticker}`}
+      aria-label={`Open ${m.ticker} detail`}
+      className="row-hov"
+      style={{
+        display: "grid",
+        gridTemplateColumns: MOVERS_GRID,
+        padding: "10px 14px",
+        borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
+        whiteSpace: "nowrap",
+        color: "inherit",
+        textDecoration: "none",
+        alignItems: "baseline",
+      }}
+    >
+      <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</span>
+      <span style={{ color: "var(--text-3)", fontSize: 11 }}>{m.layer_label}</span>
+      <span style={{ color: "var(--text-1)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
         {m.final_score == null ? "—" : m.final_score.toFixed(1)} <span style={{ color: dirColor }}>{dir}</span>
-      </td>
-      <td style={{ ...td, color: dirColor, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+      </span>
+      <span style={{ color: dirColor, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
         {m.delta > 0 ? "+" : ""}{m.delta.toFixed(1)}
-      </td>
-      <td style={{ ...td, color: "var(--text-3)" }}>—</td>
-    </tr>
+      </span>
+      <span style={{ fontVariantNumeric: "tabular-nums" }}>
+        {m.driver == null ? (
+          <span style={{ color: "var(--text-4)" }}>—</span>
+        ) : (
+          <>
+            <span style={{ color: "var(--text-2)" }}>{m.driver.factor}</span>{" "}
+            <span style={{ color: m.driver.delta > 0 ? "var(--success)" : "var(--danger)" }}>
+              {m.driver.delta > 0 ? "+" : ""}{m.driver.delta.toFixed(1)}
+            </span>
+          </>
+        )}
+      </span>
+    </Link>
   );
 }
 
