@@ -29,17 +29,10 @@ const ITEMS: NavItem[] = [
   { ic: I.refresh, label: "Backtest",   id: "backtest",  href: "/backtest",  keys: ["G", "then", "B"] },
 ];
 
-const NAV_TIPS: Record<string, string> = {
-  dash:      "Snapshot of this week's run: tier movement, macro gate, watchlist",
-  universe:  "All scored names — composite, tier, Q/G/V/AIQ breakdown, deltas",
-  portfolio: "Live $100K book — cost basis, weights, returns, factor exposure",
-  regime:    "Macro gauges (NAAIM, AAII, F&G) + multiplier state + history",
-  aiq:       "Hand-scored AIQ rubric — six dimensions per name, edit + audit",
-  memos:     "Investment memos — drafts, approvals, archive",
-  decisions: "Buy / sell / hold history — tied to memo + composite at decision time",
-  backtest:  "Walk-forward backtest runs — Sharpe, drawdown, turnover, monthly returns",
-};
-const BADGE_TIPS: Record<string, string> = {};
+// Nav-item hover tips are deliberately terse — just the page name + keybinding.
+// The long marketing-style descriptions that lived here previously rendered as
+// over-wide single-line tooltips (Tip uses white-space:nowrap) — Linear/Cursor
+// convention is label-only on nav items.
 
 export function Sidebar({
   col,
@@ -164,7 +157,7 @@ export function Sidebar({
           <SbItem key={it.id} {...it} active={isActive(it.id)} col={col} />
         ))}
       </nav>
-      <Tip label="Settings — cron registry, pipeline freshness, theme" side="right">
+      <Tip label="Settings" side="right">
         <Link
           href="/settings"
           style={{
@@ -218,7 +211,7 @@ export function Sidebar({
   );
 }
 
-function SbItem({ ic, label, active, col, badge, href, id, keys, external }: NavItem & { active: boolean; col: boolean }) {
+function SbItem({ ic, label, active, col, badge, href, keys, external }: NavItem & { active: boolean; col: boolean }) {
   const [hov, setHov] = useState(false);
   const Anchor = external ? "a" : Link;
   const anchorProps = external
@@ -266,7 +259,7 @@ function SbItem({ ic, label, active, col, badge, href, id, keys, external }: Nav
         </span>
       )}
       {!col && badge && (
-        <Tip label={BADGE_TIPS[id] || `${badge} items`} side="right" delay={350}>
+        <Tip label={`${badge} unseen`} side="right" delay={350}>
           <span
             style={{
               fontFamily: "var(--m)",
@@ -282,7 +275,7 @@ function SbItem({ ic, label, active, col, badge, href, id, keys, external }: Nav
     </Anchor>
   );
   return (
-    <Tip label={NAV_TIPS[id] || label} keys={keys} side="right" delay={400}>
+    <Tip label={label} keys={keys} side="right" delay={400}>
       {btn}
     </Tip>
   );
