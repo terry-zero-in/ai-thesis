@@ -1,8 +1,10 @@
 import { getDashboardSnapshot, getRecentInsider, type DashboardMover } from "@/lib/dashboard-data";
 import { getPortfolioSnapshot } from "@/lib/portfolio-data";
 import { getRegimeSnapshot } from "@/lib/regime-data";
+import { getMorningBrief } from "@/lib/routine-outputs";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
+import { MorningBrief } from "@/components/dashboard/MorningBrief";
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
 import { computeGreeting } from "@/app/greeting-compute";
@@ -27,12 +29,13 @@ const TIER_COLORS: Record<string, string> = {
 const SCORE_MOVERS_LIMIT = 8;
 
 export default async function DashboardPage() {
-  // Parallel fetch — four independent server queries.
-  const [snap, portfolio, regime, recentInsider] = await Promise.all([
+  // Parallel fetch — five independent server queries.
+  const [snap, portfolio, regime, recentInsider, morningBrief] = await Promise.all([
     getDashboardSnapshot(),
     getPortfolioSnapshot(),
     getRegimeSnapshot(),
     getRecentInsider(),
+    getMorningBrief(),
   ]);
   const { greeting, dateLabel } = computeGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
@@ -88,6 +91,11 @@ export default async function DashboardPage() {
             multiplier={snap.macroMultiplier}
           />
         )}
+
+        {/* Morning brief (daily-batch routine output). Renders only when
+            the routine has produced at least one of: insider summary,
+            macro log, or pending memo proposals. Invisible pre-Routines. */}
+        <MorningBrief data={morningBrief} />
 
         <KpiRow
           highCurrent={highTier?.current ?? 0}

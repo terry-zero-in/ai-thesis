@@ -16,11 +16,14 @@ interface Props {
   rows: UniverseRow[];
   asOf: string | null;
   synthetic: boolean;
+  /** Tickers currently in aiq_draft_queue (status queued/processing). Renders a small Q pill. */
+  queuedTickers?: string[];
 }
 
 const TIER_ORDER: Record<Tier, number> = { High: 0, Medium: 1, Low: 2, Avoid: 3 };
 
-export function UniverseTable({ rows, asOf, synthetic }: Props) {
+export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Props) {
+  const queuedSet = useMemo(() => new Set(queuedTickers), [queuedTickers]);
   const { q } = useFilter();
   const { layers, tiers, aiqMin, flags } = useUniverseFilter();
   const [sortKey, setSortKey] = useState<SortKey>("final");
@@ -133,7 +136,7 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
             </tr>
           )}
           {sorted.map((r) => (
-            <Row key={r.ticker} r={r} />
+            <Row key={r.ticker} r={r} queued={queuedSet.has(r.ticker)} />
           ))}
         </tbody>
       </table>
@@ -165,7 +168,7 @@ export function UniverseTable({ rows, asOf, synthetic }: Props) {
   );
 }
 
-function Row({ r }: { r: UniverseRow }) {
+function Row({ r, queued }: { r: UniverseRow; queued: boolean }) {
   return (
     <tr
       className="row-hov"
@@ -174,18 +177,39 @@ function Row({ r }: { r: UniverseRow }) {
       }}
     >
       <Td>
-        <Link
-          href={`/universe/${r.ticker}`}
-          style={{
-            fontFamily: "var(--m)",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "var(--text-1)",
-            textDecoration: "none",
-          }}
-        >
-          {r.ticker}
-        </Link>
+        <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+          <Link
+            href={`/universe/${r.ticker}`}
+            style={{
+              fontFamily: "var(--m)",
+              fontSize: 12,
+              fontWeight: 500,
+              color: "var(--text-1)",
+              textDecoration: "none",
+            }}
+          >
+            {r.ticker}
+          </Link>
+          {queued && (
+            <span
+              title="Queued for next AIQ rescore (daily-batch routine)"
+              style={{
+                fontSize: 9,
+                fontFamily: "var(--m)",
+                color: "var(--iris-300)",
+                background: "rgba(168,125,254,.10)",
+                border: "1px solid rgba(168,125,254,.35)",
+                padding: "0 4px",
+                borderRadius: 3,
+                letterSpacing: ".06em",
+                textTransform: "uppercase",
+                lineHeight: 1.6,
+              }}
+            >
+              Q
+            </span>
+          )}
+        </span>
       </Td>
       <Td>
         <Link

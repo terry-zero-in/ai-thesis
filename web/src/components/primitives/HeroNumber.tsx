@@ -128,7 +128,11 @@ export function HeroNumber({
             </span>
           )}
         </span>
-        {delta != null && value != null && (
+        {delta != null && value != null && delta.value !== 0 && (
+          // Suppress the delta block when value is exactly 0 — "· 0 (since open)"
+          // at 14px next to a 48px hero number reads as a malformed trailing
+          // decimal (e.g. "$10,998 · 0" looks like "$10,998.0"). A zero delta
+          // also carries no signal; the hero alone suffices.
           <span
             style={{
               fontFamily: "var(--m)",

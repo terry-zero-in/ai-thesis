@@ -23,10 +23,11 @@ const ITEMS: NavItem[] = [
   { ic: I.log,  label: "Portfolio",  id: "portfolio", href: "/portfolio", keys: ["G", "then", "P"] },
   { ic: I.zap,  label: "Regime",     id: "regime",    href: "/regime",    keys: ["G", "then", "R"] },
   // Workspace
-  { ic: I.sliders, label: "AIQ Editor", id: "aiq",       href: "/aiq",       keys: ["G", "then", "A"] },
-  { ic: I.note,    label: "Memos",      id: "memos",     href: "/memos",     keys: ["G", "then", "M"] },
-  { ic: I.chk,     label: "Decisions",  id: "decisions", href: "/decisions", keys: ["G", "then", "X"] },
-  { ic: I.refresh, label: "Backtest",   id: "backtest",  href: "/backtest",  keys: ["G", "then", "B"] },
+  { ic: I.sliders, label: "AIQ Editor", id: "aiq",       href: "/aiq",        keys: ["G", "then", "A"] },
+  { ic: I.note,    label: "Memos",      id: "memos",     href: "/memos",      keys: ["G", "then", "M"] },
+  { ic: I.chk,     label: "Decisions",  id: "decisions", href: "/decisions",  keys: ["G", "then", "X"] },
+  { ic: I.plus,    label: "Proposals",  id: "proposals", href: "/proposals",  keys: ["G", "then", "C"] },
+  { ic: I.refresh, label: "Backtest",   id: "backtest",  href: "/backtest",   keys: ["G", "then", "B"] },
 ];
 
 // Nav-item hover tips are deliberately terse — just the page name + keybinding.

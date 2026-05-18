@@ -33,7 +33,12 @@ export default function UniversePage() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto", minWidth: 0 }}>
       <UniverseHeader snap={snap} />
-      <UniverseTable rows={snap.rows} asOf={snap.asOf} synthetic={snap.synthetic} />
+      <UniverseTable
+        rows={snap.rows}
+        asOf={snap.asOf}
+        synthetic={snap.synthetic}
+        queuedTickers={snap.queuedTickers}
+      />
     </div>
   );
 }

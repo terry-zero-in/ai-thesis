@@ -47,6 +47,12 @@ export interface UniverseSnapshot {
   rows: UniverseRow[];
   asOf: string | null;
   synthetic: boolean;
+  /**
+   * Set of tickers currently in aiq_draft_queue (status='queued'|'processing').
+   * UI decorates these rows with a "Queued" badge — operator sees which names
+   * are waiting on the next daily-batch Routine fire. Empty array pre-Routines.
+   */
+  queuedTickers: string[];
 }
 
 export interface ScoresRow {
@@ -74,23 +80,24 @@ export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
   const sb = getSupabaseBrowser();
   if (!sb) return fixtureSnapshot();
 
-  const { data: universe, error: ue } = await sb
-    .from("universe")
-    .select("ticker,name,layer,layer_label")
-    .eq("is_active", true)
-    .order("ticker");
-  if (ue || !universe || universe.length === 0) return fixtureSnapshot();
+  const [universeRes, scoresRes, queueRes] = await Promise.all([
+    sb.from("universe").select("ticker,name,layer,layer_label").eq("is_active", true).order("ticker"),
+    sb
+      .from("scores_history")
+      .select("ticker,as_of,q_score,g_score,v_score,aiq_score,composite,final_score,tier,macro_gates_hit,macro_multiplier")
+      .order("as_of", { ascending: false })
+      .limit(400), // ~50 names × 8 history rows; safe upper bound when universe count is unknown
+    sb.from("aiq_draft_queue").select("ticker").in("status", ["queued", "processing"]),
+  ]);
 
-  const { data: scores, error: se } = await sb
-    .from("scores_history")
-    .select(
-      "ticker,as_of,q_score,g_score,v_score,aiq_score,composite,final_score,tier,macro_gates_hit,macro_multiplier",
-    )
-    .order("as_of", { ascending: false })
-    .limit(universe.length * 8); // ~2 weeks of history per name is plenty for latest + prior
+  const { data: universe, error: ue } = universeRes;
+  const { data: scores, error: se } = scoresRes;
+  const { data: queue } = queueRes; // queue errors are non-fatal — render scores without badges
+  if (ue || !universe || universe.length === 0) return fixtureSnapshot();
   if (se || !scores || scores.length === 0) return fixtureSnapshot();
 
-  return buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]);
+  const queuedTickers = (queue ?? []).map((r) => r.ticker as string);
+  return { ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]), queuedTickers };
 }
 
 export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): UniverseSnapshot {
@@ -133,7 +140,7 @@ export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): U
       as_of: latest?.as_of ?? null,
     };
   });
-  return { rows, asOf: maxAsOf, synthetic: false };
+  return { rows, asOf: maxAsOf, synthetic: false, queuedTickers: [] };
 }
 
 // ---------------------------------------------------------------------------
@@ -177,6 +184,6 @@ export function fixtureSnapshot(): UniverseSnapshot {
       as_of: "2026-05-09",
     };
   });
-  return { rows: seed, asOf: "2026-05-09", synthetic: true };
+  return { rows: seed, asOf: "2026-05-09", synthetic: true, queuedTickers: [] };
 }
 
