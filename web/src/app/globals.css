@@ -9,6 +9,32 @@
 
 *{margin:0;padding:0;box-sizing:border-box}
 
+/* Global dark-mode + accent-color for browser-native UI: scrollbars, form
+   controls (checkboxes / radios / progress / sliders), and the native date /
+   time / color pickers. `color-scheme: dark` flips Chrome / Edge / Safari to
+   their dark calendar UI; `accent-color` colors the selected-day highlight
+   and any focus ring with our locked Apex blue. */
+html{color-scheme:dark;accent-color:#3560F3}
+
+/* Calendar glyph inside <input type="date|time|month|week"> renders as a
+   black icon on dark backgrounds by default in Chromium. Invert it so it
+   reads as light against the surface. */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator{
+  filter:invert(0.7);
+  cursor:pointer;
+  opacity:0.7;
+  transition:opacity 120ms ease;
+}
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="time"]:hover::-webkit-calendar-picker-indicator,
+input[type="month"]:hover::-webkit-calendar-picker-indicator,
+input[type="week"]:hover::-webkit-calendar-picker-indicator{
+  opacity:1;
+}
+
 :root{
   /* Surfaces — Plasma Cyan palette (was Apex Blue). Sidebar deeper than canvas. */
   --canvas:#0B0C0F; --sidebar:#06070A; --surface:#15171C; --surface-2:#1B1E25; --elevated:#22262E;
