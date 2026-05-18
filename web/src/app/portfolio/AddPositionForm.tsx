@@ -244,7 +244,7 @@ export function AddPositionForm({
           alignSelf: "flex-start",
         }}
       >
-        {pending ? "Saving…" : isEdit ? "Update position" : mode === "dollar" ? "Buy" : "Add position"}
+        {pending ? "Saving…" : isEdit ? "Update position" : "Add position"}
       </button>
 
       {state.message && (

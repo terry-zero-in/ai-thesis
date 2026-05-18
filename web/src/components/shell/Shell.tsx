@@ -7,6 +7,7 @@ import { CtxPanel } from "./CtxPanel";
 import { CmdPalette } from "./CmdPalette";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
 import { GoToPill } from "./GoToPill";
+import { FooterDisclosure } from "./FooterDisclosure";
 import { useShellKeyboard } from "@/hooks/useShellKeyboard";
 import { FilterProvider } from "@/hooks/filter-context";
 import { CtxPanelProvider, useCtxPanel } from "@/hooks/ctx-panel-context";
@@ -108,6 +109,7 @@ function ShellInner({
         >
           {children}
         </div>
+        <FooterDisclosure />
       </div>
       {panel && rail !== "none" && <CtxPanel />}
 

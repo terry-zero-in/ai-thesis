@@ -74,7 +74,7 @@ export default async function PortfolioPage({
           Portfolio
         </h1>
         <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
-          Live deployment · single book · manual cost-basis entry
+          Live tracking · single book · manual cost-basis entry
         </span>
         {demo && (
           // Honest demo marker — spec §4.5 chip, --warning to signal

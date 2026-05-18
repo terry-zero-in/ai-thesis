@@ -6,8 +6,11 @@ import { HeroNumber } from "@/components/primitives/HeroNumber";
  * Credit Card): big protagonist metric block + supporting cells.
  *
  * Market Value is the protagonist (HeroNumber at lg). Below sits a
- * supporting strip with Total Capital / Deployed / P&L / Reserve — the
+ * supporting strip with Total Capital / Invested / P&L / Reserve — the
  * cells operators glance at without needing equal-weight prominence.
+ * "Invested" was previously labeled "Deployed" — renamed per THS-86
+ * compliance discipline (the verb "deploy" is on the banned list, the
+ * noun form "Invested" is the industry-standard descriptor).
  *
  * Empty state (fixture mode, no positions): hero shows "$0" muted with
  * an honest "no positions yet" attribution rather than fake values.
@@ -45,7 +48,7 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         />
       </div>
 
-      {/* Supporting strip — Total Capital · Deployed · P&L · Reserve.
+      {/* Supporting strip — Total Capital · Invested · P&L · Reserve.
           Mercury Pic 17 b2 KPI strip: top + bottom hairlines, cell dividers,
           no card chrome. */}
       <div
@@ -59,11 +62,11 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         <Kpi
           label="Total Capital"
           value={fmtUsd(snap.settings.total_capital)}
-          sub="single-book deployment cap"
+          sub="single-book capital cap"
           isFirst
         />
         <Kpi
-          label="Deployed"
+          label="Invested"
           value={fmtUsd(snap.total_deployed)}
           sub={`${snap.positions.length} ${snap.positions.length === 1 ? "position" : "positions"}`}
         />

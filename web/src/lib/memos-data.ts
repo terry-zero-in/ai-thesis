@@ -78,11 +78,11 @@ function synthesize(envConfigured: boolean): MemosSnapshot {
       id: "fixture-weekly-1",
       kind: "weekly",
       as_of: "2026-05-17",
-      headline: "Cut TSM by half on accelerating high-book correlation; redeploy to ANET + ASML.",
+      headline: "TSM thesis weakening — high-book correlation accelerating. Watchlist review suggested for ANET, ASML.",
       body: "[structured weekly — see sections.parsed]",
       sections: {
         parsed: {
-          headline: "Cut TSM by half on accelerating high-book correlation; redeploy to ANET + ASML.",
+          headline: "TSM thesis weakening — high-book correlation accelerating. Watchlist review suggested for ANET, ASML.",
           summary:
             "High book holding at 11 names but mean pairwise correlation ticked to 0.74 (was 0.66 last week). Tier distribution: 11 High / 18 Medium / 9 Low / 12 Cut. Macro multiplier 0.95.",
           high_book: [
@@ -92,7 +92,7 @@ function synthesize(envConfigured: boolean): MemosSnapshot {
               bear_case:
                 "Concentration tax now -3 from supply-chain PC1 loading rising. Stock is the most-crowded High-book holding and benefits least from a hyperscaler capex pullback.",
               action: "trim",
-              action_rationale: "Cut to half-weight to reduce factor exposure to the dominant compute axis.",
+              action_rationale: "Trim candidate — half-weight reduces factor exposure to the dominant compute axis.",
             },
             {
               ticker: "ANET",
