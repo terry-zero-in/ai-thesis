@@ -9,6 +9,8 @@ import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
 import { computeGreeting } from "@/app/greeting-compute";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
+import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
 
 /**
  * Revalidate every 30 min. Scores update on the Saturday chain;
@@ -82,6 +84,25 @@ export default async function DashboardPage() {
           segments={[
             { label: "as_of", value: snap.asOf ?? "—" },
             { label: "engine", value: "composite v1.0" },
+            {
+              label: "mode",
+              value: (
+                <span
+                  style={{
+                    color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                    fontWeight: 600,
+                    letterSpacing: ".02em",
+                  }}
+                  title={
+                    snap.synthetic
+                      ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
+                      : "Live: scores read from public.scores_history populated by the Saturday chain."
+                  }
+                >
+                  {snap.synthetic ? "Stubbed" : "Live"}
+                </span>
+              ),
+            },
             { label: "macro", value: `${snap.macroMultiplier.toFixed(2)}× (${snap.macroGatesHit}/3)` },
             { label: "weekly chain", value: "Sat 22:00–22:45 UTC" },
           ]}
@@ -130,7 +151,7 @@ export default async function DashboardPage() {
           {movers.length === 0 ? (
             <Empty>No composite movement this week.</Empty>
           ) : (
-            <MoversTable movers={movers} />
+            <MoversTable movers={movers} asOf={snap.asOf} />
           )}
         </Section>
 
@@ -404,7 +425,7 @@ function unifyMovers(winners: DashboardMover[], losers: DashboardMover[]): Dashb
  */
 const MOVERS_GRID = "92px minmax(0, 1fr) 96px 80px 110px";
 
-function MoversTable({ movers }: { movers: DashboardMover[] }) {
+function MoversTable({ movers, asOf }: { movers: DashboardMover[]; asOf: string | null }) {
   return (
     <div style={{ fontSize: 13, fontFamily: "var(--m)" }}>
       <div
@@ -429,20 +450,36 @@ function MoversTable({ movers }: { movers: DashboardMover[] }) {
       </div>
       <div>
         {movers.map((m, i) => (
-          <MoverRow key={m.ticker} m={m} isLast={i === movers.length - 1} />
+          <MoverRow key={m.ticker} m={m} isLast={i === movers.length - 1} asOf={asOf} />
         ))}
       </div>
     </div>
   );
 }
 
-function MoverRow({ m, isLast }: { m: DashboardMover; isLast: boolean }) {
+function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asOf: string | null }) {
   const dir = m.delta > 0 ? "↑" : m.delta < 0 ? "↓" : "→";
   const dirColor = m.delta > 0 ? "var(--success)" : m.delta < 0 ? "var(--danger)" : "var(--text-3)";
+  // Pull full row from snap.rows for ScoreMath inputs (q/g/v/aiq are on the
+  // UniverseRow shape but not propagated through DashboardMover by design —
+  // composite already encodes the weighted sum, the popover re-derives for
+  // transparency).
+  const scoreMathInput: ScoreMathInput = {
+    ticker: m.ticker,
+    layer: m.layer ?? 0,
+    layerLabel: m.layer_label,
+    q: m.q,
+    g: m.g,
+    v: m.v,
+    aiq: m.aiq,
+    composite: m.composite,
+    finalScore: m.final_score,
+    macroGatesHit: m.macroGatesHit,
+    macroMultiplier: m.macroMultiplier,
+    asOf,
+  };
   return (
-    <Link
-      href={`/universe/${m.ticker}`}
-      aria-label={`Open ${m.ticker} detail`}
+    <div
       className="row-hov"
       style={{
         display: "grid",
@@ -451,16 +488,38 @@ function MoverRow({ m, isLast }: { m: DashboardMover; isLast: boolean }) {
         padding: "10px 14px",
         borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
         whiteSpace: "nowrap",
-        color: "inherit",
-        textDecoration: "none",
         alignItems: "baseline",
       }}
     >
-      <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</span>
+      <Link
+        href={`/universe/${m.ticker}`}
+        aria-label={`Open ${m.ticker} detail`}
+        style={{
+          fontWeight: 600,
+          color: "var(--text-1)",
+          textDecoration: "none",
+        }}
+      >
+        {m.ticker}
+      </Link>
       <span style={{ color: "var(--text-3)", fontSize: 11 }}>{m.layer_label}</span>
-      <span style={{ color: "var(--text-1)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {m.final_score == null ? "—" : m.final_score.toFixed(1)} <span style={{ color: dirColor }}>{dir}</span>
-      </span>
+      <ScoreMathPopover input={scoreMathInput}>
+        <span
+          style={{
+            color: "var(--text-1)",
+            fontVariantNumeric: "tabular-nums",
+            display: "inline-block",
+            textAlign: "right",
+            width: "100%",
+            borderBottom: "1px dotted transparent",
+            transition: "border-color var(--dur-instant) var(--ease-out)",
+          }}
+          className="score-math-number"
+        >
+          {m.final_score == null ? "—" : m.final_score.toFixed(1)}{" "}
+          <span style={{ color: dirColor }}>{dir}</span>
+        </span>
+      </ScoreMathPopover>
       <span style={{ color: dirColor, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
         {m.delta > 0 ? "+" : ""}{m.delta.toFixed(1)}
       </span>
@@ -476,7 +535,7 @@ function MoverRow({ m, isLast }: { m: DashboardMover; isLast: boolean }) {
           </>
         )}
       </span>
-    </Link>
+    </div>
   );
 }
 

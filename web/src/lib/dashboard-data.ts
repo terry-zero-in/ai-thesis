@@ -23,11 +23,21 @@ export interface DashboardTierCounts {
 
 export interface DashboardMover {
   ticker: string;
+  layer: number;
   layer_label: string;
+  composite: number | null;
   final_score: number | null;
   prior_composite: number | null;
   delta: number;
   tier: Tier | null;
+  /** Factor scores carried through so MoverRow can render Score Math (THS-73). */
+  q: number | null;
+  g: number | null;
+  v: number | null;
+  aiq: number | null;
+  /** Macro state captured at composite computation time. */
+  macroGatesHit: number;
+  macroMultiplier: number;
   driver: { factor: "Q" | "G" | "V" | "AIQ"; delta: number } | null;
 }
 
@@ -87,11 +97,19 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     if (r.delta == null || !Number.isFinite(r.delta)) continue;
     moves.push({
       ticker: r.ticker,
+      layer: r.layer,
       layer_label: r.layer_label,
+      composite: r.composite,
       final_score: r.final_score,
       prior_composite: r.prior_composite,
       delta: r.delta,
       tier: r.tier,
+      q: r.q,
+      g: r.g,
+      v: r.v,
+      aiq: r.aiq,
+      macroGatesHit: r.macro_gates_hit,
+      macroMultiplier: r.macro_multiplier,
       driver: deriveDriver(r),
     });
   }

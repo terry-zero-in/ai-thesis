@@ -277,6 +277,13 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
 .lin-lift:hover{transform:translateY(-1px)}
 .lin-lift:active{transform:translateY(0)}
 
+/* Score-math trigger — composite numbers wrapped in <ScoreMathPopover> get a
+   subtle dotted underline reveal on hover. Linear-class peel-back: affordance
+   appears on intent, not at rest. */
+.score-math-trigger:hover .score-math-number,
+.score-math-trigger:focus-visible .score-math-number{border-bottom-color:var(--text-3) !important}
+.score-math-trigger:hover{color:var(--text-1)}
+
 /* Portfolio page two-column → stacked responsive layout.
    Above 1280px (sidebar 220px + canvas room for 10-col table + 320px form):
      - 1fr / 320px grid, form sticky to top of scroll.
