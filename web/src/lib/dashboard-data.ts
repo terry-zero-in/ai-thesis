@@ -6,6 +6,10 @@
  * crossings, and the macro multiplier state.
  */
 import { getLatestUniverseScores, type Tier, type UniverseRow } from "./universe-data";
+import { getSupabaseServer } from "./supabase/server";
+
+const INSIDER_RAIL_LOOKBACK_DAYS = 14;
+const INSIDER_RAIL_LIMIT = 5;
 
 const TIER_ORDER: Tier[] = ["High", "Medium", "Low", "Avoid"];
 
@@ -151,6 +155,48 @@ function deriveDriver(r: UniverseRow): DashboardMover["driver"] {
     }
   }
   return best;
+}
+
+/**
+ * Recent insider activity for the dashboard rail (§6 spec "Insider today").
+ *
+ * Real-data path replaces the prior THS-66 ghost. We query the last 14 days
+ * of P (purchase) and S (sale) transactions across the universe and surface
+ * the most recent N — section title in the rail is "Insider · recent" so the
+ * window is honest (Form 4 freshness varies; "today" overpromises).
+ *
+ * Returns an empty array when env is unset or no qualifying rows exist —
+ * the rail renders an honest empty state with no ticket-ID exposure.
+ */
+export interface DashboardInsiderRow {
+  ticker: string;
+  transaction_date: string;
+  insider_name: string;
+  insider_title: string | null;
+  transaction_code: "P" | "S" | string;
+  shares: number | null;
+  transaction_value: number | null;
+}
+
+export async function getRecentInsider(): Promise<DashboardInsiderRow[]> {
+  const sb = await getSupabaseServer();
+  if (!sb) return [];
+  const today = new Date().toISOString().slice(0, 10);
+  const fromIso = isoDateMinusDays(today, INSIDER_RAIL_LOOKBACK_DAYS);
+  const res = await sb
+    .from("insider_form4_raw")
+    .select("ticker,transaction_date,insider_name,insider_title,transaction_code,shares,transaction_value")
+    .gte("transaction_date", fromIso)
+    .in("transaction_code", ["P", "S"])
+    .order("transaction_date", { ascending: false })
+    .limit(INSIDER_RAIL_LIMIT);
+  return (res.data ?? []) as DashboardInsiderRow[];
+}
+
+function isoDateMinusDays(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
 }
 
 function derivePriorTier(composite: number | null): Tier | null {

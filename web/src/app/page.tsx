@@ -1,8 +1,7 @@
-import { getDashboardSnapshot, type DashboardMover } from "@/lib/dashboard-data";
+import { getDashboardSnapshot, getRecentInsider, type DashboardMover } from "@/lib/dashboard-data";
 import { getPortfolioSnapshot } from "@/lib/portfolio-data";
 import { getRegimeSnapshot } from "@/lib/regime-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
-import { GaugeCard } from "@/app/regime/GaugeCard";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
@@ -28,11 +27,12 @@ const TIER_COLORS: Record<string, string> = {
 const SCORE_MOVERS_LIMIT = 8;
 
 export default async function DashboardPage() {
-  // Parallel fetch — three independent server queries.
-  const [snap, portfolio, regime] = await Promise.all([
+  // Parallel fetch — four independent server queries.
+  const [snap, portfolio, regime, recentInsider] = await Promise.all([
     getDashboardSnapshot(),
     getPortfolioSnapshot(),
     getRegimeSnapshot(),
+    getRecentInsider(),
   ]);
   const { greeting, dateLabel } = computeGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
@@ -51,6 +51,7 @@ export default async function DashboardPage() {
     macroGatesHit: snap.macroGatesHit,
     macroMultiplier: snap.macroMultiplier,
     gateState,
+    recentInsider,
     asOf: snap.asOf,
     synthetic: snap.synthetic,
   };
@@ -83,6 +84,8 @@ export default async function DashboardPage() {
           <AlertCallout
             label="Macro regime"
             items={alertItemsFromRegime(snap, regime.latest)}
+            gatesHit={snap.macroGatesHit}
+            multiplier={snap.macroMultiplier}
           />
         )}
 
@@ -96,7 +99,22 @@ export default async function DashboardPage() {
           portfolioEmpty={portfolio.empty}
         />
 
-        <Section label="Score movers · last 7 days">
+        <Section
+          label="Score movers · last 7 days"
+          right={
+            <Link
+              href="/universe"
+              style={{
+                fontSize: 11,
+                color: "var(--accent)",
+                textDecoration: "none",
+                fontFamily: "var(--m)",
+              }}
+            >
+              View all ›
+            </Link>
+          }
+        >
           {movers.length === 0 ? (
             <Empty>No composite movement this week.</Empty>
           ) : (
@@ -107,12 +125,20 @@ export default async function DashboardPage() {
         <Section
           label="Regime · macro gate state"
           right={
-            <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-              {snap.macroGatesHit} of 3 gates hit · {snap.macroMultiplier.toFixed(2)}× multiplier active on High tier
-            </span>
+            <Link
+              href="/regime"
+              style={{
+                fontSize: 11,
+                color: "var(--accent)",
+                textDecoration: "none",
+                fontFamily: "var(--m)",
+              }}
+            >
+              Open regime ›
+            </Link>
           }
         >
-          <GaugeRow regime={regime} />
+          <CompactGateStrip regime={regime} gatesHit={snap.macroGatesHit} multiplier={snap.macroMultiplier} />
         </Section>
       </div>
     </div>
@@ -377,8 +403,36 @@ function alertItemsFromRegime(
   return items;
 }
 
-function AlertCallout({ label, items }: { label: string; items: AlertItem[] }) {
+/**
+ * Regime state derived from gate count. Names describe the CONSEQUENCE
+ * (what happens to High-tier names) rather than the cause (which gauges
+ * are firing) so the pill reads as an actionable status.
+ *
+ * 0 gates → Neutral · 1.00×       (success token — calm)
+ * 1 gate  → Tightened · 0.95×     (warning — first signal)
+ * 2 gates → Cautious · 0.90×      (warning — stronger)
+ * 3 gates → Defensive · 0.85×     (danger — fully de-risked)
+ */
+function regimeStateFor(gatesHit: number, multiplier: number): { label: string; color: string } {
+  if (gatesHit >= 3) return { label: "Defensive", color: "var(--danger)" };
+  if (gatesHit === 2) return { label: "Cautious", color: "var(--warning)" };
+  if (gatesHit === 1) return { label: "Tightened", color: "var(--warning)" };
+  return { label: "Neutral", color: "var(--success)" };
+}
+
+function AlertCallout({
+  label,
+  items,
+  gatesHit,
+  multiplier,
+}: {
+  label: string;
+  items: AlertItem[];
+  gatesHit: number;
+  multiplier: number;
+}) {
   if (items.length === 0) return null;
+  const state = regimeStateFor(gatesHit, multiplier);
   // Mercury Pic 11 b2 "Suggested actions": thin border, NO bg fill. Two-col
   // rows (notable left, hyperlinked action right). No card chrome.
   return (
@@ -408,8 +462,29 @@ function AlertCallout({ label, items }: { label: string; items: AlertItem[] }) {
         >
           {label}
         </span>
-        <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-          {items.length} active alert{items.length === 1 ? "" : "s"}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 11,
+            fontFamily: "var(--m)",
+            color: state.color,
+            border: `1px solid ${state.color}`,
+            borderRadius: 999,
+            padding: "1px 8px",
+            letterSpacing: ".02em",
+          }}
+        >
+          <span
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: "50%",
+              background: state.color,
+            }}
+          />
+          {state.label} · {multiplier.toFixed(2)}×
         </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -445,25 +520,135 @@ function AlertCallout({ label, items }: { label: string; items: AlertItem[] }) {
   );
 }
 
-/* ---------------- real gauge row (reuses /regime GaugeCard) ---------------- */
+/* ---------------- compact macro gate strip ----------------
+ *
+ * Replaces three full GaugeCards (Dashboard duplicated /regime). Single
+ * stacked row per gauge: dot · label · value/threshold · status. Bottom
+ * line summarizes hit-count + multiplier. Recovers ~400px and removes
+ * the "this looks like /regime again" sensation. Full cards live one
+ * click away at /regime via the section's right-side link.
+ */
+function CompactGateStrip({
+  regime,
+  gatesHit,
+  multiplier,
+}: {
+  regime: Awaited<ReturnType<typeof getRegimeSnapshot>>;
+  gatesHit: number;
+  multiplier: number;
+}) {
+  const latest = regime.latest;
+  const state = regimeStateFor(gatesHit, multiplier);
+  return (
+    <div
+      style={{
+        border: "1px solid var(--border-subtle)",
+        borderRadius: 6,
+        padding: "12px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      }}
+    >
+      {GAUGES.map((g) => {
+        const value = latest?.[g.key] ?? null;
+        const hit = value != null && value > g.threshold;
+        return (
+          <CompactGateRow
+            key={g.key}
+            label={g.label}
+            value={value}
+            threshold={g.threshold}
+            hit={hit}
+          />
+        );
+      })}
+      <div
+        style={{
+          marginTop: 4,
+          paddingTop: 8,
+          borderTop: "1px solid var(--border-subtle)",
+          fontSize: 11,
+          fontFamily: "var(--m)",
+          color: "var(--text-3)",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <span>
+          {gatesHit} of 3 gates hit · {multiplier.toFixed(2)}× multiplier on High tier
+        </span>
+        <span
+          style={{
+            marginLeft: "auto",
+            color: state.color,
+            letterSpacing: ".02em",
+          }}
+        >
+          {state.label}
+        </span>
+      </div>
+    </div>
+  );
+}
 
-function GaugeRow({ regime }: { regime: Awaited<ReturnType<typeof getRegimeSnapshot>> }) {
+function CompactGateRow({
+  label,
+  value,
+  threshold,
+  hit,
+}: {
+  label: string;
+  value: number | null;
+  threshold: number;
+  hit: boolean;
+}) {
+  const dotColor = hit ? "var(--warning)" : value == null ? "var(--text-4)" : "var(--text-3)";
+  const valueLabel = value == null ? "—" : value.toFixed(value < 10 ? 1 : 0);
+  let trailer: { text: string; color: string };
+  if (value == null) {
+    trailer = { text: "no data", color: "var(--text-4)" };
+  } else if (hit) {
+    const pts = Math.abs(value - threshold);
+    trailer = { text: `▲ ${pts.toFixed(1)} pts over gate`, color: "var(--warning)" };
+  } else {
+    const pts = Math.abs(threshold - value);
+    trailer = { text: `▼ ${pts.toFixed(1)} pts under gate`, color: "var(--text-3)" };
+  }
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-        gap: 14,
+        gridTemplateColumns: "10px 1fr auto auto",
+        gap: 10,
+        alignItems: "baseline",
+        fontFamily: "var(--m)",
+        fontSize: 12,
       }}
     >
-      {GAUGES.map((g) => (
-        <GaugeCard
-          key={g.key}
-          gauge={g.key as GaugeKey}
-          history={regime.history}
-          thresholdHistory={regime.threshold_history[g.key as GaugeKey]}
-        />
-      ))}
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: dotColor,
+          alignSelf: "center",
+        }}
+      />
+      <span style={{ color: "var(--text-2)" }}>{label}</span>
+      <span
+        style={{
+          fontVariantNumeric: "tabular-nums",
+          color: hit ? "var(--text-1)" : "var(--text-2)",
+          minWidth: 64,
+          textAlign: "right",
+        }}
+      >
+        {valueLabel}
+        <span style={{ color: "var(--text-4)" }}> / {threshold}</span>
+      </span>
+      <span style={{ fontSize: 11, color: trailer.color, whiteSpace: "nowrap" }}>{trailer.text}</span>
     </div>
   );
 }
