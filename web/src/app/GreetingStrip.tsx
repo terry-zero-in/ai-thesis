@@ -1,42 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { computeGreeting } from "./greeting-compute";
 
 /**
- * Client-side reactive greeting. Server-rendered initial paint to avoid
- * a flash, then re-derives every 60s from current local time so the
- * 30-min page revalidate cache doesn't strand "Good evening" at noon.
- *
- * Computed in America/Chicago per spec §5.1 mock ("23:24 CT"). Switch
- * to user's local tz if/when the app supports multi-tz operators.
+ * Client-side reactive greeting. Server-rendered initial paint via the
+ * `initial*` props (page calls computeGreeting() server-side), then
+ * re-derives every 60s after hydration so the 30-min page revalidate
+ * cache doesn't strand "Good evening" at noon.
  */
-const TZ = "America/Chicago";
-
-function compute(): { greeting: string; dateLabel: string } {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: TZ,
-    hour: "2-digit",
-    hour12: false,
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).formatToParts(now);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const hour = parseInt(get("hour"), 10);
-  const greeting =
-    hour >= 5 && hour < 12 ? "Good morning"
-    : hour >= 12 && hour < 17 ? "Good afternoon"
-    : "Good evening";
-  const dateLabel = `${get("weekday")}, ${get("month")} ${get("day")}, ${get("year")}`;
-  return { greeting, dateLabel };
-}
-
-export function getServerGreeting() {
-  return compute();
-}
-
 export function GreetingStrip({
   initialGreeting,
   initialDateLabel,
@@ -46,8 +18,8 @@ export function GreetingStrip({
 }) {
   const [state, setState] = useState({ greeting: initialGreeting, dateLabel: initialDateLabel });
   useEffect(() => {
-    setState(compute());
-    const id = setInterval(() => setState(compute()), 60_000);
+    setState(computeGreeting());
+    const id = setInterval(() => setState(computeGreeting()), 60_000);
     return () => clearInterval(id);
   }, []);
   return (

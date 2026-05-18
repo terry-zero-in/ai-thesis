@@ -20,11 +20,12 @@
   --text-1:#ECEDEF; --text-2:#CFD3DA; --text-3:#7A818D; --text-4:#5F6571;
   /* Borders — primary + strong + subtle (line/div collapsed onto subtle). */
   --border:#2A2F38; --border-strong:#34353a; --border-subtle:#1F2229;
-  /* Accent — Cypher Indigo, locked per AI Thesis Master Design Spec §2.1.
+  /* Accent — Apex-adjacent royal blue (#3560F3), locked 2026-05-18 per Terry.
      accent-soft is the selection/tint bg; accent-border is the 1px outline / left-inset cue.
-     ↑ swapped from Reticle's Plasma Cyan default 2026-05-17 per docs/design/lambo-review-2026-05-17.md */
-  --accent:#4D5BFF; --accent-hover:#6573FF; --accent-pressed:#3D4ECC;
-  --accent-soft:rgba(77,91,255,.10); --accent-border:rgba(77,91,255,.40); --accent-glow:rgba(77,91,255,.18);
+     Hover/pressed derived: hover lifts +30 R/G with B clamp; pressed darkens proportionally.
+     Soft/border/glow re-anchored to RGB(53,96,243). Prior value was Cypher Indigo #4D5BFF. */
+  --accent:#3560F3; --accent-hover:#4F78F5; --accent-pressed:#2A4DC2;
+  --accent-soft:rgba(53,96,243,.10); --accent-border:rgba(53,96,243,.40); --accent-glow:rgba(53,96,243,.18);
   /* --on-accent = text color when bg is solid accent (Btn primary, avatar, check-mark). White on indigo. */
   --on-accent:#ffffff;
   /* Semantic — desaturated per spec §2.1. Reserved for truth states only, never decorative. */

@@ -5,7 +5,8 @@ import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { GaugeCard } from "@/app/regime/GaugeCard";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
 import Link from "next/link";
-import { GreetingStrip, getServerGreeting } from "@/app/GreetingStrip";
+import { GreetingStrip } from "@/app/GreetingStrip";
+import { computeGreeting } from "@/app/greeting-compute";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 
 /**
@@ -33,7 +34,7 @@ export default async function DashboardPage() {
     getPortfolioSnapshot(),
     getRegimeSnapshot(),
   ]);
-  const { greeting, dateLabel } = getServerGreeting();
+  const { greeting, dateLabel } = computeGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
   const movers = unifyMovers(snap.topWinners, snap.topLosers);
 
