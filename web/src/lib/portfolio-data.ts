@@ -118,14 +118,79 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
   return finalizeSnapshot(positions, settings, spySnap, vixSnap, true, false);
 }
 
-/** Fixture-mode universe options for the position-add select. */
-export function getUniverseChoices(): UniverseChoice[] {
-  return FIXTURE_UNIVERSE.filter((u) => u.layer >= 1).map((u) => ({
-    ticker: u.ticker,
-    name: u.name,
-    layer: u.layer,
-    layer_label: u.layer_label,
-  }));
+/**
+ * Universe options for the position-add select.
+ *
+ * Async now because we join latest close from prices_raw — the form needs
+ * this to (a) auto-fill cost_basis when opening today, (b) compute shares
+ * from a dollar amount in Dollar-mode. Falls back to fixture prices when
+ * env unset OR when a ticker has no prices_raw row yet.
+ */
+export async function getUniverseChoices(): Promise<UniverseChoice[]> {
+  const sb = await getSupabaseServer();
+  if (!sb) {
+    return FIXTURE_UNIVERSE.filter((u) => u.layer >= 1).map((u) => ({
+      ticker: u.ticker,
+      name: u.name,
+      layer: u.layer,
+      layer_label: u.layer_label,
+      latest_price: fixtureClose(u.ticker),
+      latest_price_as_of: FIXTURE_PRICES_AS_OF,
+    }));
+  }
+
+  const { data: univData } = await sb
+    .from("universe")
+    .select("ticker,name,layer,layer_label")
+    .eq("is_active", true)
+    .order("ticker");
+  const univ = (univData ?? []) as { ticker: string; name: string; layer: number; layer_label: string }[];
+  if (univ.length === 0) {
+    // RLS blocked or table empty — surface the fixture universe so the form
+    // still works locally (unauthenticated dev requests) and isn't dead in
+    // an edge case where universe is unexpectedly empty in prod.
+    return FIXTURE_UNIVERSE.filter((u) => u.layer >= 1).map((u) => ({
+      ticker: u.ticker,
+      name: u.name,
+      layer: u.layer,
+      layer_label: u.layer_label,
+      latest_price: fixtureClose(u.ticker),
+      latest_price_as_of: FIXTURE_PRICES_AS_OF,
+    }));
+  }
+
+  // One round-trip for latest closes — limit is loose because we only
+  // need the most-recent date per ticker (filtered client-side via
+  // latestPriceMap below).
+  const tickers = univ.map((u) => u.ticker);
+  const { data: priceData } = await sb
+    .from("prices_raw")
+    .select("ticker,date,close")
+    .in("ticker", tickers)
+    .order("date", { ascending: false })
+    .limit(tickers.length * 3);
+  const priceMap = latestPriceMap((priceData ?? []) as PriceRow[]);
+
+  return univ.map((u) => {
+    const price = priceMap.get(u.ticker);
+    return {
+      ticker: u.ticker,
+      name: u.name,
+      layer: u.layer,
+      layer_label: u.layer_label,
+      latest_price: price?.close != null ? Number(price.close) : null,
+      latest_price_as_of: price?.date ?? null,
+    };
+  });
+}
+
+/** Deterministic per-ticker close used in fixture mode. Keeps the
+ * dollar-amount math stable across renders so the form preview doesn't
+ * jitter when env is unset. */
+function fixtureClose(ticker: string): number {
+  let h = 0;
+  for (let i = 0; i < ticker.length; i++) h = (h * 31 + ticker.charCodeAt(i)) >>> 0;
+  return Math.round(((h % 4000) / 10 + 25) * 100) / 100;
 }
 
 // ---------------------------------------------------------------------------
@@ -399,7 +464,14 @@ function emptyAggregate(settings: { total_capital: number; target_reserve: numbe
 }
 
 function fallbackUniverseRow(ticker: string): UniverseChoice {
-  return { ticker, name: ticker, layer: 0, layer_label: "Unknown" };
+  return {
+    ticker,
+    name: ticker,
+    layer: 0,
+    layer_label: "Unknown",
+    latest_price: null,
+    latest_price_as_of: null,
+  };
 }
 
 function formatPct(p: number): string {

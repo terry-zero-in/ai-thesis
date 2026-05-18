@@ -75,4 +75,21 @@ export interface PortfolioSnapshot {
 }
 
 /** Available universe choices for the "add position" select. */
-export type UniverseChoice = Pick<SeedRow, "ticker" | "name" | "layer" | "layer_label">;
+export interface UniverseChoice extends Pick<SeedRow, "ticker" | "name" | "layer" | "layer_label"> {
+  /** Latest close from prices_raw — used for Dollar-amount → shares math and
+   * cost-basis auto-fill when opening a position today. null when no price
+   * has been ingested yet for this ticker. */
+  latest_price: number | null;
+  latest_price_as_of: string | null;
+}
+
+/** Compact form-prefill snapshot for an already-held position. The
+ * AddPositionForm reads this map when an existing ticker is re-selected
+ * so all fields hydrate from the current row rather than blank. */
+export interface HeldPositionPrefill {
+  ticker: string;
+  shares: number;
+  cost_basis: number;
+  opened_at: string;
+  notes: string | null;
+}

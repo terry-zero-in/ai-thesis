@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { LayerChip } from "@/components/universe/LayerChip";
 import type { PositionRow } from "@/lib/portfolio-types";
@@ -52,7 +53,7 @@ export function PositionsTable({
             <Th align="right">P&L $</Th>
             <Th align="right">P&L %</Th>
             <Th align="right">% Book</Th>
-            <Th align="right" style={{ width: 64 }}>{""}</Th>
+            <Th align="right" style={{ width: 116 }}>{""}</Th>
           </tr>
         </thead>
         <tbody>
@@ -145,9 +146,42 @@ function PositionRowView({
       </Td>
       <Td align="right">{fmtPct(pctBook)}</Td>
       <Td align="right">
-        <CloseButton ticker={p.ticker} />
+        <div style={{ display: "inline-flex", gap: 6, justifyContent: "flex-end" }}>
+          <EditLink ticker={p.ticker} />
+          <CloseButton ticker={p.ticker} />
+        </div>
       </Td>
     </tr>
+  );
+}
+
+/**
+ * Per-row Edit affordance. Routes to ?edit=<ticker>#add-position which the
+ * page reads server-side to pre-select the ticker in AddPositionForm; the
+ * form's useEffect then hydrates every field from the existing row.
+ */
+function EditLink({ ticker }: { ticker: string }) {
+  return (
+    <Link
+      href={`/portfolio?edit=${encodeURIComponent(ticker)}#add-position`}
+      title="Edit position"
+      style={{
+        height: 22,
+        padding: "0 8px",
+        fontSize: 10.5,
+        fontFamily: "var(--m)",
+        color: "var(--text-3)",
+        background: "transparent",
+        border: "1px solid var(--border)",
+        borderRadius: 3,
+        textDecoration: "none",
+        display: "inline-flex",
+        alignItems: "center",
+        cursor: "pointer",
+      }}
+    >
+      edit
+    </Link>
   );
 }
 

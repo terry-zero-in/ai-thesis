@@ -14,15 +14,27 @@ export const revalidate = 300;
 export default async function PortfolioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ seed?: string }>;
+  searchParams: Promise<{ seed?: string; edit?: string }>;
 }) {
   // ?seed=fixture-positions populates a 12-position demo book for /lambo
   // review (lambo §2.4 #1). Empty fixture mode otherwise.
+  // ?edit=<TICKER> pre-selects that ticker in the add/edit form and
+  // hydrates its fields from the existing portfolio_positions row.
   const params = await searchParams;
   const demo = params.seed === "fixture-positions";
-  const snap = demo ? getFixturePortfolioSnapshot() : await getPortfolioSnapshot();
-  const choices = getUniverseChoices();
+  const editTicker = params.edit ? params.edit.toUpperCase() : null;
+  const [snap, choices] = await Promise.all([
+    demo ? Promise.resolve(getFixturePortfolioSnapshot()) : getPortfolioSnapshot(),
+    getUniverseChoices(),
+  ]);
   const taken = snap.positions.map((p) => p.ticker);
+  const heldPrefill = snap.positions.map((p) => ({
+    ticker: p.ticker,
+    shares: p.shares,
+    cost_basis: p.cost_basis,
+    opened_at: p.opened_at,
+    notes: p.notes,
+  }));
   const railData = {
     reserveActual: snap.reserve_actual,
     reserveTarget: snap.settings.target_reserve,
@@ -122,7 +134,13 @@ export default async function PortfolioPage({
               persistent operating-state context (every page), not a
               canvas-primary surface. AddPositionForm carries its own header.
             */}
-            <AddPositionForm choices={choices} envConfigured={snap.envConfigured} takenTickers={taken} />
+            <AddPositionForm
+              choices={choices}
+              envConfigured={snap.envConfigured}
+              takenTickers={taken}
+              heldPrefill={heldPrefill}
+              initialTicker={editTicker}
+            />
           </div>
         </div>
       </div>
