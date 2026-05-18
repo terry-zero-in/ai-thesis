@@ -46,9 +46,14 @@ export function TodayThesisCard({
     <section
       aria-label="Today's research thesis"
       style={{
+        // Inset-card surface fill per docs/design/instrument-field-pattern.md
+        // §3.1 — `var(--surface)` (not `var(--canvas)`) so the card READS as a
+        // card. Canvas-on-canvas + hairline-only read as wispy; surface-fill
+        // gives the card the chrome confidence the drawer earns. Border
+        // stays `--border-subtle` because this is an inset card (not floating).
         border: "1px solid var(--border-subtle)",
         borderRadius: 6,
-        background: "var(--canvas)",
+        background: "var(--surface)",
         padding: "16px 20px 14px",
         display: "flex",
         flexDirection: "column",

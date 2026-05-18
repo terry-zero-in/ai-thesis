@@ -627,13 +627,16 @@ function AlertCallout({
 }) {
   if (items.length === 0) return null;
   const state = regimeStateFor(gatesHit, multiplier);
-  // Mercury Pic 11 b2 "Suggested actions": thin border, NO bg fill. Two-col
-  // rows (notable left, hyperlinked action right). No card chrome.
+  // Inset-card surface fill per docs/design/instrument-field-pattern.md §3.1
+  // — lifted from no-fill to `var(--surface)`. The card needs to READ as a
+  // card on canvas, and the hairline-only border alone was too wispy. Two-col
+  // rows below (notable left, hyperlinked action right) unchanged.
   return (
     <div
       style={{
         border: "1px solid var(--border-subtle)",
         borderRadius: 6,
+        background: "var(--surface)",
         padding: "14px 18px 4px",
       }}
     >
@@ -736,8 +739,10 @@ function CompactGateStrip({
   return (
     <div
       style={{
+        // Inset-card surface fill per docs/design/instrument-field-pattern.md §3.1.
         border: "1px solid var(--border-subtle)",
         borderRadius: 6,
+        background: "var(--surface)",
         padding: "12px 16px",
         display: "flex",
         flexDirection: "column",

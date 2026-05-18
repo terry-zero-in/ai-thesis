@@ -229,7 +229,11 @@ function PanelShell({
   return (
     <div
       style={{
-        background: "var(--canvas)",
+        // Inset-panel surface fill per docs/design/instrument-field-pattern.md §3.1.
+        // The 1px gap between panels (parent uses gap:1 + bg --border-subtle)
+        // continues to read as a hairline divider because --border-subtle is
+        // darker than --surface — same divider behavior, lifted panel fill.
+        background: "var(--surface)",
         padding: "12px 16px",
         display: "flex",
         flexDirection: "column",
