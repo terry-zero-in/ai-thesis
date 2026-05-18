@@ -7,11 +7,11 @@ import { RailHeader, RailSection, RailFooter } from "./RailChrome";
  * /portfolio right rail — Master Design Spec §6:
  *   "Reserve tracker + two pre-committed triggers"
  *
- * Glance-mode compression of the main-canvas ReservePanel. The main canvas
- * keeps the full instrument (bar, target line, detail prose); the rail
- * shows the reserve number + a single bar + trigger-pill list so an
- * operator can see "are we over-deployed / are any triggers fired" without
- * scrolling.
+ * Sole source of truth for the Reserve & Triggers surface — canvas
+ * previously rendered a near-identical ReservePanel; that's been removed.
+ * The rail is the persistent operating-state context across every page,
+ * so Reserve lives here, not on the portfolio canvas where it would
+ * compete with the positions table for primary attention.
  *
  * Trigger count — spec amendment (Terry-confirmed 2026-05-17, lambo-review §2.4 #4):
  * Spec §6 says "two pre-committed triggers" (Position drawdown >7%; SPY ≤ −5%
@@ -125,7 +125,7 @@ export function PortfolioReserveRail({ data }: { data: PortfolioReserveRailData 
             {marketTriggers.map((t) => (
               <TriggerPill
                 key={t.kind}
-                label={t.kind === "spy_daily_drop" ? "SPY single-day drop ≥ 5%" : "VIX > 25 for 3+ days"}
+                label={t.kind === "spy_daily_drop" ? "SPY single-day drop ≥ 5%" : "VIX ≥ 25 for 3+ days"}
                 fired={t.fired}
                 detail={t.detail}
               />

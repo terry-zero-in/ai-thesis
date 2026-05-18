@@ -112,12 +112,17 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
           );
         })}
 
-        {/* Per-gauge threshold line + label */}
-        {SERIES.map(({ key, color }) => {
+        {/* Per-gauge threshold line + right-edge value label per lambo
+            "every threshold has its number anchored at the edge." */}
+        {SERIES.map(({ key, color, labelColor }) => {
           const meta = GAUGES.find((g) => g.key === key)!;
           const y = normY(meta.threshold, key);
+          const shortLabel = meta.label.split(" ")[0];
+          const fmt = key === "aaii_3wk_spread" && meta.threshold > 0
+            ? `+${meta.threshold}`
+            : `${meta.threshold}`;
           return (
-            <g key={`thresh-${key}`} opacity={0.45}>
+            <g key={`thresh-${key}`}>
               <line
                 x1={PAD_L}
                 x2={W - PAD_R}
@@ -126,23 +131,38 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
                 stroke={color}
                 strokeWidth={1}
                 strokeDasharray="3 4"
+                opacity={0.45}
               />
+              <text
+                x={W - PAD_R + 4}
+                y={y + 3}
+                fontSize={9.5}
+                fontFamily="var(--m)"
+                fill={labelColor}
+                opacity={0.65}
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                ▲ {fmt}
+              </text>
             </g>
           );
         })}
 
-        {/* Series lines */}
+        {/* Series lines — carry-forward fill for sparse weekly series
+            (NAAIM ~weekly, AAII ~weekly, F&G daily). Scrape gaps would
+            otherwise leave the chart looking broken for NAAIM/AAII. */}
         {SERIES.map(({ key, color }) => {
-          const path = history
-            .map((r, i) => {
-              const v = r[key];
+          const filled = carryForward(history.map((r) => r[key]));
+          const path = filled
+            .map((v, i) => {
               if (v == null) return null;
               const x = xAt(i);
               const y = normY(v, key);
               return `${i === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
             })
             .filter(Boolean)
-            .join(" ");
+            .join(" ")
+            .replace(/L(?=L)/g, "M"); // re-emit M after each break (no breaks now, but safe)
           return <path key={`line-${key}`} d={path} fill="none" stroke={color} strokeWidth={1.4} />;
         })}
 
@@ -214,6 +234,26 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
       </svg>
     </div>
   );
+}
+
+/**
+ * Forward-fill nulls with the most recent non-null value. Standard
+ * treatment for sparse weekly sentiment series so scrape gaps don't
+ * read as missing data. Leading nulls (before first observation) stay
+ * null so the chart doesn't pretend to know pre-series state.
+ */
+function carryForward<T>(arr: (T | null | undefined)[]): (T | null)[] {
+  const out: (T | null)[] = [];
+  let last: T | null = null;
+  for (const v of arr) {
+    if (v != null) {
+      last = v;
+      out.push(v);
+    } else {
+      out.push(last);
+    }
+  }
+  return out;
 }
 
 function avoidOverlap(y: number, others: (number | null)[]): number {

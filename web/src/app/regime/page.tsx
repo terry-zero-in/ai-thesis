@@ -54,7 +54,7 @@ export default async function RegimePage() {
           Regime
         </h1>
         <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
-          NAAIM · AAII 3wk spread · CNN Fear &amp; Greed · macro multiplier per §Fix 4
+          NAAIM · AAII 3wk spread · CNN Fear &amp; Greed · macro multiplier applied at composite
         </span>
         <div style={{ flex: 1 }} />
         {snap.synthetic && (
@@ -132,9 +132,9 @@ export default async function RegimePage() {
           <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.65, maxWidth: 760, margin: 0 }}>
             The multiplier is applied to composite scores ≥ 75 only — names
             below the High-conviction cut-off are never further de-rated by
-            macro state (composite.ts §Fix 4). One de-rated tier shift is the
-            typical behavioral consequence: a 78 raw → 0.95 → 74.1 final drops
-            from High to Medium and changes its position cap accordingly.
+            macro state. One de-rated tier shift is the typical behavioral
+            consequence: a 78 raw × 0.95 = 74.1 final drops from High to
+            Medium and changes its position cap accordingly.
           </p>
         </section>
       </div>

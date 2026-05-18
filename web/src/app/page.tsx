@@ -4,6 +4,7 @@ import { getRegimeSnapshot } from "@/lib/regime-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { GaugeCard } from "@/app/regime/GaugeCard";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
+import { GreetingStrip, getServerGreeting } from "@/app/GreetingStrip";
 
 /**
  * Revalidate every 30 min. Scores update on the Saturday chain;
@@ -30,7 +31,7 @@ export default async function DashboardPage() {
     getPortfolioSnapshot(),
     getRegimeSnapshot(),
   ]);
-  const { greeting, dateLabel } = currentGreeting();
+  const { greeting, dateLabel } = getServerGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
   const movers = unifyMovers(snap.topWinners, snap.topLosers);
 
@@ -64,7 +65,7 @@ export default async function DashboardPage() {
           gap: 32,
         }}
       >
-        <GreetingStrip greeting={greeting} dateLabel={dateLabel} synthetic={snap.synthetic} />
+        <GreetingStrip initialGreeting={greeting} initialDateLabel={dateLabel} />
 
         {snap.macroGatesHit > 0 && regime.latest && (
           <AlertCallout
@@ -103,61 +104,6 @@ export default async function DashboardPage() {
         </Section>
       </div>
     </div>
-  );
-}
-
-/* ---------------- greeting + date ---------------- */
-
-function currentGreeting(): { greeting: string; dateLabel: string } {
-  // Server-rendered in America/Chicago per spec §5.1 mock ("23:24 CT").
-  const tz = "America/Chicago";
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    hour: "2-digit",
-    hour12: false,
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  }).formatToParts(now);
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
-  const hour = parseInt(get("hour"), 10);
-  const greeting =
-    hour >= 5 && hour < 12 ? "Good morning"
-    : hour >= 12 && hour < 17 ? "Good afternoon"
-    : "Good evening";
-  const dateLabel = `${get("weekday")}, ${get("month")} ${get("day")}, ${get("year")}`;
-  return { greeting, dateLabel };
-}
-
-function GreetingStrip({ greeting, dateLabel, synthetic }: { greeting: string; dateLabel: string; synthetic: boolean }) {
-  return (
-    <header
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 4,
-        paddingBottom: 4,
-      }}
-    >
-      <h1
-        style={{
-          fontSize: 22,
-          fontWeight: 600,
-          letterSpacing: "-.014em",
-          color: "var(--text-1)",
-          fontFamily: "var(--f)",
-          lineHeight: 1.2,
-        }}
-      >
-        {greeting}, Terry
-      </h1>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-        <span>{dateLabel}</span>
-        {synthetic && <span style={{ color: "var(--text-3)" }}>· fixture mode</span>}
-      </div>
-    </header>
   );
 }
 
@@ -213,7 +159,7 @@ function KpiRow({
       <KpiCell
         label="30D return"
         value="—"
-        sub="ingest daily P&L history to enable"
+        sub="tracks once a position has been open ≥ 30 days"
         muted
       />
       <KpiCell

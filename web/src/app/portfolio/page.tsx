@@ -2,7 +2,6 @@ import { getFixturePortfolioSnapshot, getPortfolioSnapshot, getUniverseChoices }
 import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { AddPositionForm } from "./AddPositionForm";
-import { ReservePanel } from "./ReservePanel";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 
 /**
@@ -118,8 +117,11 @@ export default async function PortfolioPage({
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 0 }}>
-            <ReservePanel snap={snap} />
-            {/* AddPositionForm provides its own header (toggles Add/Update). */}
+            {/*
+              Reserve & Triggers lives in the right rail only — it's the
+              persistent operating-state context (every page), not a
+              canvas-primary surface. AddPositionForm carries its own header.
+            */}
             <AddPositionForm choices={choices} envConfigured={snap.envConfigured} takenTickers={taken} />
           </div>
         </div>
