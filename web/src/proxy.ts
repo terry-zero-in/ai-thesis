@@ -45,8 +45,14 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // Public routes always pass; gate everything else.
+  // Marketing-landing carve-out (THS-84): root "/" is reachable by an
+  // unauthenticated visitor — page.tsx renders MarketingLanding when
+  // there is no session. Authed users at "/" still flow through to the
+  // dashboard render in the same file, so this carve-out does not
+  // weaken protection of the operator surfaces.
   const isPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
-  if (!user && !isPublic) {
+  const isMarketingRoot = pathname === "/";
+  if (!user && !isPublic && !isMarketingRoot) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", pathname + request.nextUrl.search);
