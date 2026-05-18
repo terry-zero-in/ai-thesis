@@ -2,14 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import type { AckState, BulkAckState } from "./action-types";
 
-export interface AckState {
-  ok: boolean;
-  message: string;
-  key?: string;
-}
-
-export const ACK_INITIAL: AckState = { ok: false, message: "" };
+// State types + initial constants live in ./action-types because Next 16
+// forbids non-async exports from "use server" modules (object exports throw
+// at action-POST time with digest @E352).
 
 /**
  * Acknowledge or un-acknowledge an alert. Toggles based on whether the
@@ -54,14 +51,6 @@ export async function ackAlert(_prev: AckState, formData: FormData): Promise<Ack
  *
  * Review §2.10 #5.
  */
-export interface BulkAckState {
-  ok: boolean;
-  message: string;
-  count: number;
-}
-
-export const BULK_ACK_INITIAL: BulkAckState = { ok: false, message: "", count: 0 };
-
 export async function ackAlerts(_prev: BulkAckState, formData: FormData): Promise<BulkAckState> {
   const raw = String(formData.get("keys") ?? "");
   let keys: string[];

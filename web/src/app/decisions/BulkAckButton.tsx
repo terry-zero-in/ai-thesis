@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { ackAlerts, BULK_ACK_INITIAL, type BulkAckState } from "./actions";
+import { ackAlerts } from "./actions";
+import { BULK_ACK_INITIAL, type BulkAckState } from "./action-types";
 
 /**
  * "Mark all read" affordance for /decisions. Submits the JSON-serialized

@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import type { AlertEvent } from "@/lib/alerts-types";
 import { ALERT_KIND_LABELS } from "@/lib/alerts-types";
-import { ackAlert, ACK_INITIAL, type AckState } from "./actions";
+import { ackAlert } from "./actions";
+import { ACK_INITIAL, type AckState } from "./action-types";
 
 /**
  * Per-alert row with severity dot, summary, expand-on-click detail, and

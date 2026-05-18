@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import type { AiqDraftRow } from "@/lib/aiq-drafts-data";
-import { promoteAiqDraft, PROMOTE_INITIAL, type PromoteState } from "./actions";
+import { promoteAiqDraft } from "./actions";
+import { PROMOTE_INITIAL, type PromoteState } from "./action-types";
 
 const DIMENSIONS = [
   { key: "disclosure_pts", note: "disclosure", label: "Disclosure", max: 20 },

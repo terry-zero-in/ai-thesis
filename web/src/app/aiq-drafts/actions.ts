@@ -2,13 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import type { PromoteState } from "./action-types";
 
-export interface PromoteState {
-  ok: boolean;
-  message: string;
-}
-
-export const PROMOTE_INITIAL: PromoteState = { ok: false, message: "" };
+// State types + initial constant live in ./action-types because Next 16
+// forbids non-async exports from "use server" modules (object exports throw
+// at action-POST time with digest @E352).
 
 interface DraftRow {
   id: string;

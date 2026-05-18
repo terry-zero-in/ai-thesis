@@ -2,15 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import type { PositionFormState } from "./action-types";
 
-export interface PositionFormState {
-  ok: boolean;
-  message: string;
-  /** Ticker that just saved — used to highlight it in the table. */
-  ticker?: string;
-}
-
-export const POSITION_INITIAL: PositionFormState = { ok: false, message: "" };
+// PositionFormState + POSITION_INITIAL live in ./action-types because Next 16
+// forbids non-async exports from "use server" modules (object exports throw
+// at action-POST time with digest @E352). Importers should use action-types
+// for the type + initial state; this module exports only the actions.
 
 /**
  * Add or update an open position.

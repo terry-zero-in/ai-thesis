@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { savePosition, POSITION_INITIAL, type PositionFormState } from "./actions";
+import { savePosition } from "./actions";
+import { POSITION_INITIAL, type PositionFormState } from "./action-types";
 import type { HeldPositionPrefill, UniverseChoice } from "@/lib/portfolio-types";
 
 /**

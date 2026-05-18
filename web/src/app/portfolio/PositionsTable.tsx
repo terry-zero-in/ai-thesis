@@ -5,7 +5,8 @@ import { useActionState } from "react";
 import { LayerChip } from "@/components/universe/LayerChip";
 import type { PositionRow } from "@/lib/portfolio-types";
 import { POSITION_DRAWDOWN_TRIGGER } from "@/lib/portfolio-types";
-import { closePosition, POSITION_INITIAL, type PositionFormState } from "./actions";
+import { closePosition } from "./actions";
+import { POSITION_INITIAL, type PositionFormState } from "./action-types";
 
 /**
  * Positions table — one row per open position with cost / market / P&L
