@@ -5,6 +5,7 @@ import { getMorningBrief } from "@/lib/routine-outputs";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
 import { MorningBrief } from "@/components/dashboard/MorningBrief";
+import { TodayThesisCard } from "@/components/dashboard/TodayThesisCard";
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
 import { computeGreeting } from "@/app/greeting-compute";
@@ -106,6 +107,12 @@ export default async function DashboardPage() {
             { label: "macro", value: `${snap.macroMultiplier.toFixed(2)}× (${snap.macroGatesHit}/3)` },
             { label: "weekly chain", value: "Sat 22:00–22:45 UTC" },
           ]}
+        />
+
+        <TodayThesisCard
+          snap={snap}
+          movers={movers}
+          regimeState={regimeStateFor(snap.macroGatesHit, snap.macroMultiplier)}
         />
 
         {snap.macroGatesHit > 0 && regime.latest && (
