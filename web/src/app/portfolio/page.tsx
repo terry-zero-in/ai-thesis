@@ -3,6 +3,7 @@ import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { AddPositionForm } from "./AddPositionForm";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
+import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -97,12 +98,36 @@ export default async function PortfolioPage({
           </span>
         )}
         <div style={{ flex: 1 }} />
-        {snap.spy_as_of && (
-          <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-            Prices as of {snap.spy_as_of}
-          </span>
-        )}
       </header>
+
+      <div style={{ padding: "10px 28px 0", flexShrink: 0 }}>
+        <MonoMetaSpine
+          segments={[
+            { label: "positions", value: snap.positions.length },
+            { label: "as_of", value: snap.spy_as_of ?? "—" },
+            {
+              label: "mode",
+              value: (
+                <span
+                  style={{
+                    color: demo ? "var(--warning)" : "var(--success)",
+                    fontWeight: 600,
+                    letterSpacing: ".02em",
+                  }}
+                  title={
+                    demo
+                      ? "Demo: synthetic 12-position book seeded via ?seed=fixture-positions."
+                      : "Live: cost-basis entries from public.portfolio_positions; market values from public.prices_raw."
+                  }
+                >
+                  {demo ? "Demo" : "Live"}
+                </span>
+              ),
+            },
+            { label: "price chain", value: "FMP daily close · refreshes 5 min" },
+          ]}
+        />
+      </div>
 
       <div
         style={{
