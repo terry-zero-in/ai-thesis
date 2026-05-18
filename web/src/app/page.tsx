@@ -297,6 +297,7 @@ function MoversTable({ movers }: { movers: DashboardMover[] }) {
         style={{
           display: "grid",
           gridTemplateColumns: MOVERS_GRID,
+          columnGap: 16,
           padding: "0 14px 10px",
           fontSize: 10,
           textTransform: "uppercase",
@@ -332,6 +333,7 @@ function MoverRow({ m, isLast }: { m: DashboardMover; isLast: boolean }) {
       style={{
         display: "grid",
         gridTemplateColumns: MOVERS_GRID,
+        columnGap: 16,
         padding: "10px 14px",
         borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
         whiteSpace: "nowrap",

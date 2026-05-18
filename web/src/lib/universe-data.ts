@@ -49,7 +49,7 @@ export interface UniverseSnapshot {
   synthetic: boolean;
 }
 
-interface ScoresRow {
+export interface ScoresRow {
   ticker: string;
   as_of: string;
   q_score: number | null;
@@ -63,7 +63,7 @@ interface ScoresRow {
   macro_multiplier: number;
 }
 
-interface UniverseDbRow {
+export interface UniverseDbRow {
   ticker: string;
   name: string;
   layer: number;
@@ -93,7 +93,7 @@ export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
   return buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]);
 }
 
-function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): UniverseSnapshot {
+export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): UniverseSnapshot {
   // Group history descending per ticker so [0] is latest, [1] is prior.
   const byTicker = new Map<string, ScoresRow[]>();
   for (const s of scores) {
@@ -140,7 +140,7 @@ function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): Universe
 // Fixture — deterministic synthesized scores keyed off the seed universe.
 // Replaced by live data once the Saturday cron runs against a deployed project.
 // ---------------------------------------------------------------------------
-function fixtureSnapshot(): UniverseSnapshot {
+export function fixtureSnapshot(): UniverseSnapshot {
   const seed = FIXTURE_UNIVERSE.map((u, i) => {
     const baseQ = 55 + ((i * 7) % 40);
     const baseG = 50 + ((i * 11) % 45);

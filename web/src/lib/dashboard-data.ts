@@ -5,7 +5,8 @@
  * Adds tier counts (current + prior week deltas), top movers, tier
  * crossings, and the macro multiplier state.
  */
-import { getLatestUniverseScores, type Tier, type UniverseRow } from "./universe-data";
+import { type Tier, type UniverseRow } from "./universe-data";
+import { getLatestUniverseScoresServer } from "./universe-data-server";
 import { getSupabaseServer } from "./supabase/server";
 
 const INSIDER_RAIL_LOOKBACK_DAYS = 14;
@@ -55,7 +56,7 @@ export interface DashboardSnapshot {
 const MOVERS_LIMIT = 5;
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
-  const snap = await getLatestUniverseScores();
+  const snap = await getLatestUniverseScoresServer();
   const rows: UniverseRow[] = snap.rows;
 
   // Tier counts current vs prior week (prior tier derived from prior_composite
