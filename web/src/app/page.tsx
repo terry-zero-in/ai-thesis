@@ -37,7 +37,7 @@ export default async function DashboardPage() {
     getRecentInsider(),
     getMorningBrief(),
   ]);
-  const { greeting, dateLabel } = computeGreeting();
+  const { greeting, dateLabel, marketLabel } = computeGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
   const movers = unifyMovers(snap.topWinners, snap.topLosers);
 
@@ -72,7 +72,11 @@ export default async function DashboardPage() {
           gap: 32,
         }}
       >
-        <GreetingStrip initialGreeting={greeting} initialDateLabel={dateLabel} />
+        <GreetingStrip
+          initialGreeting={greeting}
+          initialDateLabel={dateLabel}
+          initialMarketLabel={marketLabel}
+        />
 
         <MonoMetaSpine
           segments={[
@@ -174,9 +178,37 @@ function KpiRow({
 }) {
   const highDelta = highCurrent - highPrior;
   const highDeltaLabel =
-    highDelta === 0 ? "no change wk/wk" : `${highDelta > 0 ? "+" : ""}${highDelta} wk/wk`;
+    highDelta === 0
+      ? "no change vs last week"
+      : `${highDelta > 0 ? "↑" : "↓"} ${Math.abs(highDelta)} vs last week`;
   const plPos = portfolioPl >= 0;
   const plPctLabel = `${plPos ? "+" : ""}${(portfolioPlPct * 100).toFixed(2)}%`;
+
+  // Empty-state variant per /lambo D2: collapse Portfolio/P&L/30D into a
+  // single onboarding card spanning 3 columns; keep High-tier names as
+  // its own tile. Three em-dashes in a row reads as "data is broken" — an
+  // explicit onboarding CTA reads as "this is where you start."
+  if (portfolioEmpty) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "3fr 1fr",
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
+      >
+        <OnboardingCard />
+        <KpiCell
+          label="High-tier names"
+          value={`${highCurrent}`}
+          sub={`${highCurrent}/${universeSize} · ${highDeltaLabel}`}
+          valueColor="var(--text-1)"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -190,17 +222,15 @@ function KpiRow({
     >
       <KpiCell
         label="Portfolio"
-        value={portfolioEmpty ? "—" : fmtUsd(portfolioValue)}
-        sub={portfolioEmpty ? "no positions yet · open /portfolio to add" : "market value"}
-        muted={portfolioEmpty}
+        value={fmtUsd(portfolioValue)}
+        sub="market value"
         isFirst
       />
       <KpiCell
-        label="P&L"
-        value={portfolioEmpty ? "—" : fmtUsd(portfolioPl, true)}
-        sub={portfolioEmpty ? "no positions yet" : `${plPctLabel} since open`}
-        valueColor={portfolioEmpty ? undefined : plPos ? "var(--success)" : "var(--danger)"}
-        muted={portfolioEmpty}
+        label="P&L · today"
+        value={fmtUsd(portfolioPl, true)}
+        sub={`${plPctLabel} since open`}
+        valueColor={plPos ? "var(--success)" : "var(--danger)"}
       />
       <KpiCell
         label="30D return"
@@ -214,6 +244,82 @@ function KpiRow({
         sub={`${highCurrent}/${universeSize} · ${highDeltaLabel}`}
         valueColor="var(--text-1)"
       />
+    </div>
+  );
+}
+
+/**
+ * Onboarding card shown in place of Portfolio/P&L/30D tiles when the
+ * portfolio is empty. Two CTAs: "Add position" → /portfolio, "Import CSV"
+ * → /portfolio (CSV importer surfaces there).
+ */
+function OnboardingCard() {
+  return (
+    <div
+      style={{
+        padding: "18px 22px",
+        borderRight: "1px solid var(--border-subtle)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        minWidth: 0,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10.5,
+          fontFamily: "var(--m)",
+          color: "var(--text-3)",
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+        }}
+      >
+        Set up your book
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--f)",
+          fontSize: 15,
+          color: "var(--text-1)",
+          lineHeight: 1.45,
+          maxWidth: 540,
+        }}
+      >
+        Add your first position to start tracking market value, P&L, and
+        30-day return against benchmarks.
+      </span>
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <Link
+          href="/portfolio"
+          style={{
+            fontSize: 12,
+            fontFamily: "var(--m)",
+            color: "var(--text-1)",
+            background: "var(--accent)",
+            padding: "6px 14px",
+            borderRadius: 4,
+            textDecoration: "none",
+            letterSpacing: ".02em",
+          }}
+        >
+          + Add position
+        </Link>
+        <Link
+          href="/portfolio?import=csv"
+          style={{
+            fontSize: 12,
+            fontFamily: "var(--m)",
+            color: "var(--text-2)",
+            border: "1px solid var(--border)",
+            padding: "6px 14px",
+            borderRadius: 4,
+            textDecoration: "none",
+            letterSpacing: ".02em",
+          }}
+        >
+          Import CSV
+        </Link>
+      </div>
     </div>
   );
 }

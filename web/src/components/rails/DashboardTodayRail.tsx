@@ -1,25 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import type { DashboardInsiderRow, DashboardMover, DashboardSnapshot } from "@/lib/dashboard-data";
+import { useEffect, useState } from "react";
+import type { DashboardInsiderRow, DashboardMover } from "@/lib/dashboard-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { RailHeader, RailSection, RailEmpty, RailFooter } from "./RailChrome";
 
 /**
- * /dashboard right rail — Master Design Spec §6:
- *   "Top score movers (5), insider today, macro gates summary"
+ * /dashboard right rail — /lambo Dashboard polish D6/G6 differentiation:
  *
- * Three sub-sections, compressed for the 320px rail. Differs from the main
- * canvas Score Movers table (top 8 unified) — rail shows top 5 by abs(Δ),
- * each as a clickable mono row that deep-links into /universe/[ticker].
+ *   "The right rail currently duplicates the main 'Score Movers' table.
+ *    Differentiate it by purpose: the main canvas is for analysis, the
+ *    rail is for awareness."
  *
- * Insider Today is a deferred-feature ghost per the established pattern on
- * /universe/[ticker] — Form 4 ingestion ships under THS-66.
+ * Sections (top → bottom):
+ *   1. Today header + live wall-clock date line
+ *   2. Calendar · upcoming   (earnings + macro release feed — v1.1 placeholder)
+ *   3. Insider · recent      (Form 4 last 14 days)
+ *   4. Macro gates summary   (per-gauge hit/miss + multiplier)
  *
- * Macro Gates summary mirrors the main canvas "N of 3 gates hit · 0.95×"
- * line but expanded to list each gate by name with its hit/miss state, so
- * the rail answers "which gates" without making the user pan back to the
- * GaugeRow at the bottom of the canvas.
+ * Removed Top Movers section per /lambo critique — it duplicated the main
+ * canvas table. Rail data still carries `movers` so consumers can opt back
+ * in later if positioning warrants it.
  */
 export interface DashboardTodayRailData {
   movers: DashboardMover[];
@@ -34,22 +36,16 @@ export interface DashboardTodayRailData {
 }
 
 export function DashboardTodayRail({ data }: { data: DashboardTodayRailData }) {
-  const { movers, macroGatesHit, macroMultiplier, gateState, recentInsider, asOf, synthetic } = data;
-  const top5 = movers.slice(0, 5);
+  const { macroGatesHit, macroMultiplier, gateState, recentInsider, asOf } = data;
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <RailHeader label="Today" />
+      <RailHeader label="Today" right={<TodayClock />} />
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <RailSection title="Top movers · 7D">
-          {top5.length === 0 ? (
-            <RailEmpty>No composite movement this week.</RailEmpty>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {top5.map((m, i) => (
-                <MoverRow key={m.ticker} m={m} isLast={i === top5.length - 1} />
-              ))}
-            </div>
-          )}
+        <RailSection title="Calendar · upcoming">
+          <RailEmpty>
+            Earnings dates + Fed / macro releases for your universe land in v1.1.
+            For now, name-level events appear on each ticker detail page.
+          </RailEmpty>
         </RailSection>
 
         <RailSection title="Insider · recent">
@@ -58,7 +54,11 @@ export function DashboardTodayRail({ data }: { data: DashboardTodayRailData }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column" }}>
               {recentInsider.map((r, i) => (
-                <InsiderRow key={`${r.ticker}-${r.transaction_date}-${i}`} r={r} isLast={i === recentInsider.length - 1} />
+                <InsiderRow
+                  key={`${r.ticker}-${r.transaction_date}-${i}`}
+                  r={r}
+                  isLast={i === recentInsider.length - 1}
+                />
               ))}
             </div>
           )}
@@ -119,8 +119,10 @@ export function DashboardTodayRail({ data }: { data: DashboardTodayRailData }) {
       <RailFooter>
         {asOf && (
           <span>
-            As of <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>{asOf}</span>
-            {synthetic ? " (fixture)" : ""}
+            Data as of{" "}
+            <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>
+              {formatAsOf(asOf)}
+            </span>
           </span>
         )}
       </RailFooter>
@@ -128,34 +130,50 @@ export function DashboardTodayRail({ data }: { data: DashboardTodayRailData }) {
   );
 }
 
-function MoverRow({ m, isLast }: { m: DashboardMover; isLast: boolean }) {
-  const dir = m.delta > 0 ? "↑" : m.delta < 0 ? "↓" : "→";
-  const dirColor = m.delta > 0 ? "var(--success)" : m.delta < 0 ? "var(--danger)" : "var(--text-3)";
+/**
+ * Live wall-clock chip in the header right slot. Re-derives every 60s.
+ * Format: "Mon May 18 · 9:34 AM CT" — abbreviated weekday + month + 12h
+ * time + Chicago-time TZ marker.
+ */
+function TodayClock() {
+  const [label, setLabel] = useState(() => formatNow());
+  useEffect(() => {
+    setLabel(formatNow());
+    const id = setInterval(() => setLabel(formatNow()), 60_000);
+    return () => clearInterval(id);
+  }, []);
   return (
-    <Link
-      href={`/universe/${m.ticker}`}
+    <span
       style={{
-        display: "grid",
-        gridTemplateColumns: "auto 1fr auto",
-        gap: 8,
-        alignItems: "baseline",
-        padding: "8px 0",
-        borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
-        textDecoration: "none",
+        fontSize: 10.5,
         fontFamily: "var(--m)",
-        fontVariantNumeric: "tabular-nums",
+        color: "var(--text-2)",
+        letterSpacing: ".02em",
+        textTransform: "none",
+        fontWeight: 400,
+        whiteSpace: "nowrap",
       }}
     >
-      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</span>
-      <span style={{ fontSize: 10.5, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".04em" }}>
-        {m.layer_label.replace(/^L\d\s+/, "")}
-      </span>
-      <span style={{ fontSize: 12, color: dirColor, whiteSpace: "nowrap" }}>
-        {dir} {m.delta > 0 ? "+" : ""}
-        {m.delta.toFixed(1)}
-      </span>
-    </Link>
+      {label}
+    </span>
   );
+}
+
+function formatNow(): string {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const parts = fmt.formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const dayPart = `${get("weekday")} ${get("month")} ${get("day")}`;
+  const timePart = `${get("hour")}:${get("minute")} ${get("dayPeriod")} CT`;
+  return `${dayPart} · ${timePart}`;
 }
 
 /**
@@ -190,6 +208,20 @@ function InsiderRow({ r, isLast }: { r: DashboardInsiderRow; isLast: boolean }) 
       <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap" }}>{daysAgo}</span>
     </Link>
   );
+}
+
+/**
+ * Long-form date for the footer "Data as of" line. Score snapshots are
+ * date-keyed (no clock time), so we render "May 9, 2026" — no fabricated
+ * "4:00 PM CT" timestamp. Honesty over polish per [[feedback_no_fabricated_quotes]].
+ */
+function formatAsOf(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso;
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthName = months[parseInt(m[2], 10) - 1] ?? m[2];
+  const day = parseInt(m[3], 10);
+  return `${monthName} ${day}, ${m[1]}`;
 }
 
 function compactNum(n: number): string {
