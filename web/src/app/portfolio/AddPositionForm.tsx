@@ -28,12 +28,19 @@ export function AddPositionForm({
   takenTickers,
   heldPrefill,
   initialTicker,
+  onSuccess,
 }: {
   choices: UniverseChoice[];
   envConfigured: boolean;
   takenTickers: string[];
   heldPrefill: HeldPositionPrefill[];
   initialTicker: string | null;
+  /**
+   * Called once after a save action succeeds (state.ok === true).
+   * Delayed ~1.2s so the success message is visible before dismissal.
+   * Used by PortfolioAddDrawer to self-close after a successful submit.
+   */
+  onSuccess?: () => void;
 }) {
   const [state, formAction, pending] = useActionState<PositionFormState, FormData>(savePosition, POSITION_INITIAL);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -97,6 +104,24 @@ export function AddPositionForm({
       formAnchorRef.current.scrollIntoView({ block: "start", behavior: "smooth" });
     }
   }, [initialTicker]);
+
+  // Fire `onSuccess` once per save-success transition (false → true). The
+  // ref-gate prevents firing on re-renders where state stays truthy, and
+  // resets when state.ok flips back to false (next submit cycle).
+  // Delay 1200ms so the user sees the green success banner before the
+  // drawer self-dismisses — feels intentional, not abrupt.
+  const successAcknowledgedRef = useRef(false);
+  useEffect(() => {
+    if (!onSuccess) return;
+    if (state.ok && !successAcknowledgedRef.current) {
+      successAcknowledgedRef.current = true;
+      const t = window.setTimeout(() => onSuccess(), 1200);
+      return () => window.clearTimeout(t);
+    }
+    if (!state.ok) {
+      successAcknowledgedRef.current = false;
+    }
+  }, [state.ok, onSuccess]);
 
   // Derived: in dollar mode, what shares would this become at current price?
   const dollarPreview = useMemo(() => {

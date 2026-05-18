@@ -1,7 +1,7 @@
 import { getFixturePortfolioSnapshot, getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
 import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
-import { AddPositionForm } from "./AddPositionForm";
+import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 
@@ -98,6 +98,22 @@ export default async function PortfolioPage({
           </span>
         )}
         <div style={{ flex: 1 }} />
+        {/*
+          Add / edit a position lives here, in the page-header upper-right —
+          the canonical "create" affordance per the PageCreateDrawer signature
+          pattern. Trigger pill collapses into the chrome at rest; ⌘N or
+          click expands an anchored 460px overlay containing the same form.
+          Replaces the prior bottom-stack form + `.portfolio-grid` 1600px
+          breakpoint hack — table now permanently claims full canvas width.
+          ?edit=<TICKER> deep-links open the drawer pre-hydrated.
+        */}
+        <PortfolioAddDrawer
+          choices={choices}
+          envConfigured={snap.envConfigured}
+          takenTickers={taken}
+          heldPrefill={heldPrefill}
+          initialTicker={editTicker}
+        />
       </header>
 
       <div style={{ padding: "10px 28px 0", flexShrink: 0 }}>
@@ -142,41 +158,22 @@ export default async function PortfolioPage({
         <AggregateBar snap={snap} />
 
         {/*
-          Two-column layout: positions table (left, fluid) + add/edit form
-          (right, fixed 320px). The container queries via `.portfolio-grid`
-          + media query in globals.css fall back to a stacked single-column
-          on viewports where the 10-column positions table can't fit
-          alongside the form — prevents the form from overlapping the
-          rightmost table columns (edit/close action cell) on mid-width
-          screens.
+          Positions table claims the full canvas width — the add/edit form
+          was hoisted to the page-header PortfolioAddDrawer (above), which
+          eliminated the form-vs-table crowding problem at the source. No
+          responsive grid, no sticky form column, no 1600px breakpoint.
+          Reserve & Triggers continues to live in the right rail.
         */}
-        <div className="portfolio-grid">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-              minWidth: 0,
-              overflowX: "auto",
-            }}
-          >
-            <PositionsTable positions={snap.positions} totalDeployed={snap.total_deployed} />
-          </div>
-
-          <div className="portfolio-form-col">
-            {/*
-              Reserve & Triggers lives in the right rail only — it's the
-              persistent operating-state context (every page), not a
-              canvas-primary surface. AddPositionForm carries its own header.
-            */}
-            <AddPositionForm
-              choices={choices}
-              envConfigured={snap.envConfigured}
-              takenTickers={taken}
-              heldPrefill={heldPrefill}
-              initialTicker={editTicker}
-            />
-          </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+            minWidth: 0,
+            overflowX: "auto",
+          }}
+        >
+          <PositionsTable positions={snap.positions} totalDeployed={snap.total_deployed} />
         </div>
       </div>
     </div>
