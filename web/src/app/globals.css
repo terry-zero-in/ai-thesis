@@ -276,3 +276,17 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
 .lin-lift{transition:transform var(--dur-fast) var(--ease-out),background var(--dur-instant) var(--ease-out),border-color var(--dur-instant) var(--ease-out)}
 .lin-lift:hover{transform:translateY(-1px)}
 .lin-lift:active{transform:translateY(0)}
+
+/* Portfolio page two-column → stacked responsive layout.
+   Above 1280px (sidebar 220px + canvas room for 10-col table + 320px form):
+     - 1fr / 320px grid, form sticky to top of scroll.
+   Below 1280px:
+     - stack form below table, form un-sticks; table gets full width and
+       its own horizontal scroll. Prevents the form from visually
+       overlapping the rightmost columns of the positions table. */
+.portfolio-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
+.portfolio-form-col{display:flex;flex-direction:column;gap:24px;min-width:0}
+@media (min-width:1280px){
+  .portfolio-grid{grid-template-columns:minmax(0,1fr) 320px;gap:32px}
+  .portfolio-form-col{position:sticky;top:0}
+}

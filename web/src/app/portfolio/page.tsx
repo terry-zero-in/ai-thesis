@@ -116,19 +116,29 @@ export default async function PortfolioPage({
       >
         <AggregateBar snap={snap} />
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) 300px",
-            gap: 32,
-            alignItems: "start",
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {/*
+          Two-column layout: positions table (left, fluid) + add/edit form
+          (right, fixed 320px). The container queries via `.portfolio-grid`
+          + media query in globals.css fall back to a stacked single-column
+          on viewports where the 10-column positions table can't fit
+          alongside the form — prevents the form from overlapping the
+          rightmost table columns (edit/close action cell) on mid-width
+          screens.
+        */}
+        <div className="portfolio-grid">
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              minWidth: 0,
+              overflowX: "auto",
+            }}
+          >
             <PositionsTable positions={snap.positions} totalDeployed={snap.total_deployed} />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 0 }}>
+          <div className="portfolio-form-col">
             {/*
               Reserve & Triggers lives in the right rail only — it's the
               persistent operating-state context (every page), not a
