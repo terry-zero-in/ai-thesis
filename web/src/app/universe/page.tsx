@@ -68,6 +68,25 @@ function UniverseHeader({ snap }: { snap: UniverseSnapshot }) {
           { label: "names", value: snap.rows.length },
           { label: "as_of", value: snap.asOf ?? "—" },
           { label: "engine", value: "composite v1.0" },
+          {
+            label: "mode",
+            value: (
+              <span
+                style={{
+                  color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                  fontWeight: 600,
+                  letterSpacing: ".02em",
+                }}
+                title={
+                  snap.synthetic
+                    ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
+                    : "Live: scores read from public.scores_history populated by the Saturday chain."
+                }
+              >
+                {snap.synthetic ? "Stubbed" : "Live"}
+              </span>
+            ),
+          },
           { label: "macro", value: sample ? `${sample.macro_multiplier.toFixed(2)}× (${sample.macro_gates_hit}/3)` : "—" },
         ]}
       />

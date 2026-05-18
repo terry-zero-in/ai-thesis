@@ -8,6 +8,8 @@ import { useUniverseFilter } from "@/hooks/universe-filter-context";
 import { TierBadge } from "./TierBadge";
 import { LayerChip } from "./LayerChip";
 import { MiniBar } from "./MiniBar";
+import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
+import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
 
 type SortKey = "ticker" | "name" | "layer" | "composite" | "final" | "tier" | "delta";
 type SortDir = "asc" | "desc";
@@ -230,10 +232,35 @@ function Row({ r, queued }: { r: UniverseRow; queued: boolean }) {
         <LayerChip layer={r.layer} label={r.layer_label} />
       </Td>
       <Td align="right" mono>
-        {fmt1(r.composite)}
+        <ScoreMathPopover input={scoreMathInputForRow(r)}>
+          <span
+            className="score-math-number"
+            style={{
+              fontVariantNumeric: "tabular-nums",
+              borderBottom: "1px dotted transparent",
+              transition: "border-color var(--dur-instant) var(--ease-out)",
+              color: "inherit",
+            }}
+          >
+            {fmt1(r.composite)}
+          </span>
+        </ScoreMathPopover>
       </Td>
       <Td align="right" mono strong>
-        {fmt1(r.final_score)}
+        <ScoreMathPopover input={scoreMathInputForRow(r)}>
+          <span
+            className="score-math-number"
+            style={{
+              fontVariantNumeric: "tabular-nums",
+              fontWeight: 600,
+              borderBottom: "1px dotted transparent",
+              transition: "border-color var(--dur-instant) var(--ease-out)",
+              color: "inherit",
+            }}
+          >
+            {fmt1(r.final_score)}
+          </span>
+        </ScoreMathPopover>
       </Td>
       <Td>
         <TierBadge tier={r.tier} />
@@ -380,6 +407,23 @@ function Td({
 
 function tintScore(v: number | null): boolean {
   return v != null && v >= 80;
+}
+
+function scoreMathInputForRow(r: UniverseRow): ScoreMathInput {
+  return {
+    ticker: r.ticker,
+    layer: r.layer,
+    layerLabel: r.layer_label,
+    q: r.q,
+    g: r.g,
+    v: r.v,
+    aiq: r.aiq,
+    composite: r.composite,
+    finalScore: r.final_score,
+    macroGatesHit: r.macro_gates_hit,
+    macroMultiplier: r.macro_multiplier,
+    asOf: r.as_of,
+  };
 }
 
 function fmt1(n: number | null) {
