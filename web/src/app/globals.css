@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   AI Thesis — Iris × Voltage v1.0 color system
-   Locked 2026-05-18 (S4). Supersedes Apex Blue (S2 2026-05-18) and Reticle
-   Stage 3 Plasma Cyan tokens. Source of truth: AI-Thesis Color System spec.
+   AI Thesis — Iris × Voltage v1.1 color system
+   Locked 2026-05-18 (S5). Supersedes v1.0 (`#A87DFE` iris) per Terry directive
+   referencing Robinhood Strategies half-circle gradient — push iris toward the
+   deeper Persian/electric-indigo side; lift surfaces by 1-2 lightness only
+   ("very little more gray"). v1.0 was locked S4; Apex Blue (S2) and Reticle
+   Stage 3 Plasma Cyan tokens superseded. Source: AI-Thesis Color System spec.
 
    Three roles, three families:
      • Iris   = the signal     (conviction ≥ 75, active-state arc, focus rings,
@@ -29,7 +32,7 @@
    time / color pickers. `color-scheme: dark` flips Chrome / Edge / Safari to
    their dark calendar UI; `accent-color` colors the selected-day highlight
    and any focus ring with the Iris-300 signal violet. */
-html{color-scheme:dark;accent-color:#A87DFE}
+html{color-scheme:dark;accent-color:#5236DC}
 
 /* Calendar glyph inside <input type="date|time|month|week"> renders as a
    black icon on dark backgrounds by default in Chromium. Invert it so it
@@ -65,21 +68,21 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
   /* Surfaces — four solid elevation steps. Hover/popover/modal = next step up.
      Never reach for shadows on a dark theme. */
-  --jet:    #000000;  /* L0 · canvas base */
-  --onyx:   #0A0B10;  /* L1 · card */
-  --carbon: #14171F;  /* L2 · elevated / hover / popover */
-  --steel:  #2A2F3E;  /* L3 · input / picker */
+  --jet:    #050608;  /* L0 · canvas base (v1.1: was #000000, +5 lightness — warm-near-black, "very little more gray") */
+  --onyx:   #0B0C12;  /* L1 · card        (v1.1: was #0A0B10, +1 warmth) */
+  --carbon: #161920;  /* L2 · elevated    (v1.1: was #14171F, +2 lift) */
+  --steel:  #2C313F;  /* L3 · input       (v1.1: was #2A2F3E, +2 lift) */
 
   /* Iris — the brand violet. Conviction signals only (composite ≥75, active-state
      arc, focus rings, links, selection, score bars, multiplier glow). Never decorative. */
-  --iris-50:  #F5EEFF;
-  --iris-100: #E4D2FF;
-  --iris-200: #C7A6FF;  /* highlight (top of arc) */
-  --iris-300: #A87DFE;  /* mid arc — vivid · default brand mark */
-  --iris-500: #8B5CF6;  /* brand base */
-  --iris-600: #7C3FE8;
-  --iris-700: #5B2EB8;  /* pressed */
-  --iris-900: #2E1166;
+  --iris-50:  #EEEAFB;  /* (v1.1: was #F5EEFF) */
+  --iris-100: #D8CFF6;  /* (v1.1: was #E4D2FF) */
+  --iris-200: #9C8AED;  /* highlight — top of arc (v1.1: was #C7A6FF) */
+  --iris-300: #5236DC;  /* mid arc — electric indigo · default brand mark · A (v1.1: was #A87DFE) */
+  --iris-500: #4D3FB8;  /* brand base — Persian indigo · B (v1.1: was #8B5CF6) */
+  --iris-600: #3D2EB8;  /* (v1.1: was #7C3FE8) */
+  --iris-700: #2E2089;  /* pressed (v1.1: was #5B2EB8) */
+  --iris-900: #1A0F4A;  /* deepest (v1.1: was #2E1166) */
 
   /* Voltage — the single neon CTA per page. Pill radius 9999px. Voltage-ink
      text on voltage fill. Never on data, labels, or icons. */
@@ -126,16 +129,16 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --accent:         var(--iris-300);
   --accent-hover:   var(--iris-200);
   --accent-pressed: var(--iris-700);
-  --accent-soft:    rgba(168,125,254,.12);
-  --accent-border:  rgba(168,125,254,.40);
-  --accent-glow:    rgba(168,125,254,.22);
+  --accent-soft:    rgba(82,54,220,.12);   /* v1.1: iris-300 #5236DC */
+  --accent-border:  rgba(82,54,220,.40);   /* v1.1: iris-300 #5236DC */
+  --accent-glow:    rgba(82,54,220,.22);   /* v1.1: iris-300 #5236DC */
   --on-accent:      var(--white);
 
   /* Semantic — truth states only, never decorative. Severity ladder is
      INDEPENDENT of Iris (Iris is brand/signal, not severity). */
   --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:var(--iris-300);
   --success-soft:rgba(91,184,128,.10); --warning-soft:rgba(221,168,90,.10);
-  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(168,125,254,.08);
+  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(82,54,220,.08);  /* v1.1: iris-300 */
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
@@ -195,7 +198,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
 html,body{height:100%;background:var(--canvas);color:var(--text-1);font-family:var(--f);font-size:13px;line-height:1.5;letter-spacing:-.011em;-webkit-font-smoothing:antialiased;overflow:hidden}
 button,input,textarea,select{font-family:var(--f);letter-spacing:-.011em;color:inherit;background:none;border:none;cursor:pointer;outline:none}
-::selection{background:color-mix(in oklab, var(--accent) 32%, transparent);color:#fff}
+::selection{background:color-mix(in oklab, var(--accent) 38%, transparent);color:#fff}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.16)}
 *{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.08) transparent}
 
