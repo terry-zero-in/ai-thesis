@@ -217,6 +217,10 @@ function InsiderRow({ r, isLast }: { r: DashboardInsiderRow; isLast: boolean }) 
   const sideLabel = isBuy ? "BUY" : "SELL";
   const daysAgo = relDays(r.transaction_date);
   const sharesFmt = r.shares != null ? compactNum(r.shares) : "—";
+  // Per-ticker dedupe pass in getRecentInsider collapses N same-side
+  // filings into one row. Show "(N)" only when N > 1 so single filings
+  // stay quiet.
+  const filingsBadge = r.filing_count > 1 ? `(${r.filing_count})` : null;
   return (
     <Link
       href={`/universe/${r.ticker}`}
@@ -234,7 +238,12 @@ function InsiderRow({ r, isLast }: { r: DashboardInsiderRow; isLast: boolean }) 
     >
       <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-1)" }}>{r.ticker}</span>
       <span style={{ fontSize: 10, color: sideColor, letterSpacing: ".04em" }}>{sideLabel}</span>
-      <span style={{ fontSize: 11, color: "var(--text-3)" }}>{sharesFmt} sh</span>
+      <span style={{ fontSize: 11, color: "var(--text-3)" }}>
+        {sharesFmt} sh
+        {filingsBadge && (
+          <span style={{ color: "var(--text-4)", marginLeft: 6 }}>{filingsBadge}</span>
+        )}
+      </span>
       <span style={{ fontSize: 11, color: "var(--text-3)", whiteSpace: "nowrap" }}>{daysAgo}</span>
     </Link>
   );

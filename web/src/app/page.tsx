@@ -293,7 +293,7 @@ function KpiRow({
         <KpiCell
           label="High-tier names"
           value={`${highCurrent}`}
-          sub={`${highCurrent}/${universeSize} · ${highDeltaLabel}`}
+          sub={`${highCurrent} of ${universeSize} scored · ${highDeltaLabel}`}
           valueColor="var(--text-1)"
         />
       </div>

@@ -87,7 +87,10 @@ export function PortfolioValueChart({
   return (
     <div
       style={{
-        background: "var(--surface)",
+        // Linear gradient: current --surface at the very top → #060709 at the
+        // bottom, just inside the border. Top edge keeps the existing surface
+        // color so the chrome reads continuous with the rest of the dashboard.
+        background: "linear-gradient(180deg, var(--surface) 0%, #060709 100%)",
         border: "1px solid var(--border-subtle)",
         borderRadius: 6,
         padding: "16px 20px 14px",

@@ -10,7 +10,15 @@ import { getLatestUniverseScoresServer } from "./universe-data-server";
 import { getSupabaseServer } from "./supabase/server";
 
 const INSIDER_RAIL_LOOKBACK_DAYS = 14;
+/** Distinct (ticker, side) groups shown in the rail after de-dupe. */
 const INSIDER_RAIL_LIMIT = 5;
+/**
+ * Raw-row ceiling for the Supabase query. We over-pull so the dedupe pass
+ * in `getRecentInsider` has enough material to surface 5 distinct groups
+ * even when a single ticker dominates the window (e.g., 3+ ARM filings on
+ * the same day eating the 5-slot rail pre-dedupe).
+ */
+const INSIDER_QUERY_LIMIT = 40;
 
 const TIER_ORDER: Tier[] = ["High", "Medium", "Low", "Avoid"];
 
@@ -189,6 +197,33 @@ function deriveDriver(r: UniverseRow): DashboardMover["driver"] {
  */
 export interface DashboardInsiderRow {
   ticker: string;
+  /** Most recent transaction_date across grouped filings. */
+  transaction_date: string;
+  /**
+   * Most recent insider on this (ticker, side) group. Kept for
+   * downstream consumers; rail UI shows only ticker + side + aggregate
+   * shares + filing count + days-ago.
+   */
+  insider_name: string;
+  insider_title: string | null;
+  transaction_code: "P" | "S" | string;
+  /** Summed shares across the grouped filings (same side only). */
+  shares: number | null;
+  /** Summed $ value across the grouped filings. */
+  transaction_value: number | null;
+  /**
+   * Count of raw Form 4 filings collapsed into this row. 1 = single
+   * filing (no "(N filings)" suffix needed); >1 means the rail row is
+   * an aggregation of N same-ticker, same-side events.
+   */
+  filing_count: number;
+}
+
+/**
+ * Raw shape from Supabase before dedupe — internal-only.
+ */
+interface InsiderRawRow {
+  ticker: string;
   transaction_date: string;
   insider_name: string;
   insider_title: string | null;
@@ -208,8 +243,48 @@ export async function getRecentInsider(): Promise<DashboardInsiderRow[]> {
     .gte("transaction_date", fromIso)
     .in("transaction_code", ["P", "S"])
     .order("transaction_date", { ascending: false })
-    .limit(INSIDER_RAIL_LIMIT);
-  return (res.data ?? []) as DashboardInsiderRow[];
+    .limit(INSIDER_QUERY_LIMIT);
+  const raw = (res.data ?? []) as InsiderRawRow[];
+
+  // De-dupe pass: group by (ticker, transaction_code). Buys and sells
+  // for the same ticker stay as separate rows (semantically distinct
+  // events). Within a group: sum shares + value, keep the most-recent
+  // date + insider, count the filings.
+  const groups = new Map<string, DashboardInsiderRow>();
+  for (const r of raw) {
+    const key = `${r.ticker}:${r.transaction_code}`;
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, {
+        ticker: r.ticker,
+        transaction_date: r.transaction_date,
+        insider_name: r.insider_name,
+        insider_title: r.insider_title,
+        transaction_code: r.transaction_code,
+        shares: r.shares,
+        transaction_value: r.transaction_value,
+        filing_count: 1,
+      });
+    } else {
+      // Raw rows come date-desc, so the first row in a group is the
+      // most recent — leave existing.transaction_date / insider_name
+      // alone. Aggregate the numerics; null + N = N (no contamination).
+      existing.shares = sumNullable(existing.shares, r.shares);
+      existing.transaction_value = sumNullable(existing.transaction_value, r.transaction_value);
+      existing.filing_count += 1;
+    }
+  }
+
+  // Preserve date-desc order across groups by sorting on most-recent
+  // transaction_date (the first-row date kept in each group).
+  return Array.from(groups.values())
+    .sort((a, b) => (a.transaction_date < b.transaction_date ? 1 : -1))
+    .slice(0, INSIDER_RAIL_LIMIT);
+}
+
+function sumNullable(a: number | null, b: number | null): number | null {
+  if (a == null && b == null) return null;
+  return (a ?? 0) + (b ?? 0);
 }
 
 function isoDateMinusDays(iso: string, days: number): string {
