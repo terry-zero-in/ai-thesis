@@ -276,8 +276,8 @@ function KpiRow({
         style={{
           display: "grid",
           gridTemplateColumns: "3fr 1fr 1fr",
-          borderTop: "1px solid var(--border-subtle)",
-          borderBottom: "1px solid var(--border-subtle)",
+          gap: 32,
+          padding: "4px 0",
         }}
       >
         <OnboardingCard />
@@ -302,19 +302,21 @@ function KpiRow({
   return (
     <div
       style={{
-        // Mercury KPI strip — no outer chrome, cells separated by hairlines.
-        // v3: 5 cells (added MACRO MULTIPLIER between 30D and HIGH-TIER).
+        // Mercury / Basis Rent-Roll pattern: 5 protagonist cells, no
+        // vertical dividers, no top/bottom hairlines, whitespace as the
+        // separator (Terry: "clean up the vertical and horizontal lines
+        // around the 5 numbers"). Each cell carries its own rhythm and
+        // earns its space without competing for chrome.
         display: "grid",
         gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-        borderTop: "1px solid var(--border-subtle)",
-        borderBottom: "1px solid var(--border-subtle)",
+        gap: 32,
+        padding: "4px 0",
       }}
     >
       <KpiCell
         label="Portfolio"
         value={fmtUsd(portfolioValue)}
         sub="market value"
-        isFirst
         spark={synthesizePortfolioSpark(portfolioValue)}
         sparkColor="var(--accent)"
       />
@@ -399,8 +401,7 @@ function OnboardingCard() {
   return (
     <div
       style={{
-        padding: "18px 22px",
-        borderRight: "1px solid var(--border-subtle)",
+        padding: "0",
         display: "flex",
         flexDirection: "column",
         gap: 10,
@@ -478,7 +479,6 @@ function KpiCell({
   sub,
   valueColor,
   muted = false,
-  isFirst = false,
   spark,
   sparkColor,
 }: {
@@ -487,7 +487,6 @@ function KpiCell({
   sub?: string;
   valueColor?: string;
   muted?: boolean;
-  isFirst?: boolean;
   /** When present, renders a 30d sparkline above the value (Q-DASH-8 LOCKED:
    * time-series tiles only — Portfolio, 30D Return, Macro Multiplier). */
   spark?: number[];
@@ -496,8 +495,7 @@ function KpiCell({
   return (
     <div
       style={{
-        padding: "16px 22px 16px",
-        borderLeft: isFirst ? undefined : "1px solid var(--border-subtle)",
+        padding: 0,
         display: "flex",
         flexDirection: "column",
         gap: 7,
