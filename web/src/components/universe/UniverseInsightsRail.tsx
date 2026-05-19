@@ -40,10 +40,11 @@ const LAYERS: { id: number; label: string }[] = [
   { id: 5, label: "L5 Incumbent" },
 ];
 
-const FLAGS: { id: UniverseFlag; label: string; wired: boolean; pending?: string }[] = [
-  { id: "macro", label: "Macro gate hit", wired: true },
-  { id: "depr", label: "Depreciation flag", wired: false, pending: "THS-46" },
-  { id: "burry", label: "Burry overstatement", wired: false, pending: "THS-46" },
+// Only wired flags surface. Depreciation + Burry overstatement land when
+// the underlying ingestion ships; until then we don't show ghost toggles
+// (no self-referential ticket citation, no unclickable boxes).
+const FLAGS: { id: UniverseFlag; label: string }[] = [
+  { id: "macro", label: "Macro gate hit" },
 ];
 
 interface Props {
@@ -121,7 +122,7 @@ export function UniverseInsightsRail(props: Props) {
           <AiqSlider value={aiqMin} onChange={onSetAiqMin} />
         </Section>
 
-        {/* Flag toggles — preserved from old rail. */}
+        {/* Flag toggles — only wired flags surface (see FLAGS const). */}
         <Section title="Flags" divider={false}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {FLAGS.map((f) => (
@@ -129,9 +130,7 @@ export function UniverseInsightsRail(props: Props) {
                 key={f.id}
                 label={f.label}
                 active={flags.has(f.id)}
-                wired={f.wired}
-                pending={f.pending}
-                onClick={() => f.wired && onToggleFlag(f.id)}
+                onClick={() => onToggleFlag(f.id)}
               />
             ))}
           </div>
@@ -542,62 +541,42 @@ function AiqSlider({ value, onChange }: { value: number | null; onChange: (v: nu
 function FlagToggle({
   label,
   active,
-  wired,
-  pending,
   onClick,
 }: {
   label: string;
   active: boolean;
-  wired: boolean;
-  pending?: string;
   onClick: () => void;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <button
-        onClick={onClick}
-        disabled={!wired}
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 8px",
+        borderRadius: 4,
+        background: active ? "var(--accent-soft)" : "transparent",
+        border: `1px solid ${active ? "var(--accent-border)" : "var(--border)"}`,
+        fontSize: 11.5,
+        fontFamily: "var(--f)",
+        color: active ? "var(--accent)" : "var(--text-2)",
+        textAlign: "left",
+        cursor: "pointer",
+      }}
+    >
+      <span
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 8px",
-          borderRadius: 4,
-          background: active ? "var(--accent-soft)" : "transparent",
-          border: `1px solid ${active ? "var(--accent-border)" : "var(--border)"}`,
-          fontSize: 11.5,
-          fontFamily: "var(--f)",
-          color: !wired ? "var(--text-4)" : active ? "var(--accent)" : "var(--text-2)",
-          textAlign: "left",
-          cursor: wired ? "pointer" : "not-allowed",
-          opacity: wired ? 1 : 0.6,
+          display: "inline-block",
+          width: 10,
+          height: 10,
+          borderRadius: 2,
+          border: `1px solid ${active ? "var(--accent)" : "var(--text-4)"}`,
+          background: active ? "var(--accent)" : "transparent",
+          flexShrink: 0,
         }}
-      >
-        <span
-          style={{
-            display: "inline-block",
-            width: 10,
-            height: 10,
-            borderRadius: 2,
-            border: `1px solid ${active ? "var(--accent)" : "var(--text-4)"}`,
-            background: active ? "var(--accent)" : "transparent",
-            flexShrink: 0,
-          }}
-        />
-        <span style={{ flex: 1, minWidth: 0 }}>{label}</span>
-      </button>
-      {!wired && pending && (
-        <span
-          style={{
-            fontSize: 10,
-            color: "var(--text-4)",
-            fontFamily: "var(--m)",
-            paddingLeft: 22,
-          }}
-        >
-          {pending} ingestion pending
-        </span>
-      )}
-    </div>
+      />
+      <span style={{ flex: 1, minWidth: 0 }}>{label}</span>
+    </button>
   );
 }

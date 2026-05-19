@@ -300,32 +300,14 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
   .score-math-grid{grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:40px}
 }
 
-/* Context-rail responsive overlay (cross-page fix).
-   ABOVE 1600px (large monitors): rail stays as a flex sibling that
-   takes 320px of horizontal canvas width — current behavior, room to
-   spare for the widest canvas table (Universe ≈1500px minWidth).
-   BELOW 1600px: rail floats over the right edge of the canvas as a
-   fixed-position overlay so the canvas always claims the full width
-   between sidebar and viewport edge. Universe table no longer gets
-   squeezed; user toggles the rail with ⌘\ when they need it. Linear
-   peek-pane pattern; cross-page benefit (Backtest, future wide canvases). */
+/* Context-rail — ALWAYS flex-sibling at every viewport width.
+   S9 revision (Terry feedback): the prior <1600px fixed-overlay behavior
+   covered canvas data AND occluded the TopBar's collapse button. Revised
+   contract: rail compresses the canvas, never overlays it. Canvas content
+   gets horizontal scroll if it can't fit the remaining width (Universe
+   table's 1100px minWidth will scroll on narrow viewports — acceptable
+   trade for collapse-button reachability + no overlap). */
 .ctx-panel-aside{
-  position:fixed;
-  top:8px;
-  right:8px;
-  bottom:8px;
-  z-index:50;
-  box-shadow:0 12px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.30);
-  animation:ctxPanelSlide 180ms var(--ease-out) both;
-}
-@media (min-width:1600px){
-  .ctx-panel-aside{
-    position:static;
-    box-shadow:none;
-    animation:none;
-  }
-}
-@keyframes ctxPanelSlide{
-  from{transform:translateX(12px);opacity:0}
-  to{transform:translateX(0);opacity:1}
+  position:static;
+  box-shadow:none;
 }
