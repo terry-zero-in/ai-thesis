@@ -48,6 +48,26 @@ export default async function MemosPage({
   const totalsByKind: Record<string, number> = { all: snap.rows.length };
   for (const m of snap.rows) totalsByKind[m.kind] = (totalsByKind[m.kind] ?? 0) + 1;
 
+  // Failure stats — surface a system-status banner when the recent run
+  // history is dominated by failures. Reads the top-3 most-recent rows
+  // since that's the operator's at-a-glance window: 3-in-a-row failures
+  // = system broken, not transient flake. Common-error string is pulled
+  // from the most recent failure so the banner names the actual cause.
+  const failedRows = snap.rows.filter((r) => r.failed);
+  const recent3 = snap.rows.slice(0, 3);
+  const recent3Failed = recent3.filter((r) => r.failed);
+  const systemBroken = recent3.length >= 2 && recent3Failed.length === recent3.length;
+  const firstFailureSince = systemBroken
+    ? [...failedRows].sort((a, b) => a.as_of.localeCompare(b.as_of))[0]?.as_of ?? null
+    : null;
+  const commonError = recent3Failed[0]?.error ?? null;
+
+  // Next scheduled daily run — Mon-Fri 13:00 UTC. Server-rendered so the
+  // operator sees a stable date instead of a flickering countdown; the
+  // 13:00 UTC granularity makes any "stale by the time you see it"
+  // concern moot.
+  const nextDailyRun = computeNextDailyRun(new Date());
+
   function tabHref(k: MemoKind | "all"): string {
     const next = new URLSearchParams();
     if (k !== "all") next.set("kind", k);
@@ -61,9 +81,14 @@ export default async function MemosPage({
       <NoRail />
       <PageHeader
         title="Memos"
-        subtitle={`${snap.rows.length} most recent`}
+        subtitle={
+          failedRows.length > 0
+            ? `${snap.rows.length} most recent · ${failedRows.length} failed`
+            : `${snap.rows.length} most recent`
+        }
         meta={[
           { label: "memos", value: snap.rows.length },
+          { label: "next daily run", value: nextDailyRun },
           {
             label: "mode",
             value: (
@@ -87,6 +112,43 @@ export default async function MemosPage({
           { label: "weekly chain", value: "Sun 23:00 UTC" },
         ]}
       />
+
+      {/* System-status banner — surfaces when the recent run history is all
+          failures. Names the cause + the first-fail date so the operator
+          knows it's a sustained outage, not a flake. Defers individual
+          card error display (still rendered per-card for the audit trail). */}
+      {systemBroken && (
+        <div
+          style={{
+            margin: "10px 28px 0",
+            padding: "10px 14px",
+            borderRadius: 5,
+            border: "1px solid rgba(251, 113, 133, .35)",
+            background: "rgba(251, 113, 133, .06)",
+            display: "flex",
+            alignItems: "baseline",
+            gap: 12,
+            flexWrap: "wrap",
+            fontSize: 12,
+            fontFamily: "var(--f)",
+            color: "var(--text-1)",
+          }}
+        >
+          <span style={{ color: "var(--danger)", fontWeight: 600, letterSpacing: ".02em" }}>
+            ⚠ Memo generation failing
+          </span>
+          {firstFailureSince && (
+            <span style={{ color: "var(--text-3)", fontFamily: "var(--m)", fontSize: 11.5 }}>
+              since {firstFailureSince}
+            </span>
+          )}
+          {commonError && (
+            <span style={{ color: "var(--text-2)", flex: "1 1 auto", minWidth: 200 }}>
+              · {commonError}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Filter bar — spec §4.5 chips (passive metadata + filter affordance) */}
       <div
@@ -207,4 +269,22 @@ export default async function MemosPage({
       </div>
     </div>
   );
+}
+
+/**
+ * Compute the next daily-memo cron fire from `now`. The daily memo cadence
+ * is Mon-Fri 13:00 UTC (per the meta line on this page). Returns a
+ * "YYYY-MM-DD HH:mm UTC" string. Sat/Sun roll forward to Monday.
+ */
+function computeNextDailyRun(now: Date): string {
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 13, 0, 0));
+  if (next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 1);
+  // 0 = Sun, 6 = Sat — roll to Monday.
+  while (next.getUTCDay() === 0 || next.getUTCDay() === 6) {
+    next.setUTCDate(next.getUTCDate() + 1);
+  }
+  const yyyy = next.getUTCFullYear();
+  const mm = String(next.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(next.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} 13:00 UTC`;
 }
