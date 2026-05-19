@@ -1,9 +1,52 @@
+import { Fragment } from "react";
 import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
 import { Sparkline } from "@/components/name/Sparkline";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 import type { NameDetail } from "@/lib/name-detail-data";
+import type { Tier } from "@/lib/universe-data";
+
+const TIER_BANDS: Array<{ tier: Tier; label: string; range: string }> = [
+  { tier: "High", label: "High", range: "≥75" },
+  { tier: "Medium", label: "Medium", range: "60–75" },
+  { tier: "Low", label: "Low", range: "45–60" },
+  { tier: "Avoid", label: "Avoid", range: "<45" },
+];
+
+function TierLegend({ tier }: { tier: Tier | null }) {
+  return (
+    <div
+      style={{
+        fontSize: 10.5,
+        fontFamily: "var(--m)",
+        letterSpacing: ".04em",
+        marginTop: -2,
+        display: "flex",
+        gap: 7,
+        flexWrap: "wrap",
+        alignItems: "baseline",
+      }}
+    >
+      {TIER_BANDS.map((b, i) => {
+        const active = b.tier === tier;
+        return (
+          <Fragment key={b.tier}>
+            {i > 0 && <span style={{ color: "var(--text-4)" }}>·</span>}
+            <span
+              style={{
+                color: active ? "var(--text-2)" : "var(--text-4)",
+                fontWeight: active ? 600 : 400,
+              }}
+            >
+              {b.label} {b.range}
+            </span>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
 
 export function NameHeader({ d }: { d: NameDetail }) {
   // 7-day delta: history is weekly per spec §7.3. history[-1] is latest,
@@ -104,6 +147,12 @@ export function NameHeader({ d }: { d: NameDetail }) {
           attribution={attribution}
           size="lg"
         />
+
+        {/* Tier-cutoff legend — spec cutoffs from scoring-weights.ts
+            classifyTier (75/60/45). Active band is elevated so the legend
+            doubles as "you are here," explaining the TierBadge word at a
+            glance instead of forcing the reader to infer the threshold. */}
+        <TierLegend tier={d.tier} />
       </div>
 
       {/* Right — 12-week sparkline */}
