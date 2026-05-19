@@ -4,6 +4,7 @@ import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
 import { Sparkline } from "@/components/name/Sparkline";
+import { SwitchNameChip } from "@/components/name/SwitchNameChip";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 import type { NameDetail } from "@/lib/name-detail-data";
 import type { Tier } from "@/lib/universe-data";
@@ -104,22 +105,12 @@ export function NameHeader({ d }: { d: NameDetail }) {
                 {d.ticker}
               </h1>
               <span style={{ fontSize: 14, color: "var(--text-2)" }}>{d.name}</span>
-              {/* Switch-name affordance — discoverable hint that ⌘K covers
-                  every name in the universe (50 seed names). Quiet at rest;
-                  lifts to text-2 on hover. Linear-class peel-back affordance. */}
-              <span
-                title="Open Cmd palette (⌘K) — switch to any name in the universe"
-                style={{
-                  fontSize: 10.5,
-                  fontFamily: "var(--m)",
-                  color: "var(--text-4)",
-                  letterSpacing: ".04em",
-                  marginLeft: 6,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                ⌘K to switch
-              </span>
+              {/* Switch-name chip — clickable pill that opens the ⌘K palette
+                  scoped to ticker search. Promoted from a muted text-4 hint
+                  per Linear's "↗ Open issue picker" pattern — the keyboard
+                  binding stays the shortcut, but the affordance is now a
+                  discoverable on-canvas control rather than a quiet text. */}
+              <SwitchNameChip />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
               <LayerChip layer={d.layer} label={d.layer_label} />

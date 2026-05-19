@@ -12,6 +12,7 @@ import { useShellKeyboard } from "@/hooks/useShellKeyboard";
 import { FilterProvider } from "@/hooks/filter-context";
 import { CtxPanelProvider, useCtxPanel } from "@/hooks/ctx-panel-context";
 import { UniverseFilterProvider } from "@/hooks/universe-filter-context";
+import { ShellControlsProvider } from "@/hooks/shell-controls-context";
 
 /**
  * Shell — top-level client component wrapping every page.
@@ -96,19 +97,21 @@ function ShellInner({
           onHelp={() => setShortcuts(true)}
           userEmail={userEmail}
         />
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            minWidth: 0,
-            animation: "fadeUp 220ms 8ms var(--ease-out) both",
-            willChange: "transform,opacity",
-          }}
-        >
-          {children}
-        </div>
+        <ShellControlsProvider openCmd={() => setCmd(true)} openShortcuts={() => setShortcuts(true)}>
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              minWidth: 0,
+              animation: "fadeUp 220ms 8ms var(--ease-out) both",
+              willChange: "transform,opacity",
+            }}
+          >
+            {children}
+          </div>
+        </ShellControlsProvider>
         <FooterDisclosure />
       </div>
       {panel && rail !== "none" && <CtxPanel />}
