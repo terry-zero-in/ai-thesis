@@ -1,28 +1,32 @@
 import type { PortfolioSnapshot } from "@/lib/portfolio-types";
-import { LineChart } from "@/components/primitives/LineChart";
+import { Sparkline } from "@/components/primitives/LineChart";
 
 /**
  * Portfolio hero — Mercury "format on canvas" + Basis Rent-Roll pattern:
  * 4 protagonist columns, no vertical dividers, no card chrome, whitespace
- * as the separator. Replaces the prior HeroNumber + 4-KPI-strip stack
- * that read cluttered (Terry: "its all messed up in that Hero section").
+ * as the separator.
  *
- * Column weights (2fr / 2fr / 1fr / 1fr):
- *   1. MARKET VALUE        — protagonist hero ($77,992)
- *   2. 30D PERFORMANCE     — sparkline + delta chip
+ * Column weights (2fr / 1fr / 1fr / 1fr) — Market Value is the sole
+ * protagonist; cols 2-4 are equal-weight supporting columns:
+ *   1. MARKET VALUE        — protagonist hero ($77,992) + concentration drag
+ *   2. 30D PERFORMANCE     — delta % + inline 80×20 sparkline
  *   3. P&L · SINCE OPEN    — small hero (-$1,483)
  *   4. RESERVE             — small hero ($20,525)
  *
- * Total Capital + Invested fold into the Market Value sub-line per the
- * Basis ref pattern: don't proliferate columns; let the protagonist
- * carry the supporting context.
+ * 30D PERFORMANCE inline-sparkline pattern (Terry feedback 2026-05-19):
+ * The earlier dedicated 360×56 chart-canvas-below treatment made the
+ * line read flat (low amplitude at width), bled into col 3, and pushed
+ * col 2's vertical mass past cols 3+4 making them feel "short." Inline
+ * 80×20 sparkline beside the % delta matches the Dashboard KpiCell
+ * pattern — number + trend read as one glance, no bleed, even row
+ * cadence across all four columns.
  *
  * Empty state: hero shows muted "$0" with an honest "no positions yet"
  * sub. Other 3 columns render as quiet em-dashes — no fake values.
  */
 const CHART_DAYS = 30;
-const CHART_W = 360;
-const CHART_H = 56;
+const SPARK_W = 80;
+const SPARK_H = 20;
 
 export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
   const plPos = snap.total_pl >= 0;
@@ -41,7 +45,7 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "2fr 2fr 1fr 1fr",
+        gridTemplateColumns: "2fr 1fr 1fr 1fr",
         gap: 32,
         padding: "20px 4px 24px",
         alignItems: "start",
@@ -94,17 +98,17 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         )}
       </Column>
 
-      {/* Col 2 — 30D PERFORMANCE (chart) */}
+      {/* Col 2 — 30D PERFORMANCE (inline sparkline + delta) */}
       <Column label="30D performance">
         {snap.empty ? (
           <BigNumber value="—" color="var(--text-4)" />
         ) : (
           <>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
               <span
                 style={{
                   fontFamily: "var(--m)",
-                  fontSize: 32,
+                  fontSize: 36,
                   fontWeight: 600,
                   color: sparkPos ? "var(--success)" : "var(--danger)",
                   fontVariantNumeric: "tabular-nums",
@@ -115,27 +119,18 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
                 {sparkPos ? "+" : ""}
                 {sparkPct.toFixed(2)}%
               </span>
-              <span
-                style={{
-                  fontFamily: "var(--m)",
-                  fontSize: 13,
-                  color: "var(--text-3)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {sparkPos ? "+" : ""}${Math.abs(sparkChange).toLocaleString("en-US", { maximumFractionDigits: 0 })}
-              </span>
+              {sparkData.length > 1 && (
+                <Sparkline
+                  data={sparkData}
+                  width={SPARK_W}
+                  height={SPARK_H}
+                  color={sparkPos ? "var(--success)" : "var(--danger)"}
+                />
+              )}
             </div>
-            <div style={{ width: "100%", maxWidth: CHART_W, height: CHART_H, marginTop: 8 }}>
-              <LineChart
-                data={sparkData}
-                width={CHART_W}
-                height={CHART_H}
-                color="var(--accent)"
-                strokeWidth={1.5}
-                filled
-              />
-            </div>
+            <SubLine>
+              {sparkPos ? "+" : ""}${Math.abs(sparkChange).toLocaleString("en-US", { maximumFractionDigits: 0 })} on 30d
+            </SubLine>
           </>
         )}
       </Column>

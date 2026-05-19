@@ -93,7 +93,11 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
     <div style={{ background: "var(--canvas)" }}>
       <table
         style={{
-          width: "100%",
+          // No `width: 100%` — when the right rail collapses, the freed canvas
+          // space should NOT inflate the Name column (Terry feedback 2026-05-19:
+          // "should look the exact same when the bar is not expanded as when it
+          // is"). Each column now carries an explicit width hint and the table
+          // sizes to that total (~1200px) regardless of canvas width.
           borderCollapse: "collapse",
           fontSize: 12.5,
           minWidth: 1100,
@@ -112,7 +116,7 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
             <Th sortable k="ticker" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={84}>
               Ticker
             </Th>
-            <Th sortable k="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
+            <Th sortable k="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={220}>
               Name
             </Th>
             <Th sortable k="layer" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={140}>
