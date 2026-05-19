@@ -1,3 +1,5 @@
+"use client";
+
 import type { PortfolioSnapshot } from "@/lib/portfolio-types";
 import { AnimateNumber } from "@/components/primitives/AnimateNumber";
 
