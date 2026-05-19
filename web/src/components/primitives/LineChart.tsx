@@ -100,5 +100,13 @@ export function Sparkline({
   color?: string;
 }) {
   if (data.length < 2) return null;
-  return <LineChart data={data} width={width} height={height} color={color} strokeWidth={1.25} filled />;
+  // LineChart's SVG uses style:100% so it fills its container — the inline
+  // span here pins the rendered size to the requested width/height props.
+  // Without this wrapper the SVG stretched to whatever space the parent
+  // flexbox handed it, blowing up the KPI tile sparklines to full-tile size.
+  return (
+    <span style={{ display: "inline-block", width, height, lineHeight: 0 }}>
+      <LineChart data={data} width={width} height={height} color={color} strokeWidth={1.25} filled />
+    </span>
+  );
 }
