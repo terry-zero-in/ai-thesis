@@ -73,12 +73,19 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
   };
 
   return (
-    // Mercury #7 — scroll context lives on the parent canvas, not here.
-    // thead sticks to the canvas-scroll viewport top, so the page header
-    // (UniverseHeader) slides away as the table scrolls into focus.
+    // S9 revision: horizontal scroll is LOCAL to the table wrapper now
+    // (overflow-x: auto + overscroll-behavior-x: contain). Previously
+    // horizontal overflow bled to the page-level scroll container which
+    // let trackpad swipe-left drag content under the sidebar (cross-page
+    // bug Terry caught). Vertical scroll + sticky thead still live on the
+    // page canvas — table wrapper doesn't intercept vertical because
+    // overflow-y stays visible by default.
     <div
       style={{
         background: "var(--canvas)",
+        overflowX: "auto",
+        overscrollBehaviorX: "contain",
+        minWidth: 0,
       }}
     >
       <table

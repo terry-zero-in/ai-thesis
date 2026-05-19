@@ -32,7 +32,17 @@ export default function UniversePage() {
   // table thead sticks to viewport top. Canvas owns the scroll context
   // (overflow: auto here); table inner wrapper hands scroll back to us.
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto", minWidth: 0 }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflowY: "auto",
+        overflowX: "hidden",
+        overscrollBehavior: "contain",
+        minWidth: 0,
+      }}
+    >
       <UniverseRailRegister snap={snap} />
       <UniverseHeader snap={snap} />
       <UniverseTable
