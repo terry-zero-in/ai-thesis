@@ -35,7 +35,7 @@ export function PortfolioAddDrawer({
   const isEdit = !!initialTicker;
   return (
     <PageCreateDrawer
-      label={isEdit ? `Edit ${initialTicker}` : "+ Add position"}
+      label={isEdit ? `Edit ${initialTicker}` : "Add position"}
       shortcutKey="n"
       defaultOpen={isEdit}
       width={460}

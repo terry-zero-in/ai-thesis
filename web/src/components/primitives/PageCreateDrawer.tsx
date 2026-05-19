@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * PageCreateDrawer — the canonical "create" affordance for any page that has a
@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
  *
  * Posture (per /lambo signature-pattern rules):
  *   - Trigger pill lives in the page-header upper-right (NOT global nav).
- *     Always-visible discoverable affordance; chevron rotates when open.
+ *     Always-visible discoverable affordance; + glyph rotates 45° to × on open.
  *   - Expanded body is an absolute-positioned overlay anchored to the
  *     trigger, dropping DOWN-LEFT under the trigger. Does NOT push the
  *     canvas — table reflow on every toggle would be hostile.
@@ -112,127 +112,156 @@ export function PageCreateDrawer({
   const headerText = label.replace(/^\+\s*/, "");
 
   return (
-    <div ref={rootRef} style={{ position: "relative", display: "inline-flex" }}>
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        style={{
-          height: 26,
-          padding: "0 12px",
-          fontSize: 12,
-          fontFamily: "var(--m)",
-          color: open ? "var(--text-1)" : "var(--text-2)",
-          background: open ? "var(--surface-hover, rgba(255,255,255,.04))" : "transparent",
-          border: "1px solid var(--border)",
-          borderRadius: 13,
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          letterSpacing: ".01em",
-          transition:
-            "background var(--dur-instant, 90ms) var(--ease-out, ease-out), color var(--dur-instant, 90ms) var(--ease-out, ease-out)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {label}
-        <span
-          aria-hidden
-          style={{
-            display: "inline-block",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform var(--dur-fast, 150ms) var(--ease-out, ease-out)",
-            fontSize: 9,
-            opacity: 0.7,
-            lineHeight: 1,
-          }}
-        >
-          ▾
-        </span>
-      </button>
-
+    <Fragment>
+      {/* #14 — Backdrop scrim: dims canvas when drawer is open, click closes */}
       {open && (
         <div
-          role="dialog"
-          aria-label={headerText}
-          className="page-create-drawer"
+          aria-hidden
+          onMouseDown={close}
           style={{
-            position: "absolute",
-            top: "calc(100% + 8px)",
-            right: 0,
-            width,
-            maxWidth: "calc(100vw - 32px)",
-            background: "var(--surface)",
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.22)",
+            zIndex: 59,
+            // Brief fade-in for polish; no fade-out because the element
+            // unmounts immediately on close (no lingering ghost). `fadeIn`
+            // is defined in globals.css (line 210) — shared across surfaces.
+            animation: "fadeIn 120ms ease-out both",
+          }}
+        />
+      )}
+
+      <div
+        ref={rootRef}
+        style={{
+          position: "relative",
+          display: "inline-flex",
+          // Lift the pill + drawer panel above the scrim when open.
+          zIndex: open ? 60 : "auto",
+        }}
+      >
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          style={{
+            height: 26,
+            padding: "0 12px",
+            fontSize: 12,
+            fontFamily: "var(--m)",
+            color: open ? "var(--text-1)" : "var(--text-2)",
+            background: open ? "var(--surface-hover, rgba(255,255,255,.04))" : "transparent",
             border: "1px solid var(--border)",
-            borderRadius: 6,
-            boxShadow: "0 10px 32px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.30)",
-            zIndex: 60,
+            borderRadius: 13,
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            letterSpacing: ".01em",
+            transition:
+              "background var(--dur-instant, 90ms) var(--ease-out, ease-out), color var(--dur-instant, 90ms) var(--ease-out, ease-out)",
+            whiteSpace: "nowrap",
           }}
         >
-          <div
+          {label}
+          {/* #15 — Plus glyph rotates 45° (becomes ×) when open */}
+          <span
+            aria-hidden
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "10px 14px",
-              borderBottom: "1px solid var(--border-subtle)",
+              display: "inline-block",
+              transform: open ? "rotate(45deg)" : "rotate(0deg)",
+              transition: "transform var(--dur-fast, 150ms) var(--ease-out, ease-out)",
+              fontSize: 9,
+              opacity: 0.7,
+              lineHeight: 1,
             }}
           >
-            <span
+            +
+          </span>
+        </button>
+
+        {open && (
+          <div
+            role="dialog"
+            aria-label={headerText}
+            className="page-create-drawer"
+            style={{
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              right: 0,
+              width,
+              maxWidth: "calc(100vw - 32px)",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              boxShadow: "0 10px 32px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.30)",
+              zIndex: 60,
+            }}
+          >
+            <div
               style={{
-                fontSize: 10.5,
-                fontFamily: "var(--m)",
-                fontWeight: 500,
-                color: "var(--text-3)",
-                letterSpacing: ".08em",
-                textTransform: "uppercase",
-              }}
-            >
-              {headerText}
-              {shortcutKey && (
-                <span
-                  style={{
-                    marginLeft: 10,
-                    color: "var(--text-4)",
-                    fontSize: 10,
-                    letterSpacing: ".04em",
-                  }}
-                  aria-hidden
-                >
-                  ⌘{shortcutKey.toUpperCase()}
-                </span>
-              )}
-            </span>
-            <button
-              type="button"
-              onClick={close}
-              aria-label="Close"
-              style={{
-                width: 22,
-                height: 22,
-                fontSize: 16,
-                color: "var(--text-3)",
-                background: "transparent",
-                border: "none",
-                borderRadius: 3,
-                cursor: "pointer",
-                lineHeight: 1,
-                padding: 0,
-                display: "inline-flex",
+                display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "space-between",
+                padding: "10px 14px",
+                borderBottom: "1px solid var(--border-subtle)",
               }}
             >
-              ×
-            </button>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontFamily: "var(--m)",
+                  fontWeight: 500,
+                  color: "var(--text-3)",
+                  letterSpacing: ".08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {headerText}
+                {shortcutKey && (
+                  <span
+                    style={{
+                      marginLeft: 10,
+                      color: "var(--text-4)",
+                      fontSize: 10,
+                      letterSpacing: ".04em",
+                    }}
+                    aria-hidden
+                  >
+                    ⌘{shortcutKey.toUpperCase()}
+                  </span>
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={close}
+                aria-label="Close"
+                style={{
+                  width: 22,
+                  height: 22,
+                  fontSize: 16,
+                  color: "var(--text-3)",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  lineHeight: 1,
+                  padding: 0,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: "14px 16px", maxHeight: "70vh", overflowY: "auto" }}>
+              {typeof children === "function" ? children({ close }) : children}
+            </div>
           </div>
-          <div style={{ padding: "14px 16px", maxHeight: "70vh", overflowY: "auto" }}>
-            {typeof children === "function" ? children({ close }) : children}
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </Fragment>
   );
 }
