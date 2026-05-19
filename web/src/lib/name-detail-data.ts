@@ -23,6 +23,12 @@ export interface NameSparkPoint {
   as_of: string;
   composite: number | null;
   final_score: number | null;
+  /**
+   * Weekly close price aligned to as_of. Null when prices_raw has no row
+   * for that date (pre-FMP-ingest or holiday/weekend score date).
+   * Surfaced for the NameScoreChart dual-line render (price + score).
+   */
+  price: number | null;
 }
 
 export interface NameQBreakdown {
@@ -241,6 +247,20 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
   const positionRows = (posAllRes.data ?? []) as Array<{ ticker: string; shares: number; cost_basis: number }>;
   const portfolio = await buildPortfolioContext(sb, t, positionRows);
 
+  // Price history aligned to score history. Some score dates may not have
+  // a prices_raw row (early ingest gaps, market closures); those points
+  // surface price: null which the chart renders as a gap.
+  const scoreDates = history.map((h) => h.as_of);
+  const { data: priceData } = await sb
+    .from("prices_raw")
+    .select("date,close")
+    .eq("ticker", t)
+    .in("date", scoreDates);
+  const priceMap = new Map<string, number>();
+  for (const r of (priceData ?? []) as Array<{ date: string; close: number | null }>) {
+    if (r.close != null) priceMap.set(r.date, Number(r.close));
+  }
+
   return buildDetail(
     universe,
     history,
@@ -249,6 +269,7 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
     (form4Res.data ?? []) as NameForm4Row[],
     (concRes.data?.tax ?? null) as number | null,
     portfolio,
+    priceMap,
     false,
   );
 }
@@ -314,6 +335,7 @@ function buildDetail(
   form4: NameForm4Row[],
   concentrationTax: number | null,
   portfolio: NamePortfolioContext,
+  priceMap: Map<string, number>,
   synthetic: boolean,
 ): NameDetail {
   const latest = history[0];
@@ -339,7 +361,12 @@ function buildDetail(
     history: history
       .slice()
       .reverse()
-      .map((h) => ({ as_of: h.as_of, composite: h.composite, final_score: h.final_score })),
+      .map((h) => ({
+        as_of: h.as_of,
+        composite: h.composite,
+        final_score: h.final_score,
+        price: priceMap.get(h.as_of) ?? null,
+      })),
     aiq_rubric: aiq,
     dep_flags: depFlags,
     form4_recent: form4,
@@ -405,15 +432,22 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
   // ending ~25 days before "today" (review §2.3 #7).
   const history: NameSparkPoint[] = [];
   const anchor = new Date("2026-05-09T00:00:00Z");
+  // Deterministic price walk parallel to the score walk so the dual-line
+  // chart has a believable shape in fixture mode. Base price keyed off the
+  // same hash; ~$25-$425 range; weekly drift ±3%.
+  const basePrice = ((h % 4000) / 10) + 25; // 25.0 .. 425.0
   for (let i = 11; i >= 0; i--) {
     const noise = (((h + i) % 7) - 3) * 0.8;
     const c = Math.max(40, Math.min(95, composite + noise));
     const fc = Math.max(40, Math.min(95, final + noise));
+    const priceDrift = (((h * (i + 1)) % 11) - 5) * 0.006; // [-3%, +3.6%]
+    const p = basePrice * (1 + priceDrift * (12 - i) * 0.15);
     const d = new Date(anchor.getTime() - i * 7 * 24 * 60 * 60 * 1000);
     history.push({
       as_of: d.toISOString().slice(0, 10),
       composite: Math.round(c * 10) / 10,
       final_score: Math.round(fc * 10) / 10,
+      price: Math.round(p * 100) / 100,
     });
   }
 
