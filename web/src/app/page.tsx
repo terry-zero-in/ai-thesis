@@ -221,7 +221,11 @@ export default async function DashboardPage({
             ) : undefined
           }
         >
-          <TopPositionsList positions={portfolio.positions} />
+          <TopPositionsList
+            positions={portfolio.positions}
+            scoresByTicker={snap.scoresByTicker}
+            totalCapital={portfolio.settings.total_capital}
+          />
         </Section>
       </div>
     </div>

@@ -58,6 +58,12 @@ export interface DashboardCrossing {
   direction: "up" | "down";
 }
 
+export interface DashboardScoreLite {
+  composite: number | null;
+  final_score: number | null;
+  tier: Tier | null;
+}
+
 export interface DashboardSnapshot {
   asOf: string | null;
   synthetic: boolean;
@@ -69,6 +75,12 @@ export interface DashboardSnapshot {
   crossings: DashboardCrossing[];
   universeSize: number;
   scoredCount: number;
+  /**
+   * Minimal per-ticker score map keyed by symbol. Lets the dashboard's
+   * TopPositionsList render a thesis-grade column without re-fetching the
+   * universe (the rows are already in memory while building this snapshot).
+   */
+  scoresByTicker: Record<string, DashboardScoreLite>;
 }
 
 const MOVERS_LIMIT = 5;
@@ -145,6 +157,15 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 
   const scoredCount = rows.filter((r) => r.final_score != null).length;
 
+  const scoresByTicker: Record<string, DashboardScoreLite> = {};
+  for (const r of rows) {
+    scoresByTicker[r.ticker] = {
+      composite: r.composite,
+      final_score: r.final_score,
+      tier: r.tier,
+    };
+  }
+
   return {
     asOf: snap.asOf,
     synthetic: snap.synthetic,
@@ -156,6 +177,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     crossings,
     universeSize: rows.length,
     scoredCount,
+    scoresByTicker,
   };
 }
 

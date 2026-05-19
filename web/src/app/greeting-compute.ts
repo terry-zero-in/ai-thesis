@@ -21,8 +21,12 @@ export interface GreetingResult {
   greeting: string;
   /** Long-form date for the second line. */
   dateLabel: string;
-  /** Market clock segment: "NYSE open · 2h 14m to close" or similar. */
+  /** Market clock segment: "NYSE open · 2:14:18 to close" or similar. */
   marketLabel: string;
+  /** Live HH:MM:SS clock in Terry's wall TZ (Chicago). Drives the "this thing is alive" tick. */
+  wallClock: string;
+  /** Market open right now (drives the pulsing-dot indicator color). */
+  marketOpen: boolean;
 }
 
 export function computeGreeting(now: Date = new Date()): GreetingResult {
@@ -30,8 +34,9 @@ export function computeGreeting(now: Date = new Date()): GreetingResult {
   const wallHour = parseInt(wall.hour, 10);
   const greeting = greetingFor(wallHour);
   const dateLabel = `${wall.weekday}, ${wall.month} ${wall.day}`;
-  const marketLabel = computeMarketLabel(now);
-  return { greeting: `${greeting}, ${NAME}`, dateLabel, marketLabel };
+  const { label: marketLabel, open: marketOpen } = computeMarketLabel(now);
+  const wallClock = `${wall.hour}:${wall.minute}:${wall.second} CT`;
+  return { greeting: `${greeting}, ${NAME}`, dateLabel, marketLabel, wallClock, marketOpen };
 }
 
 function greetingFor(hour: number): string {
@@ -49,6 +54,7 @@ interface DatePartsBundle {
   year: string;
   hour: string;
   minute: string;
+  second: string;
   dow: number; // 0=Sun..6=Sat
 }
 
@@ -62,6 +68,7 @@ function partsFor(now: Date, tz: string): DatePartsBundle {
     hour: "2-digit",
     hour12: false,
     minute: "2-digit",
+    second: "2-digit",
   });
   const parts = fmt.formatToParts(now);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
@@ -76,6 +83,7 @@ function partsFor(now: Date, tz: string): DatePartsBundle {
     year: get("year"),
     hour: get("hour"),
     minute: get("minute"),
+    second: get("second"),
     dow: dowMap[weekdayStr] ?? 0,
   };
 }
@@ -89,36 +97,43 @@ function partsFor(now: Date, tz: string): DatePartsBundle {
  * Times in subtitle expressed in Terry's wall-clock TZ (Chicago) to match
  * the dateLabel and to be more readable than ET for a US user not in NY.
  */
-function computeMarketLabel(now: Date): string {
+function computeMarketLabel(now: Date): { label: string; open: boolean } {
   const mkt = partsFor(now, MARKET_TZ);
   const mktHour = parseInt(mkt.hour, 10);
   const mktMin = parseInt(mkt.minute, 10);
-  const minutesIntoDay = mktHour * 60 + mktMin;
-  const OPEN = 9 * 60 + 30;   // 09:30 ET
-  const CLOSE = 16 * 60;      // 16:00 ET
+  const mktSec = parseInt(mkt.second, 10);
+  const secondsIntoDay = mktHour * 3600 + mktMin * 60 + mktSec;
+  const OPEN = 9 * 3600 + 30 * 60;   // 09:30:00 ET
+  const CLOSE = 16 * 3600;           // 16:00:00 ET
 
   // Weekend
   if (mkt.dow === 0 || mkt.dow === 6) {
-    return "NYSE closed · weekend";
+    return { label: "NYSE closed · weekend", open: false };
   }
   // Pre-open weekday
-  if (minutesIntoDay < OPEN) {
-    const mins = OPEN - minutesIntoDay;
-    return `NYSE closed · opens in ${humanDuration(mins)}`;
+  if (secondsIntoDay < OPEN) {
+    const secs = OPEN - secondsIntoDay;
+    return { label: `NYSE closed · opens in ${clockDuration(secs)}`, open: false };
   }
   // Regular session
-  if (minutesIntoDay < CLOSE) {
-    const mins = CLOSE - minutesIntoDay;
-    return `NYSE open · ${humanDuration(mins)} to close`;
+  if (secondsIntoDay < CLOSE) {
+    const secs = CLOSE - secondsIntoDay;
+    return { label: `NYSE open · ${clockDuration(secs)} to close`, open: true };
   }
   // Post-close weekday
-  return "NYSE closed · reopens tomorrow 8:30 AM CT";
+  return { label: "NYSE closed · reopens tomorrow 8:30 AM CT", open: false };
 }
 
-function humanDuration(totalMinutes: number): string {
-  if (totalMinutes < 60) return `${totalMinutes}m`;
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
+/**
+ * Format total seconds as H:MM:SS (or M:SS when under an hour). The seconds
+ * precision is the "this thing is alive" tick — readers see the colon-flicker
+ * every second and trust that the page is live, not stale.
+ */
+function clockDuration(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+  return `${m}:${pad(s)}`;
 }
