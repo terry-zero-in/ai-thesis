@@ -1,5 +1,4 @@
 import type { PortfolioSnapshot } from "@/lib/portfolio-types";
-import { Sparkline } from "@/components/primitives/LineChart";
 
 /**
  * Portfolio hero — Mercury "format on canvas" + Basis Rent-Roll pattern:
@@ -9,24 +8,19 @@ import { Sparkline } from "@/components/primitives/LineChart";
  * Column weights (2fr / 1fr / 1fr / 1fr) — Market Value is the sole
  * protagonist; cols 2-4 are equal-weight supporting columns:
  *   1. MARKET VALUE        — protagonist hero ($77,992) + concentration drag
- *   2. 30D PERFORMANCE     — delta % + inline 80×20 sparkline
+ *   2. 30D PERFORMANCE     — delta % (scalar, no sparkline)
  *   3. P&L · SINCE OPEN    — small hero (-$1,483)
  *   4. RESERVE             — small hero ($20,525)
  *
- * 30D PERFORMANCE inline-sparkline pattern (Terry feedback 2026-05-19):
- * The earlier dedicated 360×56 chart-canvas-below treatment made the
- * line read flat (low amplitude at width), bled into col 3, and pushed
- * col 2's vertical mass past cols 3+4 making them feel "short." Inline
- * 80×20 sparkline beside the % delta matches the Dashboard KpiCell
- * pattern — number + trend read as one glance, no bleed, even row
- * cadence across all four columns.
+ * Sparkline retired 2026-05-19 (Terry): the 80×20 inline sparkline made
+ * tame fluctuations look dramatic AND broke vertical rhythm against
+ * cols 1/3/4. The hero number carries direction; the historical shape
+ * lives on the NAV chart in the Dashboard.
  *
  * Empty state: hero shows muted "$0" with an honest "no positions yet"
  * sub. Other 3 columns render as quiet em-dashes — no fake values.
  */
 const CHART_DAYS = 30;
-const SPARK_W = 80;
-const SPARK_H = 20;
 
 export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
   const plPos = snap.total_pl >= 0;
@@ -78,55 +72,34 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
               {snap.positions.length}{" "}
               {snap.positions.length === 1 ? "position" : "positions"} ·{" "}
               {fmtUsd(snap.total_deployed)} invested · {fmtUsd(snap.settings.total_capital)} cap
-              {snap.portfolio_concentration_tax != null && (
-                <>
-                  {" · "}
-                  <span
-                    title="Sum of concentration_history.tax across held names. Range [−15, 0] per ticker. Engine drag from over-concentration on the post-macro composite score."
-                    style={{
-                      color: snap.portfolio_concentration_tax < 0 ? "var(--warning)" : "var(--text-3)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    drag {snap.portfolio_concentration_tax.toFixed(1)} pts
-                  </span>
-                </>
-              )}
             </>
           )}
         </SubLine>
+        {!snap.empty && snap.portfolio_concentration_tax != null && (
+          <SubLine>
+            <span
+              title="Sum of concentration_history.tax across held names. Range [−15, 0] per ticker. Engine drag from over-concentration on the post-macro composite score."
+              style={{
+                color: snap.portfolio_concentration_tax < 0 ? "var(--warning)" : "var(--text-3)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              concentration drag {snap.portfolio_concentration_tax.toFixed(1)} pts
+            </span>
+          </SubLine>
+        )}
       </Column>
 
-      {/* Col 2 — 30D PERFORMANCE (inline sparkline + delta) */}
+      {/* Col 2 — 30D PERFORMANCE (scalar delta, no sparkline) */}
       <Column label="30D performance">
         {snap.empty ? (
           <BigNumber value="—" color="var(--text-4)" />
         ) : (
           <>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span
-                style={{
-                  fontFamily: "var(--m)",
-                  fontSize: 36,
-                  fontWeight: 600,
-                  color: sparkPos ? "var(--success)" : "var(--danger)",
-                  fontVariantNumeric: "tabular-nums",
-                  lineHeight: 1,
-                  letterSpacing: "-.01em",
-                }}
-              >
-                {sparkPos ? "+" : ""}
-                {sparkPct.toFixed(2)}%
-              </span>
-              {sparkData.length > 1 && (
-                <Sparkline
-                  data={sparkData}
-                  width={SPARK_W}
-                  height={SPARK_H}
-                  color="var(--accent)"
-                />
-              )}
-            </div>
+            <BigNumber
+              value={`${sparkPos ? "+" : ""}${sparkPct.toFixed(2)}%`}
+              color={sparkPos ? "var(--success)" : "var(--danger)"}
+            />
             <SubLine>
               {sparkPos ? "+" : ""}${Math.abs(sparkChange).toLocaleString("en-US", { maximumFractionDigits: 0 })} on 30d
             </SubLine>

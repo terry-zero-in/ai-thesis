@@ -7,7 +7,6 @@ import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister"
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
 import { computeGreeting } from "@/app/greeting-compute";
-import { Sparkline } from "@/components/primitives/LineChart";
 import { PortfolioValueChart } from "@/components/dashboard/PortfolioValueChart";
 import { TopPositionsList } from "@/components/dashboard/TopPositionsList";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
@@ -124,14 +123,15 @@ export default async function DashboardPage({
           (MACRO MULTIPLIER). Composition:
 
             1. Greeting                   — operator anchor
-            2. 5-KPI row + sparklines     — PORTFOLIO / P&L / 30D / MACRO MULT / HIGH-TIER
+            2. 5-KPI row                  — PORTFOLIO / P&L / 30D / MACRO MULT / HIGH-TIER
             3. PORTFOLIO VALUE chart      — line chart in card with range pills
             4. Score movers               — rows on canvas (Strip role)
             5. Top positions              — rows on canvas (Strip role)
 
-          Sparklines per Q-DASH-8: time-series tiles only (PORTFOLIO, 30D RETURN,
-          MACRO MULTIPLIER). NO sparkline on P&L · since open (single scalar —
-          fake polish) or HIGH-TIER NAMES (integer count — jagged step chart).
+          KPI sparklines retired 2026-05-19 (Terry): the tiny canvas made tame
+          fluctuations look dramatic AND created vertical-rhythm asymmetry against
+          KPIs that didn't carry a sparkline. The NAV chart below the KPI row is
+          the canonical trend surface; tiles are scalar.
         */}
         <GreetingStrip
           initialGreeting={greeting}
@@ -291,8 +291,6 @@ function KpiRow({
           value={`${macroMultiplier.toFixed(2)}×`}
           sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
           valueColor={macroState.color}
-          spark={synthesizeMacroSpark(macroMultiplier)}
-          sparkColor={macroState.color}
         />
         <KpiCell
           label="High-tier names"
@@ -322,8 +320,6 @@ function KpiRow({
         label="Portfolio"
         value={fmtUsd(portfolioValue)}
         sub="market value"
-        spark={synthesizePortfolioSpark(portfolioValue)}
-        sparkColor="var(--accent)"
       />
       <KpiCell
         label="P&L · since open"
@@ -342,8 +338,6 @@ function KpiRow({
         value={`${macroMultiplier.toFixed(2)}×`}
         sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
         valueColor={macroState.color}
-        spark={synthesizeMacroSpark(macroMultiplier)}
-        sparkColor={macroState.color}
       />
       <KpiCell
         label="High-tier names"
@@ -353,48 +347,6 @@ function KpiRow({
       />
     </div>
   );
-}
-
-/**
- * Synthesize 30-day portfolio sparkline (deterministic random walk anchored
- * at current value). Real data lands when positions_history snapshotter
- * wires up. Mirrors the same algorithm as PortfolioValueChart for visual
- * coherence — the sparkline and the main chart should agree on trend
- * direction.
- */
-function synthesizePortfolioSpark(currentValue: number): number[] {
-  if (currentValue <= 0) return [];
-  const points = 30;
-  const result: number[] = [];
-  let v = currentValue;
-  let s = Math.floor(currentValue);
-  for (let i = 0; i < points; i++) {
-    result.unshift(v);
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    const noise = (s / 0x7fffffff - 0.5) * 0.012;
-    v = v / (1 + noise - 0.0008);
-    if (v < currentValue * 0.5) v = currentValue * 0.5;
-  }
-  return result;
-}
-
-/**
- * Synthesize 30-day regime multiplier sparkline. v1 is a flat-ish line at
- * the current multiplier — real data lands once regime history can be
- * queried. Renders meaningfully even when multiplier hasn't changed.
- */
-function synthesizeMacroSpark(currentMultiplier: number): number[] {
-  const points = 30;
-  const result: number[] = [];
-  let s = Math.floor(currentMultiplier * 1000);
-  for (let i = 0; i < points; i++) {
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    const noise = (s / 0x7fffffff - 0.5) * 0.02;
-    result.push(Math.max(0.85, Math.min(1.0, currentMultiplier + noise)));
-  }
-  // Anchor last point exactly
-  result[result.length - 1] = currentMultiplier;
-  return result;
 }
 
 /**
@@ -484,18 +436,12 @@ function KpiCell({
   sub,
   valueColor,
   muted = false,
-  spark,
-  sparkColor,
 }: {
   label: string;
   value: string;
   sub?: string;
   valueColor?: string;
   muted?: boolean;
-  /** When present, renders a 30d sparkline above the value (Q-DASH-8 LOCKED:
-   * time-series tiles only — Portfolio, 30D Return, Macro Multiplier). */
-  spark?: number[];
-  sparkColor?: string;
 }) {
   return (
     <div
@@ -518,28 +464,18 @@ function KpiCell({
       >
         {label}
       </span>
-      {/* Value + inline sparkline. Sparkline used to live on the label row;
-          Terry flagged it as "too removed from the numbers in which they
-          belong" — paired with the value reads as one unit. */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
-        <span
-          style={{
-            fontFamily: "var(--m)",
-            fontSize: 22,
-            fontWeight: 600,
-            fontVariantNumeric: "tabular-nums",
-            color: muted ? "var(--text-4)" : (valueColor ?? "var(--text-1)"),
-            lineHeight: 1,
-          }}
-        >
-          {value}
-        </span>
-        {spark && spark.length > 1 && (
-          <span style={{ display: "inline-flex", flexShrink: 0, alignSelf: "center", height: 20 }}>
-            <Sparkline data={spark} width={72} height={20} color={sparkColor} />
-          </span>
-        )}
-      </div>
+      <span
+        style={{
+          fontFamily: "var(--m)",
+          fontSize: 22,
+          fontWeight: 600,
+          fontVariantNumeric: "tabular-nums",
+          color: muted ? "var(--text-4)" : (valueColor ?? "var(--text-1)"),
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </span>
       {sub && (
         <span style={{ fontSize: 11, fontFamily: "var(--m)", color: "var(--text-3)" }}>{sub}</span>
       )}
