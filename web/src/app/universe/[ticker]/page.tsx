@@ -4,6 +4,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getNameDetail, type NameDetail } from "@/lib/name-detail-data";
 import { NameHeader } from "@/components/name/NameHeader";
+import { NameScoreChart } from "@/components/name/NameScoreChart";
 import { FactorPanels } from "@/components/name/FactorPanels";
 import { DepFlagsList } from "@/components/name/DepFlagsList";
 import { DataPendingCard } from "@/components/name/DataPendingCard";
@@ -95,6 +96,7 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
       {railData && <NameRailRegister data={railData} />}
       <NameHeader d={d} />
       <div style={{ flex: 1, overflow: "auto", padding: "24px 32px 40px", display: "flex", flexDirection: "column", gap: 28 }}>
+        <NameScoreChart history={d.history} ticker={d.ticker} />
         <FactorPanels d={d} />
         <DepFlagsList flags={d.dep_flags} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
