@@ -43,7 +43,7 @@ const VISIBLE_RANGE: Record<GaugeKey, [number, number]> = {
 // distorting strokes or text.
 const H = 200;
 const PAD_L = 8;
-const PAD_R = 96; // room for right-edge value labels
+const PAD_R = 78; // room for right-edge value labels (tightened so labels read tied to lines, not stranded in pad space)
 const PAD_T = 12;
 const PAD_B = 26;
 const W_FALLBACK = 1136; // SSR / pre-measure render
@@ -220,11 +220,28 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
             }),
           );
           const fmt = fmtGaugeValue(v, key);
+          // Connector from line endpoint to label: straight tick when label
+          // y matches the data y; L-shaped callout when avoid-overlap shifted
+          // the label off-line. Anchors label to its series visually so it
+          // reads as annotation, not as floating chrome in the right pad.
+          const dotX = xAt(n - 1);
+          const labelX = dotX + 8;
+          const shifted_neq = Math.abs(shifted - y) > 0.5;
+          const connectorPath = shifted_neq
+            ? `M${dotX + 3} ${y} L${dotX + 5} ${y} L${dotX + 5} ${shifted} L${labelX - 1} ${shifted}`
+            : `M${dotX + 3} ${y} L${labelX - 1} ${y}`;
           return (
             <g key={`label-${key}`}>
-              <circle cx={xAt(n - 1)} cy={y} r={3} fill={labelColor} />
+              <circle cx={dotX} cy={y} r={3} fill={labelColor} />
+              <path
+                d={connectorPath}
+                stroke={labelColor}
+                strokeWidth={1}
+                fill="none"
+                opacity={0.5}
+              />
               <text
-                x={xAt(n - 1) + 8}
+                x={labelX}
                 y={shifted + 3}
                 fontSize={11}
                 fontFamily="var(--m)"
