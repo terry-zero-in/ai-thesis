@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAiqIndex } from "@/lib/aiq-data";
 import { NoRail } from "@/components/shell/NoRail";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { LayerChip } from "@/components/universe/LayerChip";
 
 type ShowFilter = "scored" | "unscored" | "all";
 const SHOW_FILTERS: { key: ShowFilter; label: string }[] = [
@@ -49,6 +50,14 @@ export default async function AiqIndexPage({
     return b.total - a.total;
   });
   const unscoredCount = snap.rows.length - snap.scoredCount;
+  // Quarterly cadence — surface the next rescore date so "manual · quarterly"
+  // isn't an open-ended commitment. Derived from snap.asOf + 90d (median
+  // calendar quarter; not exactly +1 calendar quarter but close enough for
+  // operator planning, and avoids leap-year edge cases). Null when nothing
+  // has been scored yet.
+  const nextRescore = snap.asOf
+    ? new Date(new Date(snap.asOf).getTime() + 90 * 86_400_000).toISOString().slice(0, 10)
+    : null;
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -77,6 +86,7 @@ export default async function AiqIndexPage({
           { label: "scored", value: `${snap.scoredCount}/${snap.rows.length}` },
           { label: "as_of", value: snap.asOf ?? "—" },
           { label: "cadence", value: "manual · quarterly" },
+          ...(nextRescore ? [{ label: "next rescore", value: nextRescore }] : []),
         ]}
       />
       <div style={{ padding: "10px 32px 0", flexShrink: 0 }}>
@@ -168,7 +178,9 @@ export default async function AiqIndexPage({
                   </Link>
                 </Td>
                 <Td align="left" muted>{r.name}</Td>
-                <Td muted>{r.layer_label}</Td>
+                <Td align="left" muted>
+                  <LayerChip layer={r.layer} label={r.layer_label} />
+                </Td>
                 <Td>
                   {r.total == null ? (
                     <span style={{ color: "var(--danger)" }}>—</span>
