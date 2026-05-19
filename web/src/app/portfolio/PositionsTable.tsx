@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { LayerChip } from "@/components/universe/LayerChip";
 import type { PositionRow } from "@/lib/portfolio-types";
 import { POSITION_DRAWDOWN_TRIGGER } from "@/lib/portfolio-types";
@@ -83,6 +84,7 @@ function PositionRowView({
   totalDeployed: number;
   highlight: boolean;
 }) {
+  const router = useRouter();
   const cost = p.cost_basis * p.shares;
   const hasPrice = p.current_price != null;
   const mv = hasPrice ? (p.current_price as number) * p.shares : cost;
@@ -91,8 +93,20 @@ function PositionRowView({
   const pctBook = totalDeployed > 0 ? cost / totalDeployed : 0;
   const drawdownTriggered = hasPrice && plPct <= POSITION_DRAWDOWN_TRIGGER;
 
+  // Whole-row click → /universe/{ticker}. Mirrors the Score Movers pattern
+  // (S16). Edit/Close cells contain their own interactive elements (Link,
+  // form button) which handle their own click and don't bubble navigation.
+  // .closest() check is the safety net.
+  const onRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    const t = e.target as HTMLElement;
+    if (t.closest("a, button, input, label, form")) return;
+    router.push(`/universe/${p.ticker}`);
+  };
+
   return (
     <tr
+      className="row-hov"
+      onClick={onRowClick}
       style={{
         borderTop: "1px solid var(--border-subtle)",
         background: highlight

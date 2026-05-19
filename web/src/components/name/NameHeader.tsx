@@ -104,6 +104,22 @@ export function NameHeader({ d }: { d: NameDetail }) {
                 {d.ticker}
               </h1>
               <span style={{ fontSize: 14, color: "var(--text-2)" }}>{d.name}</span>
+              {/* Switch-name affordance — discoverable hint that ⌘K covers
+                  every name in the universe (50 seed names). Quiet at rest;
+                  lifts to text-2 on hover. Linear-class peel-back affordance. */}
+              <span
+                title="Open Cmd palette (⌘K) — switch to any name in the universe"
+                style={{
+                  fontSize: 10.5,
+                  fontFamily: "var(--m)",
+                  color: "var(--text-4)",
+                  letterSpacing: ".04em",
+                  marginLeft: 6,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ⌘K to switch
+              </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
               <LayerChip layer={d.layer} label={d.layer_label} />
