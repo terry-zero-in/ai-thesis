@@ -109,7 +109,11 @@ export function PortfolioValueChart({
         {empty ? (
           <ChartEmpty />
         ) : (
-          <ChartSvg data={data} color={positive ? "var(--success)" : "var(--danger)"} />
+          // Line color is brand-neutral (--accent). Trend communication lives
+          // in the +/- $ · +/- % chip beside the headline value — color-coding
+          // the whole line decorates with severity (/lambo: "Severity colors
+          // only at severity moments. The accent is even more precious.").
+          <ChartSvg data={data} color="var(--accent)" />
         )}
       </div>
 

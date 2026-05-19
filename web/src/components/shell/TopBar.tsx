@@ -46,65 +46,20 @@ export function TopBar({
       <div style={{ flex: 1 }} />
       <DemoBadge isDemo={!userEmail} />
       {right}
-      <Tip label="Open command palette" keys={["⌘", "K"]}>
-        <TBBtn onClick={onCmd}>
-          {I.search}
-          <span>Search</span>
-        </TBBtn>
-      </Tip>
+      {/* Search button removed per Terry — redundant with surface-level
+          filters (e.g. Universe inline filter) and the Cmd+K global binding.
+          ⌘K still fires the palette; help popover + ShortcutsOverlay surface
+          the binding for discovery. Linear/Vercel pattern. */}
       <Tip label="Keyboard shortcuts" keys={["?"]}>
         <TBBtn onClick={onHelp}>{I.help}</TBBtn>
       </Tip>
       <Tip label={panelOpen ? "Close context panel" : "Open context panel"} keys={["⌘", "\\"]}>
         <TBBtn onClick={() => setPanelOpen(!panelOpen)}>{I.panel}</TBBtn>
       </Tip>
-      {userEmail && <UserChip email={userEmail} />}
+      {/* UserChip removed per Terry — username took too much chrome space.
+          Sign-out still reachable at /logout direct URL. If discoverability
+          becomes an issue, surface in CmdPalette as a command. */}
     </header>
-  );
-}
-
-function UserChip({ email }: { email: string }) {
-  const initial = email[0]?.toUpperCase() ?? "?";
-  return (
-    <Tip label={`Sign out ${email}`} keys={[]}>
-      <a
-        href="/logout"
-        title={email}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          marginLeft: 4,
-          padding: "3px 8px 3px 4px",
-          borderRadius: 5,
-          color: "var(--text-2)",
-          border: "1px solid var(--border)",
-          fontSize: 11.5,
-          textDecoration: "none",
-          fontFamily: "var(--m)",
-        }}
-      >
-        <span
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: "50%",
-            background: "var(--accent-soft)",
-            color: "var(--accent)",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 10,
-            fontWeight: 600,
-          }}
-        >
-          {initial}
-        </span>
-        <span style={{ maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {email}
-        </span>
-      </a>
-    </Tip>
   );
 }
 
