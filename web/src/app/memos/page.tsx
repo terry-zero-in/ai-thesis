@@ -194,7 +194,15 @@ export default async function MemosPage({
             .
           </div>
         ) : (
-          filtered.map((m) => <MemoCard key={m.id} memo={m} />)
+          filtered.map((m, i) => (
+            <div
+              key={m.id}
+              className="row-stagger-in"
+              style={{ animationDelay: `${Math.min(i * 40, 800)}ms` }}
+            >
+              <MemoCard memo={m} />
+            </div>
+          ))
         )}
       </div>
     </div>

@@ -166,7 +166,15 @@ export default async function DecisionsPage({
               .
             </div>
           ) : (
-            visibleEvents.map((e) => <AlertRow key={e.key} event={e} />)
+            visibleEvents.map((e, i) => (
+              <div
+                key={e.key}
+                className="row-stagger-in"
+                style={{ animationDelay: `${Math.min(i * 30, 1000)}ms` }}
+              >
+                <AlertRow event={e} />
+              </div>
+            ))
           )}
         </section>
 

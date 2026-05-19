@@ -96,8 +96,11 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
             padding: "0 20px",
             fontSize: 12.5,
             fontWeight: 600,
-            color: "var(--voltage-ink)",
-            background: pending ? "color-mix(in oklab, var(--voltage) 60%, transparent)" : "var(--voltage)",
+            // Accent palette — voltage was retired post #92 accent pivot.
+            // Matches PortfolioAddPositionForm submit (#89). White ink on
+            // accent fill; pending state lowers fill alpha.
+            color: "var(--canvas)",
+            background: pending ? "color-mix(in oklab, var(--accent) 60%, transparent)" : "var(--accent)",
             border: "none",
             borderRadius: 9999,
             cursor: pending ? "wait" : envConfigured ? "pointer" : "not-allowed",

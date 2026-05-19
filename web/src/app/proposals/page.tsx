@@ -33,7 +33,15 @@ export default async function ProposalsPage() {
         {proposals.length === 0 ? (
           <EmptyState />
         ) : (
-          proposals.map((p) => <ProposalCard key={p.id} proposal={p} />)
+          proposals.map((p, i) => (
+            <div
+              key={p.id}
+              className="row-stagger-in"
+              style={{ animationDelay: `${Math.min(i * 50, 600)}ms` }}
+            >
+              <ProposalCard proposal={p} />
+            </div>
+          ))
         )}
       </div>
     </div>
