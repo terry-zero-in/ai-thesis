@@ -123,6 +123,28 @@ export function FactorPanels({ d }: { d: NameDetail }) {
           <Empty hint="No rubric scored yet — open the editor to add the first scoring." />
         )}
       </Panel>
+      {/* Diagnostic caption (Bucket 4 review items 2/3). Spans all 4 cols.
+          Frames sub-components as diagnostic per-pillar reads — readers
+          can't sum the Z-scores below and arrive at the headline 0-100
+          (which is the engine's universe-z-scored composite). Without this
+          caption, the Q pillar Z-scores read like they should derive the
+          Q score, and they don't. */}
+      <div
+        style={{
+          gridColumn: "1 / -1",
+          padding: "8px 20px",
+          borderTop: "1px solid var(--border-subtle)",
+          fontSize: 10.5,
+          fontFamily: "var(--m)",
+          color: "var(--text-4)",
+          letterSpacing: ".02em",
+          fontStyle: "italic",
+        }}
+      >
+        Sub-components shown are diagnostic — per-pillar z-scores (Q) and raw
+        signal values (G, V). The 0–100 headline is the engine&rsquo;s
+        universe-z-scored composite, not the sum of the rows below.
+      </div>
     </div>
   );
 }

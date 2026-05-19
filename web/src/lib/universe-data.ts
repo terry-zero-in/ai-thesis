@@ -77,6 +77,24 @@ export interface UniverseDbRow {
   layer_label: string;
 }
 
+/**
+ * Lean tickers-only fetcher for the name-detail prev/next pager. Single
+ * query, alphabetical (matches the universe table's natural order and the
+ * fixture seed ordering). Falls back to FIXTURE_UNIVERSE tickers when env
+ * is unset so the pager renders in dev.
+ */
+export async function getUniverseTickers(): Promise<string[]> {
+  const sb = getSupabaseBrowser();
+  if (!sb) return FIXTURE_UNIVERSE.map((u) => u.ticker).sort();
+  const { data, error } = await sb
+    .from("universe")
+    .select("ticker")
+    .eq("is_active", true)
+    .order("ticker");
+  if (error || !data || data.length === 0) return FIXTURE_UNIVERSE.map((u) => u.ticker).sort();
+  return (data as Array<{ ticker: string }>).map((r) => r.ticker);
+}
+
 export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
   const sb = getSupabaseBrowser();
   if (!sb) return fixtureSnapshot();

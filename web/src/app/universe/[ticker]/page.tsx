@@ -3,7 +3,9 @@
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getNameDetail, type NameDetail } from "@/lib/name-detail-data";
+import { getUniverseTickers } from "@/lib/universe-data";
 import { NameHeader } from "@/components/name/NameHeader";
+import { NamePager } from "@/components/name/NamePager";
 import { PortfolioContextStrip } from "@/components/name/PortfolioContextStrip";
 import { NameScoreChart } from "@/components/name/NameScoreChart";
 import { FactorPanels } from "@/components/name/FactorPanels";
@@ -20,6 +22,7 @@ interface Params {
 export default function NameDetailPage({ params }: { params: Promise<Params> }) {
   const { ticker } = use(params);
   const [d, setD] = useState<NameDetail | null>(null);
+  const [tickers, setTickers] = useState<string[]>([]);
   useEffect(() => {
     let alive = true;
     getNameDetail(ticker).then((x) => {
@@ -29,6 +32,16 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
       alive = false;
     };
   }, [ticker]);
+  // Tickers list is independent of the current ticker — fetch once.
+  useEffect(() => {
+    let alive = true;
+    getUniverseTickers().then((t) => {
+      if (alive) setTickers(t);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Derive rail activity events from the 12-wk history + dep flags. Sorted
   // most-recent first; capped at 6 to keep the rail glanceable.
@@ -95,6 +108,10 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {railData && <NameRailRegister data={railData} />}
+      {/* Prev/next pager — wraps universe alphabetically. Renders above
+          NameHeader so navigation chrome sits at the top of the canvas,
+          consistent with Linear's issue-prev/next pattern. */}
+      <NamePager ticker={ticker} tickers={tickers} />
       <NameHeader d={d} />
       {/* Portfolio context strip — sits between header and chart so the
           "is this in my book?" question is answered before the score chart
