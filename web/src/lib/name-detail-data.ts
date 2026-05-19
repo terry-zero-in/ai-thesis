@@ -247,18 +247,40 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
   const positionRows = (posAllRes.data ?? []) as Array<{ ticker: string; shares: number; cost_basis: number }>;
   const portfolio = await buildPortfolioContext(sb, t, positionRows);
 
-  // Price history aligned to score history. Some score dates may not have
-  // a prices_raw row (early ingest gaps, market closures); those points
-  // surface price: null which the chart renders as a gap.
-  const scoreDates = history.map((h) => h.as_of);
-  const { data: priceData } = await sb
-    .from("prices_raw")
-    .select("date,close")
-    .eq("ticker", t)
-    .in("date", scoreDates);
+  // Price history aligned to score history. Score chain runs Saturday
+  // 22:45 UTC so as_of is a Saturday — prices_raw only carries trading
+  // days, so an IN(scoreDates) match returns zero rows. Instead we
+  // pull a window covering the score date range (back-padded by 5 days
+  // to ensure the earliest Saturday has a prior Friday close), then
+  // snap-to-prior-trading-day in JS. A score date with no prior close
+  // (pre-FMP-ingest) falls through as null.
+  const scoreDates = history.map((h) => h.as_of).sort();
+  const earliest = scoreDates[0];
+  const latest = scoreDates[scoreDates.length - 1];
+  const earliestPad = earliest ? shiftDays(earliest, -7) : null;
+  const { data: priceData } = earliest && latest
+    ? await sb
+        .from("prices_raw")
+        .select("date,close")
+        .eq("ticker", t)
+        .gte("date", earliestPad as string)
+        .lte("date", latest)
+        .order("date", { ascending: true })
+    : { data: [] };
+  const priceRows = ((priceData ?? []) as Array<{ date: string; close: number | null }>).filter(
+    (r) => r.close != null,
+  );
   const priceMap = new Map<string, number>();
-  for (const r of (priceData ?? []) as Array<{ date: string; close: number | null }>) {
-    if (r.close != null) priceMap.set(r.date, Number(r.close));
+  // For each score date, find the latest priceRow with date <= scoreDate.
+  // priceRows is sorted ascending; walk a pointer to keep this O(N+M).
+  let pi = 0;
+  let lastClose: number | null = null;
+  for (const sd of scoreDates) {
+    while (pi < priceRows.length && priceRows[pi].date <= sd) {
+      lastClose = Number(priceRows[pi].close);
+      pi += 1;
+    }
+    if (lastClose != null) priceMap.set(sd, lastClose);
   }
 
   return buildDetail(
@@ -547,6 +569,12 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
     synthetic: true,
     found: true,
   };
+}
+
+function shiftDays(isoDate: string, deltaDays: number): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
 }
 
 function hash(s: string): number {
