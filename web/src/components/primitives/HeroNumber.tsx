@@ -119,6 +119,7 @@ export function HeroNumber({
       )}
       <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
         <span
+          className="hero-arrive"
           style={{
             fontFamily: "var(--m)",
             fontSize: SIZE_PX[size],

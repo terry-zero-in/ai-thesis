@@ -228,19 +228,19 @@ function Row({
   showFinal: boolean;
   rowIndex: number;
 }) {
-  // Only the first 6 rows stagger in — these are the rows visible above the
-  // fold on a standard viewport. Earlier `Math.min(rowIndex, 12)` capped
-  // every row beyond index 11 at the same delay (780ms), causing rows
-  // 12-49 to burst-render simultaneously after the wave — read as a hitch
-  // on Universe (50 rows) per Terry feedback 2026-05-19. Dashboard and
-  // Portfolio aren't affected (each has ≤12 rows, distinct delays).
-  const staggers = rowIndex < 6;
+  // All rows stagger in via row-stagger-in keyframe (opacity + 4px translate,
+  // compositor-tier). Cascade is 25ms × rowIndex with a 1200ms ceiling so a
+  // 50-row table finishes its wave in ~1.25s without the tail-rows-piled-up
+  // burst that `Math.min(rowIndex, 12)` produced on a 50-row universe.
+  // Dashboard / Portfolio aren't affected — they use the CSS-class default
+  // 65ms cascade with ≤12 rows.
+  const delayMs = Math.min(rowIndex * 25, 1200);
   return (
     <tr
-      className={staggers ? "row-hov row-stagger-in" : "row-hov"}
+      className="row-hov row-stagger-in"
       style={{
         borderBottom: "1px solid var(--border-subtle)",
-        ...(staggers ? { ["--row-i" as never]: rowIndex } : {}),
+        animationDelay: `${delayMs}ms`,
       }}
     >
       <Td>
