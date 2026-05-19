@@ -1,4 +1,5 @@
 import { getDashboardSnapshot, getRecentInsider, type DashboardMover } from "@/lib/dashboard-data";
+import type { Tier } from "@/lib/universe-data";
 import { getPortfolioSnapshot } from "@/lib/portfolio-data";
 import { getRegimeSnapshot } from "@/lib/regime-data";
 import { type GaugeKey } from "@/lib/regime-types";
@@ -32,7 +33,14 @@ const TIER_COLORS: Record<string, string> = {
 /** Unified movers limit shown on dashboard table — top abs(Δ7D). */
 const SCORE_MOVERS_LIMIT = 8;
 
-export default async function DashboardPage() {
+/** Tier sort order — duplicates dashboard-data's local const (not exported). */
+const RAIL_TIER_ORDER: Tier[] = ["High", "Medium", "Low", "Avoid"];
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ moverTier?: string }>;
+}) {
   // Marketing-landing gate (THS-84): unauthenticated visitors to "/" see
   // the paid-beta wedge; authed users get the dashboard below. The
   // ConditionalShell sibling suppresses the operator Shell on the
@@ -54,7 +62,27 @@ export default async function DashboardPage() {
   ]);
   const { greeting, dateLabel, marketLabel } = computeGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
-  const movers = unifyMovers(snap.topWinners, snap.topLosers);
+  const allMovers = unifyMovers(snap.topWinners, snap.topLosers);
+
+  // Mini-Insights filter state (task #77). Tier filter scopes the Score
+  // Movers table to a single tier; chart aggregates always run on the full
+  // movers set so bar heights stay stable when the filter is applied
+  // (matches Universe Insights rail contract from S9).
+  const params = await searchParams;
+  const requestedTier = (params.moverTier ?? "").trim();
+  const activeMoverTier: Tier | null = (RAIL_TIER_ORDER as string[]).includes(requestedTier)
+    ? (requestedTier as Tier)
+    : null;
+  const moverTierCounts: Record<Tier, number> = {
+    High: 0,
+    Medium: 0,
+    Low: 0,
+    Avoid: 0,
+  };
+  for (const m of allMovers) {
+    if (m.tier) moverTierCounts[m.tier] += 1;
+  }
+  const movers = activeMoverTier ? allMovers.filter((m) => m.tier === activeMoverTier) : allMovers;
 
   // Right-rail payload per spec §6. Derive per-gauge hit state from the
   // latest regime row using the same thresholds as composite.ts.
@@ -72,6 +100,8 @@ export default async function DashboardPage() {
     recentInsider,
     asOf: snap.asOf,
     synthetic: snap.synthetic,
+    moverTierCounts,
+    activeMoverTier,
   };
 
   return (
@@ -128,23 +158,45 @@ export default async function DashboardPage() {
         />
 
         <Section
-          label="Score movers · last 7 days"
+          label={
+            activeMoverTier
+              ? `Score movers · last 7 days · ${activeMoverTier} tier only`
+              : "Score movers · last 7 days"
+          }
           right={
-            <Link
-              href="/universe"
-              style={{
-                fontSize: 11,
-                color: "var(--accent)",
-                textDecoration: "none",
-                fontFamily: "var(--m)",
-              }}
-            >
-              View all ›
-            </Link>
+            activeMoverTier ? (
+              <Link
+                href="/"
+                style={{
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  textDecoration: "none",
+                  fontFamily: "var(--m)",
+                }}
+              >
+                Clear filter ✕
+              </Link>
+            ) : (
+              <Link
+                href="/universe"
+                style={{
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  textDecoration: "none",
+                  fontFamily: "var(--m)",
+                }}
+              >
+                View all ›
+              </Link>
+            )
           }
         >
           {movers.length === 0 ? (
-            <Empty>No composite movement this week.</Empty>
+            <Empty>
+              {activeMoverTier
+                ? `No ${activeMoverTier}-tier names in this week's score movers.`
+                : "No composite movement this week."}
+            </Empty>
           ) : (
             <MoversTable movers={movers} asOf={snap.asOf} />
           )}

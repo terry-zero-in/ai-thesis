@@ -1,10 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { DashboardInsiderRow, DashboardMover } from "@/lib/dashboard-data";
+import type { Tier } from "@/lib/universe-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { RailHeader, RailSection, RailEmpty, RailFooter } from "./RailChrome";
+
+/** Tier → token map matching the Universe Insights rail. Locked S9. */
+const TIER_COLORS: Record<Tier, string> = {
+  High: "var(--accent)",
+  Medium: "var(--warning)",
+  Low: "var(--info)",
+  Avoid: "var(--danger)",
+};
+const RAIL_TIER_ORDER: Tier[] = ["High", "Medium", "Low", "Avoid"];
 
 /**
  * /dashboard right rail — /lambo Dashboard polish D6/G6 differentiation:
@@ -33,14 +44,33 @@ export interface DashboardTodayRailData {
   recentInsider: DashboardInsiderRow[];
   asOf: string | null;
   synthetic: boolean;
+  /**
+   * Tier counts on the unified Score Movers set (always full set — not
+   * filtered). Bars in the rail represent these. Per task #77 + S9 lock:
+   * aggregates run on ALL rows; filter only affects the table.
+   */
+  moverTierCounts: Record<Tier, number>;
+  /** Currently active mover-tier filter, or null. Driven by ?moverTier=X URL. */
+  activeMoverTier: Tier | null;
 }
 
 export function DashboardTodayRail({ data }: { data: DashboardTodayRailData }) {
-  const { macroGatesHit, macroMultiplier, gateState, recentInsider, asOf } = data;
+  const { macroGatesHit, macroMultiplier, gateState, recentInsider, asOf, moverTierCounts, activeMoverTier } = data;
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <RailHeader label="Today" right={<TodayClock />} />
       <div style={{ flex: 1, overflowY: "auto" }}>
+        {/*
+          Mini-Insights port (task #77, S10). Compressed version of the
+          Universe Insights rail bar chart, scoped to the Score Movers set.
+          Click a bar = filter Score Movers table to that tier via
+          ?moverTier=X URL state. Aggregates run on the full unfiltered
+          set so bar heights stay stable.
+        */}
+        <RailSection title="Movers by tier">
+          <MoversByTier counts={moverTierCounts} activeTier={activeMoverTier} />
+        </RailSection>
+
         {/*
           Calendar placeholder removed S8 — per Linear "calmer" principles
           Terry shared (don't compete for attention you haven't earned;
@@ -238,6 +268,139 @@ function relDays(iso: string): string {
   if (days <= 0) return "today";
   if (days === 1) return "1d ago";
   return `${days}d ago`;
+}
+
+/**
+ * MoversByTier — rail-compressed version of the Universe Insights bar
+ * chart. 4 bars (one per tier), heights proportional to count within the
+ * unified Score Movers set (8 rows). Click a bar → toggle ?moverTier=X
+ * URL filter. Non-active bars dim opacity when any filter is engaged.
+ */
+function MoversByTier({
+  counts,
+  activeTier,
+}: {
+  counts: Record<Tier, number>;
+  activeTier: Tier | null;
+}) {
+  const router = useRouter();
+  const maxCount = Math.max(1, ...RAIL_TIER_ORDER.map((t) => counts[t]));
+  const totalCount = RAIL_TIER_ORDER.reduce((s, t) => s + counts[t], 0);
+
+  function toggle(t: Tier) {
+    if (activeTier === t) router.push("/");
+    else router.push(`/?moverTier=${t}`);
+  }
+
+  if (totalCount === 0) {
+    return <RailEmpty>No score movement this week.</RailEmpty>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 2 }}>
+      {/* Bar chart row — 4 bars side by side, 56px tall, flex weights equal */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 6,
+          height: 56,
+          paddingBottom: 1,
+        }}
+      >
+        {RAIL_TIER_ORDER.map((t) => {
+          const count = counts[t];
+          const heightPct = count === 0 ? 4 : Math.max(8, (count / maxCount) * 100);
+          const isActive = activeTier === t;
+          const dim = activeTier != null && !isActive;
+          return (
+            <button
+              key={t}
+              onClick={() => toggle(t)}
+              aria-label={`Filter Score Movers to ${t} tier (${count} ${count === 1 ? "name" : "names"})`}
+              style={{
+                flex: 1,
+                height: `${heightPct}%`,
+                background: TIER_COLORS[t],
+                opacity: dim ? 0.3 : 1,
+                filter: dim ? "saturate(0.4)" : undefined,
+                border: "none",
+                borderRadius: 2,
+                cursor: count === 0 ? "default" : "pointer",
+                padding: 0,
+                transition:
+                  "opacity var(--dur-instant) var(--ease-out), filter var(--dur-instant) var(--ease-out)",
+              }}
+            />
+          );
+        })}
+      </div>
+      {/* Legend table — color dot · tier · count, click to toggle */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {RAIL_TIER_ORDER.map((t) => {
+          const count = counts[t];
+          const isActive = activeTier === t;
+          const dim = activeTier != null && !isActive;
+          return (
+            <button
+              key={t}
+              onClick={() => toggle(t)}
+              disabled={count === 0}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "10px 1fr auto",
+                gap: 8,
+                alignItems: "center",
+                background: isActive ? "var(--elevated)" : "transparent",
+                border: "none",
+                padding: "3px 6px",
+                borderRadius: 3,
+                cursor: count === 0 ? "default" : "pointer",
+                opacity: dim || count === 0 ? 0.4 : 1,
+                fontSize: 11.5,
+                fontFamily: "var(--m)",
+                color: "var(--text-2)",
+                textAlign: "left",
+                transition: "opacity var(--dur-instant) var(--ease-out)",
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: TIER_COLORS[t],
+                }}
+              />
+              <span>{t}</span>
+              <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-3)" }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {activeTier && (
+        <button
+          onClick={() => router.push("/")}
+          style={{
+            fontSize: 10.5,
+            fontFamily: "var(--m)",
+            color: "var(--accent)",
+            background: "none",
+            border: "none",
+            padding: "4px 0 0",
+            cursor: "pointer",
+            textAlign: "left",
+            letterSpacing: ".02em",
+          }}
+        >
+          Clear filter ✕
+        </button>
+      )}
+    </div>
+  );
 }
 
 function GateRow({ label, hit }: { label: string; hit: boolean }) {
