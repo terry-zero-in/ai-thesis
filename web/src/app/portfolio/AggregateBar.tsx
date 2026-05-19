@@ -1,5 +1,6 @@
 import type { PortfolioSnapshot } from "@/lib/portfolio-types";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
+import { PortfolioHeroChart } from "./PortfolioHeroChart";
 
 /**
  * Portfolio top header — Mercury Pic 18/19 b2 pattern (Ops/Payroll +
@@ -29,8 +30,22 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {/* Hero block — Market Value as the protagonist (spec §1.7, lambo 60% rule). */}
-      <div style={{ padding: "8px 4px 18px" }}>
+      {/* Hero block — Market Value as the protagonist (spec §1.7, lambo 60%
+          rule), with 30-day sparkline + % delta on the right per Terry S9
+          (task #79): "The blank space to the right of the amount invested
+          would be a good spot to put the % increase or decrase and then
+          maybe a line chart right on the canvas." Chart sits naked on
+          canvas (no card) — that's the intentional differentiator from the
+          Dashboard's PortfolioValueChart, which is wrapped in a card. */}
+      <div
+        style={{
+          padding: "8px 4px 18px",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          gap: 24,
+        }}
+      >
         <HeroNumber
           label="Market value"
           value={snap.total_market_value}
@@ -46,6 +61,7 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
           }
           attribution={heroAttribution}
         />
+        <PortfolioHeroChart currentValue={snap.total_market_value} empty={snap.empty} />
       </div>
 
       {/* Supporting strip — Total Capital · Invested · P&L · Reserve.
