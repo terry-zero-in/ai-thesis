@@ -71,31 +71,30 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
           </span>
         )}
         <SubLine>
-          {snap.empty
-            ? "no positions yet — add one via the form on the right"
-            : `${snap.positions.length} ${snap.positions.length === 1 ? "position" : "positions"} · ${fmtUsd(snap.total_deployed)} invested · ${fmtUsd(snap.settings.total_capital)} cap`}
+          {snap.empty ? (
+            "no positions yet — add one via the form on the right"
+          ) : (
+            <>
+              {snap.positions.length}{" "}
+              {snap.positions.length === 1 ? "position" : "positions"} ·{" "}
+              {fmtUsd(snap.total_deployed)} invested · {fmtUsd(snap.settings.total_capital)} cap
+              {snap.portfolio_concentration_tax != null && (
+                <>
+                  {" · "}
+                  <span
+                    title="Sum of concentration_history.tax across held names. Range [−15, 0] per ticker. Engine drag from over-concentration on the post-macro composite score."
+                    style={{
+                      color: snap.portfolio_concentration_tax < 0 ? "var(--warning)" : "var(--text-3)",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    drag {snap.portfolio_concentration_tax.toFixed(1)} pts
+                  </span>
+                </>
+              )}
+            </>
+          )}
         </SubLine>
-        {!snap.empty && snap.portfolio_concentration_tax != null && (
-          <SubLine>
-            <span
-              title="Sum of concentration_history.tax across held names. Range [−15, 0] per ticker. Engine drag from over-concentration on the post-macro composite score."
-              style={{ color: "var(--text-3)" }}
-            >
-              concentration drag{" "}
-              <span
-                style={{
-                  color: snap.portfolio_concentration_tax < 0 ? "var(--warning)" : "var(--text-3)",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {snap.portfolio_concentration_tax.toFixed(1)} pts
-              </span>
-            </span>
-          </SubLine>
-        )}
-        {!snap.empty && snap.spy_as_of && (
-          <Attribution>prices as of {snap.spy_as_of}</Attribution>
-        )}
       </Column>
 
       {/* Col 2 — 30D PERFORMANCE (inline sparkline + delta) */}
@@ -124,7 +123,7 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
                   data={sparkData}
                   width={SPARK_W}
                   height={SPARK_H}
-                  color={sparkPos ? "var(--success)" : "var(--danger)"}
+                  color="var(--accent)"
                 />
               )}
             </div>
@@ -211,22 +210,6 @@ function SubLine({ children }: { children: React.ReactNode }) {
         fontSize: 12,
         color: "var(--text-3)",
         marginTop: 4,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function Attribution({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--m)",
-        fontSize: 10.5,
-        color: "var(--text-4)",
-        marginTop: 4,
-        letterSpacing: ".02em",
       }}
     >
       {children}
