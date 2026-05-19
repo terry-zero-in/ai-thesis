@@ -28,13 +28,22 @@ export async function getRegimeSnapshot(): Promise<RegimeSnapshot> {
 
   // 52 weekly rows ≈ 52 calendar rows. Pull a bit more in case of irregular
   // cadence; UI clamps to the most recent 52 on render.
+  //
+  // Order DESC + reverse: previously this was `ascending: true` with
+  // `.limit(60)`, which returns the OLDEST 60 rows. Once the daily cron
+  // pushed the table past 60 rows, the page was rendering ~2 months of
+  // prehistoric data and `latest` was the snapshot from 60 days after
+  // table birth, not the actual latest. Fetch newest 60 first, then
+  // reverse to ascending so the rest of the pipeline (slice(-52), latest
+  // = history[length-1], gate-change walk) stays correct. Caught 2026-05-19
+  // when the live page rendered 2025-07-16 instead of 2026-05-18.
   const { data } = await sb
     .from("macro_gauges")
     .select("as_of,naaim,aaii_3wk_spread,fear_greed")
-    .order("as_of", { ascending: true })
+    .order("as_of", { ascending: false })
     .limit(60);
 
-  const rows = (data ?? []) as MacroGaugeRow[];
+  const rows = ((data ?? []) as MacroGaugeRow[]).reverse();
   if (rows.length === 0) return synthesize(true);
 
   return finalize(rows, true, false);
