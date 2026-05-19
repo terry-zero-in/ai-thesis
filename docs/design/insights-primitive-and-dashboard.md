@@ -1,7 +1,7 @@
 # Insights Primitive + Dashboard Redesign
 
-**Status:** BRAINSTORM — locked direction pending Terry sign-off on Open Questions §6.
-**Authored:** 2026-05-18, S8.
+**Status:** LOCKED — Open Questions §6 answered by Terry S9 ("go"). Phase 2 build greenlit.
+**Authored:** 2026-05-18, S8. **Locked:** 2026-05-18, S9.
 **Origin:** Terry sent the Linear Insights screenshot saying "Dashboard needs some work. Its not Lambo." This doc captures the response: where the Linear pattern actually wants to live, how it threads back to Dashboard, and what to lock before any code ships.
 
 ---
@@ -206,33 +206,45 @@ And it gives Dashboard what it lacks today: a non-passive moment. Click a bar, t
 
 ---
 
-## §6 — Open Questions (Terry answers before Phase 2 starts)
+## §6 — Open Questions — LOCKED 2026-05-18, S9
 
-Locked answers will be appended inline; doc status flips to LOCKED.
+Terry greenlit defaults via "go" after Q-A (sequencing) + Q-B (Tier as default Slice) discussion. Locked answers below.
 
-**Q-INS-1.** Sector as a slice dimension — worth adding `sector` column to `universe` table for this, or live with Layer-only and add Sector later? Recommended default: **ship v1 with Layer/Tier/AIQ-band/Macro-gate as slices; defer Sector to v1.1 after a schema migration.**
+**Q-INS-1.** Sector as a slice dimension — **LOCKED: defer to v1.1.** v1 ships with Tier as primary Slice. Layer/AIQ-band/Macro-gate available as future Slice options once Segment selector lands. Sector requires schema migration; not in scope.
 
-**Q-INS-2.** Chart type — stacked vertical bar (recommended) vs grouped vs horizontal bar vs treemap? Linear uses stacked vertical. Recommended default: **stacked vertical bar.**
+**Q-INS-2.** Chart type — **LOCKED: stacked vertical bar.** Matches Linear pattern Terry referenced via screenshots S9. v1 ships as single-color bars (Slice=Tier, Segment=none); stacked-by-Segment activates when Segment selector lands.
 
-**Q-INS-3.** Selector UI — three dropdowns at top of rail (Linear-style) vs three inline chip groups vs a single "configure" modal? Recommended default: **three dropdowns in a 3-col grid at top of rail, 10.5px mono labels above each, 30px select height per Instrument-Field §2.1.**
+**Q-INS-3.** Selector UI — **LOCKED: dropdowns above chart, 30px height per Instrument-Field §2.1.** v1 hides Slice + Segment dropdowns (Tier-only fixed); Measure dropdown ships in v1.1 when alternate measures (avg composite, avg AIQ) wire up.
 
-**Q-INS-4.** Multi-select behavior — Cmd-click ADD vs always-replace? Recommended default: **single click REPLACES; Cmd/Ctrl-click ADDS; click-active REMOVES (toggle).**
+**Q-INS-4.** Multi-select behavior — **LOCKED: single click REPLACES; Cmd/Ctrl-click ADDS; click-active REMOVES (toggle).** Matches Linear's behavior in the screenshots Terry sent S9 (clicking green frontend bar → only frontend bar stays solid, others dim).
 
-**Q-INS-5.** Persistence — URL search params (deep-linkable, back-button works) vs sessionStorage (cleaner URLs) vs no persistence? Recommended default: **URL params. The rail's whole point is that "click a bar to filter" is shareable as a URL.**
+**Q-INS-5.** Persistence — **LOCKED: URL search params.** `?tier=High` for single; `?tier=High,Medium` for multi. Back-button + deep-link work. Active filter chip strip above canvas table with × to clear per dimension; ESC clears all.
 
-**Q-INS-6.** Default config on first page load — `Measure=count · Slice=Tier · Segment=Layer`? Or different? Recommended default: **as stated above — it answers the most common first question.**
+**Q-INS-6.** Default config — **LOCKED: Measure=count · Slice=Tier · Segment=none (v1).** Tier as Slice is the decision-relevant cut (HIGH/MEDIUM/LOW/AVOID = how operator acts). Segment=Layer wires up in v1.1 when stacked-bar rendering lands.
 
-**Q-DASH-1.** Drop TodayThesisCard — confirm? It was just built in S6 (THS-74). Argument for dropping: every fact it shows is also in MonoMetaSpine + AlertCallout + KpiRow. Argument for keeping: it's the only narrative-flavored card. Recommended default: **drop. Narrative belongs in /memos.**
+**Q-DASH-1.** Drop TodayThesisCard — **LOCKED: dropped from Dashboard.** File retained for /memos reuse (S8 cce37ae shipped this).
 
-**Q-DASH-2.** Move MorningBrief to /memos — confirm? Built in S5 (THS-71 partial). Recommended default: **yes, move. It's a daily-batch routine surface, which conceptually is the memos cognitive space, not the dashboard scan space.**
+**Q-DASH-2.** Move MorningBrief to /memos — **LOCKED: yes, deferred to /memos page rebuild.** S8 cce37ae dropped from Dashboard; not yet relocated (waiting on /memos surface lift).
 
-**Q-DASH-3.** Drop CompactGateStrip from canvas — confirm? Recommended default: **yes, drop. Right rail has the same data and is the canonical source.**
+**Q-DASH-3.** Drop CompactGateStrip from canvas — **LOCKED: dropped.** S8 cce37ae shipped this.
 
-**Q-DASH-4.** AlertCallout merge — should it become an inline severity badge on MonoMetaSpine, or remain its own (now-only-shown-when-gates>0) card? Recommended default: **inline severity badge. One row, denser, no duplicate "review regime" link.**
+**Q-DASH-4.** AlertCallout merge — **REVISED LOCK S9: kill EngineStateStrip entirely.** Original lock was "inline severity badge on MonoMetaSpine" (shipped as EngineStateStrip cce37ae). Terry pushed back: "If thats it I didnt like it." Replacement: MACRO MULTIPLIER promoted to KPI tile (5th tile), absorbing engine-state visibility without a dedicated chrome row.
 
-**Q-DASH-5.** Right rail "Score distribution" mini-Insights — same single-axis (Tier-only) config, OR offer the full three-selector shape? Recommended default: **single-axis (Tier-only) on Dashboard; full three-selector lives on /universe. Dashboard is for scanning, not configuring.**
+**Q-DASH-5.** Right rail "Score distribution" mini-Insights — **LOCKED: single-axis Tier-only on Dashboard rail.** Phase 4 — ports compressed bar-chart-with-filter from Universe primitive. Out of scope for v1 Dashboard rail (which stays simple: Today + Insider + Macro gates).
 
-**Q-DASH-6.** Calendar section in rail — leave as placeholder ("v1.1") or remove entirely until built? Recommended default: **remove the placeholder. Placeholders read as incomplete; absence reads as scoped.**
+**Q-DASH-6.** Calendar section in rail — **LOCKED: removed.** S8 cce37ae shipped this.
+
+### S9-specific additions (Dashboard v3 composition, after Q-DASH-4 revision)
+
+**Q-DASH-7.** 5th KPI tile content — **LOCKED: MACRO MULTIPLIER.** Rejected COMPOSITE AVG (averaging scores across a portfolio is decision-meaningless — a (90, 38) portfolio averages 64, which underwrites nothing). MACRO MULTIPLIER (e.g., `1.00× / 0.95×`) is decision-useful AND absorbs the engine-state row that EngineStateStrip was trying to carry.
+
+**Q-DASH-8.** Sparklines on KPI tiles — **LOCKED: time-series tiles only.** PORTFOLIO (30d trend), 30D RETURN (trajectory), MACRO MULTIPLIER (regime history). NO sparkline on P&L TODAY (single-day value — fake polish) or HIGH-TIER NAMES (integer count — jagged step chart, zero signal).
+
+**Q-DASH-9.** Bottom-row content on Dashboard — **LOCKED: Score Movers + Top Positions, stacked.** Two different lenses: Movers = market activity, Positions = your exposure. Both belong on morning surface; one is no substitute for the other.
+
+**Q-DASH-10.** Bottom-row container — **LOCKED: rows on canvas (Strip role per Instrument-Field §3.1), NOT cards.** Long ranked lists are edge-to-edge canvas with hairline dividers. Cards earn the container role for contained micro-surfaces (KPI tile, chart with its own controls).
+
+**Q-DASH-11.** Chart container — **LOCKED: card (Inset role per Instrument-Field §3.1).** PORTFOLIO VALUE line chart with range pills (1D/5D/1M/6M/YTD/1Y/All) wrapped in `var(--surface)` card. Maintains Instrument-Field standard; consistent with Add Position drawer pattern.
 
 ---
 
