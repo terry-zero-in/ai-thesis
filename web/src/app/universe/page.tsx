@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getLatestUniverseScores, type UniverseSnapshot } from "@/lib/universe-data";
 import { useFilter } from "@/hooks/filter-context";
@@ -84,7 +85,23 @@ function UniverseHeader({ snap }: { snap: UniverseSnapshot }) {
             </span>
           ),
         },
-        { label: "macro", value: sample ? `${sample.macro_multiplier.toFixed(2)}× (${sample.macro_gates_hit}/3)` : "—" },
+        {
+          label: "macro",
+          value: sample ? (
+            <Link
+              href="/regime"
+              title="Open Regime page — full macro multiplier curve, gauges, and history"
+              style={{
+                color: "var(--text-2)",
+                textDecoration: "none",
+                borderBottom: "1px dotted var(--text-4)",
+                paddingBottom: 1,
+              }}
+            >
+              {sample.macro_multiplier.toFixed(2)}× ({sample.macro_gates_hit}/3)
+            </Link>
+          ) : "—",
+        },
       ]}
     />
   );

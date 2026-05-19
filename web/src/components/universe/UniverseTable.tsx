@@ -43,6 +43,15 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
     () => rows.some((r) => r.macro_gates_hit > 0 && r.macro_multiplier < 1),
     [rows],
   );
+  // Final differs from Comp only when macro multiplier de-rates. With macro at
+  // 1.00× across all rows (today's state: 0 gates), the two columns are
+  // identical — same redundancy pattern as the Macro column.
+  const hasAnyFinalDelta = useMemo(
+    () => rows.some(
+      (r) => r.composite != null && r.final_score != null && Math.abs(r.composite - r.final_score) > 0.05,
+    ),
+    [rows],
+  );
 
   const filtered = useMemo(() => {
     const qNorm = q.trim().toUpperCase();
@@ -126,18 +135,20 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
               Layer
             </Th>
             <Th sortable k="composite" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" width={80}>
-              Comp
+              Composite
             </Th>
-            <Th sortable k="final" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" width={80}>
-              Final
-            </Th>
+            {hasAnyFinalDelta && (
+              <Th sortable k="final" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" width={80}>
+                Final
+              </Th>
+            )}
             <Th sortable k="tier" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} width={84}>
               Tier
             </Th>
-            <Th width={100}>Q</Th>
-            <Th width={100}>G</Th>
-            <Th width={100}>V</Th>
-            <Th width={100}>AIQ</Th>
+            <Th width={110} title="Quality factor — earnings stability, margins, operational durability (0–100)">Quality</Th>
+            <Th width={110} title="Growth factor — revenue, EPS, FCF trajectory (0–100)">Growth</Th>
+            <Th width={110} title="Value factor — multiples + reverse DCF vs sector (0–100)">Value</Th>
+            <Th width={110} title="AIQ rubric — 6-dimension AI-readiness score (0–100)">AIQ</Th>
             {hasAnyDelta && (
               <Th sortable k="delta" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" width={64}>
                 Δw
@@ -154,7 +165,7 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
           {sorted.length === 0 && (
             <tr>
               <td
-                colSpan={10 + (hasAnyDelta ? 1 : 0) + (hasAnyMacro ? 1 : 0)}
+                colSpan={9 + (hasAnyFinalDelta ? 1 : 0) + (hasAnyDelta ? 1 : 0) + (hasAnyMacro ? 1 : 0)}
                 style={{ padding: "32px 16px", color: "var(--text-3)", textAlign: "center" }}
               >
                 No names match the current filters.
@@ -168,6 +179,7 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
               queued={queuedSet.has(r.ticker)}
               showDelta={hasAnyDelta}
               showMacro={hasAnyMacro}
+              showFinal={hasAnyFinalDelta}
             />
           ))}
         </tbody>
@@ -205,11 +217,13 @@ function Row({
   queued,
   showDelta,
   showMacro,
+  showFinal,
 }: {
   r: UniverseRow;
   queued: boolean;
   showDelta: boolean;
   showMacro: boolean;
+  showFinal: boolean;
 }) {
   return (
     <tr
@@ -286,22 +300,24 @@ function Row({
           </span>
         </ScoreMathPopover>
       </Td>
-      <Td align="right" mono strong>
-        <ScoreMathPopover input={scoreMathInputForRow(r)}>
-          <span
-            className="score-math-number"
-            style={{
-              fontVariantNumeric: "tabular-nums",
-              fontWeight: 600,
-              borderBottom: "1px dotted transparent",
-              transition: "border-color var(--dur-instant) var(--ease-out)",
-              color: "inherit",
-            }}
-          >
-            {fmt1(r.final_score)}
-          </span>
-        </ScoreMathPopover>
-      </Td>
+      {showFinal && (
+        <Td align="right" mono strong>
+          <ScoreMathPopover input={scoreMathInputForRow(r)}>
+            <span
+              className="score-math-number"
+              style={{
+                fontVariantNumeric: "tabular-nums",
+                fontWeight: 600,
+                borderBottom: "1px dotted transparent",
+                transition: "border-color var(--dur-instant) var(--ease-out)",
+                color: "inherit",
+              }}
+            >
+              {fmt1(r.final_score)}
+            </span>
+          </ScoreMathPopover>
+        </Td>
+      )}
       <Td>
         <TierBadge tier={r.tier} />
       </Td>
@@ -372,6 +388,7 @@ function Th({
   sortable,
   align,
   width,
+  title,
 }: {
   children: React.ReactNode;
   k?: SortKey;
@@ -381,6 +398,7 @@ function Th({
   sortable?: boolean;
   align?: "left" | "right" | "center";
   width?: number;
+  title?: string;
 }) {
   const active = sortable && k != null && sortKey === k;
   // Review §2.2 #7: sortable headers always show a sort affordance.
@@ -391,6 +409,7 @@ function Th({
   return (
     <th
       onClick={sortable && k && onSort ? () => onSort(k) : undefined}
+      title={title}
       style={{
         position: "sticky",
         top: 0,
@@ -402,7 +421,7 @@ function Th({
         letterSpacing: ".08em",
         textTransform: "uppercase",
         color: active ? "var(--text-1)" : "var(--text-3)",
-        cursor: sortable ? "pointer" : "default",
+        cursor: sortable ? "pointer" : title ? "help" : "default",
         userSelect: "none",
         whiteSpace: "nowrap",
         width,
