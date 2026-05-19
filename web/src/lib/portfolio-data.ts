@@ -32,6 +32,7 @@ import {
   type PositionTrigger,
   type UniverseChoice,
 } from "./portfolio-types";
+import type { Tier } from "./universe-data";
 
 const DEFAULT_SETTINGS = { total_capital: 100000, target_reserve: 20000 };
 
@@ -48,6 +49,19 @@ interface PriceRow {
   ticker: string;
   date: string;
   close: number | null;
+}
+
+interface ScoreRow {
+  ticker: string;
+  as_of: string;
+  composite: number | null;
+  tier: Tier | null;
+}
+
+interface TaxRow {
+  ticker: string;
+  as_of: string;
+  tax: number | null;
 }
 
 export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
@@ -80,24 +94,39 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
 
   // Latest close per ticker — uses the (ticker, date DESC) index from THS-35.
   // One round trip pulling 5 rows per ticker is fine for v1 (<=50 names).
-  const { data: priceData } = await sb
-    .from("prices_raw")
-    .select("ticker,date,close")
-    .in("ticker", tickers)
-    .order("date", { ascending: false })
-    .limit(tickers.length * 3);
-  const priceMap = latestPriceMap((priceData ?? []) as PriceRow[]);
-
-  // Universe rows for layer/name labels.
-  const { data: univData } = await sb
-    .from("universe")
-    .select("ticker,name,layer,layer_label")
-    .in("ticker", tickers);
-  const univMap = new Map(((univData ?? []) as UniverseChoice[]).map((u) => [u.ticker, u]));
+  // Score + concentration_tax joins added per Perplexity #5/#9 — same pattern
+  // as name-detail-data.ts: order desc, group by ticker via Map filter.
+  const [priceRes, univRes, scoreRes, taxRes] = await Promise.all([
+    sb
+      .from("prices_raw")
+      .select("ticker,date,close")
+      .in("ticker", tickers)
+      .order("date", { ascending: false })
+      .limit(tickers.length * 3),
+    sb.from("universe").select("ticker,name,layer,layer_label").in("ticker", tickers),
+    sb
+      .from("scores_history")
+      .select("ticker,as_of,composite,tier")
+      .in("ticker", tickers)
+      .order("as_of", { ascending: false })
+      .limit(tickers.length * 2),
+    sb
+      .from("concentration_history")
+      .select("ticker,as_of,tax")
+      .in("ticker", tickers)
+      .order("as_of", { ascending: false })
+      .limit(tickers.length * 2),
+  ]);
+  const priceMap = latestPriceMap((priceRes.data ?? []) as PriceRow[]);
+  const univMap = new Map(((univRes.data ?? []) as UniverseChoice[]).map((u) => [u.ticker, u]));
+  const scoreMap = latestScoreMap((scoreRes.data ?? []) as ScoreRow[]);
+  const taxMap = latestTaxMap((taxRes.data ?? []) as TaxRow[]);
 
   const positions: PositionRow[] = positionDbRows.map((p) => {
     const price = priceMap.get(p.ticker) ?? null;
     const u = univMap.get(p.ticker) ?? FIXTURE_INDEX[p.ticker] ?? fallbackUniverseRow(p.ticker);
+    const score = scoreMap.get(p.ticker) ?? null;
+    const tax = taxMap.get(p.ticker) ?? null;
     return {
       ticker: p.ticker,
       shares: Number(p.shares),
@@ -110,6 +139,9 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
       name: u.name,
       layer: u.layer,
       layer_label: u.layer_label,
+      composite: score?.composite != null ? Number(score.composite) : null,
+      tier: score?.tier ?? null,
+      concentration_tax: tax?.tax != null ? Number(tax.tax) : null,
     };
   });
 
@@ -218,21 +250,24 @@ interface FixtureBookEntry {
   current_price: number;
   opened_at: string;
   notes: string | null;
+  composite: number;
+  tier: Tier;
+  concentration_tax: number;
 }
 
 const FIXTURE_BOOK: FixtureBookEntry[] = [
-  { ticker: "NVDA",  shares:  30, cost_basis: 110.00, current_price: 145.20, opened_at: "2026-02-04", notes: "Compute spine — sized large; trim at +40%." },
-  { ticker: "TSM",   shares:  60, cost_basis: 160.00, current_price: 178.50, opened_at: "2026-01-22", notes: null },
-  { ticker: "AMD",   shares:  50, cost_basis: 168.00, current_price: 154.30, opened_at: "2026-03-14", notes: "Re-eval thesis if -10% from cost." },
-  { ticker: "MSFT",  shares:  20, cost_basis: 380.00, current_price: 425.10, opened_at: "2026-01-10", notes: null },
-  { ticker: "GOOGL", shares:  40, cost_basis: 175.00, current_price: 192.60, opened_at: "2026-02-18", notes: null },
-  { ticker: "META",  shares:  15, cost_basis: 540.00, current_price: 590.20, opened_at: "2026-02-26", notes: null },
-  { ticker: "CRWD",  shares:  18, cost_basis: 360.00, current_price: 340.50, opened_at: "2026-04-02", notes: null },
-  { ticker: "PLTR",  shares: 120, cost_basis:  28.50, current_price:  35.80, opened_at: "2026-01-08", notes: "L3 App high-conviction." },
-  { ticker: "VST",   shares:  35, cost_basis: 175.00, current_price: 198.40, opened_at: "2026-03-05", notes: null },
-  { ticker: "CEG",   shares:  25, cost_basis: 215.00, current_price: 232.70, opened_at: "2026-03-19", notes: null },
-  { ticker: "AAPL",  shares:  35, cost_basis: 198.00, current_price: 205.40, opened_at: "2026-01-15", notes: null },
-  { ticker: "ADBE",  shares:  10, cost_basis: 520.00, current_price: 488.60, opened_at: "2026-04-21", notes: null },
+  { ticker: "NVDA",  shares:  30, cost_basis: 110.00, current_price: 145.20, opened_at: "2026-02-04", notes: "Compute spine — sized large; trim at +40%.", composite: 82.4, tier: "High",   concentration_tax: -4.2 },
+  { ticker: "TSM",   shares:  60, cost_basis: 160.00, current_price: 178.50, opened_at: "2026-01-22", notes: null,                                            composite: 71.6, tier: "Medium", concentration_tax: -2.1 },
+  { ticker: "AMD",   shares:  50, cost_basis: 168.00, current_price: 154.30, opened_at: "2026-03-14", notes: "Re-eval thesis if -10% from cost.",            composite: 58.3, tier: "Low",    concentration_tax: -1.4 },
+  { ticker: "MSFT",  shares:  20, cost_basis: 380.00, current_price: 425.10, opened_at: "2026-01-10", notes: null,                                            composite: 78.1, tier: "High",   concentration_tax: -3.6 },
+  { ticker: "GOOGL", shares:  40, cost_basis: 175.00, current_price: 192.60, opened_at: "2026-02-18", notes: null,                                            composite: 73.5, tier: "Medium", concentration_tax: -2.4 },
+  { ticker: "META",  shares:  15, cost_basis: 540.00, current_price: 590.20, opened_at: "2026-02-26", notes: null,                                            composite: 68.9, tier: "Medium", concentration_tax: -1.8 },
+  { ticker: "CRWD",  shares:  18, cost_basis: 360.00, current_price: 340.50, opened_at: "2026-04-02", notes: null,                                            composite: 62.4, tier: "Medium", concentration_tax: -1.1 },
+  { ticker: "PLTR",  shares: 120, cost_basis:  28.50, current_price:  35.80, opened_at: "2026-01-08", notes: "L3 App high-conviction.",                       composite: 76.8, tier: "High",   concentration_tax: -2.9 },
+  { ticker: "VST",   shares:  35, cost_basis: 175.00, current_price: 198.40, opened_at: "2026-03-05", notes: null,                                            composite: 69.2, tier: "Medium", concentration_tax: -2.0 },
+  { ticker: "CEG",   shares:  25, cost_basis: 215.00, current_price: 232.70, opened_at: "2026-03-19", notes: null,                                            composite: 64.7, tier: "Medium", concentration_tax: -1.6 },
+  { ticker: "AAPL",  shares:  35, cost_basis: 198.00, current_price: 205.40, opened_at: "2026-01-15", notes: null,                                            composite: 56.2, tier: "Low",    concentration_tax: -1.3 },
+  { ticker: "ADBE",  shares:  10, cost_basis: 520.00, current_price: 488.60, opened_at: "2026-04-21", notes: null,                                            composite: 41.9, tier: "Avoid",  concentration_tax: -0.7 },
 ];
 
 const FIXTURE_PRICES_AS_OF = "2026-05-17";
@@ -253,6 +288,9 @@ export function getFixturePortfolioSnapshot(): PortfolioSnapshot {
       name: u.name,
       layer: u.layer,
       layer_label: u.layer_label,
+      composite: p.composite,
+      tier: p.tier,
+      concentration_tax: p.concentration_tax,
     };
   });
 
@@ -274,6 +312,24 @@ function latestPriceMap(rows: PriceRow[]): Map<string, PriceRow> {
   for (const r of rows) {
     const existing = out.get(r.ticker);
     if (!existing || r.date > existing.date) out.set(r.ticker, r);
+  }
+  return out;
+}
+
+function latestScoreMap(rows: ScoreRow[]): Map<string, ScoreRow> {
+  const out = new Map<string, ScoreRow>();
+  for (const r of rows) {
+    const existing = out.get(r.ticker);
+    if (!existing || r.as_of > existing.as_of) out.set(r.ticker, r);
+  }
+  return out;
+}
+
+function latestTaxMap(rows: TaxRow[]): Map<string, TaxRow> {
+  const out = new Map<string, TaxRow>();
+  for (const r of rows) {
+    const existing = out.get(r.ticker);
+    if (!existing || r.as_of > existing.as_of) out.set(r.ticker, r);
   }
   return out;
 }
@@ -360,6 +416,19 @@ function finalizeSnapshot(
   const reserve_actual = settings.total_capital - total_deployed;
   const market_triggers = computeMarketTriggers(spy, vix);
 
+  // Sum concentration tax across held names where the engine has computed
+  // it. Null only when no held name has a row yet — distinguishes pre-engine
+  // from "engine has run, total drag is 0".
+  let taxSum = 0;
+  let taxCount = 0;
+  for (const p of positions) {
+    if (p.concentration_tax != null) {
+      taxSum += p.concentration_tax;
+      taxCount += 1;
+    }
+  }
+  const portfolio_concentration_tax = taxCount > 0 ? taxSum : null;
+
   return {
     positions,
     settings,
@@ -376,6 +445,7 @@ function finalizeSnapshot(
     empty: positions.length === 0,
     envConfigured,
     synthetic_prices,
+    portfolio_concentration_tax,
   };
 }
 
@@ -448,6 +518,7 @@ function emptySnapshot(envConfigured: boolean, synthetic_prices: boolean): Portf
     envConfigured,
     synthetic_prices,
     settings: DEFAULT_SETTINGS,
+    portfolio_concentration_tax: null,
   };
 }
 

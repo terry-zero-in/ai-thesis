@@ -71,6 +71,24 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
             ? "no positions yet — add one via the form on the right"
             : `${snap.positions.length} ${snap.positions.length === 1 ? "position" : "positions"} · ${fmtUsd(snap.total_deployed)} invested · ${fmtUsd(snap.settings.total_capital)} cap`}
         </SubLine>
+        {!snap.empty && snap.portfolio_concentration_tax != null && (
+          <SubLine>
+            <span
+              title="Sum of concentration_history.tax across held names. Range [−15, 0] per ticker. Engine drag from over-concentration on the post-macro composite score."
+              style={{ color: "var(--text-3)" }}
+            >
+              concentration drag{" "}
+              <span
+                style={{
+                  color: snap.portfolio_concentration_tax < 0 ? "var(--warning)" : "var(--text-3)",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {snap.portfolio_concentration_tax.toFixed(1)} pts
+              </span>
+            </span>
+          </SubLine>
+        )}
         {!snap.empty && snap.spy_as_of && (
           <Attribution>prices as of {snap.spy_as_of}</Attribution>
         )}

@@ -5,6 +5,7 @@
  * Matching server-only fetcher: `portfolio-data.ts`.
  */
 import type { SeedRow } from "./universe-fixture";
+import type { Tier } from "./universe-data";
 
 /** Position drawdown threshold (% from cost basis) that fires trigger 1. */
 export const POSITION_DRAWDOWN_TRIGGER = -0.07;
@@ -36,6 +37,13 @@ export interface PositionRow {
   name: string;
   layer: number;
   layer_label: string;
+  /** Joined: latest composite from scores_history (post-macro). null pre-engine. */
+  composite: number | null;
+  /** Joined: latest tier from scores_history. null pre-engine. */
+  tier: Tier | null;
+  /** Joined: latest concentration_history.tax for this ticker (-15..0 range). null
+   * when concentration engine hasn't computed for this ticker yet. */
+  concentration_tax: number | null;
 }
 
 export interface PositionTrigger {
@@ -72,6 +80,10 @@ export interface PortfolioSnapshot {
   envConfigured: boolean;
   /** True when current_price columns came from a deterministic fixture. */
   synthetic_prices: boolean;
+  /** Sum of per-position concentration_tax across all held names (≤ 0).
+   * Surfaces total engine drag from over-concentration. Null when no
+   * concentration_history rows joined (pre-engine or env unset). */
+  portfolio_concentration_tax: number | null;
 }
 
 /** Available universe choices for the "add position" select. */

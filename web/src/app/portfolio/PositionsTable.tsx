@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { LayerChip } from "@/components/universe/LayerChip";
 import type { PositionRow } from "@/lib/portfolio-types";
 import { POSITION_DRAWDOWN_TRIGGER } from "@/lib/portfolio-types";
+import type { Tier } from "@/lib/universe-data";
 import { closePosition } from "./actions";
 import { POSITION_INITIAL, type PositionFormState } from "./action-types";
 
@@ -47,13 +48,14 @@ export function PositionsTable({
           <tr>
             <Th align="left">Ticker</Th>
             <Th align="left">Layer</Th>
+            <Th align="left">Thesis</Th>
             <Th align="right">Shares</Th>
             <Th align="right">Cost</Th>
             <Th align="right">Mark</Th>
             <Th align="right">Mkt Value</Th>
             <Th align="right">P&L $</Th>
             <Th align="right">P&L %</Th>
-            <Th align="right">% Book</Th>
+            <Th align="right" title="% of NAV (book + cash)">% Book</Th>
             <Th align="right" style={{ width: 116 }}>{""}</Th>
           </tr>
         </thead>
@@ -111,6 +113,9 @@ function PositionRowView({
       </Td>
       <Td align="left">
         <LayerChip layer={p.layer} label={p.layer_label} />
+      </Td>
+      <Td align="left">
+        <ThesisCell tier={p.tier} composite={p.composite} tax={p.concentration_tax} />
       </Td>
       <Td align="right">{p.shares}</Td>
       <Td align="right">{fmtUsd(p.cost_basis)}</Td>
@@ -217,13 +222,16 @@ function Th({
   children,
   align,
   style,
+  title,
 }: {
   children: React.ReactNode;
   align: "left" | "right";
   style?: React.CSSProperties;
+  title?: string;
 }) {
   return (
     <th
+      title={title}
       style={{
         textAlign: align,
         padding: "10px 12px",
@@ -234,6 +242,7 @@ function Th({
         textTransform: "uppercase",
         letterSpacing: ".06em",
         borderBottom: "1px solid var(--border-subtle)",
+        cursor: title ? "help" : undefined,
         ...style,
       }}
     >
@@ -258,6 +267,59 @@ function Td({ children, align }: { children: React.ReactNode; align: "left" | "r
     </td>
   );
 }
+
+/**
+ * Thesis cell — tier label colored by band + composite number + optional
+ * concentration-tax chip. Mirrors the Dashboard TopPositionsList ThesisCell
+ * (per Perplexity Portfolio review #9/#5). Quiet treatment per /lambo's
+ * quiet-chrome principle: tax chip muted unless |tax| ≥ 3pts (warning).
+ */
+function ThesisCell({
+  tier,
+  composite,
+  tax,
+}: {
+  tier: Tier | null;
+  composite: number | null;
+  tax: number | null;
+}) {
+  if (tier == null || composite == null) {
+    return <span style={{ color: "var(--text-4)", fontStyle: "italic" }}>—</span>;
+  }
+  const tierColor = TIER_COLOR[tier] ?? "var(--text-2)";
+  const heavyDrag = tax != null && tax <= -3;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+        <span style={{ color: tierColor, fontWeight: 600, letterSpacing: ".02em" }}>{tier}</span>
+        <span style={{ color: "var(--text-2)", fontVariantNumeric: "tabular-nums", fontSize: 11.5 }}>
+          {composite.toFixed(1)}
+        </span>
+      </span>
+      {tax != null && (
+        <span
+          title={`Concentration tax: ${tax.toFixed(1)} pts. Engine drag from over-concentration (range −15 to 0).`}
+          style={{
+            fontSize: 10,
+            fontFamily: "var(--m)",
+            color: heavyDrag ? "var(--warning)" : "var(--text-3)",
+            fontVariantNumeric: "tabular-nums",
+            letterSpacing: ".02em",
+          }}
+        >
+          tax {tax.toFixed(1)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+const TIER_COLOR: Record<Tier, string> = {
+  High: "var(--success)",
+  Medium: "var(--text-1)",
+  Low: "var(--warning)",
+  Avoid: "var(--danger)",
+};
 
 function fmtUsd(n: number, signed = false): string {
   const sign = n < 0 ? "-" : signed && n > 0 ? "+" : "";
