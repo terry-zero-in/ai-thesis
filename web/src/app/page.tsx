@@ -1,15 +1,12 @@
 import { getDashboardSnapshot, getRecentInsider, type DashboardMover } from "@/lib/dashboard-data";
 import { getPortfolioSnapshot } from "@/lib/portfolio-data";
 import { getRegimeSnapshot } from "@/lib/regime-data";
-import { getMorningBrief } from "@/lib/routine-outputs";
-import { GAUGES, type GaugeKey } from "@/lib/regime-types";
+import { type GaugeKey } from "@/lib/regime-types";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
-import { MorningBrief } from "@/components/dashboard/MorningBrief";
-import { TodayThesisCard } from "@/components/dashboard/TodayThesisCard";
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
 import { computeGreeting } from "@/app/greeting-compute";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { EngineStateStrip } from "@/components/dashboard/EngineStateStrip";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
 import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -44,13 +41,14 @@ export default async function DashboardPage() {
     return <MarketingLanding />;
   }
 
-  // Parallel fetch — five independent server queries.
-  const [snap, portfolio, regime, recentInsider, morningBrief] = await Promise.all([
+  // Parallel fetch — four independent server queries. MorningBrief was
+  // moved off the Dashboard canvas (S8 redesign — Linear "calmer" principles);
+  // its data surfaces on /memos when that page graduates from placeholder.
+  const [snap, portfolio, regime, recentInsider] = await Promise.all([
     getDashboardSnapshot(),
     getPortfolioSnapshot(),
     getRegimeSnapshot(),
     getRecentInsider(),
-    getMorningBrief(),
   ]);
   const { greeting, dateLabel, marketLabel } = computeGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
@@ -87,59 +85,41 @@ export default async function DashboardPage() {
           gap: 32,
         }}
       >
+        {/*
+          Dashboard consolidation S8 — per docs/design/insights-primitive-and-dashboard.md
+          and Linear "calmer interface" principles Terry shared (don't compete
+          for attention you haven't earned, structure felt not seen, less is
+          more). The canvas is FOUR sections, scannable in 10 seconds, one
+          viewport at 1440px tall:
+
+            1. Greeting               — operator anchor
+            2. Engine state strip     — merges MonoMetaSpine + AlertCallout
+            3. KPI row                — four numbers
+            4. Score movers           — canvas anchor
+
+          DROPPED from canvas (per /lambo signature-pattern doctrine — these
+          were bespoke surfaces that duplicated info elsewhere):
+            - TodayThesisCard         (duplicates spine + alert + KPI)
+            - MorningBrief            (moves to /memos when that page lifts)
+            - CompactGateStrip        (right rail's MACRO GATES is canonical)
+
+          The AlertCallout (when gates>0) is now an inline severity-toned
+          segment on EngineStateStrip with a single "▶ Review regime" link.
+          No more scattered "Open regime ›" links across multiple cards.
+        */}
         <GreetingStrip
           initialGreeting={greeting}
           initialDateLabel={dateLabel}
           initialMarketLabel={marketLabel}
         />
 
-        <MonoMetaSpine
-          segments={[
-            { label: "as_of", value: snap.asOf ?? "—" },
-            { label: "engine", value: "composite v1.0" },
-            {
-              label: "mode",
-              value: (
-                <span
-                  style={{
-                    color: snap.synthetic ? "var(--warning)" : "var(--success)",
-                    fontWeight: 600,
-                    letterSpacing: ".02em",
-                  }}
-                  title={
-                    snap.synthetic
-                      ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
-                      : "Live: scores read from public.scores_history populated by the Saturday chain."
-                  }
-                >
-                  {snap.synthetic ? "Stubbed" : "Live"}
-                </span>
-              ),
-            },
-            { label: "macro", value: `${snap.macroMultiplier.toFixed(2)}× (${snap.macroGatesHit}/3)` },
-            { label: "weekly chain", value: "Sat 22:00–22:45 UTC" },
-          ]}
-        />
-
-        <TodayThesisCard
-          snap={snap}
-          movers={movers}
+        <EngineStateStrip
+          asOf={snap.asOf}
+          synthetic={snap.synthetic}
+          macroGatesHit={snap.macroGatesHit}
+          macroMultiplier={snap.macroMultiplier}
           regimeState={regimeStateFor(snap.macroGatesHit, snap.macroMultiplier)}
         />
-
-        {snap.macroGatesHit > 0 && regime.latest && (
-          <AlertCallout
-            label="Macro regime"
-            items={alertItemsFromRegime(snap, regime.latest)}
-            gatesHit={snap.macroGatesHit}
-            multiplier={snap.macroMultiplier}
-          />
-        )}
-
-        {/* Morning brief (daily-batch routine output). Renders only when
-            the routine has produced at least one of: insider summary,
-            macro log, or pending memo proposals. Invisible pre-Routines. */}
-        <MorningBrief data={morningBrief} />
 
         <KpiRow
           highCurrent={highTier?.current ?? 0}
@@ -172,25 +152,6 @@ export default async function DashboardPage() {
           ) : (
             <MoversTable movers={movers} asOf={snap.asOf} />
           )}
-        </Section>
-
-        <Section
-          label="Regime · macro gate state"
-          right={
-            <Link
-              href="/regime"
-              style={{
-                fontSize: 11,
-                color: "var(--accent)",
-                textDecoration: "none",
-                fontFamily: "var(--m)",
-              }}
-            >
-              Open regime ›
-            </Link>
-          }
-        >
-          <CompactGateStrip regime={regime} gatesHit={snap.macroGatesHit} multiplier={snap.macroMultiplier} />
         </Section>
       </div>
     </div>
@@ -558,44 +519,7 @@ function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asO
   );
 }
 
-/* ---------------- Alert Summary callout (Mercury Pic 11 b2) ---------------- */
-
-interface AlertItem {
-  notable: string;
-  action: { label: string; href: string };
-}
-
-function alertItemsFromRegime(
-  snap: { macroGatesHit: number },
-  latest: { naaim: number | null; aaii_3wk_spread: number | null; fear_greed: number | null }
-): AlertItem[] {
-  const items: AlertItem[] = [];
-  if (latest.naaim != null && latest.naaim > 90) {
-    items.push({
-      notable: `NAAIM exposure at ${latest.naaim.toFixed(1)} — above ${GAUGES.find((g) => g.key === "naaim")?.threshold ?? 90} gate threshold`,
-      action: { label: "Review regime gauges", href: "/regime" },
-    });
-  }
-  if (latest.aaii_3wk_spread != null && latest.aaii_3wk_spread > 30) {
-    items.push({
-      notable: `AAII 3-wk bull-bear spread at +${latest.aaii_3wk_spread.toFixed(1)} — above +30 gate threshold`,
-      action: { label: "Review regime gauges", href: "/regime" },
-    });
-  }
-  if (latest.fear_greed != null && latest.fear_greed > 80) {
-    items.push({
-      notable: `CNN Fear & Greed at ${latest.fear_greed.toFixed(0)} — above 80 gate threshold`,
-      action: { label: "Review regime gauges", href: "/regime" },
-    });
-  }
-  if (items.length === 0 && snap.macroGatesHit > 0) {
-    items.push({
-      notable: `${snap.macroGatesHit} of 3 macro gates currently hit — high-conviction names tightened`,
-      action: { label: "Review regime", href: "/regime" },
-    });
-  }
-  return items;
-}
+/* ---------------- regime state classifier ---------------- */
 
 /**
  * Regime state derived from gate count. Names describe the CONSEQUENCE
@@ -607,250 +531,13 @@ function alertItemsFromRegime(
  * 2 gates → Cautious · 0.90×      (warning — stronger)
  * 3 gates → Defensive · 0.85×     (danger — fully de-risked)
  */
-function regimeStateFor(gatesHit: number, multiplier: number): { label: string; color: string } {
+function regimeStateFor(gatesHit: number, _multiplier: number): { label: string; color: string } {
   if (gatesHit >= 3) return { label: "Defensive", color: "var(--danger)" };
   if (gatesHit === 2) return { label: "Cautious", color: "var(--warning)" };
   if (gatesHit === 1) return { label: "Tightened", color: "var(--warning)" };
   return { label: "Neutral", color: "var(--success)" };
 }
 
-function AlertCallout({
-  label,
-  items,
-  gatesHit,
-  multiplier,
-}: {
-  label: string;
-  items: AlertItem[];
-  gatesHit: number;
-  multiplier: number;
-}) {
-  if (items.length === 0) return null;
-  const state = regimeStateFor(gatesHit, multiplier);
-  // Inset-card surface fill per docs/design/instrument-field-pattern.md §3.1
-  // — lifted from no-fill to `var(--surface)`. The card needs to READ as a
-  // card on canvas, and the hairline-only border alone was too wispy. Two-col
-  // rows below (notable left, hyperlinked action right) unchanged.
-  return (
-    <div
-      style={{
-        border: "1px solid var(--border-subtle)",
-        borderRadius: 6,
-        background: "var(--surface)",
-        padding: "14px 18px 4px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          gap: 12,
-          paddingBottom: 8,
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            color: "var(--text-1)",
-            fontFamily: "var(--f)",
-          }}
-        >
-          {label}
-        </span>
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: 11,
-            fontFamily: "var(--m)",
-            color: state.color,
-            border: `1px solid ${state.color}`,
-            borderRadius: 999,
-            padding: "1px 8px",
-            letterSpacing: ".02em",
-          }}
-        >
-          <span
-            style={{
-              width: 5,
-              height: 5,
-              borderRadius: "50%",
-              background: state.color,
-            }}
-          />
-          {state.label} · {multiplier.toFixed(2)}×
-        </span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        {items.map((it, i) => (
-          <div
-            key={i}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: 16,
-              alignItems: "baseline",
-              padding: "12px 0",
-              borderBottom: i === items.length - 1 ? undefined : "1px solid var(--border-subtle)",
-            }}
-          >
-            <span style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.5 }}>{it.notable}</span>
-            <a
-              href={it.action.href}
-              style={{
-                fontSize: 12.5,
-                color: "var(--accent)",
-                textDecoration: "none",
-                fontFamily: "var(--m)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {it.action.label} ›
-            </a>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ---------------- compact macro gate strip ----------------
- *
- * Replaces three full GaugeCards (Dashboard duplicated /regime). Single
- * stacked row per gauge: dot · label · value/threshold · status. Bottom
- * line summarizes hit-count + multiplier. Recovers ~400px and removes
- * the "this looks like /regime again" sensation. Full cards live one
- * click away at /regime via the section's right-side link.
- */
-function CompactGateStrip({
-  regime,
-  gatesHit,
-  multiplier,
-}: {
-  regime: Awaited<ReturnType<typeof getRegimeSnapshot>>;
-  gatesHit: number;
-  multiplier: number;
-}) {
-  const latest = regime.latest;
-  const state = regimeStateFor(gatesHit, multiplier);
-  return (
-    <div
-      style={{
-        // Inset-card surface fill per docs/design/instrument-field-pattern.md §3.1.
-        border: "1px solid var(--border-subtle)",
-        borderRadius: 6,
-        background: "var(--surface)",
-        padding: "12px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-      }}
-    >
-      {GAUGES.map((g) => {
-        const value = latest?.[g.key] ?? null;
-        const hit = value != null && value > g.threshold;
-        return (
-          <CompactGateRow
-            key={g.key}
-            label={g.label}
-            value={value}
-            threshold={g.threshold}
-            hit={hit}
-          />
-        );
-      })}
-      <div
-        style={{
-          marginTop: 4,
-          paddingTop: 8,
-          borderTop: "1px solid var(--border-subtle)",
-          fontSize: 11,
-          fontFamily: "var(--m)",
-          color: "var(--text-3)",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <span>
-          {gatesHit} of 3 gates hit · {multiplier.toFixed(2)}× multiplier on High tier
-        </span>
-        <span
-          style={{
-            marginLeft: "auto",
-            color: state.color,
-            letterSpacing: ".02em",
-          }}
-        >
-          {state.label}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function CompactGateRow({
-  label,
-  value,
-  threshold,
-  hit,
-}: {
-  label: string;
-  value: number | null;
-  threshold: number;
-  hit: boolean;
-}) {
-  const dotColor = hit ? "var(--warning)" : value == null ? "var(--text-4)" : "var(--text-3)";
-  const valueLabel = value == null ? "—" : value.toFixed(value < 10 ? 1 : 0);
-  let trailer: { text: string; color: string };
-  if (value == null) {
-    trailer = { text: "no data", color: "var(--text-4)" };
-  } else if (hit) {
-    const pts = Math.abs(value - threshold);
-    trailer = { text: `▲ ${pts.toFixed(1)} pts over gate`, color: "var(--warning)" };
-  } else {
-    const pts = Math.abs(threshold - value);
-    trailer = { text: `▼ ${pts.toFixed(1)} pts under gate`, color: "var(--text-3)" };
-  }
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "10px 1fr auto auto",
-        gap: 10,
-        alignItems: "baseline",
-        fontFamily: "var(--m)",
-        fontSize: 12,
-      }}
-    >
-      <span
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
-          background: dotColor,
-          alignSelf: "center",
-        }}
-      />
-      <span style={{ color: "var(--text-2)" }}>{label}</span>
-      <span
-        style={{
-          fontVariantNumeric: "tabular-nums",
-          color: hit ? "var(--text-1)" : "var(--text-2)",
-          minWidth: 64,
-          textAlign: "right",
-        }}
-      >
-        {valueLabel}
-        <span style={{ color: "var(--text-4)" }}> / {threshold}</span>
-      </span>
-      <span style={{ fontSize: 11, color: trailer.color, whiteSpace: "nowrap" }}>{trailer.text}</span>
-    </div>
-  );
-}
 
 /* ---------------- shared chrome ---------------- */
 

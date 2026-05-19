@@ -41,13 +41,13 @@ export function DashboardTodayRail({ data }: { data: DashboardTodayRailData }) {
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <RailHeader label="Today" right={<TodayClock />} />
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <RailSection title="Calendar · upcoming">
-          <RailEmpty>
-            Earnings dates + Fed / macro releases for your universe land in v1.1.
-            For now, name-level events appear on each ticker detail page.
-          </RailEmpty>
-        </RailSection>
-
+        {/*
+          Calendar placeholder removed S8 — per Linear "calmer" principles
+          Terry shared (don't compete for attention you haven't earned;
+          placeholder reads incomplete, absence reads scoped). Earnings
+          and macro-release calendar land in v1.1 and graduate this slot
+          when there's real data to render.
+        */}
         <RailSection title="Insider · recent">
           {recentInsider.length === 0 ? (
             <RailEmpty>No qualifying insider activity in the last 14 days.</RailEmpty>
