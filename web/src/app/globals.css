@@ -32,7 +32,7 @@
    time / color pickers. `color-scheme: dark` flips Chrome / Edge / Safari to
    their dark calendar UI; `accent-color` colors the selected-day highlight
    and any focus ring with the Iris-300 signal violet. */
-html{color-scheme:dark;accent-color:#5236DC}
+html{color-scheme:dark;accent-color:#2A5FE6}
 
 /* Calendar glyph inside <input type="date|time|month|week"> renders as a
    black icon on dark backgrounds by default in Chromium. Invert it so it
@@ -122,23 +122,33 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --border:        var(--steel);     /* default divider (was #2A2F38) */
   --border-strong: var(--frost-700); /* high-visibility / input focus edge (was #34353A) */
 
-  /* Accent — Iris-300 is the SIGNAL accent (interaction states, links, focus
-     rings, score arcs, selection). The PRIMARY CTA per page uses --voltage
+  /* Accent — v1.2 (2026-05-19): rebound from --iris-300 (electric indigo
+     #5236DC) to a vivid electric blue #2A5FE6 with an indigo soul (60/40
+     weighted blend of Apex Blue #0070F3 + iris-300). Per Terry: current
+     indigo read too "design-tool"; the fintech surface calls for a brighter,
+     more action-forward primary. The Iris ramp itself stays at v1.1 values —
+     marketing landing's iris-900 → jet atmospheric gradient AND the
+     UniverseTable queued chip both intentionally stay indigo. Only the
+     accent BINDING moves off iris-300.
+
+     Accent is the SIGNAL accent (interaction states, links, focus rings,
+     score arcs, selection). The PRIMARY CTA per page uses --voltage
      directly, NOT --accent. Severity (success/warning/danger) is its own
-     ladder and is never replaced by Iris. */
-  --accent:         var(--iris-300);
-  --accent-hover:   var(--iris-200);
-  --accent-pressed: var(--iris-700);
-  --accent-soft:    rgba(82,54,220,.12);   /* v1.1: iris-300 #5236DC */
-  --accent-border:  rgba(82,54,220,.40);   /* v1.1: iris-300 #5236DC */
-  --accent-glow:    rgba(82,54,220,.22);   /* v1.1: iris-300 #5236DC */
+     ladder and is never replaced. */
+  --accent:         #2A5FE6;             /* electric blue · indigo soul */
+  --accent-hover:   #4F7AED;             /* lighter · hover */
+  --accent-pressed: #1842B0;             /* deeper · active/pressed */
+  --accent-soft:    rgba(42,95,230,.12);
+  --accent-border:  rgba(42,95,230,.40);
+  --accent-glow:    rgba(42,95,230,.22);
   --on-accent:      var(--white);
 
   /* Semantic — truth states only, never decorative. Severity ladder is
-     INDEPENDENT of Iris (Iris is brand/signal, not severity). */
-  --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:var(--iris-300);
+     INDEPENDENT of accent (accent is brand/signal, not severity). --info
+     tracks --accent so info chips inherit the brand-current accent. */
+  --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:var(--accent);
   --success-soft:rgba(91,184,128,.10); --warning-soft:rgba(221,168,90,.10);
-  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(82,54,220,.08);  /* v1.1: iris-300 */
+  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(42,95,230,.08);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
