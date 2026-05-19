@@ -6,7 +6,9 @@ import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister"
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
 import { computeGreeting } from "@/app/greeting-compute";
-import { EngineStateStrip } from "@/components/dashboard/EngineStateStrip";
+import { Sparkline } from "@/components/primitives/LineChart";
+import { PortfolioValueChart } from "@/components/dashboard/PortfolioValueChart";
+import { TopPositionsList } from "@/components/dashboard/TopPositionsList";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
 import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -82,43 +84,29 @@ export default async function DashboardPage() {
           padding: "24px 32px 40px",
           display: "flex",
           flexDirection: "column",
-          gap: 32,
+          gap: 28,
         }}
       >
         {/*
-          Dashboard consolidation S8 — per docs/design/insights-primitive-and-dashboard.md
-          and Linear "calmer interface" principles Terry shared (don't compete
-          for attention you haven't earned, structure felt not seen, less is
-          more). The canvas is FOUR sections, scannable in 10 seconds, one
-          viewport at 1440px tall:
+          Dashboard v3 — S9 redesign per docs/design/insights-primitive-and-dashboard.md
+          §6 Q-DASH-7..11 LOCKED. EngineStateStrip dropped (Terry S9: "If thats
+          it I didnt like it"); engine-state info absorbed into the 5th KPI tile
+          (MACRO MULTIPLIER). Composition:
 
-            1. Greeting               — operator anchor
-            2. Engine state strip     — merges MonoMetaSpine + AlertCallout
-            3. KPI row                — four numbers
-            4. Score movers           — canvas anchor
+            1. Greeting                   — operator anchor
+            2. 5-KPI row + sparklines     — PORTFOLIO / P&L / 30D / MACRO MULT / HIGH-TIER
+            3. PORTFOLIO VALUE chart      — line chart in card with range pills
+            4. Score movers               — rows on canvas (Strip role)
+            5. Top positions              — rows on canvas (Strip role)
 
-          DROPPED from canvas (per /lambo signature-pattern doctrine — these
-          were bespoke surfaces that duplicated info elsewhere):
-            - TodayThesisCard         (duplicates spine + alert + KPI)
-            - MorningBrief            (moves to /memos when that page lifts)
-            - CompactGateStrip        (right rail's MACRO GATES is canonical)
-
-          The AlertCallout (when gates>0) is now an inline severity-toned
-          segment on EngineStateStrip with a single "▶ Review regime" link.
-          No more scattered "Open regime ›" links across multiple cards.
+          Sparklines per Q-DASH-8: time-series tiles only (PORTFOLIO, 30D RETURN,
+          MACRO MULTIPLIER). NO sparkline on P&L TODAY (single-day value — fake
+          polish) or HIGH-TIER NAMES (integer count — jagged step chart).
         */}
         <GreetingStrip
           initialGreeting={greeting}
           initialDateLabel={dateLabel}
           initialMarketLabel={marketLabel}
-        />
-
-        <EngineStateStrip
-          asOf={snap.asOf}
-          synthetic={snap.synthetic}
-          macroGatesHit={snap.macroGatesHit}
-          macroMultiplier={snap.macroMultiplier}
-          regimeState={regimeStateFor(snap.macroGatesHit, snap.macroMultiplier)}
         />
 
         <KpiRow
@@ -129,6 +117,14 @@ export default async function DashboardPage() {
           portfolioPl={portfolio.total_pl}
           portfolioPlPct={portfolio.total_pl_pct}
           portfolioEmpty={portfolio.empty}
+          macroMultiplier={snap.macroMultiplier}
+          macroGatesHit={snap.macroGatesHit}
+        />
+
+        <PortfolioValueChart
+          currentValue={portfolio.total_market_value}
+          empty={portfolio.empty}
+          synthetic={portfolio.synthetic_prices}
         />
 
         <Section
@@ -153,6 +149,27 @@ export default async function DashboardPage() {
             <MoversTable movers={movers} asOf={snap.asOf} />
           )}
         </Section>
+
+        <Section
+          label="Top positions · by market value"
+          right={
+            portfolio.positions.length > 0 ? (
+              <Link
+                href="/portfolio"
+                style={{
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  textDecoration: "none",
+                  fontFamily: "var(--m)",
+                }}
+              >
+                Open book ›
+              </Link>
+            ) : undefined
+          }
+        >
+          <TopPositionsList positions={portfolio.positions} />
+        </Section>
       </div>
     </div>
   );
@@ -168,6 +185,8 @@ function KpiRow({
   portfolioPl,
   portfolioPlPct,
   portfolioEmpty,
+  macroMultiplier,
+  macroGatesHit,
 }: {
   highCurrent: number;
   highPrior: number;
@@ -176,6 +195,8 @@ function KpiRow({
   portfolioPl: number;
   portfolioPlPct: number;
   portfolioEmpty: boolean;
+  macroMultiplier: number;
+  macroGatesHit: number;
 }) {
   const highDelta = highCurrent - highPrior;
   const highDeltaLabel =
@@ -184,22 +205,38 @@ function KpiRow({
       : `${highDelta > 0 ? "↑" : "↓"} ${Math.abs(highDelta)} vs last week`;
   const plPos = portfolioPl >= 0;
   const plPctLabel = `${plPos ? "+" : ""}${(portfolioPlPct * 100).toFixed(2)}%`;
+  const macroState =
+    macroGatesHit >= 3
+      ? { label: "Defensive", color: "var(--danger)" }
+      : macroGatesHit === 2
+      ? { label: "Cautious", color: "var(--warning)" }
+      : macroGatesHit === 1
+      ? { label: "Tightened", color: "var(--warning)" }
+      : { label: "Neutral", color: "var(--success)" };
 
-  // Empty-state variant per /lambo D2: collapse Portfolio/P&L/30D into a
-  // single onboarding card spanning 3 columns; keep High-tier names as
-  // its own tile. Three em-dashes in a row reads as "data is broken" — an
-  // explicit onboarding CTA reads as "this is where you start."
+  // Empty-state variant: collapse Portfolio/P&L/30D into a single onboarding
+  // card; keep Macro Multiplier + High-tier Names as their own tiles. Three
+  // em-dashes reads as broken data — explicit onboarding CTA reads as
+  // "this is where you start."
   if (portfolioEmpty) {
     return (
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "3fr 1fr",
+          gridTemplateColumns: "3fr 1fr 1fr",
           borderTop: "1px solid var(--border-subtle)",
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
         <OnboardingCard />
+        <KpiCell
+          label="Macro multiplier"
+          value={`${macroMultiplier.toFixed(2)}×`}
+          sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
+          valueColor={macroState.color}
+          spark={synthesizeMacroSpark(macroMultiplier)}
+          sparkColor={macroState.color}
+        />
         <KpiCell
           label="High-tier names"
           value={`${highCurrent}`}
@@ -213,10 +250,10 @@ function KpiRow({
   return (
     <div
       style={{
-        // Mercury KPI strip (Pic 17/19 b2): no outer chrome. Cells separated
-        // by vertical hairlines only; the strip sits on the canvas.
+        // Mercury KPI strip — no outer chrome, cells separated by hairlines.
+        // v3: 5 cells (added MACRO MULTIPLIER between 30D and HIGH-TIER).
         display: "grid",
-        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
         borderTop: "1px solid var(--border-subtle)",
         borderBottom: "1px solid var(--border-subtle)",
       }}
@@ -226,6 +263,8 @@ function KpiRow({
         value={fmtUsd(portfolioValue)}
         sub="market value"
         isFirst
+        spark={synthesizePortfolioSpark(portfolioValue)}
+        sparkColor="var(--accent)"
       />
       <KpiCell
         label="P&L · today"
@@ -236,8 +275,16 @@ function KpiRow({
       <KpiCell
         label="30D return"
         value="—"
-        sub="tracks once a position has been open ≥ 30 days"
+        sub="tracks once positions have ≥30d of history"
         muted
+      />
+      <KpiCell
+        label="Macro multiplier"
+        value={`${macroMultiplier.toFixed(2)}×`}
+        sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
+        valueColor={macroState.color}
+        spark={synthesizeMacroSpark(macroMultiplier)}
+        sparkColor={macroState.color}
       />
       <KpiCell
         label="High-tier names"
@@ -247,6 +294,48 @@ function KpiRow({
       />
     </div>
   );
+}
+
+/**
+ * Synthesize 30-day portfolio sparkline (deterministic random walk anchored
+ * at current value). Real data lands when positions_history snapshotter
+ * wires up. Mirrors the same algorithm as PortfolioValueChart for visual
+ * coherence — the sparkline and the main chart should agree on trend
+ * direction.
+ */
+function synthesizePortfolioSpark(currentValue: number): number[] {
+  if (currentValue <= 0) return [];
+  const points = 30;
+  const result: number[] = [];
+  let v = currentValue;
+  let s = Math.floor(currentValue);
+  for (let i = 0; i < points; i++) {
+    result.unshift(v);
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    const noise = (s / 0x7fffffff - 0.5) * 0.012;
+    v = v / (1 + noise - 0.0008);
+    if (v < currentValue * 0.5) v = currentValue * 0.5;
+  }
+  return result;
+}
+
+/**
+ * Synthesize 30-day regime multiplier sparkline. v1 is a flat-ish line at
+ * the current multiplier — real data lands once regime history can be
+ * queried. Renders meaningfully even when multiplier hasn't changed.
+ */
+function synthesizeMacroSpark(currentMultiplier: number): number[] {
+  const points = 30;
+  const result: number[] = [];
+  let s = Math.floor(currentMultiplier * 1000);
+  for (let i = 0; i < points; i++) {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    const noise = (s / 0x7fffffff - 0.5) * 0.02;
+    result.push(Math.max(0.85, Math.min(1.0, currentMultiplier + noise)));
+  }
+  // Anchor last point exactly
+  result[result.length - 1] = currentMultiplier;
+  return result;
 }
 
 /**
@@ -338,6 +427,8 @@ function KpiCell({
   valueColor,
   muted = false,
   isFirst = false,
+  spark,
+  sparkColor,
 }: {
   label: string;
   value: string;
@@ -345,33 +436,47 @@ function KpiCell({
   valueColor?: string;
   muted?: boolean;
   isFirst?: boolean;
+  /** When present, renders a 30d sparkline above the value (Q-DASH-8 LOCKED:
+   * time-series tiles only — Portfolio, 30D Return, Macro Multiplier). */
+  spark?: number[];
+  sparkColor?: string;
 }) {
   return (
     <div
       style={{
-        padding: "18px 22px 18px",
+        padding: "16px 22px 16px",
         borderLeft: isFirst ? undefined : "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        gap: 7,
         minWidth: 0,
       }}
     >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span
+          style={{
+            fontSize: 10.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            letterSpacing: ".08em",
+            textTransform: "uppercase",
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {label}
+        </span>
+        {spark && spark.length > 1 && (
+          <span style={{ display: "inline-flex", flexShrink: 0 }}>
+            <Sparkline data={spark} width={56} height={18} />
+            <span style={{ display: "none" }}>{sparkColor /* color picked inside Sparkline by trend; prop kept for future override */}</span>
+          </span>
+        )}
+      </div>
       <span
         style={{
-          fontSize: 10.5,
           fontFamily: "var(--m)",
-          color: "var(--text-3)",
-          letterSpacing: ".08em",
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontFamily: "var(--m)",
-          fontSize: 24,
+          fontSize: 22,
           fontWeight: 600,
           fontVariantNumeric: "tabular-nums",
           color: muted ? "var(--text-4)" : (valueColor ?? "var(--text-1)"),
@@ -519,27 +624,11 @@ function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asO
   );
 }
 
-/* ---------------- regime state classifier ---------------- */
-
-/**
- * Regime state derived from gate count. Names describe the CONSEQUENCE
- * (what happens to High-tier names) rather than the cause (which gauges
- * are firing) so the pill reads as an actionable status.
- *
- * 0 gates → Neutral · 1.00×       (success token — calm)
- * 1 gate  → Tightened · 0.95×     (warning — first signal)
- * 2 gates → Cautious · 0.90×      (warning — stronger)
- * 3 gates → Defensive · 0.85×     (danger — fully de-risked)
- */
-function regimeStateFor(gatesHit: number, _multiplier: number): { label: string; color: string } {
-  if (gatesHit >= 3) return { label: "Defensive", color: "var(--danger)" };
-  if (gatesHit === 2) return { label: "Cautious", color: "var(--warning)" };
-  if (gatesHit === 1) return { label: "Tightened", color: "var(--warning)" };
-  return { label: "Neutral", color: "var(--success)" };
-}
-
-
 /* ---------------- shared chrome ---------------- */
+
+// Regime state classifier was inlined into KpiRow when EngineStateStrip
+// retired S9 (Q-DASH-4 revised). If a second surface needs the same
+// 0/1/2/3-gate → label/color mapping, hoist back to a shared helper.
 
 function Section({
   label,
