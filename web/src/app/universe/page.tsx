@@ -37,8 +37,7 @@ export default function UniversePage() {
         flex: 1,
         display: "flex",
         flexDirection: "column",
-        overflowY: "auto",
-        overflowX: "hidden",
+        overflow: "auto",
         overscrollBehavior: "contain",
         minWidth: 0,
       }}

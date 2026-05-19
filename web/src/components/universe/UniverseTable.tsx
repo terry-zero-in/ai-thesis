@@ -73,21 +73,11 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
   };
 
   return (
-    // S9 revision: horizontal scroll is LOCAL to the table wrapper now
-    // (overflow-x: auto + overscroll-behavior-x: contain). Previously
-    // horizontal overflow bled to the page-level scroll container which
-    // let trackpad swipe-left drag content under the sidebar (cross-page
-    // bug Terry caught). Vertical scroll + sticky thead still live on the
-    // page canvas — table wrapper doesn't intercept vertical because
-    // overflow-y stays visible by default.
-    <div
-      style={{
-        background: "var(--canvas)",
-        overflowX: "auto",
-        overscrollBehaviorX: "contain",
-        minWidth: 0,
-      }}
-    >
+    // Mercury #7 — single scroll context on the page wrapper (overflow: auto
+    // + overscroll-behavior: contain). thead sticks to the page-scroll top.
+    // overscroll-behavior contains trackpad-swipe gestures so they don't
+    // trigger browser back-nav or bleed content past sidebar/panel edges.
+    <div style={{ background: "var(--canvas)" }}>
       <table
         style={{
           width: "100%",
