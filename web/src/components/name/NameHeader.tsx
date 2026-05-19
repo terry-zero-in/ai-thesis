@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import Link from "next/link";
 import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
@@ -129,7 +130,23 @@ export function NameHeader({ d }: { d: NameDetail }) {
                       </span>
                     ),
                   },
-                  { label: "macro", value: `${d.macro_multiplier.toFixed(2)}× (${d.macro_gates_hit}/3)` },
+                  {
+                    label: "macro",
+                    value: (
+                      <Link
+                        href="/regime"
+                        title="Open Regime page — full macro multiplier curve, gauges, and history"
+                        style={{
+                          color: "var(--text-2)",
+                          textDecoration: "none",
+                          borderBottom: "1px dotted var(--text-4)",
+                          paddingBottom: 1,
+                        }}
+                      >
+                        {d.macro_multiplier.toFixed(2)}× ({d.macro_gates_hit}/3)
+                      </Link>
+                    ),
+                  },
                 ]}
               />
             </div>
