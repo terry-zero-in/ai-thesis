@@ -4,6 +4,7 @@ import { PositionsTable } from "./PositionsTable";
 import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { PortfolioValueChart } from "@/components/dashboard/PortfolioValueChart";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -126,6 +127,22 @@ export default async function PortfolioPage({
         }}
       >
         <AggregateBar snap={snap} />
+
+        {/*
+          Full instrumented NAV chart (task #79). Same component the
+          dashboard uses — range selector, grid, axes, HIGH/LOW dot
+          markers, cost-basis dashed reference line, hover crosshair +
+          tooltip. AggregateBar's 30D column carries the at-a-glance
+          delta; this chart carries the range-selectable drill-down.
+          Both surfaces deliberately overlap on the 30D window — calmer
+          hero glance on top, drillable canvas below.
+        */}
+        <PortfolioValueChart
+          currentValue={snap.total_market_value}
+          costBasis={snap.total_deployed}
+          empty={snap.empty}
+          synthetic={snap.synthetic_prices}
+        />
 
         {/*
           Positions table claims the full canvas width — the add/edit form
