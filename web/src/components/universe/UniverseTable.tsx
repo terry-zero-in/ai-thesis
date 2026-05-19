@@ -93,11 +93,14 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
     <div style={{ background: "var(--canvas)" }}>
       <table
         style={{
-          // No `width: 100%` — when the right rail collapses, the freed canvas
-          // space should NOT inflate the Name column (Terry feedback 2026-05-19:
-          // "should look the exact same when the bar is not expanded as when it
-          // is"). Each column now carries an explicit width hint and the table
-          // sizes to that total (~1200px) regardless of canvas width.
+          // width: 100% so the table fills its canvas — extra space distributes
+          // proportionally across columns (now that Name has a width hint, no
+          // single column absorbs all the slack). When rail expands, canvas
+          // shrinks → table shrinks with it. When rail collapses, canvas grows
+          // → table grows to fill, no empty gap on the right. Terry feedback
+          // 2026-05-19: table should not leave empty space when rail is closed,
+          // and should not overlap rail content when open.
+          width: "100%",
           borderCollapse: "collapse",
           fontSize: 12.5,
           minWidth: 1100,

@@ -1,16 +1,23 @@
 import type { Tier } from "@/lib/universe-data";
 
 /**
- * Tier → token mapping per AI Thesis Master Design Spec §2.1, §4.1, §4.6:
- *   "High conviction tier uses indigo because *we* believe in it;
- *    Medium = warning amber, Low = info blue, Avoid = danger red."
- * Previously hardcoded Reticle-derived sky-blue/gray/yellow/pink values
- * that didn't bind to the spec'd accent system. Swapped 2026-05-17.
+ * Tier → token mapping. v1.2 (2026-05-19) shifted to a semantic traffic-light
+ * mapping after the palette pivot collapsed High and Low onto the same hex
+ * (both --accent post-info-rebind) and Terry flagged the High/Low visual
+ * collision. Supersedes the prior Master Design Spec §2.1/§4.1/§4.6
+ * "indigo-for-conviction" treatment — that decision was poetic but
+ * institutionally counter-intuitive once accent moved to electric blue.
+ * Universal analyst convention: green=long, amber=caution, red=avoid.
+ *
+ *   High   = success green   (long, conviction)
+ *   Medium = text-1 neutral  (no edge)
+ *   Low    = warning amber   (de-rated)
+ *   Avoid  = danger red      (do not touch)
  */
 const STYLES: Record<Tier, { fg: string; bg: string; border: string }> = {
-  High:   { fg: "var(--accent)",  bg: "var(--accent-soft)",  border: "var(--accent-border)" },
-  Medium: { fg: "var(--warning)", bg: "var(--warning-soft)", border: "rgba(221,168,90,.30)" },
-  Low:    { fg: "var(--info)",    bg: "var(--info-soft)",    border: "rgba(101,148,232,.30)" },
+  High:   { fg: "var(--success)", bg: "var(--success-soft)", border: "rgba(91,184,128,.30)" },
+  Medium: { fg: "var(--text-1)",  bg: "rgba(255,255,255,.04)", border: "var(--border)" },
+  Low:    { fg: "var(--warning)", bg: "var(--warning-soft)", border: "rgba(221,168,90,.30)" },
   Avoid:  { fg: "var(--danger)",  bg: "var(--danger-soft)",  border: "rgba(224,120,120,.32)" },
 };
 

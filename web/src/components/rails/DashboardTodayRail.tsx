@@ -8,11 +8,12 @@ import type { Tier } from "@/lib/universe-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { RailHeader, RailSection, RailEmpty, RailFooter } from "./RailChrome";
 
-/** Tier → token map matching the Universe Insights rail. Locked S9. */
+/** Tier → token map — canonical semantic traffic-light (v1.2 2026-05-19,
+ *  matches TierBadge / PositionsTable / TopPositionsList / UniverseInsightsRail). */
 const TIER_COLORS: Record<Tier, string> = {
-  High: "var(--accent)",
-  Medium: "var(--warning)",
-  Low: "var(--info)",
+  High: "var(--success)",
+  Medium: "var(--text-1)",
+  Low: "var(--warning)",
   Avoid: "var(--danger)",
 };
 const RAIL_TIER_ORDER: Tier[] = ["High", "Medium", "Low", "Avoid"];

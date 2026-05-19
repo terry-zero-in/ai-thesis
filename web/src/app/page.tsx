@@ -24,9 +24,9 @@ export const revalidate = 1800;
 
 /** Tier → token map per spec §2.1: High=accent, Medium=warning, Low=info, Avoid=danger. */
 const TIER_COLORS: Record<string, string> = {
-  High: "var(--accent)",
-  Medium: "var(--warning)",
-  Low: "var(--info)",
+  High: "var(--success)",
+  Medium: "var(--text-1)",
+  Low: "var(--warning)",
   Avoid: "var(--danger)",
 };
 

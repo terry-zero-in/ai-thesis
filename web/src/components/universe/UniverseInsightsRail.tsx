@@ -25,10 +25,14 @@ import type { UniverseFlag } from "@/hooks/universe-filter-context";
 
 const TIERS: Tier[] = ["High", "Medium", "Low", "Avoid"];
 
+// Canonical tier color mapping — semantic traffic-light. Matches TierBadge,
+// PositionsTable.ThesisCell, TopPositionsList, DashboardTodayRail.
+// v1.2 2026-05-19: supersedes accent/warning/info/danger which collapsed
+// High and Low onto the same hex post-palette-pivot.
 const TIER_COLORS: Record<Tier, string> = {
-  High: "var(--accent)",
-  Medium: "var(--warning)",
-  Low: "var(--info)",
+  High: "var(--success)",
+  Medium: "var(--text-1)",
+  Low: "var(--warning)",
   Avoid: "var(--danger)",
 };
 

@@ -231,9 +231,9 @@ function ThesisCell({ score }: { score: DashboardScoreLite | undefined }) {
 }
 
 const TIER_COLORS: Record<Tier, string> = {
-  High: "var(--accent)",
-  Medium: "var(--warning)",
-  Low: "var(--info)",
+  High: "var(--success)",
+  Medium: "var(--text-1)",
+  Low: "var(--warning)",
   Avoid: "var(--danger)",
 };
 
