@@ -76,6 +76,35 @@ export interface NameDepFlag {
   source_url: string | null;
 }
 
+/**
+ * Portfolio context for this ticker — held vs not-held. When held, exposes
+ * the position metrics needed for the inline "your position" strip on the
+ * name detail page (weight is the position's market value divided by the
+ * book's total market value, P&L is current_price vs cost_basis). When not
+ * held, exposes the single-name cap so the strip can frame target sizing
+ * against the spec's 10% guardrail.
+ *
+ * Single-name cap pinned at 10% per spec §"Position-construction guardrails"
+ * (docs/AI-Thesis-v2-Algorithm-and-Deployment.md line 353).
+ */
+export type NamePortfolioContext =
+  | {
+      held: false;
+      single_name_cap_pct: number; // 0.10 per spec
+    }
+  | {
+      held: true;
+      shares: number;
+      cost_basis: number;
+      current_price: number | null;
+      market_value: number; // null current_price → falls back to cost_basis × shares
+      pl: number;
+      pl_pct: number;
+      weight: number; // position MV / total book MV, in [0, 1]
+      total_market_value: number;
+      single_name_cap_pct: number;
+    };
+
 export interface NameForm4Row {
   transaction_date: string;
   insider_name: string;
@@ -111,9 +140,23 @@ export interface NameDetail {
   aiq_rubric: NameAiqRubric | null;
   dep_flags: NameDepFlag[];
   form4_recent: NameForm4Row[];
+  /**
+   * Per-(ticker, latest as_of) concentration tax in [-15, 0], read from
+   * `concentration_history`. Null pre-engine or for tickers not yet
+   * processed by the weekly compute-concentration job.
+   */
+  concentration_tax: number | null;
+  /**
+   * Portfolio context — exposed even when the page is rendered as fixture
+   * so the inline "your position" strip can show the not-held variant
+   * (with the spec's single-name cap) instead of being suppressed entirely.
+   */
+  portfolio: NamePortfolioContext;
   synthetic: boolean;
   found: boolean;
 }
+
+const SINGLE_NAME_CAP_PCT = 0.10;
 
 interface ScoresRow {
   ticker: string;
@@ -142,7 +185,7 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
   const sb = getSupabaseBrowser();
   if (!sb) return fixtureDetail(t);
 
-  const [universeRes, historyRes, aiqRes, depRes, form4Res] = await Promise.all([
+  const [universeRes, historyRes, aiqRes, depRes, form4Res, concRes, posAllRes] = await Promise.all([
     sb.from("universe").select("ticker,name,layer,layer_label").eq("ticker", t).maybeSingle(),
     sb
       .from("scores_history")
@@ -174,11 +217,29 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
       .eq("ticker", t)
       .order("transaction_date", { ascending: false })
       .limit(8),
+    sb
+      .from("concentration_history")
+      .select("tax")
+      .eq("ticker", t)
+      .order("as_of", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    // All open positions — needed to compute total book MV (weight denom)
+    // AND check whether this ticker is held.
+    sb
+      .from("portfolio_positions")
+      .select("ticker,shares,cost_basis")
+      .is("closed_at", null),
   ]);
 
   const universe = universeRes.data as UniverseRow | null;
   const history = (historyRes.data ?? []) as ScoresRow[];
   if (!universe || history.length === 0) return fixtureDetail(t, universe);
+
+  // Portfolio context — only joined when env is configured. Reads current
+  // prices for all open positions so the weight denominator is honest.
+  const positionRows = (posAllRes.data ?? []) as Array<{ ticker: string; shares: number; cost_basis: number }>;
+  const portfolio = await buildPortfolioContext(sb, t, positionRows);
 
   return buildDetail(
     universe,
@@ -186,8 +247,63 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
     aiqRes.data ?? null,
     (depRes.data ?? []) as NameDepFlag[],
     (form4Res.data ?? []) as NameForm4Row[],
+    (concRes.data?.tax ?? null) as number | null,
+    portfolio,
     false,
   );
+}
+
+async function buildPortfolioContext(
+  sb: NonNullable<ReturnType<typeof getSupabaseBrowser>>,
+  ticker: string,
+  positions: Array<{ ticker: string; shares: number; cost_basis: number }>,
+): Promise<NamePortfolioContext> {
+  if (positions.length === 0) {
+    return { held: false, single_name_cap_pct: SINGLE_NAME_CAP_PCT };
+  }
+
+  const tickers = positions.map((p) => p.ticker);
+  const { data: priceData } = await sb
+    .from("prices_raw")
+    .select("ticker,date,close")
+    .in("ticker", tickers)
+    .order("date", { ascending: false })
+    .limit(tickers.length * 3);
+  const priceMap = new Map<string, number>();
+  for (const r of (priceData ?? []) as Array<{ ticker: string; date: string; close: number | null }>) {
+    if (priceMap.has(r.ticker)) continue; // first row per ticker = latest
+    if (r.close != null) priceMap.set(r.ticker, Number(r.close));
+  }
+
+  let totalMv = 0;
+  for (const p of positions) {
+    const price = priceMap.get(p.ticker);
+    totalMv += (price ?? Number(p.cost_basis)) * Number(p.shares);
+  }
+
+  const me = positions.find((p) => p.ticker === ticker);
+  if (!me) return { held: false, single_name_cap_pct: SINGLE_NAME_CAP_PCT };
+
+  const shares = Number(me.shares);
+  const cost_basis = Number(me.cost_basis);
+  const current_price = priceMap.get(ticker) ?? null;
+  const market_value = (current_price ?? cost_basis) * shares;
+  const pl = (current_price ?? cost_basis) * shares - cost_basis * shares;
+  const pl_pct = cost_basis > 0 ? pl / (cost_basis * shares) : 0;
+  const weight = totalMv > 0 ? market_value / totalMv : 0;
+
+  return {
+    held: true,
+    shares,
+    cost_basis,
+    current_price,
+    market_value,
+    pl,
+    pl_pct,
+    weight,
+    total_market_value: totalMv,
+    single_name_cap_pct: SINGLE_NAME_CAP_PCT,
+  };
 }
 
 function buildDetail(
@@ -196,6 +312,8 @@ function buildDetail(
   aiq: NameAiqRubric | null,
   depFlags: NameDepFlag[],
   form4: NameForm4Row[],
+  concentrationTax: number | null,
+  portfolio: NamePortfolioContext,
   synthetic: boolean,
 ): NameDetail {
   const latest = history[0];
@@ -225,6 +343,8 @@ function buildDetail(
     aiq_rubric: aiq,
     dep_flags: depFlags,
     form4_recent: form4,
+    concentration_tax: concentrationTax,
+    portfolio,
     synthetic,
     found: true,
   };
@@ -260,6 +380,8 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
       aiq_rubric: null,
       dep_flags: [],
       form4_recent: [],
+      concentration_tax: null,
+      portfolio: { held: false, single_name_cap_pct: SINGLE_NAME_CAP_PCT },
       synthetic: true,
       found: false,
     };
@@ -380,6 +502,14 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
     aiq_rubric: aiqRubric,
     dep_flags: depFlags,
     form4_recent: [],
+    // Fixture concentration tax: deterministic per-ticker, in [-3.5, 0].
+    // Matches the live-data range (compute-concentration scales to [-15, 0]
+    // but the AI-Thesis slate typically lands in the [-3, 0] band, deepest
+    // hit on the L1 trio per §"High-conviction aggregate").
+    concentration_tax: -Math.round(((h % 7) * 0.5) * 10) / 10,
+    // Fixture portfolio context — not-held by default. Live prod with a
+    // populated portfolio_positions table will render the held variant.
+    portfolio: { held: false, single_name_cap_pct: SINGLE_NAME_CAP_PCT },
     synthetic: true,
     found: true,
   };

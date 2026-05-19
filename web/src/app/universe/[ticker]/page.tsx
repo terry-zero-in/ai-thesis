@@ -4,6 +4,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { getNameDetail, type NameDetail } from "@/lib/name-detail-data";
 import { NameHeader } from "@/components/name/NameHeader";
+import { PortfolioContextStrip } from "@/components/name/PortfolioContextStrip";
 import { NameScoreChart } from "@/components/name/NameScoreChart";
 import { FactorPanels } from "@/components/name/FactorPanels";
 import { DepFlagsList } from "@/components/name/DepFlagsList";
@@ -95,6 +96,10 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {railData && <NameRailRegister data={railData} />}
       <NameHeader d={d} />
+      {/* Portfolio context strip — sits between header and chart so the
+          "is this in my book?" question is answered before the score chart
+          asks the reader to interpret history (Bucket 4 review item 7). */}
+      <PortfolioContextStrip d={d} />
       <div style={{ flex: 1, overflow: "auto", padding: "24px 32px 40px", display: "flex", flexDirection: "column", gap: 28 }}>
         <NameScoreChart history={d.history} ticker={d.ticker} />
         <FactorPanels d={d} />
