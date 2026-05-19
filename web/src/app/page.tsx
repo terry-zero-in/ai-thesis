@@ -507,38 +507,39 @@ function KpiCell({
         minWidth: 0,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <span
+        style={{
+          fontSize: 10.5,
+          fontFamily: "var(--m)",
+          color: "var(--text-3)",
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </span>
+      {/* Value + inline sparkline. Sparkline used to live on the label row;
+          Terry flagged it as "too removed from the numbers in which they
+          belong" — paired with the value reads as one unit. */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0 }}>
         <span
           style={{
-            fontSize: 10.5,
             fontFamily: "var(--m)",
-            color: "var(--text-3)",
-            letterSpacing: ".08em",
-            textTransform: "uppercase",
-            flex: 1,
-            minWidth: 0,
+            fontSize: 22,
+            fontWeight: 600,
+            fontVariantNumeric: "tabular-nums",
+            color: muted ? "var(--text-4)" : (valueColor ?? "var(--text-1)"),
+            lineHeight: 1,
           }}
         >
-          {label}
+          {value}
         </span>
         {spark && spark.length > 1 && (
-          <span style={{ display: "inline-flex", flexShrink: 0 }}>
-            <Sparkline data={spark} width={56} height={18} color={sparkColor} />
+          <span style={{ display: "inline-flex", flexShrink: 0, alignSelf: "center", height: 20 }}>
+            <Sparkline data={spark} width={72} height={20} color={sparkColor} />
           </span>
         )}
       </div>
-      <span
-        style={{
-          fontFamily: "var(--m)",
-          fontSize: 22,
-          fontWeight: 600,
-          fontVariantNumeric: "tabular-nums",
-          color: muted ? "var(--text-4)" : (valueColor ?? "var(--text-1)"),
-          lineHeight: 1,
-        }}
-      >
-        {value}
-      </span>
       {sub && (
         <span style={{ fontSize: 11, fontFamily: "var(--m)", color: "var(--text-3)" }}>{sub}</span>
       )}

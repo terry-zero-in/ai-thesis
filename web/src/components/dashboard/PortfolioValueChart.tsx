@@ -57,11 +57,21 @@ export function PortfolioValueChart({
   costBasis,
   empty,
   synthetic,
+  compact = false,
 }: {
   currentValue: number;
   costBasis: number;
   empty: boolean;
   synthetic: boolean;
+  /**
+   * Compact mode trims the chart's vertical footprint so it sits as
+   * supporting context (not protagonist) on /portfolio where the
+   * positions table is the protagonist. Drops the footer summary
+   * (30d high/low/max DD) and provenance line. Used on /portfolio
+   * to keep the positions table above-fold. Default false = full
+   * chart per /dashboard's "operator's morning glance" role.
+   */
+  compact?: boolean;
 }) {
   const [range, setRange] = useState<RangeKey>("1M");
   const days = RANGES.find((r) => r.key === range)?.days ?? 30;
@@ -155,8 +165,8 @@ export function PortfolioValueChart({
         )}
       </div>
 
-      {/* Footer summary */}
-      {!empty && (
+      {/* Footer summary — hidden in compact mode */}
+      {!empty && !compact && (
         <div
           style={{
             display: "flex",
@@ -192,8 +202,8 @@ export function PortfolioValueChart({
         </div>
       )}
 
-      {/* Provenance */}
-      {!empty && synthetic && (
+      {/* Provenance — hidden in compact mode */}
+      {!empty && synthetic && !compact && (
         <div
           style={{
             fontSize: 10.5,

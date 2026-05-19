@@ -142,6 +142,7 @@ export default async function PortfolioPage({
           costBasis={snap.total_deployed}
           empty={snap.empty}
           synthetic={snap.synthetic_prices}
+          compact
         />
 
         {/*
