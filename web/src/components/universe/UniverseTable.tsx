@@ -31,6 +31,19 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
   const [sortKey, setSortKey] = useState<SortKey>("final");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
+  // Per /universe review item 4: hide Δw + Macro columns when ZERO rows
+  // carry signal. Empty columns imply data should be there. Compute off
+  // the unfiltered set so toggling filters doesn't make columns appear /
+  // disappear mid-session.
+  const hasAnyDelta = useMemo(
+    () => rows.some((r) => r.delta != null && Number.isFinite(r.delta)),
+    [rows],
+  );
+  const hasAnyMacro = useMemo(
+    () => rows.some((r) => r.macro_gates_hit > 0 && r.macro_multiplier < 1),
+    [rows],
+  );
+
   const filtered = useMemo(() => {
     const qNorm = q.trim().toUpperCase();
     return rows.filter((r) => {
@@ -118,24 +131,37 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
             <Th width={100}>G</Th>
             <Th width={100}>V</Th>
             <Th width={100}>AIQ</Th>
-            <Th sortable k="delta" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" width={64}>
-              Δw
-            </Th>
-            <Th align="center" width={48}>
-              Macro
-            </Th>
+            {hasAnyDelta && (
+              <Th sortable k="delta" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} align="right" width={64}>
+                Δw
+              </Th>
+            )}
+            {hasAnyMacro && (
+              <Th align="center" width={48}>
+                Macro
+              </Th>
+            )}
           </tr>
         </thead>
         <tbody>
           {sorted.length === 0 && (
             <tr>
-              <td colSpan={12} style={{ padding: "32px 16px", color: "var(--text-3)", textAlign: "center" }}>
+              <td
+                colSpan={10 + (hasAnyDelta ? 1 : 0) + (hasAnyMacro ? 1 : 0)}
+                style={{ padding: "32px 16px", color: "var(--text-3)", textAlign: "center" }}
+              >
                 No names match the current filters.
               </td>
             </tr>
           )}
           {sorted.map((r) => (
-            <Row key={r.ticker} r={r} queued={queuedSet.has(r.ticker)} />
+            <Row
+              key={r.ticker}
+              r={r}
+              queued={queuedSet.has(r.ticker)}
+              showDelta={hasAnyDelta}
+              showMacro={hasAnyMacro}
+            />
           ))}
         </tbody>
       </table>
@@ -167,7 +193,17 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
   );
 }
 
-function Row({ r, queued }: { r: UniverseRow; queued: boolean }) {
+function Row({
+  r,
+  queued,
+  showDelta,
+  showMacro,
+}: {
+  r: UniverseRow;
+  queued: boolean;
+  showDelta: boolean;
+  showMacro: boolean;
+}) {
   return (
     <tr
       className="row-hov"
@@ -277,12 +313,16 @@ function Row({ r, queued }: { r: UniverseRow; queued: boolean }) {
       <Td tint={tintScore(r.aiq)}>
         <MiniBar label="A" value={r.aiq} />
       </Td>
-      <Td align="right" mono>
-        <DeltaCell d={r.delta} />
-      </Td>
-      <Td align="center">
-        <MacroFlag gates={r.macro_gates_hit} mult={r.macro_multiplier} />
-      </Td>
+      {showDelta && (
+        <Td align="right" mono>
+          <DeltaCell d={r.delta} />
+        </Td>
+      )}
+      {showMacro && (
+        <Td align="center">
+          <MacroFlag gates={r.macro_gates_hit} mult={r.macro_multiplier} />
+        </Td>
+      )}
     </tr>
   );
 }

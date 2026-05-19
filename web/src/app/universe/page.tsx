@@ -62,7 +62,7 @@ function UniverseHeader({ snap }: { snap: UniverseSnapshot }) {
       title="Universe"
       action={<SearchInput value={q} onChange={setQ} register={registerInput} />}
       meta={[
-        { label: "names", value: snap.rows.length },
+        { label: "scored", value: snap.rows.length },
         { label: "as_of", value: snap.asOf ?? "—" },
         { label: "engine", value: "composite v1.0" },
         {

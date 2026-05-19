@@ -86,6 +86,13 @@ export function UniverseInsightsRail(props: Props) {
   const maxCount = useMemo(() => Math.max(1, ...agg.map((a) => a.count)), [agg]);
   const anyTierActive = tiers.size > 0;
 
+  // Per /universe review item 10: histogram sum (e.g. 4+10+18+18=50) was
+  // diverging from the table's "scored" count (52) because rows with
+  // `r.tier == null` weren't counted anywhere on the rail. Surface the
+  // delta as a quiet "(N unscored)" line so the math reconciles.
+  const tieredCount = useMemo(() => agg.reduce((sum, a) => sum + a.count, 0), [agg]);
+  const unscoredCount = rows.length - tieredCount;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <RailHeader label="Insights" right={hasFilter ? <ClearBtn onClick={onClear} /> : null} />
@@ -99,6 +106,21 @@ export function UniverseInsightsRail(props: Props) {
             anyActive={anyTierActive}
             onToggle={onToggleTier}
           />
+          {unscoredCount > 0 && (
+            <div
+              style={{
+                fontSize: 10.5,
+                fontFamily: "var(--m)",
+                color: "var(--text-4)",
+                letterSpacing: ".02em",
+                paddingTop: 8,
+                fontStyle: "italic",
+              }}
+              title={`${unscoredCount} name${unscoredCount === 1 ? "" : "s"} in the snapshot ${unscoredCount === 1 ? "has" : "have"} no tier classification (composite null or unscored).`}
+            >
+              + {unscoredCount} unscored
+            </div>
+          )}
         </Section>
 
         {/* Legend table — second affordance, synchronized with bar chart. */}
