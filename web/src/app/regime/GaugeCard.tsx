@@ -1,4 +1,4 @@
-import { GAUGES, type GaugeKey, type MacroGaugeRow, type ThresholdHistory } from "@/lib/regime-types";
+import { GAUGES, fmtGaugeValue, type GaugeKey, type MacroGaugeRow, type ThresholdHistory } from "@/lib/regime-types";
 import { GaugeBar } from "./GaugeBar";
 
 /**
@@ -82,10 +82,10 @@ export function GaugeCard({
             lineHeight: 1,
           }}
         >
-          {latest == null ? "—" : fmt(latest, gauge)}
+          {latest == null ? "—" : fmtGaugeValue(latest, gauge)}
         </span>
         <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-          gate at {fmt(meta.threshold, gauge)}
+          gate at {fmtGaugeValue(meta.threshold, gauge)}
         </span>
       </div>
 
@@ -115,8 +115,3 @@ export function GaugeCard({
   );
 }
 
-function fmt(n: number, key: GaugeKey): string {
-  if (key === "naaim") return n.toFixed(1);
-  if (key === "aaii_3wk_spread") return (n > 0 ? "+" : "") + n.toFixed(1);
-  return n.toFixed(0);
-}

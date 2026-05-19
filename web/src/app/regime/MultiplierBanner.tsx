@@ -1,4 +1,4 @@
-import { MULTIPLIER_BY_GATES } from "@/lib/regime-types";
+import { MULTIPLIER_BY_GATES, fmtGaugeValue, type ClosestGate } from "@/lib/regime-types";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
 import { MultiplierLadder, type LadderStep } from "@/components/primitives/MultiplierLadder";
 
@@ -13,13 +13,15 @@ export function MultiplierBanner({
   gatesHit,
   multiplier,
   asOf,
+  closestGate,
 }: {
   gatesHit: number;
   multiplier: number;
   asOf: string | null;
+  closestGate: ClosestGate | null;
 }) {
   const valueColor = gatesHit === 0 ? "var(--text-1)" : gatesHit === 1 ? "var(--warning)" : "var(--danger)";
-  const derivation = `${gatesHit} of 3 gates hit · applied to raw ≥ 75 only`;
+  const derivation = `${gatesHit} of 3 gates hit · applied only to composite ≥ 75 (high-tier names)`;
   const attribution = asOf ? `snapshot ${asOf} · macro engine` : undefined;
   return (
     // Mercury decard: top + bottom hairlines define the strip; cells flow
@@ -43,6 +45,26 @@ export function MultiplierBanner({
           derivation={derivation}
           attribution={attribution}
         />
+        {closestGate && (
+          <span
+            style={{
+              alignSelf: "flex-start",
+              marginTop: 8,
+              fontSize: 11,
+              fontFamily: "var(--m)",
+              color: "var(--warning)",
+              background: "var(--warning-soft)",
+              border: "1px solid rgba(221,168,90,.35)",
+              padding: "3px 8px",
+              borderRadius: 3,
+              fontVariantNumeric: "tabular-nums",
+              letterSpacing: ".01em",
+            }}
+            title={`${closestGate.label} at ${fmtGaugeValue(closestGate.value, closestGate.key)}, gate at ${fmtGaugeValue(closestGate.threshold, closestGate.key)}. If it fires, multiplier tightens ${multiplier.toFixed(2)}× → ${closestGate.nextMultiplier.toFixed(2)}×.`}
+          >
+            Approaching · {closestGate.label.split(" ")[0]} {closestGate.ptsToGate.toFixed(1)} pts to gate · next {closestGate.nextMultiplier.toFixed(2)}×
+          </span>
+        )}
       </Cell>
 
       <Cell label="Curve">

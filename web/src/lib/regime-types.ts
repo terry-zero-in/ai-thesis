@@ -30,7 +30,7 @@ export const GAUGES: ReadonlyArray<{
     key: "aaii_3wk_spread",
     label: "AAII 3-wk Spread",
     threshold: 30,
-    range: [-40, 60],
+    range: [-60, 60],
     blurb: "Retail bull − bear spread, three-week average. Gate hits at > 30.",
   },
   {
@@ -48,6 +48,79 @@ export const MULTIPLIER_BY_GATES: Record<0 | 1 | 2 | 3, number> = {
   2: 0.9,
   3: 0.85,
 };
+
+/**
+ * Canonical per-gauge display formatter. Used by hero card, right rail,
+ * trend-chart right-edge labels, and any future "closest gate" callout
+ * so the same number renders identically everywhere.
+ *
+ * - NAAIM: 1 decimal (range 0-200, single percent precision is enough)
+ * - AAII : 1 decimal with explicit sign (bull-bear spread, sign matters)
+ * - F&G  : integer (0-100 index, fractional values mislead users)
+ */
+export function fmtGaugeValue(n: number, key: GaugeKey): string {
+  if (key === "naaim") return n.toFixed(1);
+  if (key === "aaii_3wk_spread") return (n > 0 ? "+" : "") + n.toFixed(1);
+  return n.toFixed(0);
+}
+
+/**
+ * Distance from a gauge's current value to its threshold. Negative if
+ * the gauge has already fired (value > threshold). Used by the
+ * "closest gate" callout to surface "X pts to gate" when within ~10
+ * pts of crossing.
+ */
+export function distanceToGate(value: number | null, threshold: number): number | null {
+  if (value == null) return null;
+  return threshold - value;
+}
+
+export interface ClosestGate {
+  key: GaugeKey;
+  label: string;
+  value: number;
+  threshold: number;
+  ptsToGate: number;
+  /** Multiplier that would apply if one more gate fires. */
+  nextMultiplier: number;
+}
+
+/**
+ * Pick the non-fired gauge closest to its threshold, if any are within
+ * `withinPts`. Returns null when:
+ *   - all gauges already fired (the multiplier already reflects them)
+ *   - all non-fired gauges are further than withinPts (no signal worth surfacing)
+ *
+ * `currentGates` is the gates-hit count at snapshot time; `nextMultiplier`
+ * is min(currentGates+1, 3) → MULTIPLIER_BY_GATES.
+ */
+export function pickClosestGate(
+  latest: MacroGaugeRow | null,
+  currentGates: number,
+  withinPts: number = 10,
+): ClosestGate | null {
+  if (latest == null) return null;
+  let best: ClosestGate | null = null;
+  for (const g of GAUGES) {
+    const v = latest[g.key];
+    if (v == null) continue;
+    const dist = g.threshold - v;
+    if (dist <= 0) continue;            // already fired
+    if (dist > withinPts) continue;     // too far to flag
+    if (best == null || dist < best.ptsToGate) {
+      const nextGates = Math.min(currentGates + 1, 3) as 0 | 1 | 2 | 3;
+      best = {
+        key: g.key,
+        label: g.label,
+        value: v,
+        threshold: g.threshold,
+        ptsToGate: dist,
+        nextMultiplier: MULTIPLIER_BY_GATES[nextGates],
+      };
+    }
+  }
+  return best;
+}
 
 export interface MacroGaugeRow {
   as_of: string;

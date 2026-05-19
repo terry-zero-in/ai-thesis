@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtGaugeValue, type GaugeKey } from "@/lib/regime-types";
 import { RailHeader, RailSection, RailFooter } from "./RailChrome";
 
 /**
@@ -12,6 +13,7 @@ import { RailHeader, RailSection, RailFooter } from "./RailChrome";
  * "what multiplier applies at N gates" without leaving the page.
  */
 export interface RegimeLegendItem {
+  key: GaugeKey;
   label: string;
   value: number | null;
   threshold: number;
@@ -147,8 +149,8 @@ function LegendRow({ it }: { it: RegimeLegendItem }) {
             whiteSpace: "nowrap",
           }}
         >
-          {it.value == null ? "—" : it.value.toFixed(it.threshold >= 10 ? 1 : 2)}
-          <span style={{ color: "var(--text-4)" }}> / {it.threshold}</span>
+          {it.value == null ? "—" : fmtGaugeValue(it.value, it.key)}
+          <span style={{ color: "var(--text-4)" }}> / {fmtGaugeValue(it.threshold, it.key)}</span>
         </span>
       </div>
       <span style={{ fontSize: 11, color: "var(--text-3)", lineHeight: 1.45, paddingLeft: 14 }}>

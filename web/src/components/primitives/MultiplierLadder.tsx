@@ -10,7 +10,9 @@
  *
  * Active state lift per Terry's [[feedback_active_state_surface_lift]]:
  * background --accent-soft, 1px --accent-border, value text --accent.
- * Inactive: transparent bg, --border, --text-2 value.
+ * Inactive: transparent bg, transparent border (no false clickability),
+ * --text-2 value. Only the active step earns a visible boundary, so the
+ * row reads "one moment among a sequence" rather than "four buttons."
  *
  * Reuse candidates:
  *   - /regime macro-multiplier-by-gates (the founding case)
@@ -50,7 +52,7 @@ export function MultiplierLadder({ steps, activeKey, gap = 4 }: MultiplierLadder
               padding: "6px 8px",
               textAlign: "center",
               background: active ? "var(--accent-soft)" : "transparent",
-              border: active ? "1px solid var(--accent-border)" : "1px solid var(--border)",
+              border: active ? "1px solid var(--accent-border)" : "1px solid transparent",
               borderRadius: 4,
               minWidth: 0,
             }}

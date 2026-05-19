@@ -1,5 +1,5 @@
 import { getRegimeSnapshot } from "@/lib/regime-data";
-import { GAUGES } from "@/lib/regime-types";
+import { GAUGES, pickClosestGate } from "@/lib/regime-types";
 import { MultiplierBanner } from "./MultiplierBanner";
 import { GaugeCard } from "./GaugeCard";
 import { RegimeTrendChart } from "./RegimeTrendChart";
@@ -20,7 +20,7 @@ export default async function RegimePage() {
   const items: RegimeLegendItem[] = GAUGES.map((g) => {
     const v = snap.latest?.[g.key] ?? null;
     const hit = v != null && v > g.threshold;
-    return { label: g.label, value: v, threshold: g.threshold, hit, blurb: g.blurb };
+    return { key: g.key, label: g.label, value: v, threshold: g.threshold, hit, blurb: g.blurb };
   });
   const railData = {
     items,
@@ -74,7 +74,12 @@ export default async function RegimePage() {
           maxWidth: 1200,
         }}
       >
-        <MultiplierBanner gatesHit={snap.gates_hit} multiplier={snap.multiplier} asOf={snap.latest?.as_of ?? null} />
+        <MultiplierBanner
+          gatesHit={snap.gates_hit}
+          multiplier={snap.multiplier}
+          asOf={snap.latest?.as_of ?? null}
+          closestGate={pickClosestGate(snap.latest, snap.gates_hit)}
+        />
 
         {/* GaugeCards keep their card chrome — multi-part instruments earn
             their boundary per /lambo "earn its place." */}

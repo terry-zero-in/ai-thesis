@@ -1,4 +1,4 @@
-import { GAUGES, type GaugeKey, type MacroGaugeRow } from "@/lib/regime-types";
+import { GAUGES, fmtGaugeValue, type GaugeKey, type MacroGaugeRow } from "@/lib/regime-types";
 
 /**
  * 52-week trend chart for the 3 macro gauges — Master Design Spec §5.5:
@@ -28,7 +28,7 @@ const SERIES: { key: GaugeKey; color: string; labelColor: string }[] = [
 
 const VISIBLE_RANGE: Record<GaugeKey, [number, number]> = {
   naaim: [0, 100],
-  aaii_3wk_spread: [-40, 60],
+  aaii_3wk_spread: [-60, 60],
   fear_greed: [0, 100],
 };
 
@@ -191,7 +191,7 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
               return sv == null ? null : normY(sv, s.key);
             }),
           );
-          const fmt = key === "fear_greed" ? v.toFixed(0) : key === "aaii_3wk_spread" ? (v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)) : v.toFixed(1);
+          const fmt = fmtGaugeValue(v, key);
           return (
             <g key={`label-${key}`}>
               <circle cx={xAt(n - 1)} cy={y} r={3} fill={labelColor} />
