@@ -259,14 +259,15 @@ export function AddPositionForm({
           padding: "0 18px",
           fontSize: 12,
           fontWeight: 600,
-          color: "var(--voltage-ink)",
-          background: pending ? "color-mix(in oklab, var(--voltage) 60%, transparent)" : "var(--voltage)",
+          color: "var(--text-1)",
+          background: pending ? "color-mix(in oklab, var(--accent) 60%, transparent)" : "var(--accent)",
           border: "none",
-          borderRadius: 9999,
+          borderRadius: 4,
           cursor: submitDisabled ? (pending ? "wait" : "not-allowed") : "pointer",
           opacity: !envConfigured ? 0.5 : 1,
           transition: "background var(--dur-instant) var(--ease-out)",
           alignSelf: "flex-start",
+          letterSpacing: ".02em",
         }}
       >
         {pending ? "Saving…" : isEdit ? "Update position" : "Add position"}

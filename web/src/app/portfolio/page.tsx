@@ -4,7 +4,6 @@ import { PositionsTable } from "./PositionsTable";
 import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 import { PageHeader } from "@/components/primitives/PageHeader";
-import { PortfolioValueChart } from "@/components/dashboard/PortfolioValueChart";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -129,28 +128,17 @@ export default async function PortfolioPage({
         <AggregateBar snap={snap} />
 
         {/*
-          Full instrumented NAV chart (task #79). Same component the
-          dashboard uses — range selector, grid, axes, HIGH/LOW dot
-          markers, cost-basis dashed reference line, hover crosshair +
-          tooltip. AggregateBar's 30D column carries the at-a-glance
-          delta; this chart carries the range-selectable drill-down.
-          Both surfaces deliberately overlap on the 30D window — calmer
-          hero glance on top, drillable canvas below.
-        */}
-        <PortfolioValueChart
-          currentValue={snap.total_market_value}
-          costBasis={snap.total_deployed}
-          empty={snap.empty}
-          synthetic={snap.synthetic_prices}
-          compact
-        />
+          NAV chart deliberately lives ONLY on /dashboard. /portfolio's job
+          is the positions book (add/edit/close); duplicating the chart here
+          made the two pages read too similar AND pushed the positions table
+          below the fold on standard viewports (Terry feedback 2026-05-19).
+          AggregateBar still carries the 30D delta + sparkline in column 2 —
+          enough at-a-glance trend signal for a positions-management surface.
+          Dashboard owns the range-selectable drill-down.
 
-        {/*
-          Positions table claims the full canvas width — the add/edit form
-          was hoisted to the page-header PortfolioAddDrawer (above), which
-          eliminated the form-vs-table crowding problem at the source. No
-          responsive grid, no sticky form column, no 1600px breakpoint.
-          Reserve & Triggers continues to live in the right rail.
+          Positions table now claims the full canvas height — no inner
+          scroll-trap, no fold cutoff. The outer overflow:auto on the
+          parent flex column handles scroll naturally.
         */}
         <div
           style={{
