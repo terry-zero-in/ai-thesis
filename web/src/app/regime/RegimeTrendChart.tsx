@@ -112,39 +112,27 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
           );
         })}
 
-        {/* Per-gauge threshold line + right-edge value label per lambo
-            "every threshold has its number anchored at the edge." */}
-        {SERIES.map(({ key, color, labelColor }) => {
+        {/* Per-gauge threshold lines — dashed line only, no right-edge label.
+            Earlier the ▲{value} labels lived at x = W - PAD_R + 4, colliding
+            with the value labels at x = W - PAD_R + 8 (4px apart, same y-strip
+            when value is near threshold). Threshold values are shown in the
+            gauge cards above + the rail Threshold Legend; the dashed line's
+            color matches its series so attribution is preserved. */}
+        {SERIES.map(({ key, color }) => {
           const meta = GAUGES.find((g) => g.key === key)!;
           const y = normY(meta.threshold, key);
-          const shortLabel = meta.label.split(" ")[0];
-          const fmt = key === "aaii_3wk_spread" && meta.threshold > 0
-            ? `+${meta.threshold}`
-            : `${meta.threshold}`;
           return (
-            <g key={`thresh-${key}`}>
-              <line
-                x1={PAD_L}
-                x2={W - PAD_R}
-                y1={y}
-                y2={y}
-                stroke={color}
-                strokeWidth={1}
-                strokeDasharray="3 4"
-                opacity={0.45}
-              />
-              <text
-                x={W - PAD_R + 4}
-                y={y + 3}
-                fontSize={9.5}
-                fontFamily="var(--m)"
-                fill={labelColor}
-                opacity={0.65}
-                style={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                ▲ {fmt}
-              </text>
-            </g>
+            <line
+              key={`thresh-${key}`}
+              x1={PAD_L}
+              x2={W - PAD_R}
+              y1={y}
+              y2={y}
+              stroke={color}
+              strokeWidth={1}
+              strokeDasharray="3 4"
+              opacity={0.45}
+            />
           );
         })}
 
@@ -273,10 +261,17 @@ function Legend() {
     <div style={{ display: "flex", gap: 14, fontSize: 11, fontFamily: "var(--m)" }}>
       {SERIES.map(({ key, color }) => {
         const meta = GAUGES.find((g) => g.key === key)!;
+        const thresh =
+          key === "aaii_3wk_spread" && meta.threshold > 0
+            ? `+${meta.threshold}`
+            : `${meta.threshold}`;
         return (
           <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-3)" }}>
             <span style={{ display: "inline-block", width: 10, height: 2, background: color, borderRadius: 1 }} />
-            {meta.label.split(" ")[0]}
+            {meta.label.split(" ")[0]}{" "}
+            <span style={{ color: "var(--text-4)", fontVariantNumeric: "tabular-nums" }}>
+              gate {thresh}
+            </span>
           </span>
         );
       })}
@@ -291,7 +286,7 @@ function Legend() {
             backgroundImage: "repeating-linear-gradient(90deg, var(--text-3) 0 3px, transparent 3px 6px)",
           }}
         />
-        gate
+        gate threshold
       </span>
     </div>
   );
