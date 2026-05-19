@@ -97,7 +97,12 @@ export function PortfolioValueChart({
       }}
     >
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
+      {/* Header — label + delta-strip. The big NAV headline was removed
+          2026-05-19 because it duplicated the value the KPI tile (dashboard)
+          and AggregateBar (portfolio page) already render directly above
+          the chart. The chart's job is to show *movement*; absolute value
+          lives in the protagonist hero one section up. */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
           <span
             style={{
@@ -109,14 +114,13 @@ export function PortfolioValueChart({
               fontWeight: 500,
             }}
           >
-            Portfolio · NAV
+            NAV history
           </span>
-          <Headline value={currentValue} empty={empty} />
           {!empty && (
             <div
               style={{
                 fontFamily: "var(--m)",
-                fontSize: 12.5,
+                fontSize: 13,
                 color: "var(--text-2)",
                 fontVariantNumeric: "tabular-nums",
                 lineHeight: 1.5,
@@ -126,10 +130,10 @@ export function PortfolioValueChart({
                 gap: 12,
               }}
             >
-              <span style={{ color: sinceOpenPos ? "var(--success)" : "var(--danger)" }}>
+              <span style={{ color: sinceOpenPos ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
                 {sinceOpenPos ? "+" : "−"}${Math.abs(sinceOpenPl).toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
               </span>
-              <span style={{ color: sinceOpenPos ? "var(--success)" : "var(--danger)" }}>
+              <span style={{ color: sinceOpenPos ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
                 ({sinceOpenPos ? "+" : "−"}{Math.abs(sinceOpenPct).toFixed(2)}%)
               </span>
               <span style={{ color: "var(--text-3)" }}>since open</span>
@@ -204,50 +208,6 @@ export function PortfolioValueChart({
         </div>
       )}
     </div>
-  );
-}
-
-/* ----------------- headline ----------------- */
-
-function Headline({ value, empty }: { value: number; empty: boolean }) {
-  if (empty) {
-    return (
-      <span
-        style={{
-          fontFamily: "var(--m)",
-          fontSize: 44,
-          fontWeight: 500,
-          color: "var(--text-4)",
-          fontVariantNumeric: "tabular-nums",
-          lineHeight: 1,
-          letterSpacing: "-.025em",
-          marginTop: 2,
-        }}
-      >
-        —
-      </span>
-    );
-  }
-  // Split into whole + decimal so .XX renders dimmer per mock pattern.
-  const whole = Math.floor(Math.abs(value)).toLocaleString("en-US");
-  const cents = (Math.abs(value) % 1).toFixed(2).slice(1); // ".41"
-  const sign = value < 0 ? "−" : "";
-  return (
-    <span
-      style={{
-        fontFamily: "var(--m)",
-        fontSize: 44,
-        fontWeight: 500,
-        color: "var(--text-1)",
-        fontVariantNumeric: "tabular-nums",
-        lineHeight: 1,
-        letterSpacing: "-.025em",
-        marginTop: 2,
-      }}
-    >
-      {sign}${whole}
-      <span style={{ color: "var(--text-3)", fontWeight: 400 }}>{cents}</span>
-    </span>
   );
 }
 
