@@ -94,7 +94,7 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
         preserveAspectRatio="xMidYMid meet"
-        style={{ display: "block", maxWidth: 960 }}
+        style={{ display: "block" }}
       >
         {/* y-grid hairlines at 0% / 50% / 100% of the normalized space */}
         {[0, 0.5, 1].map((t) => {
