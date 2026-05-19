@@ -32,8 +32,11 @@ const VISIBLE_RANGE: Record<GaugeKey, [number, number]> = {
   fear_greed: [0, 100],
 };
 
-const W = 720;
-const H = 220;
+// Wide-format viewBox so SVG proportional scaling fills the regime canvas
+// (~1200 max) without dragging height up. With W=1200 and width:100% the
+// chart renders at canvas-width × ~190px tall instead of ~347px.
+const W = 1200;
+const H = 200;
 const PAD_L = 8;
 const PAD_R = 96; // room for right-edge value labels
 const PAD_T = 12;
