@@ -235,9 +235,9 @@ function Row({
               style={{
                 fontSize: 9,
                 fontFamily: "var(--m)",
-                color: "var(--iris-300)",
-                background: "rgba(168,125,254,.10)",
-                border: "1px solid rgba(168,125,254,.35)",
+                color: "var(--accent)",
+                background: "var(--accent-soft)",
+                border: "1px solid var(--accent-border)",
                 padding: "0 4px",
                 borderRadius: 3,
                 letterSpacing: ".06em",
