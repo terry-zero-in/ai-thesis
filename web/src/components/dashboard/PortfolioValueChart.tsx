@@ -87,11 +87,7 @@ export function PortfolioValueChart({
   return (
     <div
       style={{
-        // Linear gradient: --surface (#0B0C12) at the top → #07080E at the
-        // bottom (each RGB stepped down 4). Whisper-subtle — just enough
-        // depth to give the chart panel weight without breaking continuity
-        // with the rest of the dashboard chrome.
-        background: "linear-gradient(180deg, var(--surface) 0%, #07080E 100%)",
+        background: "var(--surface)",
         border: "1px solid var(--border-subtle)",
         borderRadius: 6,
         padding: "16px 20px 14px",
