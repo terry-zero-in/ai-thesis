@@ -270,12 +270,12 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
    `backwards` fill-mode + `animation-delay` keeps row hidden until its delay elapses.
    Animation runs once per mount; re-renders with stable keys won't re-fire. */
 @keyframes row-stagger-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.row-stagger-in{animation:row-stagger-in 320ms var(--ease-out) backwards;animation-delay:calc(var(--row-i,0) * 30ms)}
+.row-stagger-in{animation:row-stagger-in 480ms var(--ease-out) backwards;animation-delay:calc(var(--row-i,0) * 65ms)}
 
 /* Chip fade-in — drawdown ↘ trigger and similar one-shot signal chips.
    Slides in 3px from the leading edge as it fades up. */
 @keyframes chip-fade-in{from{opacity:0;transform:translateX(-3px)}to{opacity:1;transform:translateX(0)}}
-.chip-fade-in{animation:chip-fade-in 240ms var(--ease-out) both}
+.chip-fade-in{animation:chip-fade-in 380ms var(--ease-out) both}
 
 /* Row hover utility — shifts surface, raises text contrast, reveals .row-actions on hover. */
 .row-hov{transition:background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out),box-shadow var(--dur-instant) var(--ease-out);cursor:pointer}

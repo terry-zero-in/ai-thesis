@@ -36,10 +36,13 @@ type Props = {
 const EASE_OUT_CUBIC = (t: number) => 1 - Math.pow(1 - t, 3);
 
 export function AnimateNumber({ value, format, duration = 800, style, className, ariaLabel }: Props) {
-  const [display, setDisplay] = useState<number>(value);
-  // Track the value we last animated FROM so subsequent changes interpolate
-  // from the previous target, not the last frame's intermediate.
-  const fromRef = useRef<number>(value);
+  // Start at 0 (or near-0 for negative targets) so the FIRST mount animates
+  // 0 → value, not value → value. SSR paint will briefly show "0" before
+  // hydration; the count-up reads as deliberate. fromRef carries forward
+  // post-animation so subsequent value changes (e.g. /portfolio revalidate
+  // every 5 min) interpolate from the previously settled value, not from 0.
+  const [display, setDisplay] = useState<number>(0);
+  const fromRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
