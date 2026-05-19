@@ -130,8 +130,8 @@ export default async function DashboardPage({
             5. Top positions              — rows on canvas (Strip role)
 
           Sparklines per Q-DASH-8: time-series tiles only (PORTFOLIO, 30D RETURN,
-          MACRO MULTIPLIER). NO sparkline on P&L TODAY (single-day value — fake
-          polish) or HIGH-TIER NAMES (integer count — jagged step chart).
+          MACRO MULTIPLIER). NO sparkline on P&L · since open (single scalar —
+          fake polish) or HIGH-TIER NAMES (integer count — jagged step chart).
         */}
         <GreetingStrip
           initialGreeting={greeting}
@@ -326,9 +326,9 @@ function KpiRow({
         sparkColor="var(--accent)"
       />
       <KpiCell
-        label="P&L · today"
+        label="P&L · since open"
         value={fmtUsd(portfolioPl, true)}
-        sub={`${plPctLabel} since open`}
+        sub={`${plPctLabel} on cost basis`}
         valueColor={plPos ? "var(--success)" : "var(--danger)"}
       />
       <KpiCell
