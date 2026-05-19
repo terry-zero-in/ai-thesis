@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { GAUGES, fmtGaugeValue, type GaugeKey, type MacroGaugeRow } from "@/lib/regime-types";
 
 /**
@@ -16,8 +19,11 @@ import { GAUGES, fmtGaugeValue, type GaugeKey, type MacroGaugeRow } from "@/lib/
  * the dashed colour matches the line colour (subtle) with a final
  * "▲{value}" anchor at the right edge.
  *
- * Server component — pure SVG, no client interactivity. Hover is
- * provided by the row tooltip on dot/label hover via `<title>`.
+ * Client component — measures container width via ResizeObserver and
+ * renders SVG at exactly container_width × H pixels. This keeps the
+ * chart height fixed (matching the gauge-card row above it) while
+ * filling whatever canvas width is available. Strokes and labels stay
+ * at native pixel sizes — no proportional zooming as viewport changes.
  */
 
 const SERIES: { key: GaugeKey; color: string; labelColor: string }[] = [
@@ -32,17 +38,34 @@ const VISIBLE_RANGE: Record<GaugeKey, [number, number]> = {
   fear_greed: [0, 100],
 };
 
-// Wide-format viewBox so SVG proportional scaling fills the regime canvas
-// (~1200 max) without dragging height up. With W=1200 and width:100% the
-// chart renders at canvas-width × ~190px tall instead of ~347px.
-const W = 1200;
+// Fixed pixel height matching the gauge-card row above. Width is measured
+// at runtime via ResizeObserver so the chart fills its container without
+// distorting strokes or text.
 const H = 200;
 const PAD_L = 8;
 const PAD_R = 96; // room for right-edge value labels
 const PAD_T = 12;
 const PAD_B = 26;
+const W_FALLBACK = 1136; // SSR / pre-measure render
 
 export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(W_FALLBACK);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const ro = new ResizeObserver((entries) => {
+      const cw = entries[0].contentRect.width;
+      if (cw > 0) setW(Math.round(cw));
+    });
+    ro.observe(el);
+    // Sync initial measurement (ResizeObserver fires async; this avoids
+    // a one-frame flash at the fallback width).
+    setW(Math.round(el.getBoundingClientRect().width));
+    return () => ro.disconnect();
+  }, []);
+
   if (history.length < 2) {
     return (
       <div style={{ fontSize: 12, color: "var(--text-4)", fontStyle: "italic", padding: "10px 0" }}>
@@ -65,7 +88,7 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
   const endLabel = history[n - 1].as_of.slice(0, 7);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div
         style={{
           display: "flex",
@@ -94,9 +117,9 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
       </div>
 
       <svg
+        width={W}
+        height={H}
         viewBox={`0 0 ${W} ${H}`}
-        width="100%"
-        preserveAspectRatio="xMidYMid meet"
         style={{ display: "block" }}
       >
         {/* y-grid hairlines at 0% / 50% / 100% of the normalized space */}
