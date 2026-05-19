@@ -153,6 +153,7 @@ export default async function DashboardPage({
 
         <PortfolioValueChart
           currentValue={portfolio.total_market_value}
+          costBasis={portfolio.total_deployed}
           empty={portfolio.empty}
           synthetic={portfolio.synthetic_prices}
         />

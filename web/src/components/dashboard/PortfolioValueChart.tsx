@@ -1,20 +1,34 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { LineChart } from "@/components/primitives/LineChart";
 
 /**
- * PortfolioValueChart — canvas card showing portfolio book value over time
- * with range pills (1D / 5D / 1M / 6M / YTD / 1Y / All). Wrapped in a
- * var(--surface) card per Instrument-Field §3.1 Inset role.
+ * PortfolioValueChart — instrument-grade chart for the /dashboard surface.
  *
- * v1 data: synthesized random walk anchored at currentValue, deterministic
- * by ticker-count seed so the chart is stable across page loads. Live data
- * (positions_history table) is THS-XX (deferred until daily snapshotter).
+ * v2 (this rewrite) follows the Claude Design "AI Thesis — Dashboard.html"
+ * reference pattern Terry surfaced 2026-05-19 — a Bloomberg/Mercury-class
+ * NAV chart with the full instrumentation kit: Y-axis tick labels (right-
+ * anchored $X.Xk format, 5 ticks), X-axis date labels (5 evenly-spaced),
+ * subtle horizontal grid lines, area fill under the NAV line, HIGH/LOW
+ * canvas annotations with dot markers, dashed cost-basis horizontal
+ * reference line, and a footer summary strip (30d high · 30d low · max
+ * drawdown). Hover surfaces a crosshair + dot + tooltip card with NAV +
+ * delta-from-cost-basis.
  *
- * Hover: crosshair + value+date tooltip per Linear/Mercury pattern. Tooltip
- * resolves to the nearest data point — for daily-step fixtures that means
- * single-day precision.
+ * v1 used LineChart primitive + overlay divs. v2 ditches that for a
+ * single custom SVG so all elements (grid, axes, line, ref-line, dots,
+ * area) share one coordinate space. LineChart primitive stays for the
+ * lighter consumers (Sparkline, NameScoreChart, PortfolioHeroChart).
+ *
+ * Synthesize() rewritten to walk cost-basis → currentValue across the
+ * range with bounded noise — gives the chart a real "bought at X, today
+ * at Y" shape instead of pure noise around currentValue. Anchored
+ * endpoints: start = costBasis, end = currentValue.
+ *
+ * NOTE: SPY-normalized series referenced in the source mock is NOT
+ * included here — we don't have SPY-series data wired through yet. When
+ * the SPY time-series lands, add it as a second dashed line per the
+ * mock's --quiet stroke pattern.
  */
 type RangeKey = "1D" | "5D" | "1M" | "6M" | "YTD" | "1Y" | "All";
 
@@ -23,35 +37,52 @@ const RANGES: { key: RangeKey; days: number; label: string }[] = [
   { key: "5D", days: 5, label: "5D" },
   { key: "1M", days: 30, label: "1M" },
   { key: "6M", days: 180, label: "6M" },
-  { key: "YTD", days: 138, label: "YTD" }, // approximation for fixture
+  { key: "YTD", days: 138, label: "YTD" },
   { key: "1Y", days: 365, label: "1Y" },
   { key: "All", days: 730, label: "All" },
 ];
 
-const CHART_H = 180;
-const CHART_VIEW_W = 1200;
-const PADDING_Y = 2;
+const CHART_H = 280;
+const VIEW_W = 1200;
+const VIEW_H = 280;
+const PAD_L = 48;
+const PAD_R = 16;
+const PAD_T = 16;
+const PAD_B = 30;
+const INNER_W = VIEW_W - PAD_L - PAD_R;
+const INNER_H = VIEW_H - PAD_T - PAD_B;
 
 export function PortfolioValueChart({
   currentValue,
+  costBasis,
   empty,
   synthetic,
 }: {
   currentValue: number;
+  costBasis: number;
   empty: boolean;
   synthetic: boolean;
 }) {
   const [range, setRange] = useState<RangeKey>("1M");
   const days = RANGES.find((r) => r.key === range)?.days ?? 30;
 
-  const series = useMemo(() => synthesize(currentValue, days, empty), [currentValue, days, empty]);
+  const series = useMemo(
+    () => synthesize(currentValue, costBasis, days, empty),
+    [currentValue, costBasis, days, empty],
+  );
   const data = series.values;
   const dates = series.dates;
-  const startValue = data[0];
-  const change = currentValue - startValue;
-  const changePct = startValue > 0 ? (change / startValue) * 100 : 0;
-  const positive = change >= 0;
-  const changeColor = positive ? "var(--success)" : "var(--danger)";
+
+  const sinceOpenPl = empty ? 0 : currentValue - data[0];
+  const sinceOpenPct = data[0] > 0 ? (sinceOpenPl / data[0]) * 100 : 0;
+  const sinceOpenPos = sinceOpenPl >= 0;
+
+  const vsCostPl = empty ? 0 : currentValue - costBasis;
+  const vsCostPct = costBasis > 0 ? (vsCostPl / costBasis) * 100 : 0;
+  const vsCostPos = vsCostPl >= 0;
+
+  // High / low / max-drawdown
+  const stats = useMemo(() => computeStats(data, dates), [data, dates]);
 
   return (
     <div
@@ -62,51 +93,50 @@ export function PortfolioValueChart({
         padding: "16px 20px 14px",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 14,
       }}
     >
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
           <span
             style={{
               fontSize: 10.5,
               fontFamily: "var(--m)",
               color: "var(--text-3)",
-              letterSpacing: ".08em",
+              letterSpacing: ".14em",
               textTransform: "uppercase",
+              fontWeight: 500,
             }}
           >
-            Portfolio value
+            Portfolio · NAV
           </span>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-            <span
+          <Headline value={currentValue} empty={empty} />
+          {!empty && (
+            <div
               style={{
                 fontFamily: "var(--m)",
-                fontSize: 22,
-                fontWeight: 600,
-                color: "var(--text-1)",
+                fontSize: 12.5,
+                color: "var(--text-2)",
                 fontVariantNumeric: "tabular-nums",
-                lineHeight: 1,
+                lineHeight: 1.5,
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "baseline",
+                gap: 12,
               }}
             >
-              {empty ? "—" : fmtUsd(currentValue)}
-            </span>
-            {!empty && (
-              <span
-                style={{
-                  fontFamily: "var(--m)",
-                  fontSize: 12,
-                  color: changeColor,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {positive ? "+" : ""}
-                {fmtUsd(change, true)} · {positive ? "+" : ""}
-                {changePct.toFixed(2)}%
+              <span style={{ color: sinceOpenPos ? "var(--success)" : "var(--danger)" }}>
+                {sinceOpenPos ? "+" : "−"}${Math.abs(sinceOpenPl).toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
               </span>
-            )}
-          </div>
+              <span style={{ color: sinceOpenPos ? "var(--success)" : "var(--danger)" }}>
+                ({sinceOpenPos ? "+" : "−"}{Math.abs(sinceOpenPct).toFixed(2)}%)
+              </span>
+              <span style={{ color: "var(--text-3)" }}>since open</span>
+              <span style={{ color: "var(--text-4)" }}>·</span>
+              <KeyVal k="vs cost" sign={vsCostPos ? "+" : "−"} value={`$${Math.abs(vsCostPl).toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`} pct={`${vsCostPos ? "+" : "−"}${Math.abs(vsCostPct).toFixed(2)}%`} positive={vsCostPos} />
+            </div>
+          )}
         </div>
         <div style={{ flex: 1 }} />
         <RangePicker value={range} onChange={setRange} />
@@ -117,15 +147,48 @@ export function PortfolioValueChart({
         {empty ? (
           <ChartEmpty />
         ) : (
-          // Line color is brand-neutral (--accent). Trend communication lives
-          // in the +/- $ · +/- % chip beside the headline value — color-coding
-          // the whole line decorates with severity (/lambo: "Severity colors
-          // only at severity moments. The accent is even more precious.").
-          <ChartWithHover data={data} dates={dates} />
+          <ChartCanvas data={data} dates={dates} costBasis={costBasis} stats={stats} />
         )}
       </div>
 
-      {/* Footer */}
+      {/* Footer summary */}
+      {!empty && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 14,
+            fontFamily: "var(--m)",
+            fontSize: 10.5,
+            color: "var(--text-4)",
+            letterSpacing: ".02em",
+            paddingTop: 2,
+          }}
+        >
+          <Legend swatch="solid" color="var(--accent)" label="NAV" />
+          <Legend swatch="dashed" color="var(--text-3)" label="Cost basis" />
+          <Sep />
+          <span>
+            30d high <Mono>${stats.high.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}</Mono>{" "}
+            <Quiet>({fmtShortDate(stats.high.date)})</Quiet>
+          </span>
+          <Sep />
+          <span>
+            30d low <Mono>${stats.low.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}</Mono>{" "}
+            <Quiet>({fmtShortDate(stats.low.date)})</Quiet>
+          </span>
+          <Sep />
+          <span>
+            max drawdown{" "}
+            <span style={{ color: "var(--danger)" }}>
+              {stats.maxDrawdownPct === 0 ? "—" : `−${stats.maxDrawdownPct.toFixed(2)}%`}
+            </span>
+          </span>
+        </div>
+      )}
+
+      {/* Provenance */}
       {!empty && synthetic && (
         <div
           style={{
@@ -133,15 +196,96 @@ export function PortfolioValueChart({
             fontFamily: "var(--m)",
             color: "var(--text-4)",
             letterSpacing: ".04em",
+            paddingTop: 4,
           }}
         >
-          Fixture · deterministic random walk anchored at current value · live
-          data lands when positions_history snapshot wires up
+          Fixture · deterministic walk from cost basis → current value · SPY-normalized overlay
+          lands when SPY time-series wires up
         </div>
       )}
     </div>
   );
 }
+
+/* ----------------- headline ----------------- */
+
+function Headline({ value, empty }: { value: number; empty: boolean }) {
+  if (empty) {
+    return (
+      <span
+        style={{
+          fontFamily: "var(--m)",
+          fontSize: 44,
+          fontWeight: 500,
+          color: "var(--text-4)",
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1,
+          letterSpacing: "-.025em",
+          marginTop: 2,
+        }}
+      >
+        —
+      </span>
+    );
+  }
+  // Split into whole + decimal so .XX renders dimmer per mock pattern.
+  const whole = Math.floor(Math.abs(value)).toLocaleString("en-US");
+  const cents = (Math.abs(value) % 1).toFixed(2).slice(1); // ".41"
+  const sign = value < 0 ? "−" : "";
+  return (
+    <span
+      style={{
+        fontFamily: "var(--m)",
+        fontSize: 44,
+        fontWeight: 500,
+        color: "var(--text-1)",
+        fontVariantNumeric: "tabular-nums",
+        lineHeight: 1,
+        letterSpacing: "-.025em",
+        marginTop: 2,
+      }}
+    >
+      {sign}${whole}
+      <span style={{ color: "var(--text-3)", fontWeight: 400 }}>{cents}</span>
+    </span>
+  );
+}
+
+function KeyVal({
+  k,
+  sign,
+  value,
+  pct,
+  positive,
+}: {
+  k: string;
+  sign: string;
+  value: string;
+  pct: string;
+  positive: boolean;
+}) {
+  const color = positive ? "var(--success)" : "var(--danger)";
+  return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+      <span
+        style={{
+          fontSize: 10,
+          color: "var(--text-4)",
+          letterSpacing: ".14em",
+          textTransform: "uppercase",
+        }}
+      >
+        {k}
+      </span>
+      <span style={{ color }}>
+        {sign}{value.replace("$-", "$").replace("$−", "$")}
+      </span>
+      <span style={{ color, fontSize: 11.5 }}>({pct})</span>
+    </span>
+  );
+}
+
+/* ----------------- range picker ----------------- */
 
 function RangePicker({ value, onChange }: { value: RangeKey; onChange: (k: RangeKey) => void }) {
   return (
@@ -183,69 +327,250 @@ function RangePicker({ value, onChange }: { value: RangeKey; onChange: (k: Range
   );
 }
 
-/**
- * Chart with crosshair + tooltip on hover. The base LineChart renders the
- * filled area + line; this wrapper overlays a transparent capture rect to
- * track mouse position, then renders crosshair + dot + tooltip when active.
- *
- * Hit-testing: nearest data-index by x-position. For ranges with hundreds
- * of points this rounds to the visually-nearest day, which is what users
- * actually want — no interpolation, no fuzz.
- */
-function ChartWithHover({ data, dates }: { data: number[]; dates: Date[] }) {
+/* ----------------- chart canvas (custom SVG) ----------------- */
+
+type Stats = {
+  high: { value: number; date: Date; idx: number };
+  low: { value: number; date: Date; idx: number };
+  maxDrawdownPct: number;
+};
+
+function computeStats(values: number[], dates: Date[]): Stats {
+  let hiIdx = 0;
+  let loIdx = 0;
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] > values[hiIdx]) hiIdx = i;
+    if (values[i] < values[loIdx]) loIdx = i;
+  }
+  // Max drawdown: largest peak-to-trough decline
+  let peak = values[0];
+  let maxDd = 0;
+  for (const v of values) {
+    if (v > peak) peak = v;
+    const dd = peak > 0 ? (peak - v) / peak : 0;
+    if (dd > maxDd) maxDd = dd;
+  }
+  return {
+    high: { value: values[hiIdx], date: dates[hiIdx], idx: hiIdx },
+    low: { value: values[loIdx], date: dates[loIdx], idx: loIdx },
+    maxDrawdownPct: maxDd * 100,
+  };
+}
+
+function ChartCanvas({
+  data,
+  dates,
+  costBasis,
+  stats,
+}: {
+  data: number[];
+  dates: Date[];
+  costBasis: number;
+  stats: Stats;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState<{ idx: number; clientX: number } | null>(null);
+  const [hover, setHover] = useState<{ idx: number } | null>(null);
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const usableH = CHART_H - PADDING_Y * 2;
-  const step = data.length <= 1 ? 0 : CHART_VIEW_W / (data.length - 1);
+  // Y-axis range — include cost basis in the bounds so the reference line
+  // always renders inside the chart.
+  const yMinRaw = Math.min(...data, costBasis);
+  const yMaxRaw = Math.max(...data, costBasis);
+  const yPad = (yMaxRaw - yMinRaw) * 0.18 || yMaxRaw * 0.05;
+  const yMin = yMinRaw - yPad;
+  const yMax = yMaxRaw + yPad / 2;
 
+  const xAt = (i: number) => PAD_L + (data.length <= 1 ? 0 : i / (data.length - 1)) * INNER_W;
+  const yAt = (v: number) => PAD_T + (1 - (v - yMin) / (yMax - yMin)) * INNER_H;
+
+  // Y-axis ticks (5 evenly spaced)
+  const tickCount = 4;
+  const ticks: number[] = [];
+  for (let i = 0; i <= tickCount; i++) {
+    ticks.push(yMin + (yMax - yMin) * (i / tickCount));
+  }
+
+  // X-axis labels (5 evenly spaced indices)
+  const xLabelIdxs = [0, Math.round((data.length - 1) * 0.25), Math.round((data.length - 1) * 0.5), Math.round((data.length - 1) * 0.75), data.length - 1];
+
+  // NAV path
+  const navPath = data
+    .map((v, i) => `${i === 0 ? "M" : "L"}${xAt(i).toFixed(2)},${yAt(v).toFixed(2)}`)
+    .join(" ");
+  const navArea =
+    navPath +
+    ` L${xAt(data.length - 1).toFixed(2)},${(PAD_T + INNER_H).toFixed(2)}` +
+    ` L${xAt(0).toFixed(2)},${(PAD_T + INNER_H).toFixed(2)} Z`;
+
+  // Cost basis horizontal line
+  const cbY = yAt(costBasis);
+
+  // Hover handler
   function handleMove(e: React.MouseEvent<HTMLDivElement>) {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const relX = (e.clientX - rect.left) / rect.width;
-    const rawIdx = Math.round(relX * (data.length - 1));
-    const idx = Math.max(0, Math.min(data.length - 1, rawIdx));
-    setHover({ idx, clientX: e.clientX - rect.left });
+    const xPx = e.clientX - rect.left;
+    const ratio = (xPx / rect.width) * VIEW_W;
+    const usable = (ratio - PAD_L) / INNER_W;
+    if (usable < 0 || usable > 1) {
+      setHover(null);
+      return;
+    }
+    const i = Math.max(0, Math.min(data.length - 1, Math.round(usable * (data.length - 1))));
+    setHover({ idx: i });
   }
 
-  const hoverX = hover ? (hover.idx * step) : 0;
-  const hoverY = hover
-    ? PADDING_Y + (1 - (data[hover.idx] - min) / range) * usableH
-    : 0;
+  const hoverIdx = hover?.idx ?? null;
+  const hoverXPct = hoverIdx != null ? (xAt(hoverIdx) / VIEW_W) * 100 : 0;
+  const hoverYPct = hoverIdx != null ? (yAt(data[hoverIdx]) / VIEW_H) * 100 : 0;
 
-  // Convert hoverX from viewBox coordinates → container percent so the dot
-  // + crosshair land at the right visual position regardless of container
-  // width. The SVG uses preserveAspectRatio="none" so X-scaling is linear.
-  const hoverXPct = data.length <= 1 ? 0 : (hover ? hover.idx / (data.length - 1) : 0) * 100;
-  const hoverYPct = (hoverY / CHART_H) * 100;
+  // HIGH/LOW annotation positions (HTML overlay so text isn't clipped)
+  const hiXPct = (xAt(stats.high.idx) / VIEW_W) * 100;
+  const hiYPct = (yAt(stats.high.value) / VIEW_H) * 100;
+  const loXPct = (xAt(stats.low.idx) / VIEW_W) * 100;
+  const loYPct = (yAt(stats.low.value) / VIEW_H) * 100;
 
   return (
     <div
       ref={containerRef}
       onMouseMove={handleMove}
       onMouseLeave={() => setHover(null)}
-      style={{ width: "100%", height: "100%", position: "relative", cursor: "crosshair" }}
+      style={{ position: "relative", width: "100%", height: "100%", cursor: "crosshair" }}
     >
-      <LineChart data={data} width={CHART_VIEW_W} height={CHART_H} color="var(--accent)" strokeWidth={1.5} filled />
-      {hover && (
+      <svg
+        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        preserveAspectRatio="none"
+        style={{ width: "100%", height: "100%", display: "block" }}
+      >
+        <defs>
+          <linearGradient id="nav-fill-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.32" />
+            <stop offset="60%" stopColor="var(--accent)" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal grid lines + Y-axis tick labels */}
+        {ticks.map((t, i) => {
+          const y = yAt(t);
+          return (
+            <g key={i}>
+              <line
+                x1={PAD_L}
+                y1={y}
+                x2={VIEW_W - PAD_R}
+                y2={y}
+                stroke="rgba(255,255,255,0.04)"
+                strokeWidth={1}
+              />
+              <text
+                x={PAD_L - 8}
+                y={y + 3}
+                textAnchor="end"
+                fill="var(--text-4)"
+                fontFamily="var(--m)"
+                fontSize={10}
+                letterSpacing="0.5"
+              >
+                ${(t / 1000).toFixed(1)}k
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Cost basis dashed reference line */}
+        <line
+          x1={PAD_L}
+          y1={cbY}
+          x2={VIEW_W - PAD_R}
+          y2={cbY}
+          stroke="var(--text-3)"
+          strokeWidth={1.2}
+          strokeDasharray="4 4"
+          opacity={0.6}
+        />
+
+        {/* NAV area fill */}
+        <path d={navArea} fill="url(#nav-fill-grad)" />
+
+        {/* NAV line */}
+        <path
+          d={navPath}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth={1.6}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+
+        {/* HIGH marker dot */}
+        <circle
+          cx={xAt(stats.high.idx)}
+          cy={yAt(stats.high.value)}
+          r={3.5}
+          fill="var(--success)"
+          stroke="var(--surface)"
+          strokeWidth={2}
+        />
+        {/* LOW marker dot */}
+        <circle
+          cx={xAt(stats.low.idx)}
+          cy={yAt(stats.low.value)}
+          r={3.5}
+          fill="var(--danger)"
+          stroke="var(--surface)"
+          strokeWidth={2}
+        />
+      </svg>
+
+      {/* HIGH label (HTML overlay so it doesn't scale with SVG aspect) */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${hiXPct}%`,
+          top: `${hiYPct}%`,
+          transform: hiXPct > 70 ? "translate(-110%, -160%)" : "translate(12px, -160%)",
+          fontFamily: "var(--m)",
+          fontSize: 10,
+          color: "var(--text-3)",
+          letterSpacing: "0.04em",
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+        }}
+      >
+        HIGH ${stats.high.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+      </div>
+      {/* LOW label */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${loXPct}%`,
+          top: `${loYPct}%`,
+          transform: loXPct > 70 ? "translate(-110%, 50%)" : "translate(12px, 50%)",
+          fontFamily: "var(--m)",
+          fontSize: 10,
+          color: "var(--text-3)",
+          letterSpacing: "0.04em",
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+        }}
+      >
+        LOW ${stats.low.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+      </div>
+
+      {/* Crosshair + hover */}
+      {hoverIdx != null && (
         <>
-          {/* Crosshair vertical guideline */}
           <div
             style={{
               position: "absolute",
               left: `${hoverXPct}%`,
               top: 0,
-              bottom: 0,
+              bottom: `${(PAD_B / VIEW_H) * 100}%`,
               width: 1,
-              background: "var(--text-3)",
-              opacity: 0.4,
+              borderLeft: "1px dashed rgba(255,255,255,0.22)",
               pointerEvents: "none",
             }}
           />
-          {/* Point marker */}
           <div
             style={{
               position: "absolute",
@@ -257,18 +582,41 @@ function ChartWithHover({ data, dates }: { data: number[]; dates: Date[] }) {
               marginTop: -4,
               borderRadius: "50%",
               background: "var(--accent)",
-              border: "2px solid var(--surface)",
+              boxShadow: "0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent)",
               pointerEvents: "none",
             }}
           />
-          {/* Tooltip card */}
           <HoverTooltip
-            value={data[hover.idx]}
-            date={dates[hover.idx]}
+            value={data[hoverIdx]}
+            date={dates[hoverIdx]}
+            costBasis={costBasis}
             containerXPct={hoverXPct}
           />
         </>
       )}
+
+      {/* X-axis date labels (HTML overlay below the chart canvas) */}
+      <div
+        style={{
+          position: "absolute",
+          left: `${(PAD_L / VIEW_W) * 100}%`,
+          right: `${(PAD_R / VIEW_W) * 100}%`,
+          bottom: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          fontFamily: "var(--m)",
+          fontSize: 10,
+          color: "var(--text-4)",
+          letterSpacing: "0.05em",
+          pointerEvents: "none",
+        }}
+      >
+        {xLabelIdxs.map((i, k) => (
+          <span key={k}>
+            {k === xLabelIdxs.length - 1 ? "TODAY" : fmtShortDate(dates[i]).toUpperCase()}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -276,72 +624,104 @@ function ChartWithHover({ data, dates }: { data: number[]; dates: Date[] }) {
 function HoverTooltip({
   value,
   date,
+  costBasis,
   containerXPct,
 }: {
   value: number;
   date: Date;
+  costBasis: number;
   containerXPct: number;
 }) {
-  // Clamp horizontal anchor so tooltip doesn't overflow the chart edges.
-  // Tooltip is roughly 130px wide; chart container width varies by viewport.
-  // Using CSS-only clamping via translateX with edge-aware offset.
-  const leftEdge = containerXPct < 10;
-  const rightEdge = containerXPct > 90;
+  const delta = value - costBasis;
+  const pct = costBasis > 0 ? (delta / costBasis) * 100 : 0;
+  const pos = delta >= 0;
+  const leftEdge = containerXPct < 12;
+  const rightEdge = containerXPct > 88;
   const transform = leftEdge
-    ? "translateX(0)"
+    ? "translateX(6px)"
     : rightEdge
-      ? "translateX(-100%)"
+      ? "translateX(calc(-100% - 6px))"
       : "translateX(-50%)";
   return (
     <div
       style={{
         position: "absolute",
         left: `${containerXPct}%`,
-        top: 4,
+        top: 6,
         transform,
         background: "var(--elevated)",
         border: "1px solid var(--border)",
         borderRadius: 4,
-        padding: "6px 10px",
+        padding: "8px 10px",
         display: "flex",
         flexDirection: "column",
-        gap: 2,
+        gap: 3,
+        minWidth: 140,
         pointerEvents: "none",
         whiteSpace: "nowrap",
-        boxShadow: "0 2px 8px rgba(0,0,0,.4)",
-        zIndex: 2,
+        boxShadow: "0 4px 14px rgba(0,0,0,.4)",
+        zIndex: 4,
       }}
     >
       <span
         style={{
           fontFamily: "var(--m)",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "var(--text-1)",
-          fontVariantNumeric: "tabular-nums",
-          lineHeight: 1.2,
-        }}
-      >
-        {fmtUsd(value)}
-      </span>
-      <span
-        style={{
-          fontFamily: "var(--m)",
           fontSize: 10,
-          color: "var(--text-3)",
-          letterSpacing: ".02em",
-          lineHeight: 1.2,
+          color: "var(--text-4)",
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
         }}
       >
-        {formatDate(date)}
+        {fmtLongDate(date)}
       </span>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
+        <span style={{ fontFamily: "var(--m)", fontSize: 10.5, color: "var(--text-4)", letterSpacing: "0.05em" }}>NAV</span>
+        <span style={{ fontFamily: "var(--m)", fontSize: 12, color: "var(--text-1)", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+          ${value.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}
+        </span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
+        <span style={{ fontFamily: "var(--m)", fontSize: 10.5, color: "var(--text-4)", letterSpacing: "0.05em" }}>vs cost</span>
+        <span style={{ fontFamily: "var(--m)", fontSize: 11.5, color: pos ? "var(--success)" : "var(--danger)", fontVariantNumeric: "tabular-nums" }}>
+          {pos ? "+" : "−"}${Math.abs(delta).toLocaleString("en-US", { maximumFractionDigits: 0 })} · {pos ? "+" : "−"}{Math.abs(pct).toFixed(2)}%
+        </span>
+      </div>
     </div>
   );
 }
 
-function formatDate(d: Date): string {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+/* ----------------- footer helpers ----------------- */
+
+function Legend({ swatch, color, label }: { swatch: "solid" | "dashed"; color: string; label: string }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--text-3)" }}>
+      <span
+        style={{
+          width: 12,
+          height: 2,
+          background:
+            swatch === "solid"
+              ? color
+              : `repeating-linear-gradient(to right, ${color} 0 4px, transparent 4px 7px)`,
+        }}
+      />
+      {label}
+    </span>
+  );
+}
+
+function Sep() {
+  return <span style={{ color: "var(--text-4)" }}>·</span>;
+}
+
+function Mono({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{ color: "var(--text-2)", fontVariantNumeric: "tabular-nums" }}>{children}</span>
+  );
+}
+
+function Quiet({ children }: { children: React.ReactNode }) {
+  return <span style={{ color: "var(--text-4)" }}>{children}</span>;
 }
 
 function ChartEmpty() {
@@ -362,28 +742,31 @@ function ChartEmpty() {
   );
 }
 
-function fmtUsd(n: number, signed = false): string {
-  const sign = n < 0 ? "-" : signed && n > 0 ? "+" : "";
-  const body = Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
-  return `${sign}$${body}`;
+/* ----------------- formatters ----------------- */
+
+function fmtShortDate(d: Date): string {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[d.getMonth()]} ${d.getDate()}`;
 }
 
+function fmtLongDate(d: Date): string {
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+/* ----------------- synthesize ----------------- */
+
 /**
- * Deterministic random walk anchored at `currentValue` over `days` points.
- * Uses a fixed seed (currentValue itself as integer) so the chart stays
- * stable across React re-renders. Last point ALWAYS = currentValue so the
- * displayed "now" matches the KPI tile.
- *
- * NO drift — drift bias compounds catastrophically when walking backward
- * (a -0.08%/day drift over 365 iterations produced ~-29% phantom losses
- * across the 1Y range, making the demo portfolio look like it tanked).
- * Pure noise centered at zero keeps the walk anchored at currentValue.
- *
- * Returns parallel arrays: values + dates (one Date per data point,
- * stepping back one calendar day per index from today).
+ * Walk from cost basis (i=0) to currentValue (i=points-1) with bounded
+ * noise. Honest fixture: chart starts where the user bought in, ends at
+ * today's value. Cost-basis horizontal line will appear at the start
+ * point. When currentValue < costBasis → downtrend (loss); when
+ * currentValue > costBasis → uptrend (gain). No drift, no negative
+ * compounding — endpoints are anchored.
  */
 function synthesize(
   currentValue: number,
+  costBasis: number,
   days: number,
   empty: boolean,
 ): { values: number[]; dates: Date[] } {
@@ -402,17 +785,24 @@ function synthesize(
     return { values: Array(points).fill(0), dates };
   }
 
-  const seed = Math.floor(currentValue);
+  const startValue = costBasis > 0 ? costBasis : currentValue;
+  const noiseScale = Math.max(currentValue, startValue) * 0.012; // ±0.6%
   const values: number[] = [];
-  let v = currentValue;
-  let s = seed;
+  let s = Math.floor(currentValue + startValue);
   for (let i = 0; i < points; i++) {
-    values.unshift(v);
+    const t = points === 1 ? 1 : i / (points - 1);
+    const trend = startValue * (1 - t) + currentValue * t;
     s = (s * 1103515245 + 12345) & 0x7fffffff;
-    const noise = (s / 0x7fffffff - 0.5) * 0.012; // ±0.6% per day
-    v = v / (1 + noise);
-    if (v < currentValue * 0.5) v = currentValue * 0.5;
-    if (v > currentValue * 2) v = currentValue * 2;
+    const noise = (s / 0x7fffffff - 0.5) * 2 * noiseScale;
+    let v: number;
+    if (i === 0) {
+      v = startValue; // anchor start at cost basis
+    } else if (i === points - 1) {
+      v = currentValue; // anchor end at current value
+    } else {
+      v = trend + noise;
+    }
+    values.push(v);
   }
   return { values, dates };
 }
