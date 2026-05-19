@@ -70,15 +70,15 @@ function Row({ c, isLast }: { c: GateChange; isLast: boolean }) {
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 8,
-          fontSize: 12,
+          gap: 14,
+          fontSize: 12.5,
           color: "var(--text-2)",
           fontVariantNumeric: "tabular-nums",
           whiteSpace: "nowrap",
         }}
       >
-        <span style={{ color: "var(--text-3)" }}>{c.prior_multiplier.toFixed(2)}×</span>
-        <span style={{ color: arrowColor, fontWeight: 600 }}>→</span>
+        <span style={{ color: "var(--text-2)" }}>{c.prior_multiplier.toFixed(2)}×</span>
+        <span style={{ color: arrowColor, fontWeight: 600, fontSize: 13 }}>→</span>
         <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{c.current_multiplier.toFixed(2)}×</span>
       </span>
     </div>

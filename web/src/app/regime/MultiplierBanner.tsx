@@ -90,10 +90,14 @@ function Cell({
   children: React.ReactNode;
   wide?: boolean;
 }) {
+  // Balanced 50/50 split — the multiplier value and the curve carry equal
+  // information weight (one is "current state," the other is "consequence
+  // of state changes"). Earlier 1.4:1 favoring the hero made the left cell
+  // float in empty space while the curve cell felt cramped.
   return (
     <div
       style={{
-        flex: wide ? 1.4 : 1,
+        flex: 1,
         padding: "16px 22px",
         borderRight: wide ? "1px solid var(--border-subtle)" : undefined,
         display: "flex",

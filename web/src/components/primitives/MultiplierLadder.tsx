@@ -49,12 +49,18 @@ export function MultiplierLadder({ steps, activeKey, gap = 4 }: MultiplierLadder
             key={s.key}
             style={{
               flex: 1,
-              padding: "6px 8px",
+              padding: "8px 10px 6px",
               textAlign: "center",
               background: active ? "var(--accent-soft)" : "transparent",
               border: active ? "1px solid var(--accent-border)" : "1px solid transparent",
               borderRadius: 4,
               minWidth: 0,
+              // Active cell earns its lift: 2px accent rail at the bottom
+              // makes the "you are here" signal unambiguous, per
+              // [[feedback_active_state_indicator_2px_floor]]. Inactive
+              // cells carry a transparent rail of the same thickness so
+              // baselines align across the row (no jitter when state shifts).
+              borderBottom: active ? "2px solid var(--accent)" : "2px solid transparent",
             }}
           >
             <div
@@ -74,14 +80,15 @@ export function MultiplierLadder({ steps, activeKey, gap = 4 }: MultiplierLadder
             <div
               style={{
                 fontFamily: "var(--m)",
-                fontSize: 14,
-                fontWeight: 600,
+                fontSize: active ? 18 : 14,
+                fontWeight: active ? 700 : 600,
                 fontVariantNumeric: "tabular-nums",
                 color: active ? "var(--accent)" : "var(--text-2)",
-                marginTop: 2,
+                marginTop: 4,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
+                lineHeight: 1.1,
               }}
             >
               {s.value}

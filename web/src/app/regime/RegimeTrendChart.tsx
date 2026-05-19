@@ -88,7 +88,21 @@ export function RegimeTrendChart({ history }: { history: MacroGaugeRow[] }) {
   const endLabel = history[n - 1].as_of.slice(0, 7);
 
   return (
-    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    // Surface card chrome — matches the gauge card row above so the regime
+    // canvas reads as a consistent rhythm of contained instruments rather
+    // than mixing surface-lifted cards with raw-canvas chart panes.
+    <div
+      ref={containerRef}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: 6,
+        padding: "14px 16px",
+      }}
+    >
       <div
         style={{
           display: "flex",
