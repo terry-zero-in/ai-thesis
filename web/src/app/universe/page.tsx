@@ -5,6 +5,7 @@ import { getLatestUniverseScores, type UniverseSnapshot } from "@/lib/universe-d
 import { useFilter } from "@/hooks/filter-context";
 import { UniverseTable } from "@/components/universe/UniverseTable";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
 
 export default function UniversePage() {
   const [snap, setSnap] = useState<UniverseSnapshot | null>(null);
@@ -32,6 +33,7 @@ export default function UniversePage() {
   // (overflow: auto here); table inner wrapper hands scroll back to us.
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto", minWidth: 0 }}>
+      <UniverseRailRegister snap={snap} />
       <UniverseHeader snap={snap} />
       <UniverseTable
         rows={snap.rows}

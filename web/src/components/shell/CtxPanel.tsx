@@ -2,7 +2,8 @@
 
 import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { useUniverseFilter } from "@/hooks/universe-filter-context";
-import { UniverseFilterRail } from "@/components/universe/UniverseFilterRail";
+import { UniverseInsightsRail } from "@/components/universe/UniverseInsightsRail";
+import type { UniverseSnapshot } from "@/lib/universe-data";
 import { DashboardTodayRail, type DashboardTodayRailData } from "@/components/rails/DashboardTodayRail";
 import { NameActivityRail, type NameActivityRailData } from "@/components/rails/NameActivityRail";
 import { PortfolioReserveRail, type PortfolioReserveRailData } from "@/components/rails/PortfolioReserveRail";
@@ -57,7 +58,7 @@ export function CtxPanel() {
       }}
     >
       {rail === "universe-filter" ? (
-        <UniverseFilterPanel />
+        <UniverseFilterPanel payload={payload} />
       ) : rail === "dashboard-today" && payload ? (
         <DashboardTodayRail data={payload as DashboardTodayRailData} />
       ) : rail === "name-activity" && payload ? (
@@ -75,10 +76,16 @@ export function CtxPanel() {
   );
 }
 
-function UniverseFilterPanel() {
+function UniverseFilterPanel({ payload }: { payload: unknown }) {
   const f = useUniverseFilter();
+  // Pre-payload (snap still loading from /universe/page.tsx), render with
+  // empty rows so the chart skeleton appears; bars populate within ~50ms
+  // when UniverseRailRegister flips the payload.
+  const snap = payload as UniverseSnapshot | null;
+  const rows = snap?.rows ?? [];
   return (
-    <UniverseFilterRail
+    <UniverseInsightsRail
+      rows={rows}
       layers={f.layers}
       tiers={f.tiers}
       aiqMin={f.aiqMin}
