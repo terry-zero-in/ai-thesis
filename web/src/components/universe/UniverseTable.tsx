@@ -172,7 +172,7 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
               </td>
             </tr>
           )}
-          {sorted.map((r) => (
+          {sorted.map((r, i) => (
             <Row
               key={r.ticker}
               r={r}
@@ -180,6 +180,7 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
               showDelta={hasAnyDelta}
               showMacro={hasAnyMacro}
               showFinal={hasAnyFinalDelta}
+              rowIndex={i}
             />
           ))}
         </tbody>
@@ -218,18 +219,23 @@ function Row({
   showDelta,
   showMacro,
   showFinal,
+  rowIndex,
 }: {
   r: UniverseRow;
   queued: boolean;
   showDelta: boolean;
   showMacro: boolean;
   showFinal: boolean;
+  rowIndex: number;
 }) {
   return (
     <tr
-      className="row-hov"
+      className="row-hov row-stagger-in"
       style={{
         borderBottom: "1px solid var(--border-subtle)",
+        // Cap stagger at 12 — books larger than ~50 names (universe sort)
+        // would otherwise wait ~3s for the tail. Cap reuses bounded scale.
+        ["--row-i" as never]: Math.min(rowIndex, 12),
       }}
     >
       <Td>
@@ -248,6 +254,7 @@ function Row({
           </Link>
           {queued && (
             <span
+              className="chip-fade-in"
               title="Queued for next AIQ rescore (daily-batch routine)"
               style={{
                 fontSize: 9,

@@ -55,9 +55,8 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         ) : (
           <AnimateNumber
             value={snap.total_market_value}
-            format={(n) => fmtUsd(n)}
+            kind="usd"
             style={bigNumberStyle("var(--text-1)")}
-            ariaLabel={fmtUsd(snap.total_market_value)}
           />
         )}
         <SubLine>
@@ -94,9 +93,9 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
           <>
             <AnimateNumber
               value={sparkPct}
-              format={(n) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`}
+              kind="pct-signed"
+              decimals={2}
               style={bigNumberStyle(sparkPos ? "var(--success)" : "var(--danger)")}
-              ariaLabel={`${sparkPos ? "+" : ""}${sparkPct.toFixed(2)}%`}
             />
             <SubLine>
               {sparkPos ? "+" : ""}${Math.abs(sparkChange).toLocaleString("en-US", { maximumFractionDigits: 0 })} on 30d
@@ -112,9 +111,8 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         ) : (
           <AnimateNumber
             value={snap.total_pl}
-            format={(n) => fmtUsd(n, true)}
+            kind="usd-signed"
             style={bigNumberStyle(plPos ? "var(--success)" : "var(--danger)")}
-            ariaLabel={fmtUsd(snap.total_pl, true)}
           />
         )}
         <SubLine>
@@ -128,11 +126,10 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
       <Column label="Reserve">
         <AnimateNumber
           value={snap.reserve_actual}
-          format={(n) => fmtUsd(n)}
+          kind="usd"
           style={bigNumberStyle(
             snap.reserve_actual >= snap.settings.target_reserve ? "var(--text-1)" : "var(--danger)",
           )}
-          ariaLabel={fmtUsd(snap.reserve_actual)}
         />
         <SubLine>target {fmtUsd(snap.settings.target_reserve)}</SubLine>
       </Column>

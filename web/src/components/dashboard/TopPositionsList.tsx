@@ -62,7 +62,7 @@ export function TopPositionsList({
       <HeaderRow />
       <div>
         {built.rows.map((r, i) => (
-          <PositionRowRender key={r.ticker} r={r} isLast={i === built.rows.length - 1} />
+          <PositionRowRender key={r.ticker} r={r} isLast={i === built.rows.length - 1} rowIndex={i} />
         ))}
       </div>
       <ReconcileRow
@@ -112,13 +112,13 @@ function HeaderRow() {
   );
 }
 
-function PositionRowRender({ r, isLast }: { r: Row; isLast: boolean }) {
+function PositionRowRender({ r, isLast, rowIndex }: { r: Row; isLast: boolean; rowIndex: number }) {
   const positive = r.pl >= 0;
   const plColor = positive ? "var(--success)" : "var(--danger)";
   return (
     <Link
       href={`/universe/${r.ticker}`}
-      className="row-hov"
+      className="row-hov row-stagger-in"
       style={{
         display: "grid",
         gridTemplateColumns: GRID,
@@ -129,6 +129,7 @@ function PositionRowRender({ r, isLast }: { r: Row; isLast: boolean }) {
         alignItems: "center",
         textDecoration: "none",
         color: "inherit",
+        ["--row-i" as never]: Math.min(rowIndex, 12),
       }}
     >
       <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{r.ticker}</span>

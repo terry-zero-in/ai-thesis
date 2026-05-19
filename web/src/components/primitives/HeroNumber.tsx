@@ -1,3 +1,5 @@
+import { AnimateNumber, type AnimateNumberKind } from "./AnimateNumber";
+
 /**
  * HeroNumber — the protagonist number on a page, rendered at hero scale.
  *
@@ -86,6 +88,21 @@ export function HeroNumber({
   const deltaColor =
     delta == null ? "var(--text-3)" : delta.value > 0 ? "var(--success)" : delta.value < 0 ? "var(--danger)" : "var(--text-3)";
 
+  // Map HeroNumber prefix/unit into an AnimateNumber kind for the count-up
+  // primitive. Currency prefixes ("$"/"€") collapse to "usd" (no localized
+  // €-prefix kind yet; current consumers are USD-only). Unit-based kinds
+  // are anchored by their suffix glyph. Default = "decimal".
+  // Note: the unit glyph is rendered separately below as a smaller sibling
+  // span, so the AnimateNumber kind for unit cases is chosen to NOT emit
+  // the unit (e.g. "multiplier" kind appends "×" — we use "decimal" when
+  // there's a unit so AnimateNumber renders just the number and the
+  // existing unit-span keeps its smaller scale).
+  const animKind: AnimateNumberKind =
+    prefix === "$" || prefix === "€"
+      ? "usd"
+      : "decimal";
+  const animDecimals = prefix === "$" || prefix === "€" ? 0 : precision;
+
   return (
     <div
       style={{
@@ -121,8 +138,17 @@ export function HeroNumber({
             letterSpacing: "-.018em",
           }}
         >
-          {valueStr}
-          {unit && (
+          {value == null ? (
+            valueStr
+          ) : (
+            <AnimateNumber value={value} kind={animKind} decimals={animDecimals} />
+          )}
+          {value != null && unit && (
+            <span style={{ fontSize: SIZE_PX[size] * 0.55, marginLeft: 2, color: "var(--text-2)", fontWeight: 500 }}>
+              {unit}
+            </span>
+          )}
+          {value == null && unit && (
             <span style={{ fontSize: SIZE_PX[size] * 0.55, marginLeft: 2, color: "var(--text-2)", fontWeight: 500 }}>
               {unit}
             </span>

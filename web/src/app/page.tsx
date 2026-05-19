@@ -11,6 +11,7 @@ import { PortfolioValueChart } from "@/components/dashboard/PortfolioValueChart"
 import { TopPositionsList } from "@/components/dashboard/TopPositionsList";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
 import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
+import { AnimateNumber, type AnimateNumberKind } from "@/components/primitives/AnimateNumber";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { MarketingLanding } from "@/components/marketing/MarketingLanding";
 
@@ -316,14 +317,16 @@ function KpiRow({
         padding: "4px 0",
       }}
     >
-      <KpiCell
+      <AnimatedKpiCell
         label="Portfolio"
-        value={fmtUsd(portfolioValue)}
+        value={portfolioValue}
+        kind="usd"
         sub="market value"
       />
-      <KpiCell
+      <AnimatedKpiCell
         label="P&L · since open"
-        value={fmtUsd(portfolioPl, true)}
+        value={portfolioPl}
+        kind="usd-signed"
         sub={`${plPctLabel} on cost basis`}
         valueColor={plPos ? "var(--success)" : "var(--danger)"}
       />
@@ -333,15 +336,18 @@ function KpiRow({
         sub="tracks once positions have ≥30d of history"
         muted
       />
-      <KpiCell
+      <AnimatedKpiCell
         label="Macro multiplier"
-        value={`${macroMultiplier.toFixed(2)}×`}
+        value={macroMultiplier}
+        kind="multiplier"
+        decimals={2}
         sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
         valueColor={macroState.color}
       />
-      <KpiCell
+      <AnimatedKpiCell
         label="High-tier names"
-        value={`${highCurrent}`}
+        value={highCurrent}
+        kind="int"
         sub={`${highCurrent}/${universeSize} · ${highDeltaLabel}`}
         valueColor="var(--text-1)"
       />
@@ -453,34 +459,81 @@ function KpiCell({
         minWidth: 0,
       }}
     >
-      <span
-        style={{
-          fontSize: 10.5,
-          fontFamily: "var(--m)",
-          color: "var(--text-3)",
-          letterSpacing: ".08em",
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          fontFamily: "var(--m)",
-          fontSize: 22,
-          fontWeight: 600,
-          fontVariantNumeric: "tabular-nums",
-          color: muted ? "var(--text-4)" : (valueColor ?? "var(--text-1)"),
-          lineHeight: 1,
-        }}
-      >
+      <span style={kpiLabelStyle()}>{label}</span>
+      <span style={kpiValueStyle(muted ? "var(--text-4)" : (valueColor ?? "var(--text-1)"))}>
         {value}
       </span>
-      {sub && (
-        <span style={{ fontSize: 11, fontFamily: "var(--m)", color: "var(--text-3)" }}>{sub}</span>
-      )}
+      {sub && <span style={kpiSubStyle()}>{sub}</span>}
     </div>
   );
+}
+
+/**
+ * Animated sibling — count-up on mount + on revalidate. Uses the kind-based
+ * AnimateNumber API so the prop boundary stays serializable (this page is
+ * a Server Component). Same style scaffold as KpiCell — only the value
+ * span swaps to AnimateNumber.
+ */
+function AnimatedKpiCell({
+  label,
+  value,
+  kind,
+  decimals,
+  sub,
+  valueColor,
+}: {
+  label: string;
+  value: number;
+  kind: AnimateNumberKind;
+  decimals?: number;
+  sub?: string;
+  valueColor?: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 7,
+        minWidth: 0,
+      }}
+    >
+      <span style={kpiLabelStyle()}>{label}</span>
+      <AnimateNumber
+        value={value}
+        kind={kind}
+        decimals={decimals}
+        style={kpiValueStyle(valueColor ?? "var(--text-1)")}
+      />
+      {sub && <span style={kpiSubStyle()}>{sub}</span>}
+    </div>
+  );
+}
+
+function kpiLabelStyle(): React.CSSProperties {
+  return {
+    fontSize: 10.5,
+    fontFamily: "var(--m)",
+    color: "var(--text-3)",
+    letterSpacing: ".08em",
+    textTransform: "uppercase",
+  };
+}
+
+function kpiValueStyle(color: string): React.CSSProperties {
+  return {
+    fontFamily: "var(--m)",
+    fontSize: 22,
+    fontWeight: 600,
+    fontVariantNumeric: "tabular-nums",
+    color,
+    lineHeight: 1,
+  };
+}
+
+function kpiSubStyle(): React.CSSProperties {
+  return { fontSize: 11, fontFamily: "var(--m)", color: "var(--text-3)" };
 }
 
 /* ---------------- unified Score movers ---------------- */
@@ -526,14 +579,14 @@ function MoversTable({ movers, asOf }: { movers: DashboardMover[]; asOf: string 
       </div>
       <div>
         {movers.map((m, i) => (
-          <MoverRow key={m.ticker} m={m} isLast={i === movers.length - 1} asOf={asOf} />
+          <MoverRow key={m.ticker} m={m} isLast={i === movers.length - 1} asOf={asOf} rowIndex={i} />
         ))}
       </div>
     </div>
   );
 }
 
-function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asOf: string | null }) {
+function MoverRow({ m, isLast, asOf, rowIndex }: { m: DashboardMover; isLast: boolean; asOf: string | null; rowIndex: number }) {
   const dir = m.delta > 0 ? "↑" : m.delta < 0 ? "↓" : "→";
   const dirColor = m.delta > 0 ? "var(--success)" : m.delta < 0 ? "var(--danger)" : "var(--text-3)";
   // Pull full row from snap.rows for ScoreMath inputs (q/g/v/aiq are on the
@@ -562,7 +615,7 @@ function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asO
     <Link
       href={`/universe/${m.ticker}`}
       aria-label={`Open ${m.ticker} detail`}
-      className="row-hov"
+      className="row-hov row-stagger-in"
       style={{
         display: "grid",
         gridTemplateColumns: MOVERS_GRID,
@@ -573,6 +626,8 @@ function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asO
         alignItems: "baseline",
         textDecoration: "none",
         color: "inherit",
+        // Cascade index for .row-stagger-in animation-delay calc.
+        ["--row-i" as never]: Math.min(rowIndex, 12),
       }}
     >
       <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</span>
