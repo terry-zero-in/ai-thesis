@@ -49,11 +49,11 @@ export default async function RegimePage() {
                 }}
                 title={
                   snap.synthetic
-                    ? "Stubbed: synthesized fixture data — macro_gauges table not yet populated by ingestion."
-                    : "Live: macro gauge readings from public.macro_gauges, refreshed by the Tue 22:00 UTC chain."
+                    ? "Sample data — macro gauges shown against a pre-generated dataset for product preview."
+                    : "Live data — macro gauges from the daily ingest cron, refreshed by the Tue 22:00 UTC chain."
                 }
               >
-                {snap.synthetic ? "Stubbed" : "Live"}
+                {snap.synthetic ? "Sample" : "Live"}
               </span>
             ),
           },

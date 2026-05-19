@@ -77,11 +77,11 @@ function UniverseHeader({ snap }: { snap: UniverseSnapshot }) {
               }}
               title={
                 snap.synthetic
-                  ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
-                  : "Live: scores read from public.scores_history populated by the Saturday chain."
+                  ? "Sample data — universe scored against a pre-generated dataset for product preview."
+                  : "Live data — universe scored against your account's latest weekly engine run."
               }
             >
-              {snap.synthetic ? "Stubbed" : "Live"}
+              {snap.synthetic ? "Sample" : "Live"}
             </span>
           ),
         },

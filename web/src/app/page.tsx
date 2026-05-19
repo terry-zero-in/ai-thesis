@@ -554,8 +554,14 @@ function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asO
     macroMultiplier: m.macroMultiplier,
     asOf,
   };
+  // Full-row click → /universe/{ticker}. ScoreMathPopover's trigger calls
+  // both preventDefault + stopPropagation so clicking the composite cell
+  // opens the popover instead of navigating. Linear-class affordance: the
+  // whole row is the navigation surface (no hunt for the ticker hot-zone).
   return (
-    <div
+    <Link
+      href={`/universe/${m.ticker}`}
+      aria-label={`Open ${m.ticker} detail`}
       className="row-hov"
       style={{
         display: "grid",
@@ -565,19 +571,11 @@ function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asO
         borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
         whiteSpace: "nowrap",
         alignItems: "baseline",
+        textDecoration: "none",
+        color: "inherit",
       }}
     >
-      <Link
-        href={`/universe/${m.ticker}`}
-        aria-label={`Open ${m.ticker} detail`}
-        style={{
-          fontWeight: 600,
-          color: "var(--text-1)",
-          textDecoration: "none",
-        }}
-      >
-        {m.ticker}
-      </Link>
+      <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</span>
       <span style={{ color: "var(--text-3)", fontSize: 11 }}>{m.layer_label}</span>
       <ScoreMathPopover input={scoreMathInput}>
         <span
@@ -611,7 +609,7 @@ function MoverRow({ m, isLast, asOf }: { m: DashboardMover; isLast: boolean; asO
           </>
         )}
       </span>
-    </div>
+    </Link>
   );
 }
 

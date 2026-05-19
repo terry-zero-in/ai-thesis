@@ -42,7 +42,7 @@ export default async function SettingsPage() {
                 Single-tenant v1 — only the authenticated email can read or write any surface.
               </>
             ) : (
-              <>Not signed in (fixture mode). RLS gates all writes; reads fall back to fixtures when env is unset.</>
+              <>Sample workspace — sign in to use real data and enable writes.</>
             )}
           </div>
         </Section>

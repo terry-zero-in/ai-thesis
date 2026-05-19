@@ -75,11 +75,11 @@ export default async function MemosPage({
                 }}
                 title={
                   snap.synthetic
-                    ? "Stubbed: synthesized fixture memos — daily-batch routine not yet writing to memos table."
-                    : "Live: memos written by the daily-batch + weekly-rescore routines."
+                    ? "Sample data — memos shown from a pre-generated dataset for product preview."
+                    : "Live data — memos written by your daily-batch + weekly-rescore routines."
                 }
               >
-                {snap.synthetic ? "Stubbed" : "Live"}
+                {snap.synthetic ? "Sample" : "Live"}
               </span>
             ),
           },

@@ -107,7 +107,7 @@ export function RegimeLegendRail({ data }: { data: RegimeLegendRailData }) {
         {asOf && (
           <span>
             As of <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>{asOf}</span>
-            {synthetic ? " (fixture)" : ""}
+            {synthetic ? " · sample data" : ""}
           </span>
         )}
       </RailFooter>

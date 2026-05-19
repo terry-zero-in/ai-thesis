@@ -73,9 +73,9 @@ export default async function PortfolioPage({
                   letterSpacing: ".05em",
                   textTransform: "uppercase",
                 }}
-                title="Synthetic 12-position book seeded via ?seed=fixture-positions for /lambo review."
+                title="Pre-loaded 12-position book for product preview."
               >
-                Demo · fixture book
+                Sample book
               </span>
             )}
           </span>
@@ -103,11 +103,11 @@ export default async function PortfolioPage({
                 }}
                 title={
                   demo
-                    ? "Demo: synthetic 12-position book seeded via ?seed=fixture-positions."
-                    : "Live: cost-basis entries from public.portfolio_positions; market values from public.prices_raw."
+                    ? "Sample data — pre-loaded 12-position book for product preview."
+                    : "Live data — your tracked positions and current market values."
                 }
               >
-                {demo ? "Demo" : "Live"}
+                {demo ? "Sample" : "Live"}
               </span>
             ),
           },

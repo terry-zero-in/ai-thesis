@@ -85,7 +85,7 @@ export function LoginForm({ next, envConfigured }: { next: string; envConfigured
         >
           Supabase env not configured. Set <code style={{ fontFamily: "var(--m)" }}>NEXT_PUBLIC_SUPABASE_URL</code> +{" "}
           <code style={{ fontFamily: "var(--m)" }}>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in{" "}
-          <code style={{ fontFamily: "var(--m)" }}>.env.local</code>; the app renders against fixtures without auth.
+          <code style={{ fontFamily: "var(--m)" }}>.env.local</code>; the app renders against sample data without auth.
         </div>
       )}
     </form>

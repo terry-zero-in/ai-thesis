@@ -172,11 +172,11 @@ function Header({
         }}
         title={
           synthetic
-            ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
-            : "Live: scores read from public.scores_history populated by the Saturday chain."
+            ? "Sample data — thesis shown against a pre-generated dataset for product preview."
+            : "Live data — thesis built from your account's latest scores."
         }
       >
-        {synthetic ? "Stubbed" : "Live"}
+        {synthetic ? "Sample" : "Live"}
       </span>
     </div>
   );

@@ -122,11 +122,11 @@ export function NameHeader({ d }: { d: NameDetail }) {
                         }}
                         title={
                           d.synthetic
-                            ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
-                            : "Live: scores read from public.scores_history populated by the Saturday chain."
+                            ? "Sample data — score shown against a pre-generated dataset for product preview."
+                            : "Live data — score from your account's latest weekly engine run."
                         }
                       >
-                        {d.synthetic ? "Stubbed" : "Live"}
+                        {d.synthetic ? "Sample" : "Live"}
                       </span>
                     ),
                   },

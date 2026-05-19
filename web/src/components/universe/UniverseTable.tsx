@@ -204,7 +204,7 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
         {asOf && (
           <span>
             · as of <span style={{ color: "var(--text-2)" }}>{asOf}</span>
-            {synthetic ? " (fixture)" : ""}
+            {synthetic ? " · sample data" : ""}
           </span>
         )}
       </div>

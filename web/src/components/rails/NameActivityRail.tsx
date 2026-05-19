@@ -58,7 +58,7 @@ export function NameActivityRail({ data }: { data: NameActivityRailData }) {
         {asOf && (
           <span>
             As of <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>{asOf}</span>
-            {synthetic ? " (fixture)" : ""}
+            {synthetic ? " · sample data" : ""}
           </span>
         )}
       </RailFooter>

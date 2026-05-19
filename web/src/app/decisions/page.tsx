@@ -72,11 +72,11 @@ export default async function DecisionsPage({
                 }}
                 title={
                   snap.synthetic
-                    ? "Stubbed: synthesized fixture alerts — derived from a fixture universe + macro state."
-                    : "Live: alerts derived from public.scores_history + public.macro_gauges."
+                    ? "Sample data — alerts derived from the sample universe + macro state."
+                    : "Live data — alerts derived from your account's latest scores + macro gauges."
                 }
               >
-                {snap.synthetic ? "Stubbed" : "Live"}
+                {snap.synthetic ? "Sample" : "Live"}
               </span>
             ),
           },

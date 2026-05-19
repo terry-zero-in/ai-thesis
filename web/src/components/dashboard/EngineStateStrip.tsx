@@ -56,11 +56,11 @@ export function EngineStateStrip({
               }}
               title={
                 synthetic
-                  ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
-                  : "Live: scores read from public.scores_history populated by the Saturday chain."
+                  ? "Sample data — engine outputs shown against a pre-generated dataset for product preview."
+                  : "Live data — engine outputs from your account's latest weekly run."
               }
             >
-              {synthetic ? "STUBBED" : "LIVE"}
+              {synthetic ? "SAMPLE" : "LIVE"}
             </span>
           ),
         },
