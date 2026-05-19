@@ -468,8 +468,7 @@ function KpiCell({
         </span>
         {spark && spark.length > 1 && (
           <span style={{ display: "inline-flex", flexShrink: 0 }}>
-            <Sparkline data={spark} width={56} height={18} />
-            <span style={{ display: "none" }}>{sparkColor /* color picked inside Sparkline by trend; prop kept for future override */}</span>
+            <Sparkline data={spark} width={56} height={18} color={sparkColor} />
           </span>
         )}
       </div>

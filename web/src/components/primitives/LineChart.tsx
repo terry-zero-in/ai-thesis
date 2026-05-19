@@ -73,14 +73,23 @@ export function LineChart({
 }
 
 /**
- * Sparkline — thin wrapper for inline use in KPI tiles. Auto-colors:
- *   - positive trend (last > first) → success
- *   - negative trend → danger
- *   - neutral → text-3
+ * Sparkline — thin wrapper for inline use in KPI tiles. Color defaults to
+ * var(--accent); caller can override for semantic-color cases (e.g. Macro
+ * Multiplier tile passes the regime-state color). Trend information lives
+ * in the numeric chip beside the value, not in the line itself — /lambo:
+ * "severity colors only at severity moments."
  */
-export function Sparkline({ data, width = 80, height = 24 }: { data: number[]; width?: number; height?: number }) {
+export function Sparkline({
+  data,
+  width = 80,
+  height = 24,
+  color = "var(--accent)",
+}: {
+  data: number[];
+  width?: number;
+  height?: number;
+  color?: string;
+}) {
   if (data.length < 2) return null;
-  const trend = data[data.length - 1] - data[0];
-  const color = trend > 0 ? "var(--success)" : trend < 0 ? "var(--danger)" : "var(--text-3)";
   return <LineChart data={data} width={width} height={height} color={color} strokeWidth={1.25} filled />;
 }
