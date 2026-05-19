@@ -56,8 +56,17 @@ export function LineChart({
 
   const gradientId = `lc-grad-${Math.random().toString(36).slice(2, 9)}`;
 
+  // SVG sizing: viewBox owns coordinate space (path math is against
+  // width/height props); style:100% lets the rendered SVG fill its
+  // container without the explicit width attribute setting an intrinsic
+  // 1200px that overflows narrower parents. display:block kills the
+  // inline-baseline gap so the bottom edge sits flush with the wrapper.
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+    <svg
+      style={{ width: "100%", height: "100%", display: "block" }}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+    >
       {filled && (
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
