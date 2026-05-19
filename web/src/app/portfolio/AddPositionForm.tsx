@@ -239,7 +239,7 @@ export function AddPositionForm({
           rows={2}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Fill notes, related decision, etc."
+          placeholder="Trade rationale, related decision, conviction note…"
           style={textareaStyle()}
         />
       </Field>

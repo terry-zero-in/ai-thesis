@@ -17,16 +17,13 @@ import type { PortfolioSnapshot } from "@/lib/portfolio-types";
  * cols 1/3/4. The hero number carries direction; the historical shape
  * lives on the NAV chart in the Dashboard.
  *
- * Empty state: hero shows muted "$0" with an honest "no positions yet"
+ * Empty state: hero shows muted em-dash with an honest "no positions yet"
  * sub. Other 3 columns render as quiet em-dashes — no fake values.
  */
 const CHART_DAYS = 30;
 
 export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
   const plPos = snap.total_pl >= 0;
-  const plPctLabel = snap.total_market_value > 0
-    ? `${plPos ? "+" : ""}${(snap.total_pl_pct * 100).toFixed(2)}% since open`
-    : null;
 
   // 30D sparkline data — same deterministic walk used in PortfolioHeroChart.
   const sparkData = synthesize(snap.total_market_value, CHART_DAYS, snap.empty);
@@ -45,25 +42,15 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         alignItems: "start",
       }}
     >
-      {/* Col 1 — MARKET VALUE (protagonist) */}
+      {/* Col 1 — MARKET VALUE (protagonist).
+          Since-open % lives in Col 3 (P&L · since open) — Market Value owns
+          "what is this worth," P&L owns "what is the return." Two cols, two
+          roles, no double-counting. */}
       <Column label="Market value">
         <BigNumber
           value={snap.empty ? "—" : fmtUsd(snap.total_market_value)}
           color={snap.empty ? "var(--text-4)" : "var(--text-1)"}
         />
-        {plPctLabel && (
-          <span
-            style={{
-              fontFamily: "var(--m)",
-              fontSize: 12,
-              color: plPos ? "var(--success)" : "var(--danger)",
-              fontVariantNumeric: "tabular-nums",
-              marginTop: 4,
-            }}
-          >
-            {plPctLabel}
-          </span>
-        )}
         <SubLine>
           {snap.empty ? (
             "no positions yet — add one via the form on the right"

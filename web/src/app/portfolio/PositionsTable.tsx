@@ -27,7 +27,7 @@ export function PositionsTable({
     return (
       <div
         style={{
-          padding: "28px 8px",
+          padding: "40px 16px",
           fontSize: 13,
           color: "var(--text-3)",
           textAlign: "center",
@@ -35,7 +35,7 @@ export function PositionsTable({
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        No open positions yet. Add the first one using the form on the right.
+        No open positions yet. Click <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>Add position</span> in the top-right to start tracking your book.
       </div>
     );
   }
@@ -48,14 +48,14 @@ export function PositionsTable({
         <thead>
           <tr>
             <Th align="left">Ticker</Th>
-            <Th align="left">Layer</Th>
-            <Th align="left">Thesis</Th>
+            <Th align="left" title="Compute / Models / Apps · AI value-chain layer">Layer</Th>
+            <Th align="left" title="Tier (High/Medium/Low/Avoid) · Composite score · Concentration tax">Thesis</Th>
             <Th align="right">Shares</Th>
-            <Th align="right">Cost</Th>
-            <Th align="right">Mark</Th>
-            <Th align="right">Mkt Value</Th>
-            <Th align="right">P&L $</Th>
-            <Th align="right">P&L %</Th>
+            <Th align="right" title="Cost basis per share — what you paid">Cost</Th>
+            <Th align="right" title="Latest close · FMP daily, refreshed every 5 min">Mark</Th>
+            <Th align="right" title="Market value = mark × shares">Mkt Value</Th>
+            <Th align="right" title="P&L in dollars since position opened">P&L $</Th>
+            <Th align="right" title="P&L as a % of cost basis since position opened">P&L %</Th>
             <Th align="right" title="% of NAV (book + cash)">% Book</Th>
             <Th align="right" style={{ width: 116 }}>{""}</Th>
           </tr>
@@ -102,11 +102,25 @@ function PositionRowView({
     if (t.closest("a, button, input, label, form")) return;
     router.push(`/universe/${p.ticker}`);
   };
+  // Keyboard parity with the mouse path — Enter / Space on a focused row
+  // navigates to the detail page. Linear-grade keyboarding: every clickable
+  // surface is tabbable. The .closest() guard mirrors onRowClick so focus
+  // landing on an inner Link/button doesn't double-navigate.
+  const onRowKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const t = e.target as HTMLElement;
+    if (t !== e.currentTarget && t.closest("a, button, input, label, form")) return;
+    e.preventDefault();
+    router.push(`/universe/${p.ticker}`);
+  };
 
   return (
     <tr
       className="row-hov"
       onClick={onRowClick}
+      onKeyDown={onRowKeyDown}
+      tabIndex={0}
+      aria-label={`Open ${p.ticker} detail`}
       style={{
         borderTop: "1px solid var(--border-subtle)",
         background: highlight
@@ -151,6 +165,7 @@ function PositionRowView({
         <span style={{ color: pl >= 0 ? "var(--success)" : "var(--danger)" }}>{fmtPct(plPct, true)}</span>
         {drawdownTriggered && (
           <div
+            title={`Drawdown trigger fired — position is ≥${Math.abs(POSITION_DRAWDOWN_TRIGGER * 100).toFixed(0)}% below cost basis. Review thesis.`}
             style={{
               fontSize: 9,
               fontFamily: "var(--m)",
@@ -158,6 +173,7 @@ function PositionRowView({
               letterSpacing: ".08em",
               textTransform: "uppercase",
               marginTop: 2,
+              cursor: "help",
             }}
           >
             ↘ trigger
@@ -184,7 +200,8 @@ function EditLink({ ticker }: { ticker: string }) {
   return (
     <Link
       href={`/portfolio?edit=${encodeURIComponent(ticker)}#add-position`}
-      title="Edit position"
+      title="Edit position — opens the drawer with this ticker hydrated"
+      className="lin-hov"
       style={{
         height: 22,
         padding: "0 8px",
@@ -213,7 +230,8 @@ function CloseButton({ ticker }: { ticker: string }) {
       <button
         type="submit"
         disabled={pending}
-        title={state.message || "Mark position closed"}
+        title={state.message || "Mark position closed — removes from book, archives the row"}
+        className="lin-hov"
         style={{
           height: 22,
           padding: "0 8px",
