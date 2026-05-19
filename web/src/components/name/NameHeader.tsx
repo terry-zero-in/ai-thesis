@@ -22,7 +22,7 @@ export function NameHeader({ d }: { d: NameDetail }) {
           d.macro_gates_hit === 1 ? "" : "s"
         } hit) · = ${d.final_score.toFixed(1)} effective`
       : d.composite != null && d.final_score != null
-        ? `Raw ${d.composite.toFixed(1)} · macro ×1.00 (no gates) · = ${d.final_score.toFixed(1)} effective`
+        ? `Raw ${d.composite.toFixed(1)} · macro ×1.00 (0/3 gates) · = ${d.final_score.toFixed(1)} effective`
         : undefined;
 
   const attribution = d.as_of

@@ -17,6 +17,7 @@
  */
 import { getSupabaseBrowser } from "./supabase/client";
 import { FIXTURE_UNIVERSE } from "./universe-fixture";
+import { classifyTier } from "./scoring-weights";
 
 export type Tier = "High" | "Medium" | "Low" | "Avoid";
 
@@ -159,7 +160,11 @@ export function fixtureSnapshot(): UniverseSnapshot {
     const macroMult = i % 9 === 0 ? 0.95 : 1.0;
     const gates = macroMult < 1 ? 1 : 0;
     const final = Math.round(composite * macroMult * 10) / 10;
-    const tier: Tier = final >= 85 ? "High" : final >= 75 ? "Medium" : final >= 60 ? "Low" : "Avoid";
+    // Use the canonical spec cutoffs (75/60/45 — scoring-weights.ts:60). The
+    // inline ternary here previously used 85/75/60 — a +10 drift that silently
+    // shifted every fixture row one band lower than spec. Hit on /universe
+    // review 2026-05-19 (MU at 79.7 rendered Medium here, High elsewhere).
+    const tier: Tier = classifyTier(final);
     const prior = Math.round((composite - ((i % 5) - 2) * 0.8) * 10) / 10;
     return {
       ticker: u.ticker,

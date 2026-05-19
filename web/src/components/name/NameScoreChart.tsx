@@ -24,16 +24,23 @@ export function NameScoreChart({ history, ticker }: { history: NameSparkPoint[];
   // Filter out null composites — keep parallel date alignment.
   const points = history.filter((h) => h.composite != null) as Array<{ as_of: string; composite: number }>;
   if (points.length < 2) {
+    // Tighter inline empty state — full-width card was reading as a system
+    // error rather than a graceful empty (review item 6). Width-capped,
+    // italic, dimmer chrome — calmer.
     return (
       <div
         style={{
           background: "var(--surface)",
-          border: "1px solid var(--border-subtle)",
+          border: "1px dashed var(--border-subtle)",
           borderRadius: 6,
-          padding: "16px 20px",
-          color: "var(--text-3)",
-          fontSize: 12,
+          padding: "10px 14px",
+          color: "var(--text-4)",
+          fontSize: 11.5,
           fontFamily: "var(--m)",
+          fontStyle: "italic",
+          alignSelf: "flex-start",
+          maxWidth: 480,
+          letterSpacing: ".01em",
         }}
       >
         Score history insufficient — {ticker} needs ≥2 scored weeks before the chart renders.
