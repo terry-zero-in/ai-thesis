@@ -61,12 +61,13 @@ export function PositionsTable({
           </tr>
         </thead>
         <tbody>
-          {positions.map((p) => (
+          {positions.map((p, i) => (
             <PositionRowView
               key={p.ticker}
               p={p}
               totalDeployed={totalDeployed}
               highlight={highlightTicker === p.ticker}
+              rowIndex={i}
             />
           ))}
         </tbody>
@@ -79,10 +80,12 @@ function PositionRowView({
   p,
   totalDeployed,
   highlight,
+  rowIndex,
 }: {
   p: PositionRow;
   totalDeployed: number;
   highlight: boolean;
+  rowIndex: number;
 }) {
   const router = useRouter();
   const cost = p.cost_basis * p.shares;
@@ -116,7 +119,7 @@ function PositionRowView({
 
   return (
     <tr
-      className="row-hov"
+      className="row-hov row-stagger-in"
       onClick={onRowClick}
       onKeyDown={onRowKeyDown}
       tabIndex={0}
@@ -128,6 +131,10 @@ function PositionRowView({
           : drawdownTriggered
             ? "var(--danger-soft)"
             : undefined,
+        // Custom property consumed by .row-stagger-in animation-delay calc.
+        // Caps at 12 to keep stagger bounded — book larger than 12 names is
+        // rare for an individual portfolio; tail rows arrive together.
+        ["--row-i" as never]: Math.min(rowIndex, 12),
       }}
     >
       <Td align="left">
@@ -165,6 +172,7 @@ function PositionRowView({
         <span style={{ color: pl >= 0 ? "var(--success)" : "var(--danger)" }}>{fmtPct(plPct, true)}</span>
         {drawdownTriggered && (
           <div
+            className="chip-fade-in"
             title={`Drawdown trigger fired — position is ≥${Math.abs(POSITION_DRAWDOWN_TRIGGER * 100).toFixed(0)}% below cost basis. Review thesis.`}
             style={{
               fontSize: 9,

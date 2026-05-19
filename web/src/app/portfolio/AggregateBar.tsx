@@ -1,4 +1,5 @@
 import type { PortfolioSnapshot } from "@/lib/portfolio-types";
+import { AnimateNumber } from "@/components/primitives/AnimateNumber";
 
 /**
  * Portfolio hero — Mercury "format on canvas" + Basis Rent-Roll pattern:
@@ -47,10 +48,16 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
           "what is this worth," P&L owns "what is the return." Two cols, two
           roles, no double-counting. */}
       <Column label="Market value">
-        <BigNumber
-          value={snap.empty ? "—" : fmtUsd(snap.total_market_value)}
-          color={snap.empty ? "var(--text-4)" : "var(--text-1)"}
-        />
+        {snap.empty ? (
+          <BigNumber value="—" color="var(--text-4)" />
+        ) : (
+          <AnimateNumber
+            value={snap.total_market_value}
+            format={(n) => fmtUsd(n)}
+            style={bigNumberStyle("var(--text-1)")}
+            ariaLabel={fmtUsd(snap.total_market_value)}
+          />
+        )}
         <SubLine>
           {snap.empty ? (
             "no positions yet — add one via the form on the right"
@@ -83,9 +90,11 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
           <BigNumber value="—" color="var(--text-4)" />
         ) : (
           <>
-            <BigNumber
-              value={`${sparkPos ? "+" : ""}${sparkPct.toFixed(2)}%`}
-              color={sparkPos ? "var(--success)" : "var(--danger)"}
+            <AnimateNumber
+              value={sparkPct}
+              format={(n) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`}
+              style={bigNumberStyle(sparkPos ? "var(--success)" : "var(--danger)")}
+              ariaLabel={`${sparkPos ? "+" : ""}${sparkPct.toFixed(2)}%`}
             />
             <SubLine>
               {sparkPos ? "+" : ""}${Math.abs(sparkChange).toLocaleString("en-US", { maximumFractionDigits: 0 })} on 30d
@@ -96,10 +105,16 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
 
       {/* Col 3 — P&L · SINCE OPEN */}
       <Column label="P&L · since open">
-        <BigNumber
-          value={snap.empty ? "—" : fmtUsd(snap.total_pl, true)}
-          color={snap.empty ? "var(--text-4)" : plPos ? "var(--success)" : "var(--danger)"}
-        />
+        {snap.empty ? (
+          <BigNumber value="—" color="var(--text-4)" />
+        ) : (
+          <AnimateNumber
+            value={snap.total_pl}
+            format={(n) => fmtUsd(n, true)}
+            style={bigNumberStyle(plPos ? "var(--success)" : "var(--danger)")}
+            ariaLabel={fmtUsd(snap.total_pl, true)}
+          />
+        )}
         <SubLine>
           {snap.empty
             ? "no positions yet"
@@ -109,13 +124,13 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
 
       {/* Col 4 — RESERVE */}
       <Column label="Reserve">
-        <BigNumber
-          value={fmtUsd(snap.reserve_actual)}
-          color={
-            snap.reserve_actual >= snap.settings.target_reserve
-              ? "var(--text-1)"
-              : "var(--danger)"
-          }
+        <AnimateNumber
+          value={snap.reserve_actual}
+          format={(n) => fmtUsd(n)}
+          style={bigNumberStyle(
+            snap.reserve_actual >= snap.settings.target_reserve ? "var(--text-1)" : "var(--danger)",
+          )}
+          ariaLabel={fmtUsd(snap.reserve_actual)}
         />
         <SubLine>target {fmtUsd(snap.settings.target_reserve)}</SubLine>
       </Column>
@@ -144,22 +159,26 @@ function Column({ label, children }: { label: string; children: React.ReactNode 
 }
 
 function BigNumber({ value, color }: { value: string; color: string }) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--m)",
-        fontSize: 36,
-        fontWeight: 600,
-        color,
-        fontVariantNumeric: "tabular-nums",
-        lineHeight: 1,
-        letterSpacing: "-.01em",
-        marginTop: 2,
-      }}
-    >
-      {value}
-    </span>
-  );
+  return <span style={bigNumberStyle(color)}>{value}</span>;
+}
+
+/**
+ * Shared style for hero values across the 4 AggregateBar columns. Lifted
+ * into a factory so BigNumber (em-dash empty state) and AnimateNumber
+ * (animated count-up) render at identical scale/weight/rhythm — the only
+ * difference is whether the text content rolls or is static.
+ */
+function bigNumberStyle(color: string): React.CSSProperties {
+  return {
+    fontFamily: "var(--m)",
+    fontSize: 36,
+    fontWeight: 600,
+    color,
+    fontVariantNumeric: "tabular-nums",
+    lineHeight: 1,
+    letterSpacing: "-.01em",
+    marginTop: 2,
+  };
 }
 
 function SubLine({ children }: { children: React.ReactNode }) {
