@@ -3,7 +3,7 @@ import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -53,97 +53,67 @@ export default async function PortfolioPage({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <PortfolioRailRegister data={railData} />
-      <header
-        style={{
-          padding: "18px 28px 14px",
-          borderBottom: "1px solid var(--border-subtle)",
-          display: "flex",
-          alignItems: "baseline",
-          gap: 12,
-          flexShrink: 0,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: "-.014em",
-            color: "var(--text-1)",
-            fontFamily: "var(--m)",
-          }}
-        >
-          Portfolio
-        </h1>
-        <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
-          Live tracking · single book · manual cost-basis entry
-        </span>
-        {demo && (
-          // Honest demo marker — spec §4.5 chip, --warning to signal
-          // "synthetic data, not live." Clears with /portfolio (no seed).
-          <span
-            style={{
-              fontSize: 10,
-              fontFamily: "var(--m)",
-              color: "var(--warning)",
-              background: "var(--warning-soft)",
-              border: "1px solid rgba(221,168,90,.30)",
-              padding: "1px 5px",
-              borderRadius: 3,
-              letterSpacing: ".05em",
-              textTransform: "uppercase",
-            }}
-            title="Synthetic 12-position book seeded via ?seed=fixture-positions for /lambo review."
-          >
-            Demo · fixture book
+      <PageHeader
+        title="Portfolio"
+        subtitle={
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <span>Live tracking · single book · manual cost-basis entry</span>
+            {demo && (
+              // Honest demo marker — spec §4.5 chip, --warning to signal
+              // "synthetic data, not live." Clears with /portfolio (no seed).
+              <span
+                style={{
+                  fontSize: 10,
+                  fontFamily: "var(--m)",
+                  color: "var(--warning)",
+                  background: "var(--warning-soft)",
+                  border: "1px solid rgba(221,168,90,.30)",
+                  padding: "1px 5px",
+                  borderRadius: 3,
+                  letterSpacing: ".05em",
+                  textTransform: "uppercase",
+                }}
+                title="Synthetic 12-position book seeded via ?seed=fixture-positions for /lambo review."
+              >
+                Demo · fixture book
+              </span>
+            )}
           </span>
-        )}
-        <div style={{ flex: 1 }} />
-        {/*
-          Add / edit a position lives here, in the page-header upper-right —
-          the canonical "create" affordance per the PageCreateDrawer signature
-          pattern. Trigger pill collapses into the chrome at rest; ⌘N or
-          click expands an anchored 460px overlay containing the same form.
-          Replaces the prior bottom-stack form + `.portfolio-grid` 1600px
-          breakpoint hack — table now permanently claims full canvas width.
-          ?edit=<TICKER> deep-links open the drawer pre-hydrated.
-        */}
-        <PortfolioAddDrawer
-          choices={choices}
-          envConfigured={snap.envConfigured}
-          takenTickers={taken}
-          heldPrefill={heldPrefill}
-          initialTicker={editTicker}
-        />
-      </header>
-
-      <div style={{ padding: "10px 28px 0", flexShrink: 0 }}>
-        <MonoMetaSpine
-          segments={[
-            { label: "positions", value: snap.positions.length },
-            { label: "as_of", value: snap.spy_as_of ?? "—" },
-            {
-              label: "mode",
-              value: (
-                <span
-                  style={{
-                    color: demo ? "var(--warning)" : "var(--success)",
-                    fontWeight: 600,
-                    letterSpacing: ".02em",
-                  }}
-                  title={
-                    demo
-                      ? "Demo: synthetic 12-position book seeded via ?seed=fixture-positions."
-                      : "Live: cost-basis entries from public.portfolio_positions; market values from public.prices_raw."
-                  }
-                >
-                  {demo ? "Demo" : "Live"}
-                </span>
-              ),
-            },
-            { label: "price chain", value: "FMP daily close · refreshes 5 min" },
-          ]}
-        />
-      </div>
+        }
+        action={
+          <PortfolioAddDrawer
+            choices={choices}
+            envConfigured={snap.envConfigured}
+            takenTickers={taken}
+            heldPrefill={heldPrefill}
+            initialTicker={editTicker}
+          />
+        }
+        meta={[
+          { label: "positions", value: snap.positions.length },
+          { label: "as_of", value: snap.spy_as_of ?? "—" },
+          {
+            label: "mode",
+            value: (
+              <span
+                style={{
+                  color: demo ? "var(--warning)" : "var(--success)",
+                  fontWeight: 600,
+                  letterSpacing: ".02em",
+                }}
+                title={
+                  demo
+                    ? "Demo: synthetic 12-position book seeded via ?seed=fixture-positions."
+                    : "Live: cost-basis entries from public.portfolio_positions; market values from public.prices_raw."
+                }
+              >
+                {demo ? "Demo" : "Live"}
+              </span>
+            ),
+          },
+          { label: "price chain", value: "FMP daily close · refreshes 5 min" },
+        ]}
+      />
 
       <div
         style={{

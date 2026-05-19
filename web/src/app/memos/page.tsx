@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getMemosSnapshot, type MemoKind } from "@/lib/memos-data";
 import { MemoCard } from "./MemoCard";
 import { NoRail } from "@/components/shell/NoRail";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 /**
  * Revalidate hourly. Daily memo lands at 13:00 UTC; weekly memo at
@@ -59,59 +59,34 @@ export default async function MemosPage({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <NoRail />
-      <header
-        style={{
-          padding: "18px 28px 10px",
-          borderBottom: "1px solid var(--border-subtle)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <h1
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              letterSpacing: "-.014em",
-              color: "var(--text-1)",
-              fontFamily: "var(--m)",
-            }}
-          >
-            Memos
-          </h1>
-          <span style={{ fontSize: 12, color: "var(--text-3)" }}>
-            {snap.rows.length} most recent
-          </span>
-        </div>
-        <MonoMetaSpine
-          segments={[
-            { label: "memos", value: snap.rows.length },
-            {
-              label: "mode",
-              value: (
-                <span
-                  style={{
-                    color: snap.synthetic ? "var(--warning)" : "var(--success)",
-                    fontWeight: 600,
-                    letterSpacing: ".02em",
-                  }}
-                  title={
-                    snap.synthetic
-                      ? "Stubbed: synthesized fixture memos — daily-batch routine not yet writing to memos table."
-                      : "Live: memos written by the daily-batch + weekly-rescore routines."
-                  }
-                >
-                  {snap.synthetic ? "Stubbed" : "Live"}
-                </span>
-              ),
-            },
-            { label: "daily chain", value: "Mon-Fri 13:00 UTC" },
-            { label: "weekly chain", value: "Sun 23:00 UTC" },
-          ]}
-        />
-      </header>
+      <PageHeader
+        title="Memos"
+        subtitle={`${snap.rows.length} most recent`}
+        meta={[
+          { label: "memos", value: snap.rows.length },
+          {
+            label: "mode",
+            value: (
+              <span
+                style={{
+                  color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                  fontWeight: 600,
+                  letterSpacing: ".02em",
+                }}
+                title={
+                  snap.synthetic
+                    ? "Stubbed: synthesized fixture memos — daily-batch routine not yet writing to memos table."
+                    : "Live: memos written by the daily-batch + weekly-rescore routines."
+                }
+              >
+                {snap.synthetic ? "Stubbed" : "Live"}
+              </span>
+            ),
+          },
+          { label: "daily chain", value: "Mon-Fri 13:00 UTC" },
+          { label: "weekly chain", value: "Sun 23:00 UTC" },
+        ]}
+      />
 
       {/* Filter bar — spec §4.5 chips (passive metadata + filter affordance) */}
       <div

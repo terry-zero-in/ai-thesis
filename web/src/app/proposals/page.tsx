@@ -1,5 +1,5 @@
 import { getUniverseProposals } from "@/lib/routine-outputs";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 /**
  * Universe proposals — written by the monthly-curator Routine (PR1, E80).
@@ -19,31 +19,15 @@ export default async function ProposalsPage() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto", minWidth: 0 }}>
-      <div
-        style={{
-          padding: "16px 20px 12px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-.014em", color: "var(--text-1)" }}>
-            Universe proposals
-          </h1>
-          <span style={{ fontSize: 12, color: "var(--text-3)", fontFamily: "var(--f)" }}>
-            Monthly curator suggestions for the 50-name universe
-          </span>
-        </div>
-        <MonoMetaSpine
-          segments={[
-            { label: "pending", value: proposals.length },
-            { label: "engine", value: "monthly-curator routine" },
-            { label: "cadence", value: "first Saturday of month, 20:00 UTC" },
-          ]}
-        />
-      </div>
+      <PageHeader
+        title="Universe proposals"
+        subtitle="Monthly curator suggestions for the 50-name universe"
+        meta={[
+          { label: "pending", value: proposals.length },
+          { label: "engine", value: "monthly-curator routine" },
+          { label: "cadence", value: "first Saturday of month, 20:00 UTC" },
+        ]}
+      />
 
       <div style={{ padding: "20px 24px 40px", display: "flex", flexDirection: "column", gap: 24 }}>
         {proposals.length === 0 ? (

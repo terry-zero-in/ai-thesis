@@ -1,6 +1,7 @@
 import { getAiqDraftsSnapshot } from "@/lib/aiq-drafts-data";
 import { DraftCard } from "./DraftCard";
 import { NoRail } from "@/components/shell/NoRail";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 /**
  * Revalidate every 15 minutes. Drafts trickle in as the per-ticker
@@ -16,31 +17,10 @@ export default async function AiqDraftsPage() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <NoRail />
-      <header
-        style={{
-          padding: "18px 28px 14px",
-          borderBottom: "1px solid var(--border-subtle)",
-          display: "flex",
-          alignItems: "baseline",
-          gap: 12,
-          flexShrink: 0,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: "-.014em",
-            color: "var(--text-1)",
-            fontFamily: "var(--m)",
-          }}
-        >
-          AIQ Drafts
-        </h1>
-        <span style={{ fontSize: 12, color: "var(--text-3)" }}>
-          {unreviewed.length} pending · {reviewed.length} reviewed
-        </span>
-      </header>
+      <PageHeader
+        title="AIQ Drafts"
+        subtitle={`${unreviewed.length} pending · ${reviewed.length} reviewed`}
+      />
 
       <div
         style={{

@@ -4,7 +4,7 @@ import { AlertRow } from "./AlertRow";
 import { BulkAckButton } from "./BulkAckButton";
 import { ALERT_KIND_LABELS, type AlertKind } from "@/lib/alerts-types";
 import { NoRail } from "@/components/shell/NoRail";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 /**
  * Revalidate every 10 minutes so newly-derived alerts (from
@@ -41,70 +41,49 @@ export default async function DecisionsPage({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <NoRail />
-      <header
-        style={{
-          padding: "18px 28px 14px",
-          borderBottom: "1px solid var(--border-subtle)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <h1
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              letterSpacing: "-.014em",
-              color: "var(--text-1)",
-              fontFamily: "var(--m)",
-            }}
-          >
-            Decisions
-          </h1>
-          <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
+      <PageHeader
+        title="Decisions"
+        subtitle={
+          <span>
             Tier movement log + alerts ·{" "}
             <strong style={{ color: snap.unseen > 0 ? "var(--danger)" : "var(--text-3)" }}>
               {snap.unseen} unseen
             </strong>
           </span>
-          <div style={{ flex: 1 }} />
+        }
+        action={
           <BulkAckButton
             keys={unseenKeysInView}
             label={activeKind ? `Mark ${unseenKeysInView.length} read` : `Mark all read`}
           />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <MonoMetaSpine
-            segments={[
-              { label: "events", value: snap.events.length },
-              { label: "kinds", value: Object.keys(byKind).length },
-              { label: "engine", value: "alerts v1.0" },
-              {
-                label: "mode",
-                value: (
-                  <span
-                    style={{
-                      color: snap.synthetic ? "var(--warning)" : "var(--success)",
-                      fontWeight: 600,
-                      letterSpacing: ".02em",
-                    }}
-                    title={
-                      snap.synthetic
-                        ? "Stubbed: synthesized fixture alerts — derived from a fixture universe + macro state."
-                        : "Live: alerts derived from public.scores_history + public.macro_gauges."
-                    }
-                  >
-                    {snap.synthetic ? "Stubbed" : "Live"}
-                  </span>
-                ),
-              },
-            ]}
-          />
-          <div style={{ flex: 1 }} />
-        </div>
-        {activeKind && (
+        }
+        meta={[
+          { label: "events", value: snap.events.length },
+          { label: "kinds", value: Object.keys(byKind).length },
+          { label: "engine", value: "alerts v1.0" },
+          {
+            label: "mode",
+            value: (
+              <span
+                style={{
+                  color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                  fontWeight: 600,
+                  letterSpacing: ".02em",
+                }}
+                title={
+                  snap.synthetic
+                    ? "Stubbed: synthesized fixture alerts — derived from a fixture universe + macro state."
+                    : "Live: alerts derived from public.scores_history + public.macro_gauges."
+                }
+              >
+                {snap.synthetic ? "Stubbed" : "Live"}
+              </span>
+            ),
+          },
+        ]}
+      />
+      {activeKind && (
+        <div style={{ padding: "10px 32px 0", flexShrink: 0 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <span
               style={{
@@ -137,8 +116,8 @@ export default async function DecisionsPage({
               Clear
             </Link>
           </span>
-        )}
-      </header>
+        </div>
+      )}
 
       <div
         style={{

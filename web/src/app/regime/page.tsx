@@ -6,7 +6,7 @@ import { RegimeTrendChart } from "./RegimeTrendChart";
 import { GateHistory } from "./GateHistory";
 import { RegimeRailRegister } from "@/components/rails/RegimeRailRegister";
 import type { RegimeLegendItem } from "@/components/rails/RegimeLegendRail";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 /**
  * Revalidate every 30 minutes so the page picks up new weekly macro_gauges
@@ -33,60 +33,35 @@ export default async function RegimePage() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <RegimeRailRegister data={railData} />
-      <header
-        style={{
-          padding: "18px 28px 14px",
-          borderBottom: "1px solid var(--border-subtle)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <h1
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              letterSpacing: "-.014em",
-              color: "var(--text-1)",
-              fontFamily: "var(--m)",
-            }}
-          >
-            Regime
-          </h1>
-          <span style={{ fontSize: 12.5, color: "var(--text-3)" }}>
-            NAAIM · AAII 3wk spread · CNN Fear &amp; Greed · macro multiplier applied at composite
-          </span>
-        </div>
-        <MonoMetaSpine
-          segments={[
-            { label: "as_of", value: snap.latest?.as_of ?? "—" },
-            {
-              label: "mode",
-              value: (
-                <span
-                  style={{
-                    color: snap.synthetic ? "var(--warning)" : "var(--success)",
-                    fontWeight: 600,
-                    letterSpacing: ".02em",
-                  }}
-                  title={
-                    snap.synthetic
-                      ? "Stubbed: synthesized fixture data — macro_gauges table not yet populated by ingestion."
-                      : "Live: macro gauge readings from public.macro_gauges, refreshed by the Tue 22:00 UTC chain."
-                  }
-                >
-                  {snap.synthetic ? "Stubbed" : "Live"}
-                </span>
-              ),
-            },
-            { label: "gates", value: `${snap.gates_hit}/3` },
-            { label: "multiplier", value: `${snap.multiplier.toFixed(2)}×` },
-            { label: "macro chain", value: "Tue 22:00 UTC weekly" },
-          ]}
-        />
-      </header>
+      <PageHeader
+        title="Regime"
+        subtitle="NAAIM · AAII 3wk spread · CNN Fear & Greed · macro multiplier applied at composite"
+        meta={[
+          { label: "as_of", value: snap.latest?.as_of ?? "—" },
+          {
+            label: "mode",
+            value: (
+              <span
+                style={{
+                  color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                  fontWeight: 600,
+                  letterSpacing: ".02em",
+                }}
+                title={
+                  snap.synthetic
+                    ? "Stubbed: synthesized fixture data — macro_gauges table not yet populated by ingestion."
+                    : "Live: macro gauge readings from public.macro_gauges, refreshed by the Tue 22:00 UTC chain."
+                }
+              >
+                {snap.synthetic ? "Stubbed" : "Live"}
+              </span>
+            ),
+          },
+          { label: "gates", value: `${snap.gates_hit}/3` },
+          { label: "multiplier", value: `${snap.multiplier.toFixed(2)}×` },
+          { label: "macro chain", value: "Tue 22:00 UTC weekly" },
+        ]}
+      />
 
       <div
         style={{

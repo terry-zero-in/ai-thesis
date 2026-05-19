@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAiqIndex } from "@/lib/aiq-data";
 import { NoRail } from "@/components/shell/NoRail";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 type ShowFilter = "scored" | "unscored" | "all";
 const SHOW_FILTERS: { key: ShowFilter; label: string }[] = [
@@ -53,29 +53,9 @@ export default async function AiqIndexPage({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <NoRail />
-      <header
-        style={{
-          padding: "18px 28px 14px",
-          borderBottom: "1px solid var(--border-subtle)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <h1
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              letterSpacing: "-.014em",
-              color: "var(--text-1)",
-              fontFamily: "var(--m)",
-            }}
-          >
-            AIQ Editor
-          </h1>
-          <div style={{ flex: 1 }} />
+      <PageHeader
+        title="AIQ Editor"
+        action={
           <Link
             href="/aiq-drafts"
             style={{
@@ -92,15 +72,15 @@ export default async function AiqIndexPage({
           >
             Drafts queue ›
           </Link>
-        </div>
+        }
+        meta={[
+          { label: "scored", value: `${snap.scoredCount}/${snap.rows.length}` },
+          { label: "as_of", value: snap.asOf ?? "—" },
+          { label: "cadence", value: "manual · quarterly" },
+        ]}
+      />
+      <div style={{ padding: "10px 32px 0", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-          <MonoMetaSpine
-            segments={[
-              { label: "scored", value: `${snap.scoredCount}/${snap.rows.length}` },
-              { label: "as_of", value: snap.asOf ?? "—" },
-              { label: "cadence", value: "manual · quarterly" },
-            ]}
-          />
           <div style={{ flex: 1 }} />
           <div style={{ display: "inline-flex", gap: 0, border: "1px solid var(--border)", borderRadius: 4, overflow: "hidden" }}>
             {SHOW_FILTERS.map((f, i) => {
@@ -132,7 +112,7 @@ export default async function AiqIndexPage({
             })}
           </div>
         </div>
-      </header>
+      </div>
 
       <div style={{ flex: 1, overflow: "auto" }}>
         <table

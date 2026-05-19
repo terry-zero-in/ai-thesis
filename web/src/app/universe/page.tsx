@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getLatestUniverseScores, type UniverseSnapshot } from "@/lib/universe-data";
 import { useFilter } from "@/hooks/filter-context";
 import { UniverseTable } from "@/components/universe/UniverseTable";
-import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { PageHeader } from "@/components/primitives/PageHeader";
 import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
 
 export default function UniversePage() {
@@ -58,50 +58,35 @@ function UniverseHeader({ snap }: { snap: UniverseSnapshot }) {
   const { q, setQ, registerInput } = useFilter();
   const sample = snap.rows.find((r) => r.macro_gates_hit != null);
   return (
-    <div
-      style={{
-        padding: "16px 20px 12px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-        flexShrink: 0,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <h1 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-.014em", color: "var(--text-1)" }}>
-          Universe
-        </h1>
-        <div style={{ flex: 1 }} />
-        <SearchInput value={q} onChange={setQ} register={registerInput} />
-      </div>
-      <MonoMetaSpine
-        segments={[
-          { label: "names", value: snap.rows.length },
-          { label: "as_of", value: snap.asOf ?? "—" },
-          { label: "engine", value: "composite v1.0" },
-          {
-            label: "mode",
-            value: (
-              <span
-                style={{
-                  color: snap.synthetic ? "var(--warning)" : "var(--success)",
-                  fontWeight: 600,
-                  letterSpacing: ".02em",
-                }}
-                title={
-                  snap.synthetic
-                    ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
-                    : "Live: scores read from public.scores_history populated by the Saturday chain."
-                }
-              >
-                {snap.synthetic ? "Stubbed" : "Live"}
-              </span>
-            ),
-          },
-          { label: "macro", value: sample ? `${sample.macro_multiplier.toFixed(2)}× (${sample.macro_gates_hit}/3)` : "—" },
-        ]}
-      />
-    </div>
+    <PageHeader
+      title="Universe"
+      action={<SearchInput value={q} onChange={setQ} register={registerInput} />}
+      meta={[
+        { label: "names", value: snap.rows.length },
+        { label: "as_of", value: snap.asOf ?? "—" },
+        { label: "engine", value: "composite v1.0" },
+        {
+          label: "mode",
+          value: (
+            <span
+              style={{
+                color: snap.synthetic ? "var(--warning)" : "var(--success)",
+                fontWeight: 600,
+                letterSpacing: ".02em",
+              }}
+              title={
+                snap.synthetic
+                  ? "Stubbed: synthesized fixture data — engine not yet running against a deployed Supabase project."
+                  : "Live: scores read from public.scores_history populated by the Saturday chain."
+              }
+            >
+              {snap.synthetic ? "Stubbed" : "Live"}
+            </span>
+          ),
+        },
+        { label: "macro", value: sample ? `${sample.macro_multiplier.toFixed(2)}× (${sample.macro_gates_hit}/3)` : "—" },
+      ]}
+    />
   );
 }
 

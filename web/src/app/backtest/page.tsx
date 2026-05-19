@@ -1,6 +1,7 @@
 import { getBacktestSnapshot } from "@/lib/backtest-data";
 import { RunRow } from "./RunRow";
 import { NoRail } from "@/components/shell/NoRail";
+import { PageHeader } from "@/components/primitives/PageHeader";
 
 /**
  * Revalidate every 30 min. Backtest runs are operator-invoked
@@ -15,31 +16,10 @@ export default async function BacktestPage() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <NoRail />
-      <header
-        style={{
-          padding: "18px 28px 14px",
-          borderBottom: "1px solid var(--border-subtle)",
-          display: "flex",
-          alignItems: "baseline",
-          gap: 12,
-          flexShrink: 0,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            letterSpacing: "-.014em",
-            color: "var(--text-1)",
-            fontFamily: "var(--m)",
-          }}
-        >
-          Backtest
-        </h1>
-        <span style={{ fontSize: 12, color: "var(--text-3)" }}>
-          {snap.rows.length} run{snap.rows.length === 1 ? "" : "s"} · operator-invoked
-        </span>
-      </header>
+      <PageHeader
+        title="Backtest"
+        subtitle={`${snap.rows.length} run${snap.rows.length === 1 ? "" : "s"} · operator-invoked`}
+      />
 
       <div
         style={{
