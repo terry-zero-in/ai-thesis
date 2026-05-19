@@ -228,14 +228,19 @@ function Row({
   showFinal: boolean;
   rowIndex: number;
 }) {
+  // Only the first 6 rows stagger in — these are the rows visible above the
+  // fold on a standard viewport. Earlier `Math.min(rowIndex, 12)` capped
+  // every row beyond index 11 at the same delay (780ms), causing rows
+  // 12-49 to burst-render simultaneously after the wave — read as a hitch
+  // on Universe (50 rows) per Terry feedback 2026-05-19. Dashboard and
+  // Portfolio aren't affected (each has ≤12 rows, distinct delays).
+  const staggers = rowIndex < 6;
   return (
     <tr
-      className="row-hov row-stagger-in"
+      className={staggers ? "row-hov row-stagger-in" : "row-hov"}
       style={{
         borderBottom: "1px solid var(--border-subtle)",
-        // Cap stagger at 12 — books larger than ~50 names (universe sort)
-        // would otherwise wait ~3s for the tail. Cap reuses bounded scale.
-        ["--row-i" as never]: Math.min(rowIndex, 12),
+        ...(staggers ? { ["--row-i" as never]: rowIndex } : {}),
       }}
     >
       <Td>
