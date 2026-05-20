@@ -27,22 +27,24 @@ const COLUMNS =
 export async function getAiqContext(ticker: string): Promise<AiqContext> {
   const t = ticker.toUpperCase();
   const sb = await getSupabaseServer();
+  // Fixture-mode (no Supabase env) is the ONLY path that may fabricate
+  // rubric values — those are clearly labeled as sample data via the
+  // shell's DemoBadge. Once env is configured, an unscored ticker must
+  // surface as the empty state so the operator sees the real workflow
+  // (Codex review on PR #10 flagged this — synthesized fallbacks on
+  // `data.length === 0` would pre-fill the editor with fake values and
+  // change scoring semantics).
   if (!sb) return synthesizeAiqContext(t);
 
+  const seed = FIXTURE_INDEX[t] ?? null;
   const { data, error } = await sb
     .from("aiq_rubric")
     .select(COLUMNS)
     .eq("ticker", t)
     .order("scored_at", { ascending: false })
     .limit(20);
-  if (error || !data || data.length === 0) {
-    // RLS denied / table empty in fixture-mode prod → fall back to the
-    // synthetic seed so the editor renders consistently with /universe.
-    const ctx = synthesizeAiqContext(t);
-    return { ...ctx, envConfigured: true };
-  }
+  if (error || !data) return { seed, latest: null, history: [], envConfigured: true };
 
-  const seed = FIXTURE_INDEX[t] ?? null;
   const rows = data as unknown as AiqRow[];
   return { seed, latest: rows[0] ?? null, history: rows, envConfigured: true };
 }
