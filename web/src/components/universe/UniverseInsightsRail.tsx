@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Tier, UniverseRow } from "@/lib/universe-data";
 import type { UniverseFlag } from "@/hooks/universe-filter-context";
 
@@ -220,47 +220,15 @@ function BarChart({
           const dimmed = anyActive && !isActive;
           const barH = Math.max(2, (count / maxCount) * (CHART_H - 18));
           return (
-            <button
+            <BarColumn
               key={tier}
-              onClick={() => onToggle(tier)}
-              title={`${tier}: ${count} ${count === 1 ? "name" : "names"} · click to ${isActive ? "clear" : "filter"}`}
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 4,
-                background: "transparent",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                opacity: dimmed ? 0.3 : 1,
-                transition: "opacity var(--dur-instant) var(--ease-out)",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--m)",
-                  fontSize: 10,
-                  color: dimmed ? "var(--text-4)" : "var(--text-2)",
-                  fontVariantNumeric: "tabular-nums",
-                  lineHeight: 1,
-                }}
-              >
-                {count}
-              </span>
-              <div
-                style={{
-                  width: "100%",
-                  height: barH,
-                  background: TIER_FILL[tier],
-                  borderTop: `2px solid ${TIER_CAP[tier]}`,
-                  borderRadius: 2,
-                  filter: dimmed ? "saturate(0.4)" : undefined,
-                  transition: "filter var(--dur-instant) var(--ease-out)",
-                }}
-              />
-            </button>
+              tier={tier}
+              count={count}
+              barH={barH}
+              isActive={isActive}
+              dimmed={dimmed}
+              onToggle={onToggle}
+            />
           );
         })}
       </div>
@@ -300,6 +268,79 @@ function BarChart({
 }
 
 /**
+ * One column in the BarChart. Extracted so per-column hover state stays
+ * hooks-legal (useState inside a .map callback is a React rule violation
+ * when the array could change shape — here it can't, but extraction is
+ * still cleaner). Resting bars lift to --surface-hover on hover when not
+ * dimmed by an active filter; dimmed bars stay quiet.
+ */
+function BarColumn({
+  tier,
+  count,
+  barH,
+  isActive,
+  dimmed,
+  onToggle,
+}: {
+  tier: Tier;
+  count: number;
+  barH: number;
+  isActive: boolean;
+  dimmed: boolean;
+  onToggle: (t: Tier) => void;
+}) {
+  const [hov, setHov] = useState(false);
+  const hoverable = !dimmed;
+  return (
+    <button
+      onClick={() => onToggle(tier)}
+      onMouseEnter={() => hoverable && setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      title={`${tier}: ${count} ${count === 1 ? "name" : "names"} · click to ${isActive ? "clear" : "filter"}`}
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+        background: hov ? "var(--surface-hover)" : "transparent",
+        border: "none",
+        padding: "4px 2px 0",
+        borderRadius: 4,
+        cursor: "pointer",
+        opacity: dimmed ? 0.3 : 1,
+        transition:
+          "opacity var(--dur-fast) var(--ease-out),background var(--dur-fast) var(--ease-out)",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--m)",
+          fontSize: 10,
+          color: dimmed ? "var(--text-4)" : hov ? "var(--text-1)" : "var(--text-2)",
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1,
+          transition: "color var(--dur-fast) var(--ease-out)",
+        }}
+      >
+        {count}
+      </span>
+      <div
+        style={{
+          width: "100%",
+          height: barH,
+          background: TIER_FILL[tier],
+          borderTop: `2px solid ${TIER_CAP[tier]}`,
+          borderRadius: 2,
+          filter: dimmed ? "saturate(0.4)" : undefined,
+          transition: "filter var(--dur-fast) var(--ease-out)",
+        }}
+      />
+    </button>
+  );
+}
+
+/**
  * Legend table — color dot · tier · count · avg final score. Whole row
  * clickable → same toggle behavior as bar. Active row gets a 2px accent
  * left rail per feedback_active_state_indicator_2px_floor.
@@ -321,66 +362,109 @@ function LegendTable({
         const isActive = activeTiers.has(tier);
         const dimmed = anyActive && !isActive;
         return (
-          <button
+          <LegendRow
             key={tier}
-            onClick={() => onToggle(tier)}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "12px 1fr auto auto",
-              gap: 8,
-              alignItems: "baseline",
-              padding: "6px 8px",
-              borderLeft: `2px solid ${isActive ? "var(--accent)" : "transparent"}`,
-              background: isActive ? "var(--elevated)" : "transparent",
-              border: "none",
-              borderRadius: 0,
-              cursor: "pointer",
-              opacity: dimmed ? 0.4 : 1,
-              fontFamily: "var(--m)",
-              fontVariantNumeric: "tabular-nums",
-              transition: "background var(--dur-instant) var(--ease-out),opacity var(--dur-instant) var(--ease-out)",
-              textAlign: "left",
-            }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: TIER_DOT[tier],
-                marginLeft: 2,
-              }}
-            />
-            <span
-              style={{
-                fontSize: 11.5,
-                color: isActive ? "var(--text-1)" : "var(--text-2)",
-                letterSpacing: ".02em",
-              }}
-            >
-              {tier}
-            </span>
-            <span
-              style={{
-                fontSize: 11.5,
-                color: isActive ? "var(--text-1)" : "var(--text-2)",
-                fontWeight: isActive ? 600 : 500,
-              }}
-            >
-              {count}
-            </span>
-            <span
-              style={{
-                fontSize: 10.5,
-                color: "var(--text-3)",
-              }}
-            >
-              {avgFinal != null ? `avg ${avgFinal.toFixed(1)}` : "—"}
-            </span>
-          </button>
+            tier={tier}
+            count={count}
+            avgFinal={avgFinal}
+            isActive={isActive}
+            dimmed={dimmed}
+            onToggle={onToggle}
+          />
         );
       })}
     </div>
+  );
+}
+
+/**
+ * One row in the LegendTable. Extracted for per-row hover state. Inactive
+ * rows lift to --surface-hover on hover; active rows lock --elevated and
+ * keep their 2px accent left-rail (S20 active-state-indicator floor).
+ */
+function LegendRow({
+  tier,
+  count,
+  avgFinal,
+  isActive,
+  dimmed,
+  onToggle,
+}: {
+  tier: Tier;
+  count: number;
+  avgFinal: number | null;
+  isActive: boolean;
+  dimmed: boolean;
+  onToggle: (t: Tier) => void;
+}) {
+  const [hov, setHov] = useState(false);
+  const showHover = hov && !isActive && !dimmed;
+  return (
+    <button
+      onClick={() => onToggle(tier)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "12px 1fr auto auto",
+        gap: 8,
+        alignItems: "baseline",
+        padding: "6px 8px",
+        borderLeft: `2px solid ${isActive ? "var(--accent)" : "transparent"}`,
+        background: isActive
+          ? "var(--elevated)"
+          : showHover
+          ? "var(--surface-hover)"
+          : "transparent",
+        border: "none",
+        borderRadius: 0,
+        cursor: "pointer",
+        opacity: dimmed ? 0.4 : 1,
+        fontFamily: "var(--m)",
+        fontVariantNumeric: "tabular-nums",
+        transition:
+          "background var(--dur-fast) var(--ease-out),opacity var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)",
+        textAlign: "left",
+      }}
+    >
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: TIER_DOT[tier],
+          marginLeft: 2,
+        }}
+      />
+      <span
+        style={{
+          fontSize: 11.5,
+          color: isActive || showHover ? "var(--text-1)" : "var(--text-2)",
+          letterSpacing: ".02em",
+          transition: "color var(--dur-fast) var(--ease-out)",
+        }}
+      >
+        {tier}
+      </span>
+      <span
+        style={{
+          fontSize: 11.5,
+          color: isActive || showHover ? "var(--text-1)" : "var(--text-2)",
+          fontWeight: isActive ? 600 : 500,
+          transition: "color var(--dur-fast) var(--ease-out)",
+        }}
+      >
+        {count}
+      </span>
+      <span
+        style={{
+          fontSize: 10.5,
+          color: "var(--text-3)",
+        }}
+      >
+        {avgFinal != null ? `avg ${avgFinal.toFixed(1)}` : "—"}
+      </span>
+    </button>
   );
 }
 
@@ -482,20 +566,31 @@ function FilterChip({
   children: React.ReactNode;
   onClick: () => void;
 }) {
+  const [hov, setHov] = useState(false);
+  // Active chip locks its accent-soft surface; hover has no effect — active
+  // is the floor, not a transient signal. Inactive chips lift to
+  // --surface-hover + --text-1 to match the S21 global hover rhythm.
+  const showHover = hov && !active;
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       style={{
         padding: "4px 9px",
         borderRadius: 3,
         fontSize: 11,
-        color: active ? "var(--accent)" : "var(--text-2)",
-        background: active ? "var(--accent-soft)" : "rgba(255,255,255,.02)",
+        color: active ? "var(--accent)" : showHover ? "var(--text-1)" : "var(--text-2)",
+        background: active
+          ? "var(--accent-soft)"
+          : showHover
+          ? "var(--surface-hover)"
+          : "rgba(255,255,255,.02)",
         border: `1px solid ${active ? "var(--accent-border)" : "var(--border)"}`,
         whiteSpace: "nowrap",
         cursor: "pointer",
         transition:
-          "background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out),border-color var(--dur-instant) var(--ease-out)",
+          "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out)",
       }}
     >
       {children}
@@ -591,22 +686,32 @@ function FlagToggle({
   active: boolean;
   onClick: () => void;
 }) {
+  const [hov, setHov] = useState(false);
+  const showHover = hov && !active;
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       style={{
         display: "flex",
         alignItems: "center",
         gap: 8,
         padding: "6px 8px",
         borderRadius: 4,
-        background: active ? "var(--accent-soft)" : "transparent",
+        background: active
+          ? "var(--accent-soft)"
+          : showHover
+          ? "var(--surface-hover)"
+          : "transparent",
         border: `1px solid ${active ? "var(--accent-border)" : "var(--border)"}`,
         fontSize: 11.5,
         fontFamily: "var(--f)",
-        color: active ? "var(--accent)" : "var(--text-2)",
+        color: active ? "var(--accent)" : showHover ? "var(--text-1)" : "var(--text-2)",
         textAlign: "left",
         cursor: "pointer",
+        transition:
+          "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out)",
       }}
     >
       <span

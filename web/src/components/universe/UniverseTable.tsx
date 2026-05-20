@@ -422,14 +422,25 @@ function Th({
   title?: string;
 }) {
   const active = sortable && k != null && sortKey === k;
+  const [hov, setHov] = useState(false);
   // Review §2.2 #7: sortable headers always show a sort affordance.
   // Active: ▲/▼ in --accent. Sortable-inactive: ⇅ in --text-4 (Linear quiet
   // pattern — capability visible, doesn't compete with active state).
+  // S22 add: sortable headers hover-lift label color text-3 → text-1 and
+  // the sort glyph color text-4 → text-2, so the affordance is visible
+  // before commit. Matches Linear's column-header hover discipline.
   const arrow = active ? (sortDir === "asc" ? "▲" : "▼") : sortable ? "⇅" : "";
-  const arrowColor = active ? "var(--accent)" : "var(--text-4)";
+  const showHover = sortable && hov && !active;
+  const arrowColor = active
+    ? "var(--accent)"
+    : showHover
+    ? "var(--text-2)"
+    : "var(--text-4)";
   return (
     <th
       onClick={sortable && k && onSort ? () => onSort(k) : undefined}
+      onMouseEnter={() => sortable && setHov(true)}
+      onMouseLeave={() => setHov(false)}
       title={title}
       style={{
         position: "sticky",
@@ -441,16 +452,27 @@ function Th({
         fontWeight: 500,
         letterSpacing: ".08em",
         textTransform: "uppercase",
-        color: active ? "var(--text-1)" : "var(--text-3)",
+        color: active || showHover ? "var(--text-1)" : "var(--text-3)",
         cursor: sortable ? "pointer" : title ? "help" : "default",
         userSelect: "none",
         whiteSpace: "nowrap",
         width,
+        transition:
+          "color var(--dur-fast) var(--ease-out)",
       }}
     >
       {children}
       {arrow && (
-        <span style={{ marginLeft: 5, fontSize: 8, color: arrowColor }}>{arrow}</span>
+        <span
+          style={{
+            marginLeft: 5,
+            fontSize: 8,
+            color: arrowColor,
+            transition: "color var(--dur-fast) var(--ease-out)",
+          }}
+        >
+          {arrow}
+        </span>
       )}
     </th>
   );
