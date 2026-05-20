@@ -80,13 +80,17 @@ export function TBBtn({ children, onClick, title }: { children: ReactNode; onCli
       style={{
         padding: "5px 9px",
         borderRadius: 5,
+        // Hover / press surfaces wired to the unified --hover-tint-strong /
+        // --press-tint tokens so every icon button on the canvas (TopBar,
+        // PVChart range picker, sidebar collapse) reads the same intensity.
+        // Duration matched to --dur-fast (140ms ≈ Linear 150ms).
         color: h ? "var(--text-1)" : "var(--text-3)",
-        background: p ? "rgba(255,255,255,.08)" : h ? "rgba(255,255,255,.04)" : "transparent",
+        background: p ? "var(--press-tint)" : h ? "var(--hover-tint-strong)" : "transparent",
         display: "flex",
         alignItems: "center",
         gap: 6,
         fontSize: 12,
-        transition: "background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out)",
+        transition: "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)",
         cursor: "pointer",
       }}
     >

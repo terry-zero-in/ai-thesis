@@ -80,6 +80,7 @@ export function Sidebar({
         <Tip label="Return to dashboard" side="right">
           <Link
             href="/"
+            className="logo-hov"
             style={{ color: "var(--accent)", display: "flex", padding: 4, borderRadius: 5, flexShrink: 0, cursor: "pointer" }}
           >
             {I.hex}
@@ -230,11 +231,14 @@ function SbItem({ ic, label, active, col, badge, href, keys, external }: NavItem
         padding: col ? "8px 0" : "7px 8px",
         borderRadius: 6,
         justifyContent: col ? "center" : "flex-start",
-        color: active ? "var(--text-1)" : hov ? "var(--text-2)" : "var(--text-3)",
+        // Linear posture: inactive lifts all the way to --text-1 (white) on
+        // hover (was --text-2). Active items hold state and never change on
+        // hover — the `active` branch wins regardless of `hov`.
+        color: active ? "var(--text-1)" : hov ? "var(--text-1)" : "var(--text-3)",
         background: active ? "var(--surface-2)" : hov ? "var(--hover-tint)" : "transparent",
         fontWeight: active ? 500 : 400,
         fontSize: 13,
-        transition: "background var(--dur-instant) var(--ease-out),color var(--dur-instant) var(--ease-out)",
+        transition: "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)",
         position: "relative",
         whiteSpace: "nowrap",
         width: "100%",
@@ -247,9 +251,9 @@ function SbItem({ ic, label, active, col, badge, href, keys, external }: NavItem
         style={{
           display: "flex",
           flexShrink: 0,
-          opacity: active ? 1 : 0.7,
+          opacity: active ? 1 : hov ? 1 : 0.7,
           color: active ? "var(--accent)" : "inherit",
-          transition: "color var(--dur-instant) var(--ease-out),opacity var(--dur-instant) var(--ease-out)",
+          transition: "color var(--dur-fast) var(--ease-out),opacity var(--dur-fast) var(--ease-out)",
         }}
       >
         {ic}

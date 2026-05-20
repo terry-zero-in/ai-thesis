@@ -167,28 +167,12 @@ export default async function DashboardPage({
           }
           right={
             activeMoverTier ? (
-              <Link
-                href="/"
-                style={{
-                  fontSize: 11,
-                  color: "var(--accent)",
-                  textDecoration: "none",
-                  fontFamily: "var(--m)",
-                }}
-              >
-                Clear filter ✕
+              <Link href="/" className="accent-link" style={{ fontSize: 11 }}>
+                Clear filter <span className="accent-link-chev">✕</span>
               </Link>
             ) : (
-              <Link
-                href="/universe"
-                style={{
-                  fontSize: 11,
-                  color: "var(--accent)",
-                  textDecoration: "none",
-                  fontFamily: "var(--m)",
-                }}
-              >
-                View all ›
+              <Link href="/universe" className="accent-link" style={{ fontSize: 11 }}>
+                View all <span className="accent-link-chev">›</span>
               </Link>
             )
           }
@@ -208,16 +192,8 @@ export default async function DashboardPage({
           label="Top positions · by market value"
           right={
             portfolio.positions.length > 0 ? (
-              <Link
-                href="/portfolio"
-                style={{
-                  fontSize: 11,
-                  color: "var(--accent)",
-                  textDecoration: "none",
-                  fontFamily: "var(--m)",
-                }}
-              >
-                Open book ›
+              <Link href="/portfolio" className="accent-link" style={{ fontSize: 11 }}>
+                Open book <span className="accent-link-chev">›</span>
               </Link>
             ) : undefined
           }
@@ -275,30 +251,35 @@ function KpiRow({
   // Empty-state variant: collapse Portfolio/P&L/30D into a single onboarding
   // card; keep Macro Multiplier + High-tier Names as their own tiles. Three
   // em-dashes reads as broken data — explicit onboarding CTA reads as
-  // "this is where you start."
+  // "this is where you start." Hairlines between cells match the populated
+  // variant so the empty state preserves the same rhythm.
   if (portfolioEmpty) {
     return (
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "3fr 1fr 1fr",
-          gap: 32,
+          gap: 0,
           padding: "4px 0",
         }}
       >
-        <OnboardingCard />
-        <KpiCell
-          label="Macro multiplier"
-          value={`${macroMultiplier.toFixed(2)}×`}
-          sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
-          valueColor={macroState.color}
-        />
-        <KpiCell
-          label="High-tier names"
-          value={`${highCurrent}`}
-          sub={`${highCurrent} of ${universeSize} scored · ${highDeltaLabel}`}
-          valueColor="var(--text-1)"
-        />
+        <KpiSlot first><OnboardingCard /></KpiSlot>
+        <KpiSlot>
+          <KpiCell
+            label="Macro multiplier"
+            value={`${macroMultiplier.toFixed(2)}×`}
+            sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
+            valueColor={macroState.color}
+          />
+        </KpiSlot>
+        <KpiSlot last>
+          <KpiCell
+            label="High-tier names"
+            value={`${highCurrent}`}
+            sub={`${highCurrent} of ${universeSize} scored · ${highDeltaLabel}`}
+            valueColor="var(--text-1)"
+          />
+        </KpiSlot>
       </div>
     );
   }
@@ -306,51 +287,90 @@ function KpiRow({
   return (
     <div
       style={{
-        // Mercury / Basis Rent-Roll pattern: 5 protagonist cells, no
-        // vertical dividers, no top/bottom hairlines, whitespace as the
-        // separator (Terry: "clean up the vertical and horizontal lines
-        // around the 5 numbers"). Each cell carries its own rhythm and
-        // earns its space without competing for chrome.
+        // 5 protagonist cells with vertical hairline separators per Terry
+        // 2026-05-20 ("not tiles… vertical line to separate them in between
+        // each"). Hairline lives on the right edge of cells 1–4; each cell
+        // pads 24px on each side of the line so breathing is symmetric.
+        // Cells stay chromeless (no card, no top/bottom border) — only the
+        // verticals.
         display: "grid",
         gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-        gap: 32,
+        gap: 0,
         padding: "4px 0",
       }}
     >
-      <AnimatedKpiCell
-        label="Portfolio"
-        value={portfolioValue}
-        kind="usd"
-        sub="market value"
-      />
-      <AnimatedKpiCell
-        label="P&L · since open"
-        value={portfolioPl}
-        kind="usd-signed"
-        sub={`${plPctLabel} on cost basis`}
-        valueColor={plPos ? "var(--success)" : "var(--danger)"}
-      />
-      <KpiCell
-        label="30D return"
-        value="—"
-        sub="tracks once positions have ≥30d of history"
-        muted
-      />
-      <AnimatedKpiCell
-        label="Macro multiplier"
-        value={macroMultiplier}
-        kind="multiplier"
-        decimals={2}
-        sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
-        valueColor={macroState.color}
-      />
-      <AnimatedKpiCell
-        label="High-tier names"
-        value={highCurrent}
-        kind="int"
-        sub={`${highCurrent}/${universeSize} · ${highDeltaLabel}`}
-        valueColor="var(--text-1)"
-      />
+      <KpiSlot first>
+        <AnimatedKpiCell
+          label="Portfolio"
+          value={portfolioValue}
+          kind="usd"
+          sub="market value"
+        />
+      </KpiSlot>
+      <KpiSlot>
+        <AnimatedKpiCell
+          label="P&L · since open"
+          value={portfolioPl}
+          kind="usd-signed"
+          sub={`${plPctLabel} on cost basis`}
+          valueColor={plPos ? "var(--success)" : "var(--danger)"}
+        />
+      </KpiSlot>
+      <KpiSlot>
+        <KpiCell
+          label="30D return"
+          value="—"
+          sub="tracks once positions have ≥30d of history"
+          muted
+        />
+      </KpiSlot>
+      <KpiSlot>
+        <AnimatedKpiCell
+          label="Macro multiplier"
+          value={macroMultiplier}
+          kind="multiplier"
+          decimals={2}
+          sub={`${macroState.label} · ${macroGatesHit}/3 gates`}
+          valueColor={macroState.color}
+        />
+      </KpiSlot>
+      <KpiSlot last>
+        <AnimatedKpiCell
+          label="High-tier names"
+          value={highCurrent}
+          kind="int"
+          sub={`${highCurrent}/${universeSize} · ${highDeltaLabel}`}
+          valueColor="var(--text-1)"
+        />
+      </KpiSlot>
+    </div>
+  );
+}
+
+/**
+ * KPI grid cell slot — adds the vertical hairline divider to cells 1..n-1
+ * and pads each side of the hairline 24px so cell content breathes
+ * symmetrically. `first` cell drops left padding (flush to canvas edge);
+ * `last` cell drops right padding and the trailing hairline.
+ */
+function KpiSlot({
+  children,
+  first,
+  last,
+}: {
+  children: React.ReactNode;
+  first?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        padding: first ? "0 24px 0 0" : last ? "0 0 0 24px" : "0 24px",
+        borderRight: last ? undefined : "1px solid var(--border-subtle)",
+        minWidth: 0,
+      }}
+    >
+      {children}
     </div>
   );
 }

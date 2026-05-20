@@ -271,29 +271,41 @@ function RangePicker({ value, onChange }: { value: RangeKey; onChange: (k: Range
     >
       {RANGES.map((r) => {
         const active = r.key === value;
-        return (
-          <button
-            key={r.key}
-            onClick={() => onChange(r.key)}
-            style={{
-              fontSize: 10.5,
-              fontFamily: "var(--m)",
-              fontWeight: active ? 600 : 400,
-              color: active ? "var(--text-1)" : "var(--text-3)",
-              background: active ? "var(--elevated)" : "transparent",
-              border: "none",
-              padding: "3px 8px",
-              borderRadius: 3,
-              cursor: "pointer",
-              letterSpacing: ".02em",
-              transition: "background var(--dur-instant) var(--ease-out)",
-            }}
-          >
-            {r.label}
-          </button>
-        );
+        return <RangePill key={r.key} label={r.label} active={active} onClick={() => onChange(r.key)} />;
       })}
     </div>
+  );
+}
+
+/**
+ * Single timeframe pill. Inactive pills lift to --hover-tint-strong + --text-1
+ * on hover (Linear segmented-pill posture); active pill holds --elevated bg
+ * and never changes on hover (active state IS the cue, no double-stack). All
+ * transitions on --dur-fast to match the unified hover-timing across the app.
+ */
+function RangePill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  const [h, setH] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        fontSize: 10.5,
+        fontFamily: "var(--m)",
+        fontWeight: active ? 600 : 400,
+        color: active ? "var(--text-1)" : h ? "var(--text-1)" : "var(--text-3)",
+        background: active ? "var(--elevated)" : h ? "var(--hover-tint-strong)" : "transparent",
+        border: "none",
+        padding: "3px 8px",
+        borderRadius: 3,
+        cursor: "pointer",
+        letterSpacing: ".02em",
+        transition: "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)",
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
