@@ -94,10 +94,14 @@ export function NameHeader({ d }: { d: NameDetail }) {
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-        {/* Top strip — ticker + name + meta + tier badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+        {/* Top strip — ticker + name + switch + tier (inline) over meta row.
+            S22: TierBadge moved INTO the ticker row alongside SwitchNameChip;
+            previously sat parallel to the 2-row stack with a flex:1 spacer
+            that pushed it to the canvas-right edge once the hero collapsed
+            to a single column. The badge belongs next to the name — same
+            reading line as "GOOGL · Alphabet · Switch name · [Low]". */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
               <h1
                 style={{
                   fontSize: 22,
@@ -116,6 +120,7 @@ export function NameHeader({ d }: { d: NameDetail }) {
                   binding stays the shortcut, but the affordance is now a
                   discoverable on-canvas control rather than a quiet text. */}
               <SwitchNameChip />
+              <TierBadge tier={d.tier} />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
               <LayerChip layer={d.layer} label={d.layer_label} />
@@ -162,9 +167,6 @@ export function NameHeader({ d }: { d: NameDetail }) {
                 ]}
               />
             </div>
-          </div>
-          <div style={{ flex: 1 }} />
-          <TierBadge tier={d.tier} />
         </div>
 
         {/* Hero — Final is the protagonist per spec §1.7 + §5.3 */}
