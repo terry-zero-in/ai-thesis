@@ -59,6 +59,39 @@ export function NameHeader({ d }: { d: NameDetail }) {
       ? { value: Number((lastTwo[1].final_score - lastTwo[0].final_score).toFixed(1)), period: "7d" }
       : null;
 
+  // 12-week trajectory diagnostic — counterweight to the left-column hero.
+  // The first valid final_score in d.history is the 12-wk-prior anchor; the
+  // last is current. Range is min/max of final_score across the visible window.
+  const finals12wk = d.history
+    .map((p) => ({ as_of: p.as_of, v: p.final_score }))
+    .filter((x): x is { as_of: string; v: number } => x.v != null);
+  const firstFinal = finals12wk[0] ?? null;
+  const lastFinal = finals12wk[finals12wk.length - 1] ?? null;
+  const delta12 =
+    firstFinal && lastFinal
+      ? Number((lastFinal.v - firstFinal.v).toFixed(1))
+      : null;
+  const range12 =
+    finals12wk.length > 0
+      ? {
+          min: Math.min(...finals12wk.map((x) => x.v)),
+          max: Math.max(...finals12wk.map((x) => x.v)),
+        }
+      : null;
+  const change12Derivation =
+    firstFinal && lastFinal && range12
+      ? `${firstFinal.v.toFixed(1)} → ${lastFinal.v.toFixed(1)} · range ${range12.min.toFixed(1)}–${range12.max.toFixed(1)}`
+      : undefined;
+  const change12Attribution = firstFinal ? `since ${firstFinal.as_of}` : undefined;
+  const change12Color =
+    delta12 == null
+      ? "var(--text-1)"
+      : delta12 > 0
+        ? "var(--success)"
+        : delta12 < 0
+          ? "var(--danger)"
+          : "var(--text-1)";
+
   // Derivation chain — only renders the macro step when a multiplier was applied.
   // Composite is the raw score; Final = Composite × macro_multiplier.
   const derivation =
@@ -179,9 +212,32 @@ export function NameHeader({ d }: { d: NameDetail }) {
         <TierLegend tier={d.tier} />
       </div>
 
-      {/* Right — 12-week sparkline */}
-      <div style={{ paddingTop: 22, minWidth: 0 }}>
-        <Sparkline history={d.history} />
+      {/* Right column — 12-week trajectory anchor. Mirrors the left's hero
+          structure (label + hero number + derivation + attribution) so the
+          right earns visual weight equal to the left, then anchors below
+          with a tall sparkline. Per /lambo Pattern #1 + Mercury Pic 19 b2:
+          big number on left = current score, big number on right =
+          trajectory. Two protagonists, two roles. */}
+      <div
+        style={{
+          paddingTop: 6,
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          minWidth: 0,
+        }}
+      >
+        <HeroNumber
+          label="12-week change"
+          value={delta12}
+          prefix={delta12 != null && delta12 > 0 ? "+" : ""}
+          precision={1}
+          derivation={change12Derivation}
+          attribution={change12Attribution}
+          valueColor={change12Color}
+          size="lg"
+        />
+        <Sparkline history={d.history} chartOnly height={140} />
       </div>
     </div>
   );

@@ -15,7 +15,28 @@ const THRESHOLDS = [
   { v: 75, label: "High" },
 ];
 
-export function Sparkline({ history }: { history: NameSparkPoint[] }) {
+export function Sparkline({
+  history,
+  chartOnly = false,
+  height = 130,
+}: {
+  history: NameSparkPoint[];
+  /**
+   * When true, drop the header strip (12-week history label + date range)
+   * and the bottom legend (Final/Composite/range). Caller owns the textual
+   * context. Used by NameHeader where the right-column hero provides those
+   * labels directly. Defaults to false so any other consumer gets the full
+   * self-contained sparkline.
+   */
+  chartOnly?: boolean;
+  /**
+   * SVG viewport height in px. Default 130 — bumped from 72 (S22) so the
+   * sparkline carries real visual weight on the Name Detail right column
+   * (Mercury Credit-Card Pic 19 b2 pattern, chart-as-counterweight to the
+   * left-side hero number).
+   */
+  height?: number;
+}) {
   if (history.length === 0) {
     return (
       <div style={{ fontSize: 11, color: "var(--text-4)", fontStyle: "italic" }}>
@@ -24,7 +45,7 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
     );
   }
   const w = 480;
-  const h = 72; // bumped from 56 to give threshold-line labels room
+  const h = height;
   const padX = 4;
   const padY = 6;
   const compositeVals = history.map((p) => p.composite).filter((v): v is number => v != null);
@@ -56,22 +77,24 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
     // Mercury decard: format on canvas, no card chrome. Used both standalone
     // and inline within NameHeader as the right-side block (Pic 19 b2 pattern).
     <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span
-          style={{
-            fontSize: 10.5,
-            fontFamily: "var(--m)",
-            color: "var(--text-3)",
-            letterSpacing: ".08em",
-            textTransform: "uppercase",
-          }}
-        >
-          12-week history
-        </span>
-        <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
-          {first.as_of} → {last.as_of}
-        </span>
-      </div>
+      {!chartOnly && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span
+            style={{
+              fontSize: 10.5,
+              fontFamily: "var(--m)",
+              color: "var(--text-3)",
+              letterSpacing: ".08em",
+              textTransform: "uppercase",
+            }}
+          >
+            12-week history
+          </span>
+          <span style={{ fontSize: 11, color: "var(--text-3)", fontFamily: "var(--m)" }}>
+            {first.as_of} → {last.as_of}
+          </span>
+        </div>
+      )}
       <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
         {/* Threshold rules per spec §4.9 — hairlines at 60 + 75 */}
         {visibleThresholds.map((t) => {
@@ -117,14 +140,16 @@ export function Sparkline({ history }: { history: NameSparkPoint[] }) {
           ),
         )}
       </svg>
-      <div style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--text-3)" }}>
-        <Legend color="var(--accent)" label={`Final · ${last.final_score?.toFixed(1) ?? "—"}`} dashed={false} />
-        <Legend color="var(--text-3)" label={`Composite · ${last.composite?.toFixed(1) ?? "—"}`} dashed={true} />
-        <span style={{ flex: 1 }} />
-        <span style={{ fontFamily: "var(--m)" }}>
-          {min.toFixed(1)} – {max.toFixed(1)}
-        </span>
-      </div>
+      {!chartOnly && (
+        <div style={{ display: "flex", gap: 14, fontSize: 11, color: "var(--text-3)" }}>
+          <Legend color="var(--accent)" label={`Final · ${last.final_score?.toFixed(1) ?? "—"}`} dashed={false} />
+          <Legend color="var(--text-3)" label={`Composite · ${last.composite?.toFixed(1) ?? "—"}`} dashed={true} />
+          <span style={{ flex: 1 }} />
+          <span style={{ fontFamily: "var(--m)" }}>
+            {min.toFixed(1)} – {max.toFixed(1)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
