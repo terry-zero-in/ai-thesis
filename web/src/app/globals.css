@@ -122,33 +122,36 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --border:        var(--steel);     /* default divider (was #2A2F38) */
   --border-strong: var(--frost-700); /* high-visibility / input focus edge (was #34353A) */
 
-  /* Accent — v1.2 (2026-05-19): rebound from --iris-300 (electric indigo
-     #5236DC) to a vivid electric blue #2A5FE6 with an indigo soul (60/40
-     weighted blend of Apex Blue #0070F3 + iris-300). Per Terry: current
-     indigo read too "design-tool"; the fintech surface calls for a brighter,
-     more action-forward primary. The Iris ramp itself stays at v1.1 values —
-     marketing landing's iris-900 → jet atmospheric gradient AND the
-     UniverseTable queued chip both intentionally stay indigo. Only the
-     accent BINDING moves off iris-300.
+  /* Accent — v1.3 (2026-05-19): rebound from electric blue #2A5FE6 to
+     Granite mint-teal #4FC9B5 ("refined teal"). Per Terry: the warm-leaning
+     surface stack reads more institutional with a teal/mint accent than a
+     blue one — fintech-blue feels generic; mint signals a confident
+     departure. Surfaces (jet/onyx/carbon/steel) and severity ladder both
+     untouched — only the accent binding moves.
+
+     Note: --success #5BB880 stays — mint and success-green are
+     distinguishable on the B-axis (mint is teal-leaning, success is
+     pure green). If they read too close in live use, fall back via
+     a follow-up commit.
 
      Accent is the SIGNAL accent (interaction states, links, focus rings,
      score arcs, selection). The PRIMARY CTA per page uses --voltage
      directly, NOT --accent. Severity (success/warning/danger) is its own
      ladder and is never replaced. */
-  --accent:         #2A5FE6;             /* electric blue · indigo soul */
-  --accent-hover:   #4F7AED;             /* lighter · hover */
-  --accent-pressed: #1842B0;             /* deeper · active/pressed */
-  --accent-soft:    rgba(42,95,230,.12);
-  --accent-border:  rgba(42,95,230,.40);
-  --accent-glow:    rgba(42,95,230,.22);
-  --on-accent:      var(--white);
+  --accent:         #4FC9B5;             /* refined mint-teal · Granite */
+  --accent-hover:   #6FDDC9;             /* lighter · hover */
+  --accent-pressed: #3DA295;             /* deeper · active/pressed */
+  --accent-soft:    rgba(79,201,181,.12);
+  --accent-border:  rgba(79,201,181,.40);
+  --accent-glow:    rgba(79,201,181,.22);
+  --on-accent:      var(--jet);          /* near-black on mint for contrast */
 
   /* Semantic — truth states only, never decorative. Severity ladder is
      INDEPENDENT of accent (accent is brand/signal, not severity). --info
      tracks --accent so info chips inherit the brand-current accent. */
   --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:var(--accent);
   --success-soft:rgba(91,184,128,.10); --warning-soft:rgba(221,168,90,.10);
-  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(42,95,230,.08);
+  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(79,201,181,.08);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
