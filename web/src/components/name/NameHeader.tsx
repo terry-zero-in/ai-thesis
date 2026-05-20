@@ -59,49 +59,6 @@ export function NameHeader({ d }: { d: NameDetail }) {
       ? { value: Number((lastTwo[1].final_score - lastTwo[0].final_score).toFixed(1)), period: "7d" }
       : null;
 
-  // 12-week trajectory diagnostic — counterweight to the left-column hero.
-  // The first valid final_score in d.history is the 12-wk-prior anchor; the
-  // last is current. Range is min/max of final_score across the visible window.
-  const finals12wk = d.history
-    .map((p) => ({ as_of: p.as_of, v: p.final_score }))
-    .filter((x): x is { as_of: string; v: number } => x.v != null);
-  const firstFinal = finals12wk[0] ?? null;
-  const lastFinal = finals12wk[finals12wk.length - 1] ?? null;
-  const delta12 =
-    firstFinal && lastFinal
-      ? Number((lastFinal.v - firstFinal.v).toFixed(1))
-      : null;
-  const range12 =
-    finals12wk.length > 0
-      ? {
-          min: Math.min(...finals12wk.map((x) => x.v)),
-          max: Math.max(...finals12wk.map((x) => x.v)),
-        }
-      : null;
-  // Trajectory is "rich" only when we have multiple snapshots AND there's
-  // meaningful spread between them. A single snapshot — or 12 identical
-  // values — collapses the chart to a flat line and the delta hero to
-  // "0.0", reading as broken. Detect that and render an honest empty state
-  // (newly-scored name awaiting weekly composite snapshots) instead of the
-  // degenerate hero.
-  const hasTrajectory =
-    finals12wk.length >= 2 &&
-    range12 != null &&
-    range12.max - range12.min >= 0.1;
-  const change12Derivation =
-    firstFinal && lastFinal && range12
-      ? `${firstFinal.v.toFixed(1)} → ${lastFinal.v.toFixed(1)} · range ${range12.min.toFixed(1)}–${range12.max.toFixed(1)}`
-      : undefined;
-  const change12Attribution = firstFinal ? `since ${firstFinal.as_of}` : undefined;
-  const change12Color =
-    delta12 == null
-      ? "var(--text-1)"
-      : delta12 > 0
-        ? "var(--success)"
-        : delta12 < 0
-          ? "var(--danger)"
-          : "var(--text-1)";
-
   // Derivation chain — only renders the macro step when a multiplier was applied.
   // Composite is the raw score; Final = Composite × macro_multiplier.
   const derivation =
@@ -222,178 +179,17 @@ export function NameHeader({ d }: { d: NameDetail }) {
         <TierLegend tier={d.tier} />
       </div>
 
-      {/* Right column — 12-week trajectory anchor. Mirrors the left's hero
-          structure (label + hero number + derivation + attribution) so the
-          right earns visual weight equal to the left, then anchors below
-          with a tall sparkline. Per /lambo Pattern #1 + Mercury Pic 19 b2:
-          big number on left = current score, big number on right =
-          trajectory. Two protagonists, two roles.
-
-          Newly-scored names (1 snapshot or all identical) render an honest
-          empty-state instead of a degenerate "0.0" hero — the column stays
-          anchored, but quietly. */}
-      <div
-        style={{
-          paddingTop: 6,
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-          minWidth: 0,
-        }}
-      >
-        {hasTrajectory ? (
-          <>
-            <HeroNumber
-              label="12-week change"
-              value={delta12}
-              prefix={delta12 != null && delta12 > 0 ? "+" : ""}
-              precision={1}
-              derivation={change12Derivation}
-              attribution={change12Attribution}
-              valueColor={change12Color}
-              size="lg"
-            />
-            <Sparkline history={d.history} chartOnly height={140} />
-          </>
-        ) : (
-          <TrajectoryEmpty
-            currentScore={d.final_score}
-            firstAsOf={firstFinal?.as_of ?? d.as_of ?? null}
-            snapshotCount={finals12wk.length}
-          />
-        )}
+      {/* Right column — 12-week trajectory chart. The chart is the value-
+          add: it shows the SHAPE of the score's recent history, which is
+          information the left's hero number cannot convey. Earlier S22
+          attempts added a second HeroNumber (+2.4 12-week-change) on the
+          right; that competed with the left's protagonist and duplicated
+          information the chart already shows. /lambo "one protagonist per
+          screen" — the chart alone, sized big, balances the left. */}
+      <div style={{ paddingTop: 6, minWidth: 0 }}>
+        <Sparkline history={d.history} height={200} />
       </div>
     </div>
   );
 }
 
-/**
- * Empty-state for the right-column trajectory anchor when a name has too
- * few snapshots for a meaningful 12-week chart (1 distinct value, or no
- * spread). Renders quiet, honest, anchored — no degenerate "0.0" delta
- * hero, no flat-line chart pretending to show a trajectory.
- *
- * Geometry mirrors the populated hero: same label cap, same value-block
- * scale so the row doesn't reflow between adjacent tickers (ticker pager
- * navigation stays smooth). Per /lambo "structure with enough fidelity
- * that it reads as 'this is where X lives,' not 'this is unfinished.'"
- */
-function TrajectoryEmpty({
-  currentScore,
-  firstAsOf,
-  snapshotCount,
-}: {
-  currentScore: number | null;
-  firstAsOf: string | null;
-  snapshotCount: number;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "8px 0" }}>
-      <div
-        style={{
-          fontSize: 10.5,
-          fontFamily: "var(--m)",
-          color: "var(--text-3)",
-          letterSpacing: ".08em",
-          textTransform: "uppercase",
-        }}
-      >
-        12-week history
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-        <span
-          style={{
-            fontFamily: "var(--m)",
-            fontSize: 36,
-            fontWeight: 500,
-            color: "var(--text-3)",
-            fontVariantNumeric: "tabular-nums",
-            lineHeight: 1,
-            letterSpacing: "-.01em",
-          }}
-        >
-          —
-        </span>
-        <span
-          style={{
-            fontSize: 12.5,
-            fontFamily: "var(--f)",
-            color: "var(--text-3)",
-            lineHeight: 1.4,
-            maxWidth: 320,
-          }}
-        >
-          Trajectory builds with each weekly composite snapshot. Chart
-          activates once the next Saturday run records movement.
-        </span>
-      </div>
-      <div
-        style={{
-          fontSize: 11,
-          fontFamily: "var(--m)",
-          color: "var(--text-4)",
-          fontVariantNumeric: "tabular-nums",
-          marginTop: 2,
-        }}
-      >
-        {snapshotCount} of 12 weeks recorded
-        {firstAsOf && (
-          <>
-            {" "}· first scored {firstAsOf}
-          </>
-        )}
-      </div>
-      {/* Quiet placeholder area — same vertical footprint as the populated
-          sparkline (140px) so column heights match between tickers. A faint
-          baseline + a single dot marking the current score's vertical
-          position give the geometry an anchor without faking data. */}
-      <div
-        style={{
-          height: 140,
-          marginTop: 8,
-          position: "relative",
-          borderTop: "1px solid var(--border-subtle)",
-          borderBottom: "1px solid var(--border-subtle)",
-          opacity: 0.5,
-        }}
-        aria-hidden
-      >
-        {currentScore != null && (
-          <div
-            title={`Current ${currentScore.toFixed(1)}`}
-            style={{
-              position: "absolute",
-              top: `${Math.max(8, Math.min(92, 100 - ((currentScore - 40) / 55) * 100))}%`,
-              right: 6,
-              transform: "translate(0, -50%)",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 9.5,
-                fontFamily: "var(--m)",
-                color: "var(--text-4)",
-                letterSpacing: ".04em",
-                textTransform: "uppercase",
-              }}
-            >
-              {currentScore.toFixed(1)}
-            </span>
-            <span
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: "50%",
-                background: "var(--accent)",
-                opacity: 0.6,
-              }}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}

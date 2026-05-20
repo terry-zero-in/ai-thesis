@@ -37,11 +37,26 @@ export function Sparkline({
    */
   height?: number;
 }) {
-  if (history.length === 0) {
+  // Sparse-data check: we need ≥2 final-score snapshots with at least
+  // 0.1 spread to draw a meaningful chart. Anything less collapses the
+  // path to a flat line at the chart center and reads as broken chrome.
+  // Detect early and render an honest empty-state line.
+  const validFinals = history.filter(
+    (p): p is typeof p & { final_score: number } => p.final_score != null,
+  );
+  const hasSpread =
+    validFinals.length >= 2 &&
+    Math.max(...validFinals.map((p) => p.final_score)) -
+      Math.min(...validFinals.map((p) => p.final_score)) >=
+      0.1;
+  if (history.length === 0 || !hasSpread) {
     return (
-      <div style={{ fontSize: 11, color: "var(--text-4)", fontStyle: "italic" }}>
-        No history yet — needs at least one Saturday cron run.
-      </div>
+      <SparseTrajectoryNote
+        chartOnly={chartOnly}
+        height={height}
+        snapshotCount={validFinals.length}
+        firstAsOf={validFinals[0]?.as_of ?? null}
+      />
     );
   }
   const w = 480;
@@ -150,6 +165,81 @@ export function Sparkline({
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Quiet empty-state for names with insufficient 12-week history to draw
+ * a meaningful chart (0 or 1 final-score snapshots, or all values
+ * identical). Same vertical footprint as the populated chart so column
+ * heights match between adjacent tickers in the pager.
+ *
+ * Per /lambo "structure with enough fidelity that it reads as 'this is
+ * where X lives,' not 'this is unfinished.'" One quiet line of copy + a
+ * faint baseline; no fake data, no decorative ghosts.
+ */
+function SparseTrajectoryNote({
+  chartOnly,
+  height,
+  snapshotCount,
+  firstAsOf,
+}: {
+  chartOnly: boolean;
+  height: number;
+  snapshotCount: number;
+  firstAsOf: string | null;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      {!chartOnly && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <span
+            style={{
+              fontSize: 10.5,
+              fontFamily: "var(--m)",
+              color: "var(--text-3)",
+              letterSpacing: ".08em",
+              textTransform: "uppercase",
+            }}
+          >
+            12-week history
+          </span>
+        </div>
+      )}
+      <div
+        style={{
+          height,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderTop: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--border-subtle)",
+          opacity: 0.6,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 12,
+            color: "var(--text-3)",
+            fontFamily: "var(--f)",
+            fontStyle: "italic",
+            textAlign: "center",
+            padding: "0 24px",
+            lineHeight: 1.4,
+          }}
+        >
+          Trajectory chart activates after the next weekly composite snapshot.
+        </span>
+      </div>
+      <span style={{ fontSize: 11, fontFamily: "var(--m)", color: "var(--text-4)", fontVariantNumeric: "tabular-nums" }}>
+        {snapshotCount} of 12 weeks recorded
+        {firstAsOf && (
+          <>
+            {" "}· first scored {firstAsOf}
+          </>
+        )}
+      </span>
     </div>
   );
 }
