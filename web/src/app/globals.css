@@ -129,10 +129,10 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
      departure. Surfaces (jet/onyx/carbon/steel) and severity ladder both
      untouched — only the accent binding moves.
 
-     Note: --success #5BB880 stays — mint and success-green are
-     distinguishable on the B-axis (mint is teal-leaning, success is
-     pure green). If they read too close in live use, fall back via
-     a follow-up commit.
+     Note: --success bumped to #4bde80 (Granite --pos) in same v1.3 pass —
+     prior #5BB880 sat too close to the mint accent on hue. New #4bde80 is
+     brighter + greener, opening real perceptual distance from mint-teal
+     accent. Mint = interactive/positive-action; success = state-positive.
 
      Accent is the SIGNAL accent (interaction states, links, focus rings,
      score arcs, selection). The PRIMARY CTA per page uses --voltage
@@ -149,8 +149,8 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   /* Semantic — truth states only, never decorative. Severity ladder is
      INDEPENDENT of accent (accent is brand/signal, not severity). --info
      tracks --accent so info chips inherit the brand-current accent. */
-  --success:#5BB880; --warning:#DDA85A; --danger:#E07878; --info:var(--accent);
-  --success-soft:rgba(91,184,128,.10); --warning-soft:rgba(221,168,90,.10);
+  --success:#4bde80; --warning:#DDA85A; --danger:#E07878; --info:var(--accent);
+  --success-soft:rgba(75,222,128,.10); --warning-soft:rgba(221,168,90,.10);
   --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(79,201,181,.08);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
