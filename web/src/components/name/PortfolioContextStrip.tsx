@@ -139,14 +139,19 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
 }
 
 function Container({ children }: { children: React.ReactNode }) {
+  // Pill geometry per Terry 2026-05-20 — see NamePager.Strip for the
+  // global rule. Same 32 / 40 horizontal margin, same 6px radius. Vertical
+  // margin tightens the gap to NameHeader (above) and the chart (below)
+  // so the strip reads as instrument-belt, not floating.
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
         gap: 24,
-        padding: "14px 32px",
-        borderBottom: "1px solid var(--border-subtle)",
+        margin: "8px 40px 10px 32px",
+        padding: "12px 16px",
+        borderRadius: 6,
         background: "var(--surface)",
         alignItems: "baseline",
         flexShrink: 0,

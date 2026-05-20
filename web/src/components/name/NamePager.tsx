@@ -52,14 +52,20 @@ export function NamePager({ ticker, tickers }: Props) {
 }
 
 function Strip({ children }: { children: React.ReactNode }) {
+  // Pill geometry per Terry 2026-05-20: edge-to-edge ribbons never butt
+  // against sidebar/rail. Left margin (32px) aligns the pill's left edge
+  // with the canvas content's natural left padding. Right margin (40px =
+  // 32 + 8) creates the asymmetric extra-breathing-room on the rail side.
+  // borderRadius 6 matches the sidebar hover-pill shape.
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "8px 32px",
-        borderBottom: "1px solid var(--border-subtle)",
+        margin: "10px 40px 0 32px",
+        padding: "6px 14px",
+        borderRadius: 6,
         background: "var(--surface)",
         flexShrink: 0,
         gap: 16,
