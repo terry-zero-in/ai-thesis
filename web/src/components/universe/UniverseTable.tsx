@@ -388,11 +388,11 @@ function MacroFlag({ gates, mult }: { gates: number; mult: number }) {
       style={{
         fontFamily: "var(--m)",
         fontSize: 10,
-        color: "var(--warning)",
-        background: "var(--warning-soft)",
-        border: "1px solid rgba(221,168,90,.30)",
-        borderRadius: 3,
-        padding: "1px 5px",
+        color: "var(--warning-text)",
+        background: "var(--warning-text-fill)",
+        border: "1px solid var(--warning-text-border)",
+        borderRadius: 6,
+        padding: "1px 6px",
       }}
     >
       ×{mult.toFixed(2)}

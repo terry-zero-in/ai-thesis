@@ -65,11 +65,11 @@ export default async function PortfolioPage({
                 style={{
                   fontSize: 10,
                   fontFamily: "var(--m)",
-                  color: "var(--warning)",
-                  background: "var(--warning-soft)",
-                  border: "1px solid rgba(221,168,90,.30)",
-                  padding: "1px 5px",
-                  borderRadius: 3,
+                  color: "var(--warning-text)",
+                  background: "var(--warning-text-fill)",
+                  border: "1px solid var(--warning-text-border)",
+                  padding: "1px 7px",
+                  borderRadius: 6,
                   letterSpacing: ".05em",
                   textTransform: "uppercase",
                 }}

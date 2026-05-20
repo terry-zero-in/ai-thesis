@@ -57,11 +57,11 @@ export function GaugeCard({
             style={{
               fontSize: 9.5,
               fontFamily: "var(--m)",
-              color: "var(--warning)",
-              border: "1px solid rgba(221,168,90,.40)",
-              background: "var(--warning-soft)",
-              padding: "1px 6px",
-              borderRadius: 3,
+              color: "var(--warning-text)",
+              border: "1px solid var(--warning-text-border)",
+              background: "var(--warning-text-fill)",
+              padding: "1px 7px",
+              borderRadius: 6,
               letterSpacing: ".08em",
               textTransform: "uppercase",
             }}

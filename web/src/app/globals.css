@@ -121,10 +121,15 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --text-3: var(--frost-300);  /* secondary (was #7A818D) */
   --text-4: var(--frost-500);  /* muted (was #5F6571) */
 
-  /* Borders — subtle → default → strong; rises into Frost on the strong end. */
-  --border-subtle: #1F2229;          /* hairline (kept literal — sits between onyx and carbon) */
-  --border:        var(--steel);     /* default divider (was #2A2F38) */
-  --border-strong: var(--frost-700); /* high-visibility / input focus edge (was #34353A) */
+  /* Borders — hairline → subtle → default → strong → focus.
+     v2.0 deck (S20) standardizes 4 weights of divider, ramping from Frost
+     900 (subtle) → Frost 700 (strong), with hairline as the lightest cue
+     and focus rings on iris-300. */
+  --border-hairline: rgba(255,255,255,.06);  /* lightest separator (deck "Hairline") */
+  --border-subtle:   #1F2229;                /* default divider (deck "Default · Frost 900") */
+  --border:          var(--steel);           /* table / form border */
+  --border-strong:   var(--frost-700);       /* high-visibility / input focus edge */
+  --border-focus:    var(--iris-300);        /* focus rings, active selection — iris-300 #B696FF */
 
   /* Accent — v2.0 RESTORED (S20, 2026-05-20). Reverts S5 Persian-indigo,
      S14 Apex Blue, and S19 Granite mint-teal back to canonical Iris vivid
@@ -167,6 +172,31 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --success:#30D158; --warning:#DDA85A; --danger:#E5484D; --info:var(--accent);
   --success-soft:rgba(48,209,88,.10); --warning-soft:rgba(221,168,90,.10);
   --danger-soft:rgba(229,72,77,.10); --info-soft:rgba(139,92,246,.08);
+
+  /* ── Pastel-tier semantic colors (Iris × Voltage v2.0 chip system) ────
+     The chip system uses a SOFTER, more pastel value for chip text on
+     dark surfaces, paired with very low opacity fill (~8%) and faint
+     border (~25%) in the same channel. The solid tier above stays for
+     dots, focus rings, score arcs, and primary state moments.
+
+     Convention by chip shape:
+       • Fully rounded pill (9999px)  = identity/label (Tier, Layer, Info/Link)
+       • Rounded rect (6px)           = transient state (delta, warning) */
+  --success-text:        #6EE7B7;             /* mint pastel — High-tier, +delta */
+  --success-text-fill:   rgba(110,231,183,.08);
+  --success-text-border: rgba(110,231,183,.25);
+
+  --warning-text:        #F5C268;             /* amber pastel — Low-tier, gate-hit */
+  --warning-text-fill:   rgba(245,194,107,.08);
+  --warning-text-border: rgba(245,194,107,.25);
+
+  --danger-text:         #FCA5A5;             /* coral pastel — Avoid-tier, −delta */
+  --danger-text-fill:    rgba(252,165,165,.08);
+  --danger-text-border:  rgba(252,165,165,.25);
+
+  --info-text:           var(--iris-300);     /* iris pastel #B696FF — Info/Link */
+  --info-text-fill:      rgba(182,150,255,.08);
+  --info-text-border:    rgba(182,150,255,.25);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);

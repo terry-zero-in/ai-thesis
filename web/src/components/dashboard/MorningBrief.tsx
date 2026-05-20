@@ -136,11 +136,11 @@ function InsiderPanel({ insider }: { insider: NonNullable<MorningBriefData["insi
               style={{
                 fontSize: 10.5,
                 fontFamily: "var(--m)",
-                color: "var(--text-2)",
-                background: "rgba(139,92,246,.08)",
-                border: "1px solid rgba(139,92,246,.30)",
-                padding: "1px 6px",
-                borderRadius: 3,
+                color: "var(--info-text)",
+                background: "var(--info-text-fill)",
+                border: "1px solid var(--info-text-border)",
+                padding: "1px 9px",
+                borderRadius: 9999,
                 textDecoration: "none",
                 letterSpacing: ".02em",
               }}

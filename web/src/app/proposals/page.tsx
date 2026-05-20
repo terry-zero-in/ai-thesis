@@ -110,11 +110,11 @@ function ProposalCard({ proposal }: { proposal: Awaited<ReturnType<typeof getUni
           style={{
             fontSize: 10.5,
             fontFamily: "var(--m)",
-            color: "var(--warning)",
-            background: "var(--warning-soft)",
-            border: "1px solid rgba(221,168,90,.30)",
-            padding: "1px 7px",
-            borderRadius: 3,
+            color: "var(--warning-text)",
+            background: "var(--warning-text-fill)",
+            border: "1px solid var(--warning-text-border)",
+            padding: "1px 9px",
+            borderRadius: 6,
             letterSpacing: ".04em",
             textTransform: "uppercase",
           }}

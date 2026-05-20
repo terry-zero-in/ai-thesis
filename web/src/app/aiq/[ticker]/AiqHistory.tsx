@@ -106,11 +106,11 @@ function HistoryRow({
                 style={{
                   fontSize: 10,
                   fontFamily: "var(--m)",
-                  color: dlt > 0 ? "var(--success)" : "var(--danger)",
-                  background: dlt > 0 ? "var(--success-soft)" : "var(--danger-soft)",
-                  border: `1px solid ${dlt > 0 ? "rgba(48,209,88,.30)" : "rgba(229,72,77,.30)"}`,
-                  padding: "1px 5px",
-                  borderRadius: 3,
+                  color: dlt > 0 ? "var(--success-text)" : "var(--danger-text)",
+                  background: dlt > 0 ? "var(--success-text-fill)" : "var(--danger-text-fill)",
+                  border: `1px solid ${dlt > 0 ? "var(--success-text-border)" : "var(--danger-text-border)"}`,
+                  padding: "1px 6px",
+                  borderRadius: 6,
                 }}
               >
                 {d.label.slice(0, 4)} {dlt > 0 ? "+" : ""}

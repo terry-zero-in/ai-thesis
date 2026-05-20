@@ -1,19 +1,21 @@
-// Categorical layer encoding — kept literal because layer colors are not defined
-// as tokens (S4 2026-05-18). Five distinct categorical hues so every layer reads
-// as its own thing.
+// Categorical layer encoding — five distinct categorical pastel hues per the
+// Iris × Voltage v2.0 deck (S20). The colors live ONLY on the 8px leading
+// dot, never as fill or row tint — per /lambo "severity colors only at
+// severity moments." Layer is an identifier, not a state, so the chip itself
+// is inline-text style (no pill bg) when used in dense table rows; the dot
+// + label carry the signal.
 //
-// L2 history: was #A78BFA violet under the iris-accent regime (v1.1). After the
-// 2026-05-19 palette pivot to electric-blue --accent (#2A5FE6), Terry directed
-// the cascade to "carry through" layer dots. L2 moved to #6E7BE8 — a
-// violet-leaning electric blue that's part of the new accent family but
-// categorically distinct from --accent (lighter, more violet) so it doesn't
-// read as "active state."
+//   L1 Compute     · Cyan   #67E8F9 — cool cyan
+//   L2 Hyperscaler · Sky    #7DD3FC — sky blue
+//   L3 App         · Mint   #6EE7B7 — pastel emerald
+//   L4 Power       · Amber  #F5C268 — pastel amber
+//   L5 Incumbent   · Slate  #8A92A6 — neutral slate
 const COLORS: Record<number, string> = {
-  1: "#5BC0DE",        // L1 Compute     — cool teal-cyan
-  2: "#6E7BE8",        // L2 Hyperscaler — violet-leaning electric blue (v1.2)
-  3: "var(--success)", // L3 App         — green
-  4: "var(--warning)", // L4 Power       — amber
-  5: "var(--frost-500)", // L5 Incumbent — frost
+  1: "#67E8F9", // L1 Compute     — Cyan
+  2: "#7DD3FC", // L2 Hyperscaler — Sky
+  3: "#6EE7B7", // L3 App         — Mint (= --success-text)
+  4: "#F5C268", // L4 Power       — Amber (= --warning-text)
+  5: "#8A92A6", // L5 Incumbent   — Slate
 };
 
 export function LayerChip({ layer, label }: { layer: number; label: string }) {
@@ -22,8 +24,8 @@ export function LayerChip({ layer, label }: { layer: number; label: string }) {
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
       <span
         style={{
-          width: 6,
-          height: 6,
+          width: 8,
+          height: 8,
           borderRadius: "50%",
           background: color,
           flexShrink: 0,
