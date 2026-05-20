@@ -97,8 +97,11 @@ export default function NameDetailPage({ params }: { params: Promise<Params> }) 
         <h1 style={{ fontSize: 20, marginBottom: 8 }}>{ticker.toUpperCase()} not found</h1>
         <p style={{ color: "var(--text-3)", fontSize: 13 }}>
           That ticker isn&rsquo;t in the active universe.{" "}
-          <Link href="/universe" style={{ color: "var(--accent)" }}>
+          <Link href="/universe" className="accent-link" style={{ fontSize: 13 }}>
             Back to Universe
+            <span className="accent-link-chev" aria-hidden>
+              ›
+            </span>
           </Link>
         </p>
       </div>

@@ -53,9 +53,13 @@ export function DepFlagsList({ flags }: { flags: NameDepFlag[] }) {
                 href={f.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ fontSize: 11, color: "var(--accent)", textDecoration: "none" }}
+                className="accent-link"
+                style={{ fontSize: 11 }}
               >
-                source ↗
+                source
+                <span className="accent-link-chev" aria-hidden>
+                  ↗
+                </span>
               </a>
             )}
           </div>
