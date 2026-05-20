@@ -235,7 +235,12 @@ function SbItem({ ic, label, active, col, badge, href, keys, external }: NavItem
         // hover (was --text-2). Active items hold state and never change on
         // hover — the `active` branch wins regardless of `hov`.
         color: active ? "var(--text-1)" : hov ? "var(--text-1)" : "var(--text-3)",
-        background: active ? "var(--surface-2)" : hov ? "var(--hover-tint)" : "transparent",
+        // Sidebar-specific achromatic state surfaces — true-neutral, distinct
+        // from the canvas/right-rail blue-tinted ladder. --hover-tint over
+        // a near-black sidebar was nearly invisible; --sidebar-hover (#141415)
+        // gives the visible bar-over-page-name treatment Terry locked
+        // 2026-05-20 (eye-dropper from Linear's sidebar).
+        background: active ? "var(--sidebar-active)" : hov ? "var(--sidebar-hover)" : "transparent",
         fontWeight: active ? 500 : 400,
         fontSize: 13,
         transition: "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out)",

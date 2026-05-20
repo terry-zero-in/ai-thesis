@@ -106,7 +106,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   /* ─── SEMANTIC ALIASES (consumer interface, do not move) ──────────────── */
 
   --canvas:        var(--onyx);    /* L1 · #0A0B10 — main canvas */
-  --sidebar:       var(--jet);     /* L0 · #000000 — darkest, sidebar */
+  --sidebar:       #070707;        /* L0 · sidebar bg (Terry eye-dropper 2026-05-20) — slight lift off pure jet so the right-rail/canvas hairline reads against it without going pure black. */
   --surface:       var(--carbon);  /* L2 · #14171F — cards, right rail, palette, tooltips */
   --surface-2:     var(--carbon);  /* L2 · same as surface — cards within cards stay flat */
   --elevated:      var(--steel);   /* L3 · #2A2F3E — popovers, hover surfaces, elevated modals */
@@ -114,6 +114,15 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --hover-tint:        rgba(255,255,255,.035);
   --hover-tint-strong: rgba(255,255,255,.06);
   --press-tint:        rgba(255,255,255,.085);
+
+  /* Sidebar-specific achromatic state surfaces (Terry eye-dropper 2026-05-20,
+     Linear-benchmarked). DISTINCT from the Iris-tinted --carbon family used
+     across canvas / right rail / cards — the sidebar is a true-neutral lane
+     and the rest of the app stays in the locked Iris-family blue-tinted
+     ladder. Do NOT collapse these back into --surface/--surface-2 because
+     they look "one shade off"; the chroma difference is intentional. */
+  --sidebar-hover:  #141415;       /* hover bar over inactive nav item */
+  --sidebar-active: #1D1D1F;       /* selected nav item surface */
 
   /* Text — 4-level scale mapped onto Frost. */
   --text-1: var(--white);      /* display + headlines (was #ECEDEF) */
