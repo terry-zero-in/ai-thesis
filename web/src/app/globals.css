@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   AI Thesis — Iris × Voltage v1.1 color system
-   Locked 2026-05-18 (S5). Supersedes v1.0 (`#A87DFE` iris) per Terry directive
-   referencing Robinhood Strategies half-circle gradient — push iris toward the
-   deeper Persian/electric-indigo side; lift surfaces by 1-2 lightness only
-   ("very little more gray"). v1.0 was locked S4; Apex Blue (S2) and Reticle
-   Stage 3 Plasma Cyan tokens superseded. Source: AI-Thesis Color System spec.
+   AI Thesis — Iris × Voltage v2.0 color system
+   RESTORED 2026-05-20 (S20). Reverts the S5 (v1.1 Persian indigo), S14 (v1.2
+   Apex Blue) and S19 (v1.3 Granite mint-teal) accent drift back to the
+   canonical Iris × Voltage system Terry locked 2026-05-18. The mint adoption
+   crept color into chrome that was supposed to stay achromatic — accent now
+   reserved for THE signal moment again. Sidebar drops to true black (--void)
+   so it reads darker than the canvas, per Terry's S20 directive.
 
    Three roles, three families:
      • Iris   = the signal     (conviction ≥ 75, active-state arc, focus rings,
@@ -32,7 +33,7 @@
    time / color pickers. `color-scheme: dark` flips Chrome / Edge / Safari to
    their dark calendar UI; `accent-color` colors the selected-day highlight
    and any focus ring with the Iris-300 signal violet. */
-html{color-scheme:dark;accent-color:#2A5FE6}
+html{color-scheme:dark;accent-color:#A87DFE}
 
 /* Calendar glyph inside <input type="date|time|month|week"> renders as a
    black icon on dark backgrounds by default in Chromium. Invert it so it
@@ -74,15 +75,17 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --steel:  #2C313F;  /* L3 · input       (v1.1: was #2A2F3E, +2 lift) */
 
   /* Iris — the brand violet. Conviction signals only (composite ≥75, active-state
-     arc, focus rings, links, selection, score bars, multiplier glow). Never decorative. */
-  --iris-50:  #EEEAFB;  /* (v1.1: was #F5EEFF) */
-  --iris-100: #D8CFF6;  /* (v1.1: was #E4D2FF) */
-  --iris-200: #9C8AED;  /* highlight — top of arc (v1.1: was #C7A6FF) */
-  --iris-300: #5236DC;  /* mid arc — electric indigo · default brand mark · A (v1.1: was #A87DFE) */
-  --iris-500: #4D3FB8;  /* brand base — Persian indigo · B (v1.1: was #8B5CF6) */
-  --iris-600: #3D2EB8;  /* (v1.1: was #7C3FE8) */
-  --iris-700: #2E2089;  /* pressed (v1.1: was #5B2EB8) */
-  --iris-900: #1A0F4A;  /* deepest (v1.1: was #2E1166) */
+     arc, focus rings, links, selection, score bars, multiplier glow). Never decorative.
+     v2.0 RESTORED 2026-05-20 (S20): the v1.1 Persian-indigo and S14 electric-blue
+     pivots are reverted. Iris is vivid violet, not blue, not indigo. */
+  --iris-50:  #F5EEFF;
+  --iris-100: #E4D2FF;
+  --iris-200: #C7A6FF;  /* highlight — top of arc */
+  --iris-300: #B696FF;  /* bridge — between 200 and 500 */
+  --iris-500: #A87DFE;  /* mid arc · vivid — THE signal violet */
+  --iris-600: #8B5CF6;  /* brand base */
+  --iris-700: #5B2E88;  /* pressed */
+  --iris-900: #2E1166;  /* deepest */
 
   /* Voltage — the single neon CTA per page. Pill radius 9999px. Voltage-ink
      text on voltage fill. Never on data, labels, or icons. */
@@ -101,9 +104,11 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
   /* ─── SEMANTIC ALIASES (consumer interface, do not move) ──────────────── */
 
-  --canvas:        var(--jet);     /* was #0B0C0F */
-  --sidebar:       var(--onyx);    /* one-step lift from canvas (was #06070A) */
-  --surface:       var(--onyx);    /* card surface (was #15171C) */
+  --canvas:        var(--jet);     /* L0 base · #050608 — warm near-black */
+  --sidebar:       var(--void);    /* S20: sidebar drops to true #000000 — darker
+                                      than canvas per Terry directive ("even if
+                                      just by a little bit"). Δ = ~5 lightness. */
+  --surface:       var(--onyx);    /* card surface — lift one step above canvas */
   --surface-2:     var(--carbon);  /* (was #1B1E25) */
   --elevated:      var(--carbon);  /* hover/popover surface (was #22262E) */
   --hover-lift:    var(--steel);   /* (was #232730) */
@@ -122,36 +127,34 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --border:        var(--steel);     /* default divider (was #2A2F38) */
   --border-strong: var(--frost-700); /* high-visibility / input focus edge (was #34353A) */
 
-  /* Accent — v1.3 (2026-05-19): rebound from electric blue #2A5FE6 to
-     Granite mint-teal #4FC9B5 ("refined teal"). Per Terry: the warm-leaning
-     surface stack reads more institutional with a teal/mint accent than a
-     blue one — fintech-blue feels generic; mint signals a confident
-     departure. Surfaces (jet/onyx/carbon/steel) and severity ladder both
-     untouched — only the accent binding moves.
+  /* Accent — v2.0 RESTORED (S20, 2026-05-20). Reverts S5 Persian-indigo,
+     S14 Apex Blue, and S19 Granite mint-teal back to canonical Iris vivid
+     violet #A87DFE. The mint adoption crept color into chrome that was
+     supposed to stay achromatic — accent is now reserved for THE signal
+     moment again. Surfaces and severity ladder untouched.
 
-     Note: --success bumped to #4bde80 (Granite --pos) in same v1.3 pass —
-     prior #5BB880 sat too close to the mint accent on hue. New #4bde80 is
-     brighter + greener, opening real perceptual distance from mint-teal
-     accent. Mint = interactive/positive-action; success = state-positive.
-
-     Accent is the SIGNAL accent (interaction states, links, focus rings,
-     score arcs, selection). The PRIMARY CTA per page uses --voltage
-     directly, NOT --accent. Severity (success/warning/danger) is its own
-     ladder and is never replaced. */
-  --accent:         #4FC9B5;             /* refined mint-teal · Granite */
-  --accent-hover:   #6FDDC9;             /* lighter · hover */
-  --accent-pressed: #3DA295;             /* deeper · active/pressed */
-  --accent-soft:    rgba(79,201,181,.12);
-  --accent-border:  rgba(79,201,181,.40);
-  --accent-glow:    rgba(79,201,181,.22);
-  --on-accent:      var(--jet);          /* near-black on mint for contrast */
+     Role split (Iris × Voltage system):
+       --accent (Iris)   = SIGNAL — interaction states, links, focus rings,
+                           score arcs, active nav, selection, chart NAV line.
+                           Never decorative.
+       --voltage         = THE primary CTA per page (one per page rule).
+                           voltage-ink text on voltage fill. Never on data.
+       severity ladder   = state colors (success/warning/danger) — independent
+                           of accent; never replaced. */
+  --accent:         var(--iris-500);     /* #A87DFE · vivid violet — THE signal */
+  --accent-hover:   var(--iris-200);     /* #C7A6FF · highlight on hover */
+  --accent-pressed: var(--iris-700);     /* #5B2E88 · deepest on active/pressed */
+  --accent-soft:    rgba(168,125,254,.12);
+  --accent-border:  rgba(168,125,254,.40);
+  --accent-glow:    rgba(168,125,254,.22);
+  --on-accent:      var(--white);        /* white on vivid violet — readable contrast */
 
   /* Semantic — truth states only, never decorative. Severity ladder is
      INDEPENDENT of accent (accent is brand/signal, not severity). --info
      tracks --accent so info chips inherit the brand-current accent. */
   --success:#4bde80; --warning:#DDA85A; --danger:#E07878; --info:var(--accent);
   --success-soft:rgba(75,222,128,.10); --warning-soft:rgba(221,168,90,.10);
-  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(79,201,181,.08);
+  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(168,125,254,.08);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
