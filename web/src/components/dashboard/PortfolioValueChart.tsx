@@ -492,39 +492,48 @@ function ChartCanvas({
         />
       </svg>
 
-      {/* HIGH label (HTML overlay so it doesn't scale with SVG aspect) */}
+      {/* HIGH pill (HTML overlay so it doesn't scale with SVG aspect) */}
+      <AnchorPill
+        leftPct={hiXPct}
+        topPct={hiYPct}
+        rightEdge={hiXPct > 70}
+        kind="high"
+        value={stats.high.value}
+      />
+      {/* LOW pill */}
+      <AnchorPill
+        leftPct={loXPct}
+        topPct={loYPct}
+        rightEdge={loXPct > 70}
+        kind="low"
+        value={stats.low.value}
+      />
+
+      {/* Cost basis inline label — anchored to the right edge of the dashed
+          reference line so the user can read the line's value without
+          tracing back to the legend. Mono, --text-3 to match the dash
+          stroke, tiny --surface backdrop so it doesn't visually collide
+          with the line itself. */}
       <div
         style={{
           position: "absolute",
-          left: `${hiXPct}%`,
-          top: `${hiYPct}%`,
-          transform: hiXPct > 70 ? "translate(-110%, -160%)" : "translate(12px, -160%)",
+          right: `${(PAD_R / VIEW_W) * 100 + 0.4}%`,
+          top: `${(cbY / VIEW_H) * 100}%`,
+          transform: "translateY(-50%)",
           fontFamily: "var(--m)",
-          fontSize: 10,
+          fontSize: 9.5,
           color: "var(--text-3)",
-          letterSpacing: "0.04em",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          fontWeight: 500,
+          background: "var(--surface)",
+          padding: "1px 5px",
+          borderRadius: 2,
           whiteSpace: "nowrap",
           pointerEvents: "none",
         }}
       >
-        HIGH ${stats.high.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
-      </div>
-      {/* LOW label */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${loXPct}%`,
-          top: `${loYPct}%`,
-          transform: loXPct > 70 ? "translate(-110%, 50%)" : "translate(12px, 50%)",
-          fontFamily: "var(--m)",
-          fontSize: 10,
-          color: "var(--text-3)",
-          letterSpacing: "0.04em",
-          whiteSpace: "nowrap",
-          pointerEvents: "none",
-        }}
-      >
-        LOW ${stats.low.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+        Cost ${(costBasis / 1000).toFixed(1)}k
       </div>
 
       {/* Crosshair + hover */}
@@ -656,6 +665,77 @@ function HoverTooltip({
           {pos ? "+" : "−"}${Math.abs(delta).toLocaleString("en-US", { maximumFractionDigits: 0 })} · {pos ? "+" : "−"}{Math.abs(pct).toFixed(2)}%
         </span>
       </div>
+    </div>
+  );
+}
+
+/* ----------------- anchor pill ----------------- */
+
+/**
+ * Colored pill chip anchored to the HIGH/LOW dot marker on the chart.
+ * Semantic color (success for peak, danger for trough). Mono, tabular,
+ * tiny prefix label inside the pill so the value and its semantic role
+ * read as one glyph. Positioning mirrors the prior plain-text overlay:
+ * flips to the left of the dot when the dot is in the right 30% of the
+ * chart so the pill never escapes the canvas.
+ */
+function AnchorPill({
+  leftPct,
+  topPct,
+  rightEdge,
+  kind,
+  value,
+}: {
+  leftPct: number;
+  topPct: number;
+  rightEdge: boolean;
+  kind: "high" | "low";
+  value: number;
+}) {
+  const isHigh = kind === "high";
+  const color = isHigh ? "var(--success)" : "var(--danger)";
+  const bg = isHigh ? "rgba(75,222,128,.10)" : "rgba(224,120,120,.10)";
+  const border = isHigh
+    ? "color-mix(in oklab, var(--success) 32%, transparent)"
+    : "color-mix(in oklab, var(--danger) 32%, transparent)";
+  const verticalShift = isHigh ? "-200%" : "60%";
+  const transform = rightEdge
+    ? `translate(calc(-100% - 10px), ${verticalShift})`
+    : `translate(10px, ${verticalShift})`;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${leftPct}%`,
+        top: `${topPct}%`,
+        transform,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 3,
+        padding: "1.5px 6px",
+        fontFamily: "var(--m)",
+        fontVariantNumeric: "tabular-nums",
+        whiteSpace: "nowrap",
+        pointerEvents: "none",
+      }}
+    >
+      <span
+        style={{
+          fontSize: 8.5,
+          color,
+          letterSpacing: "0.12em",
+          fontWeight: 600,
+          opacity: 0.72,
+        }}
+      >
+        {isHigh ? "HIGH" : "LOW"}
+      </span>
+      <span style={{ fontSize: 10.5, color, fontWeight: 600 }}>
+        ${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+      </span>
     </div>
   );
 }
