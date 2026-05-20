@@ -16,13 +16,19 @@
  * page canvas, bordered top + bottom only so it reads as instrument-belt,
  * not a card). 4-column grid for held, single row for not-held.
  */
+import Link from "next/link";
+import { useState } from "react";
 import type { NameDetail } from "@/lib/name-detail-data";
 
 export function PortfolioContextStrip({ d }: { d: NameDetail }) {
   const tax = d.concentration_tax;
   const ctx = d.portfolio;
 
-  // Shared style for each metric cell.
+  // Shared style for each metric cell. Cells are clickable → /portfolio
+  // (the source of position truth). Per Terry 2026-05-20 KPI-clickability
+  // sweep: any KPI-type data with a logical drill-down destination gets a
+  // Link + hover. Cell hover lifts to --surface-hover (one Linear-step
+  // above the strip's --surface pill), readable inside the bounded pill.
   const cell = {
     display: "flex",
     flexDirection: "column" as const,
@@ -50,7 +56,7 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
     const plColor = ctx.pl >= 0 ? "var(--success)" : "var(--danger)";
     return (
       <Container>
-        <div style={cell}>
+        <KpiCell href="/portfolio" cellStyle={cell}>
           <span style={labelStyle}>Weight</span>
           <span
             style={{
@@ -64,8 +70,8 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
               vs {pct(ctx.single_name_cap_pct, 0)} cap
             </span>
           </span>
-        </div>
-        <div style={cell}>
+        </KpiCell>
+        <KpiCell href="/portfolio" cellStyle={cell}>
           <span style={labelStyle}>Cost basis</span>
           <span style={valueStyle}>
             {money(ctx.cost_basis)}
@@ -73,8 +79,8 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
               × {ctx.shares} sh
             </span>
           </span>
-        </div>
-        <div style={cell}>
+        </KpiCell>
+        <KpiCell href="/portfolio" cellStyle={cell}>
           <span style={labelStyle}>P&amp;L</span>
           <span style={{ ...valueStyle, color: plColor }}>
             {ctx.pl >= 0 ? "+" : ""}
@@ -84,8 +90,8 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
               {pct(ctx.pl_pct)}
             </span>
           </span>
-        </div>
-        <div style={cell}>
+        </KpiCell>
+        <KpiCell href="/portfolio" cellStyle={cell}>
           <span style={labelStyle}>Concentration tax</span>
           <span
             style={{
@@ -99,7 +105,7 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
               pts
             </span>
           </span>
-        </div>
+        </KpiCell>
       </Container>
     );
   }
@@ -107,10 +113,11 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
   // Not-held variant — left cell spans 3, tax cell on the right. Same
   // 4-col grid as held so the strip's geometry doesn't reflow between
   // tickers. Quiet posture; the strip's job here is to answer "is this in
-  // my book?" — the answer is no.
+  // my book?" — the answer is no. Cells still clickable → /portfolio (the
+  // place to add the position from).
   return (
     <Container>
-      <div style={{ ...cell, gridColumn: "span 3" }}>
+      <KpiCell href="/portfolio" cellStyle={{ ...cell, gridColumn: "span 3" }}>
         <span style={labelStyle}>Your position</span>
         <span style={valueStyle}>
           Not in portfolio
@@ -118,8 +125,8 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
             single-name cap {pct(ctx.single_name_cap_pct, 0)}
           </span>
         </span>
-      </div>
-      <div style={cell}>
+      </KpiCell>
+      <KpiCell href="/portfolio" cellStyle={cell}>
         <span style={labelStyle}>Concentration tax</span>
         <span
           style={{
@@ -133,8 +140,46 @@ export function PortfolioContextStrip({ d }: { d: NameDetail }) {
             pts
           </span>
         </span>
-      </div>
+      </KpiCell>
     </Container>
+  );
+}
+
+/**
+ * Clickable KPI cell wrapper. Local hover state lifts background to
+ * --surface-hover (one Linear-step above the strip's own --surface pill),
+ * so the affordance is visible inside the bounded surface. Per S22 KPI-
+ * clickability sweep: each metric is its own drill-down anchor.
+ */
+function KpiCell({
+  href,
+  cellStyle,
+  children,
+}: {
+  href: string;
+  cellStyle: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <Link
+      href={href}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...cellStyle,
+        textDecoration: "none",
+        color: "inherit",
+        padding: "6px 10px",
+        margin: "-6px -10px",
+        borderRadius: 5,
+        background: hov ? "var(--surface-hover)" : "transparent",
+        transition: "background var(--dur-fast) var(--ease-out)",
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </Link>
   );
 }
 

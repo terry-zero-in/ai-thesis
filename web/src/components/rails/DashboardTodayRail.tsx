@@ -362,19 +362,20 @@ function MoversByTier({
       {activeTier && (
         <button
           onClick={() => router.push("/")}
+          className="accent-link"
           style={{
             fontSize: 10.5,
-            fontFamily: "var(--m)",
-            color: "var(--accent)",
             background: "none",
             border: "none",
             padding: "4px 0 0",
-            cursor: "pointer",
             textAlign: "left",
             letterSpacing: ".02em",
           }}
         >
-          Clear filter ✕
+          Clear filter
+          <span className="accent-link-chev" aria-hidden>
+            ✕
+          </span>
         </button>
       )}
     </div>
@@ -448,8 +449,13 @@ function TierLegendBtn({
 }
 
 function GateRow({ label, hit }: { label: string; hit: boolean }) {
+  // Each gate row is clickable → /regime (the source of truth for gauge
+  // thresholds + history). .rail-row-hov gives the same inset-pill hover
+  // affordance the InsiderRow uses above. Per S22 KPI-clickability sweep.
   return (
-    <div
+    <Link
+      href="/regime"
+      className="rail-row-hov"
       style={{
         display: "flex",
         alignItems: "center",
@@ -457,6 +463,8 @@ function GateRow({ label, hit }: { label: string; hit: boolean }) {
         fontSize: 11.5,
         fontFamily: "var(--m)",
         color: hit ? "var(--text-1)" : "var(--text-3)",
+        textDecoration: "none",
+        padding: "5px 8px",
       }}
     >
       <span
@@ -472,6 +480,6 @@ function GateRow({ label, hit }: { label: string; hit: boolean }) {
       <span style={{ fontSize: 10, color: "var(--text-3)", letterSpacing: ".04em", textTransform: "uppercase" }}>
         {hit ? "hit" : "—"}
       </span>
-    </div>
+    </Link>
   );
 }
