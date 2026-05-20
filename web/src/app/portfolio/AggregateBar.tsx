@@ -1,12 +1,14 @@
-"use client";
-
 import type { PortfolioSnapshot } from "@/lib/portfolio-types";
-import { AnimateNumber } from "@/components/primitives/AnimateNumber";
 
 /**
  * Portfolio hero — Mercury "format on canvas" + Basis Rent-Roll pattern:
  * 4 protagonist columns, no vertical dividers, no card chrome, whitespace
  * as the separator.
+ *
+ * Count-up motion removed 2026-05-20 (Terry directive: count-up only on
+ * very first Dashboard load ever, never on any other page). Numbers
+ * render static — same scale/weight/color as before, just without the
+ * 0 → value roll.
  *
  * Column weights (2fr / 1fr / 1fr / 1fr) — Market Value is the sole
  * protagonist; cols 2-4 are equal-weight supporting columns:
@@ -53,11 +55,7 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         {snap.empty ? (
           <BigNumber value="—" color="var(--text-4)" />
         ) : (
-          <AnimateNumber
-            value={snap.total_market_value}
-            kind="usd"
-            style={bigNumberStyle("var(--text-1)")}
-          />
+          <BigNumber value={fmtUsd(snap.total_market_value)} color="var(--text-1)" />
         )}
         <SubLine>
           {snap.empty ? (
@@ -91,11 +89,9 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
           <BigNumber value="—" color="var(--text-4)" />
         ) : (
           <>
-            <AnimateNumber
-              value={sparkPct}
-              kind="pct-signed"
-              decimals={2}
-              style={bigNumberStyle(sparkPos ? "var(--success)" : "var(--danger)")}
+            <BigNumber
+              value={`${sparkPos ? "+" : ""}${sparkPct.toFixed(2)}%`}
+              color={sparkPos ? "var(--success)" : "var(--danger)"}
             />
             <SubLine>
               {sparkPos ? "+" : ""}${Math.abs(sparkChange).toLocaleString("en-US", { maximumFractionDigits: 0 })} on 30d
@@ -109,10 +105,9 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         {snap.empty ? (
           <BigNumber value="—" color="var(--text-4)" />
         ) : (
-          <AnimateNumber
-            value={snap.total_pl}
-            kind="usd-signed"
-            style={bigNumberStyle(plPos ? "var(--success)" : "var(--danger)")}
+          <BigNumber
+            value={fmtUsd(snap.total_pl, true)}
+            color={plPos ? "var(--success)" : "var(--danger)"}
           />
         )}
         <SubLine>
@@ -124,12 +119,9 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
 
       {/* Col 4 — RESERVE */}
       <Column label="Reserve">
-        <AnimateNumber
-          value={snap.reserve_actual}
-          kind="usd"
-          style={bigNumberStyle(
-            snap.reserve_actual >= snap.settings.target_reserve ? "var(--text-1)" : "var(--danger)",
-          )}
+        <BigNumber
+          value={fmtUsd(snap.reserve_actual)}
+          color={snap.reserve_actual >= snap.settings.target_reserve ? "var(--text-1)" : "var(--danger)"}
         />
         <SubLine>target {fmtUsd(snap.settings.target_reserve)}</SubLine>
       </Column>

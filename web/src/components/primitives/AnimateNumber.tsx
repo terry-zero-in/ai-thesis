@@ -45,6 +45,16 @@ type Props = {
   className?: string;
   /** ARIA label for screen readers — they get the final value, not the rolling intermediate. */
   ariaLabel?: string;
+  /**
+   * Optional first-visit gate. When present, the count-up only fires on the
+   * very first ever load of the page that mounts this instance (per browser,
+   * tracked via localStorage[gateKey]). Subsequent loads — including page
+   * revalidate, route revisit, hard reload — snap directly to value with no
+   * animation. Use for surfaces where motion is the "arrival affordance"
+   * not a recurring effect. (Terry 2026-05-20 — KPI count-up should only
+   * fire on first Dashboard visit ever.)
+   */
+  gateKey?: string;
 };
 
 const EASE_OUT_CUBIC = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -72,7 +82,7 @@ function formatBy(kind: AnimateNumberKind, n: number, decimals?: number): string
   }
 }
 
-export function AnimateNumber({ value, kind, decimals, duration = 800, style, className, ariaLabel }: Props) {
+export function AnimateNumber({ value, kind, decimals, duration = 800, style, className, ariaLabel, gateKey }: Props) {
   // Start at 0 so the FIRST mount animates 0 → value, not value → value.
   // SSR briefly paints "0" formatted by `kind` before hydration; the
   // count-up reads as deliberate arrival. fromRef carries forward
@@ -90,6 +100,20 @@ export function AnimateNumber({ value, kind, decimals, duration = 800, style, cl
       setDisplay(value);
       fromRef.current = value;
       return;
+    }
+    // First-visit gate: when gateKey is set and localStorage marker exists,
+    // this is NOT a first visit — snap to value, skip animation entirely.
+    if (gateKey && typeof window !== "undefined") {
+      try {
+        if (window.localStorage.getItem(gateKey)) {
+          setDisplay(value);
+          fromRef.current = value;
+          return;
+        }
+      } catch {
+        // localStorage can throw in private mode or with quota issues — fall
+        // through to animate, no caching. Better to animate twice than crash.
+      }
     }
     const from = fromRef.current;
     const to = value;
@@ -109,6 +133,14 @@ export function AnimateNumber({ value, kind, decimals, duration = 800, style, cl
         setDisplay(to);
         fromRef.current = to;
         rafRef.current = null;
+        // Mark the gate so subsequent mounts skip the animation.
+        if (gateKey && typeof window !== "undefined") {
+          try {
+            window.localStorage.setItem(gateKey, "1");
+          } catch {
+            // ignore — see comment above
+          }
+        }
       }
     };
     rafRef.current = requestAnimationFrame(step);
@@ -118,7 +150,7 @@ export function AnimateNumber({ value, kind, decimals, duration = 800, style, cl
         rafRef.current = null;
       }
     };
-  }, [value, duration]);
+  }, [value, duration, gateKey]);
 
   return (
     <span className={className} style={style} aria-label={ariaLabel ?? formatBy(kind, value, decimals)}>

@@ -555,6 +555,7 @@ function AnimatedKpiCell({
         kind={kind}
         decimals={decimals}
         style={kpiValueStyle(valueColor ?? "var(--text-1)")}
+        gateKey="dashboard-kpis-animated-v1"
       />
       {sub && <span style={kpiSubStyle()}>{sub}</span>}
     </div>

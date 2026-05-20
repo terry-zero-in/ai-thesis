@@ -292,7 +292,7 @@ function SbItem({ ic, label, active, col, badge, href, keys, external }: NavItem
         </span>
       )}
       {!col && badge && (
-        <Tip label={`${badge} unseen`} side="right" delay={350}>
+        <Tip label={`${badge} unseen`} side="right">
           <span
             style={{
               fontFamily: "var(--m)",
@@ -308,7 +308,7 @@ function SbItem({ ic, label, active, col, badge, href, keys, external }: NavItem
     </Anchor>
   );
   return (
-    <Tip label={label} keys={keys} side="right" delay={400}>
+    <Tip label={label} keys={keys} side="right">
       {btn}
     </Tip>
   );

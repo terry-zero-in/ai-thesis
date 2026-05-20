@@ -125,16 +125,19 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
   /* Sidebar-scoped state surfaces. The sidebar base stays at jet #000000
      (flat, the only achromatic surface in the system — locked). State
-     surfaces ride the SAME L1 → L2 ladder the rest of the app uses, so
-     the RGB chroma spread (B−R = +6 at L1, +11 at L2) matches the system
-     pattern instead of drifting to pure-achromatic. Mapping:
-       L0 base   = jet     #000000  (flat)
-       L1 hover  = onyx    #0A0B10  (+6 cool tint — same as canvas)
-       L2 active = carbon  #14171F  (+11 cool tint — same as card/rail)
-     Earlier achromatic values (#0D0D0D / #161616) drifted off the system
-     pattern; aliasing to onyx/carbon snaps them back. (Terry 2026-05-20.) */
-  --sidebar-hover:  var(--onyx);     /* L1 lift — same chroma family as canvas */
-  --sidebar-active: var(--carbon);   /* L2 lift — same chroma family as card / rail */
+     surfaces lift through the iris-tinted ladder. Mapping:
+       L0 base   = jet     #000000     (flat)
+       L2 hover  = carbon  #14171F     (+11 cool tint — same lightness as card/rail; lifts above the perceptual floor on near-black)
+       L2.5 active = #1D222D            (+16 cool tint — sidebar-specific intermediate between carbon and steel; Linear-active lightness)
+     Earlier iterations sat at onyx (#0A0B10) for hover but R=10 is below
+     the visibility floor on a jet base — Terry: "still nearly impossible
+     to see." Bumped to carbon for hover so the lift carries. Active needs
+     to be visibly distinct from the (now-stronger) hover, so it lifts to
+     a new L2.5 surface between carbon (R=20) and steel (R=42). Chroma
+     grows from 0 (base) → +11 (hover) → +16 (active), mirroring the
+     system's L0→L1→L2→L3 chroma growth pattern. (Terry 2026-05-20.) */
+  --sidebar-hover:  var(--carbon);   /* L2 lift — carbon lightness w/ +11 chroma */
+  --sidebar-active: #1D222D;         /* L2.5 lift — between carbon and steel, +16 chroma */
 
   /* Text — 4-level scale mapped onto Frost. */
   --text-1: var(--white);      /* display + headlines (was #ECEDEF) */

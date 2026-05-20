@@ -17,7 +17,6 @@ export function DemoBadge({ isDemo }: { isDemo: boolean }) {
     <Tip
       label="Demo workspace · all prices, scores, and alerts are simulated for product preview. Sign in to use real data."
       side="bottom"
-      delay={300}
     >
       <span
         style={{

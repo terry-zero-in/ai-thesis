@@ -21,7 +21,9 @@ export interface TipProps {
   style?: CSSProperties;
 }
 
-export function Tip({ label, keys, children, side = "bottom", delay = 500, style }: TipProps) {
+// Default delay 650ms matches Linear's measured tooltip appearance (~655ms).
+// Earlier 500ms felt rushed on hover; bumped 2026-05-20.
+export function Tip({ label, keys, children, side = "bottom", delay = 650, style }: TipProps) {
   const [show, setShow] = useState(false);
   const [coords, setCoords] = useState({ left: -9999, top: -9999 });
   const t = useRef<ReturnType<typeof setTimeout> | null>(null);
