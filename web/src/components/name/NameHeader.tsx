@@ -3,7 +3,6 @@ import Link from "next/link";
 import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
-import { Sparkline } from "@/components/name/Sparkline";
 import { SwitchNameChip } from "@/components/name/SwitchNameChip";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
 import type { NameDetail } from "@/lib/name-detail-data";
@@ -75,17 +74,23 @@ export function NameHeader({ d }: { d: NameDetail }) {
     : undefined;
 
   return (
-    // Mercury Pic 19 b2 (Credit Card): big metric block on left + chart on
-    // right, side-by-side header. Bottom hairline divides header from canvas.
+    // Single-column hero. Earlier two-column variant (S22) put a 12-week
+    // sparkline on the right as a counterweight to the FINAL SCORE hero on
+    // the left, but the canonical trajectory visualization is
+    // NameScoreChart below — a dual-axis composite + price chart at full
+    // canvas width. A second mini-chart in the hero was redundant noise
+    // (Terry 2026-05-20). The hero now owns identity + current score +
+    // derivation only; trajectory lives downstream where it has room to
+    // breathe. /lambo "one protagonist per screen."
     <div
       style={{
         padding: "22px 32px 22px",
         borderBottom: "1px solid var(--border-subtle)",
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 1.35fr) minmax(0, 1fr)",
-        gap: 36,
-        alignItems: "start",
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
         flexShrink: 0,
+        minWidth: 0,
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
@@ -179,16 +184,6 @@ export function NameHeader({ d }: { d: NameDetail }) {
         <TierLegend tier={d.tier} />
       </div>
 
-      {/* Right column — 12-week trajectory chart. The chart is the value-
-          add: it shows the SHAPE of the score's recent history, which is
-          information the left's hero number cannot convey. Earlier S22
-          attempts added a second HeroNumber (+2.4 12-week-change) on the
-          right; that competed with the left's protagonist and duplicated
-          information the chart already shows. /lambo "one protagonist per
-          screen" — the chart alone, sized big, balances the left. */}
-      <div style={{ paddingTop: 6, minWidth: 0 }}>
-        <Sparkline history={d.history} height={200} />
-      </div>
     </div>
   );
 }
