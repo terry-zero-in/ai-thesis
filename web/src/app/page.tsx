@@ -264,7 +264,7 @@ function KpiRow({
         }}
       >
         <KpiSlot first><OnboardingCard /></KpiSlot>
-        <KpiSlot>
+        <KpiSlot href="/regime">
           <KpiCell
             label="Macro multiplier"
             value={`${macroMultiplier.toFixed(2)}×`}
@@ -272,7 +272,7 @@ function KpiRow({
             valueColor={macroState.color}
           />
         </KpiSlot>
-        <KpiSlot last>
+        <KpiSlot last href="/universe?tier=High">
           <KpiCell
             label="High-tier names"
             value={`${highCurrent}`}
@@ -299,7 +299,7 @@ function KpiRow({
         padding: "4px 0",
       }}
     >
-      <KpiSlot first>
+      <KpiSlot first href="/portfolio">
         <AnimatedKpiCell
           label="Portfolio"
           value={portfolioValue}
@@ -307,7 +307,7 @@ function KpiRow({
           sub="market value"
         />
       </KpiSlot>
-      <KpiSlot>
+      <KpiSlot href="/portfolio">
         <AnimatedKpiCell
           label="P&L · since open"
           value={portfolioPl}
@@ -316,7 +316,7 @@ function KpiRow({
           valueColor={plPos ? "var(--success)" : "var(--danger)"}
         />
       </KpiSlot>
-      <KpiSlot>
+      <KpiSlot href="/portfolio">
         <KpiCell
           label="30D return"
           value="—"
@@ -324,7 +324,7 @@ function KpiRow({
           muted
         />
       </KpiSlot>
-      <KpiSlot>
+      <KpiSlot href="/regime">
         <AnimatedKpiCell
           label="Macro multiplier"
           value={macroMultiplier}
@@ -334,7 +334,7 @@ function KpiRow({
           valueColor={macroState.color}
         />
       </KpiSlot>
-      <KpiSlot last>
+      <KpiSlot last href="/universe?tier=High">
         <AnimatedKpiCell
           label="High-tier names"
           value={highCurrent}
@@ -352,16 +352,46 @@ function KpiRow({
  * and pads each side of the hairline 24px so cell content breathes
  * symmetrically. `first` cell drops left padding (flush to canvas edge);
  * `last` cell drops right padding and the trailing hairline.
+ *
+ * When `href` is passed (Terry 2026-05-20 — "should all be click through
+ * items"), inner content wraps in a Link with .kpi-hov: subtle --hover-tint
+ * bg fill with 6px rounded corners on hover, extending outward via negative
+ * margin so the pill fills the cell content area without overlapping the
+ * neighbouring hairline.
  */
 function KpiSlot({
   children,
   first,
   last,
+  href,
 }: {
   children: React.ReactNode;
   first?: boolean;
   last?: boolean;
+  href?: string;
 }) {
+  const innerPad = "10px 12px";
+  const innerNegMargin = "-10px -12px";
+  const inner = href ? (
+    <Link
+      href={href}
+      className="kpi-hov"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 7,
+        padding: innerPad,
+        margin: innerNegMargin,
+        color: "inherit",
+        textDecoration: "none",
+        minWidth: 0,
+      }}
+    >
+      {children}
+    </Link>
+  ) : (
+    children
+  );
   return (
     <div
       style={{
@@ -370,7 +400,7 @@ function KpiSlot({
         minWidth: 0,
       }}
     >
-      {children}
+      {inner}
     </div>
   );
 }

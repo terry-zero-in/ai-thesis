@@ -115,6 +115,14 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --hover-tint-strong: rgba(255,255,255,.06);
   --press-tint:        rgba(255,255,255,.085);
 
+  /* --surface-hover — bumped one Linear-step off --surface (#14171F). Step
+     calc from Linear right-rail: base #171718 → hover #1F2023 = ΔR=+8,
+     ΔG=+9, ΔB=+11. Applied to our --surface: #14171F + (8,9,11) = #1C202A.
+     Use on hoverable items WITHIN any carbon-family parent (right rail
+     rows, card list items, popover items) — not for hover on the canvas
+     itself (that's --hover-tint). Terry 2026-05-20. */
+  --surface-hover:     #1C202A;
+
   /* Sidebar-scoped achromatic state surfaces. Step sizes lifted from Linear's
      measured sidebar (base #070707 → hover #141415 = +13, hover → active
      #1D1D1F = +9), applied to OUR jet base #000000. Result: pure-achromatic
@@ -388,6 +396,24 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
    brand cluster is the hover target. */
 .logo-hov{transition:color var(--dur-fast) var(--ease-out),background var(--dur-fast) var(--ease-out)}
 .logo-hov:hover{color:var(--accent-hover);background:var(--sidebar-hover)}
+
+/* Rail row hover — clickable items inside any right rail (carbon surface).
+   Extends outward via negative horizontal margin so the hover pill stops
+   ~8px short of the rail's outer edge (matches Linear posture: pill is
+   inset from the rail boundary, never edge-to-edge), with 6px rounded
+   corners. Bg lift uses --surface-hover (Linear-step from --surface).
+   Vertical padding lives on the consuming element (varies row-to-row);
+   horizontal padding is owned by this class so the inset is uniform. */
+.rail-row-hov{margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:6px;transition:background var(--dur-fast) var(--ease-out);cursor:pointer}
+.rail-row-hov:hover{background:var(--surface-hover)}
+.rail-row-hov:active{background:color-mix(in oklab,var(--surface-hover) 80%,var(--white) 8%)}
+
+/* KPI hover — Dashboard KPI cells are clickthroughs to their detail page
+   (Portfolio/P&L/30D → /portfolio; Macro mult → /regime; High-tier →
+   /universe?tier=High). Subtle --hover-tint pill on hover (canvas parent,
+   not carbon) with 6px radius. Used by KpiSlot when href is provided. */
+.kpi-hov{transition:background var(--dur-fast) var(--ease-out);border-radius:6px;cursor:pointer}
+.kpi-hov:hover{background:var(--hover-tint)}
 
 /* Score-math trigger — composite numbers wrapped in <ScoreMathPopover> get a
    subtle dotted underline reveal on hover. Linear-class peel-back: affordance

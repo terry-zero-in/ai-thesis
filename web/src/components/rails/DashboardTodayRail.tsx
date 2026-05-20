@@ -133,17 +133,8 @@ export function DashboardTodayRail({ data }: { data: DashboardTodayRailData }) {
               <GateRow key={g.key} label={g.label} hit={gateState[g.key as GaugeKey] === true} />
             ))}
           </div>
-          <Link
-            href="/regime"
-            style={{
-              fontSize: 11,
-              color: "var(--accent)",
-              textDecoration: "none",
-              fontFamily: "var(--m)",
-              marginTop: 8,
-            }}
-          >
-            Open regime ›
+          <Link href="/regime" className="accent-link" style={{ fontSize: 11, marginTop: 8 }}>
+            Open regime <span className="accent-link-chev">›</span>
           </Link>
         </RailSection>
       </div>
@@ -212,7 +203,7 @@ function formatNow(): string {
  * Whole row stretched-link → /universe/[ticker] so a single click jumps to
  * the name detail where the full Form 4 surface lives.
  */
-function InsiderRow({ r, isLast }: { r: DashboardInsiderRow; isLast: boolean }) {
+function InsiderRow({ r }: { r: DashboardInsiderRow; isLast: boolean }) {
   const isBuy = r.transaction_code === "P";
   const sideColor = isBuy ? "var(--success)" : "var(--danger)";
   const sideLabel = isBuy ? "BUY" : "SELL";
@@ -225,13 +216,18 @@ function InsiderRow({ r, isLast }: { r: DashboardInsiderRow; isLast: boolean }) 
   return (
     <Link
       href={`/universe/${r.ticker}`}
+      className="rail-row-hov"
       style={{
+        // Hover pill (--surface-hover bg + 6px radius + inset from rail edge)
+        // is the row separator — no borderBottom needed (Linear posture). The
+        // .rail-row-hov class owns horizontal padding + negative margin so
+        // the pill extends ~8px outward toward the rail edge but never
+        // edge-to-edge.
         display: "grid",
         gridTemplateColumns: "auto auto 1fr auto",
         gap: 8,
         alignItems: "baseline",
-        padding: "8px 0",
-        borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
+        padding: "8px 8px",
         textDecoration: "none",
         fontFamily: "var(--m)",
         fontVariantNumeric: "tabular-nums",
@@ -352,42 +348,14 @@ function MoversByTier({
           const isActive = activeTier === t;
           const dim = activeTier != null && !isActive;
           return (
-            <button
+            <TierLegendBtn
               key={t}
+              tier={t}
+              count={count}
+              isActive={isActive}
+              dim={dim}
               onClick={() => toggle(t)}
-              disabled={count === 0}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "10px 1fr auto",
-                gap: 8,
-                alignItems: "center",
-                background: isActive ? "var(--elevated)" : "transparent",
-                border: "none",
-                padding: "3px 6px",
-                borderRadius: 3,
-                cursor: count === 0 ? "default" : "pointer",
-                opacity: dim || count === 0 ? 0.4 : 1,
-                fontSize: 11.5,
-                fontFamily: "var(--m)",
-                color: "var(--text-2)",
-                textAlign: "left",
-                transition: "opacity var(--dur-instant) var(--ease-out)",
-              }}
-            >
-              <span
-                aria-hidden
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: TIER_COLORS[t],
-                }}
-              />
-              <span>{t}</span>
-              <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-3)" }}>
-                {count}
-              </span>
-            </button>
+            />
           );
         })}
       </div>
@@ -410,6 +378,72 @@ function MoversByTier({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * Tier legend button — active items hold --elevated; inactive items lift
+ * to --surface-hover on hover (Linear-step from --surface, matches the
+ * rail row-hover token). Local hov state because background depends on
+ * active state too (CSS-only :hover can't override an inline conditional).
+ */
+function TierLegendBtn({
+  tier,
+  count,
+  isActive,
+  dim,
+  onClick,
+}: {
+  tier: Tier;
+  count: number;
+  isActive: boolean;
+  dim: boolean;
+  onClick: () => void;
+}) {
+  const [hov, setHov] = useState(false);
+  const disabled = count === 0;
+  const bg = isActive
+    ? "var(--elevated)"
+    : hov && !disabled
+      ? "var(--surface-hover)"
+      : "transparent";
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      disabled={disabled}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "10px 1fr auto",
+        gap: 8,
+        alignItems: "center",
+        background: bg,
+        border: "none",
+        padding: "3px 6px",
+        borderRadius: 3,
+        cursor: disabled ? "default" : "pointer",
+        opacity: dim || disabled ? 0.4 : 1,
+        fontSize: 11.5,
+        fontFamily: "var(--m)",
+        color: hov && !disabled && !isActive ? "var(--text-1)" : "var(--text-2)",
+        textAlign: "left",
+        transition:
+          "background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),opacity var(--dur-fast) var(--ease-out)",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: TIER_COLORS[tier],
+        }}
+      />
+      <span>{tier}</span>
+      <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-3)" }}>{count}</span>
+    </button>
   );
 }
 
