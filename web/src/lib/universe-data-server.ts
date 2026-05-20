@@ -31,21 +31,27 @@ export async function getLatestUniverseScoresServer(): Promise<UniverseSnapshot>
   const sb = await getSupabaseServer();
   if (!sb) return fixtureSnapshot();
 
-  const { data: universe, error: ue } = await sb
-    .from("universe")
-    .select("ticker,name,layer,layer_label")
-    .eq("is_active", true)
-    .order("ticker");
-  if (ue || !universe || universe.length === 0) return fixtureSnapshot();
+  // Parallelize the three independent queries so the RSC fetch isn't
+  // serialized waiting for universe → scores → queue. Same pattern as the
+  // browser variant in `universe-data.ts`.
+  const [universeRes, scoresRes, queueRes] = await Promise.all([
+    sb.from("universe").select("ticker,name,layer,layer_label").eq("is_active", true).order("ticker"),
+    sb
+      .from("scores_history")
+      .select(
+        "ticker,as_of,q_score,g_score,v_score,aiq_score,composite,final_score,tier,macro_gates_hit,macro_multiplier",
+      )
+      .order("as_of", { ascending: false })
+      .limit(400),
+    sb.from("aiq_draft_queue").select("ticker").in("status", ["queued", "processing"]),
+  ]);
 
-  const { data: scores, error: se } = await sb
-    .from("scores_history")
-    .select(
-      "ticker,as_of,q_score,g_score,v_score,aiq_score,composite,final_score,tier,macro_gates_hit,macro_multiplier",
-    )
-    .order("as_of", { ascending: false })
-    .limit(universe.length * 8);
+  const { data: universe, error: ue } = universeRes;
+  const { data: scores, error: se } = scoresRes;
+  const { data: queue } = queueRes; // queue errors are non-fatal — render scores without badges
+  if (ue || !universe || universe.length === 0) return fixtureSnapshot();
   if (se || !scores || scores.length === 0) return fixtureSnapshot();
 
-  return buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]);
+  const queuedTickers = (queue ?? []).map((r) => (r as { ticker: string }).ticker);
+  return { ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]), queuedTickers };
 }
