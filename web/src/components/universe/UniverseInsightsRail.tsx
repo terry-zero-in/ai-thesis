@@ -25,15 +25,32 @@ import type { UniverseFlag } from "@/hooks/universe-filter-context";
 
 const TIERS: Tier[] = ["High", "Medium", "Low", "Avoid"];
 
-// Canonical tier color mapping — semantic traffic-light. Matches TierBadge,
-// PositionsTable.ThesisCell, TopPositionsList, DashboardTodayRail.
-// v1.2 2026-05-19: supersedes accent/warning/info/danger which collapsed
-// High and Low onto the same hex post-palette-pivot.
-const TIER_COLORS: Record<Tier, string> = {
+// Tier color mapping — split into two surfaces:
+//   • TIER_DOT  = the small semantic-colored legend dot (severity at the
+//                 moment, ≤8px footprint — allowed per /lambo).
+//   • TIER_FILL = tinted bar fill (~12% opacity of the tier color) for the
+//                 histogram. Bars get a 2px top cap in the full tier color
+//                 (TIER_CAP) — the cap reads as the "severity moment," the
+//                 fill stays calm. Mediums goes achromatic because "medium"
+//                 isn't a severity state — pure white as a bar fill was the
+//                 loudest element on the screen (S20 crayola critique).
+const TIER_DOT: Record<Tier, string> = {
   High: "var(--success)",
-  Medium: "var(--text-1)",
+  Medium: "var(--text-3)",   // achromatic — medium is "meh", not a state
   Low: "var(--warning)",
   Avoid: "var(--danger)",
+};
+const TIER_FILL: Record<Tier, string> = {
+  High:   "rgba(48,209,88,.12)",
+  Medium: "rgba(255,255,255,.05)",
+  Low:    "rgba(221,168,90,.12)",
+  Avoid:  "rgba(229,72,77,.12)",
+};
+const TIER_CAP: Record<Tier, string> = {
+  High:   "rgba(48,209,88,.55)",
+  Medium: "rgba(255,255,255,.18)",
+  Low:    "rgba(221,168,90,.55)",
+  Avoid:  "rgba(229,72,77,.55)",
 };
 
 const LAYERS: { id: number; label: string }[] = [
@@ -236,7 +253,8 @@ function BarChart({
                 style={{
                   width: "100%",
                   height: barH,
-                  background: TIER_COLORS[tier],
+                  background: TIER_FILL[tier],
+                  borderTop: `2px solid ${TIER_CAP[tier]}`,
                   borderRadius: 2,
                   filter: dimmed ? "saturate(0.4)" : undefined,
                   transition: "filter var(--dur-instant) var(--ease-out)",
@@ -329,7 +347,7 @@ function LegendTable({
                 width: 8,
                 height: 8,
                 borderRadius: "50%",
-                background: TIER_COLORS[tier],
+                background: TIER_DOT[tier],
                 marginLeft: 2,
               }}
             />

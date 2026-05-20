@@ -33,7 +33,7 @@
    time / color pickers. `color-scheme: dark` flips Chrome / Edge / Safari to
    their dark calendar UI; `accent-color` colors the selected-day highlight
    and any focus ring with the Iris-300 signal violet. */
-html{color-scheme:dark;accent-color:#A87DFE}
+html{color-scheme:dark;accent-color:#8B5CF6}
 
 /* Calendar glyph inside <input type="date|time|month|week"> renders as a
    black icon on dark backgrounds by default in Chromium. Invert it so it
@@ -140,13 +140,17 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
                            voltage-ink text on voltage fill. Never on data.
        severity ladder   = state colors (success/warning/danger) — independent
                            of accent; never replaced. */
-  --accent:         var(--iris-500);     /* #A87DFE · vivid violet — THE signal */
-  --accent-hover:   var(--iris-200);     /* #C7A6FF · highlight on hover */
+  --accent:         var(--iris-600);     /* #8B5CF6 · violet — THE signal.
+                                            S20 step-darker from iris-500 #A87DFE
+                                            per Terry feedback: pastel-500 read
+                                            weak on canvas/sidebar; iris-600 holds
+                                            its weight while same hue family. */
+  --accent-hover:   var(--iris-300);     /* #B696FF · bridge for hover lift */
   --accent-pressed: var(--iris-700);     /* #5B2E88 · deepest on active/pressed */
-  --accent-soft:    rgba(168,125,254,.12);
-  --accent-border:  rgba(168,125,254,.40);
-  --accent-glow:    rgba(168,125,254,.22);
-  --on-accent:      var(--white);        /* white on vivid violet — readable contrast */
+  --accent-soft:    rgba(139,92,246,.12);
+  --accent-border:  rgba(139,92,246,.40);
+  --accent-glow:    rgba(139,92,246,.22);
+  --on-accent:      var(--white);        /* white on violet — readable contrast */
 
   /* Semantic — truth states only, never decorative. Severity ladder is
      INDEPENDENT of accent (accent is brand/signal, not severity). --info
@@ -162,7 +166,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
          reads as alert without shouting against the cool palette. */
   --success:#30D158; --warning:#DDA85A; --danger:#E5484D; --info:var(--accent);
   --success-soft:rgba(48,209,88,.10); --warning-soft:rgba(221,168,90,.10);
-  --danger-soft:rgba(229,72,77,.10); --info-soft:rgba(168,125,254,.08);
+  --danger-soft:rgba(229,72,77,.10); --info-soft:rgba(139,92,246,.08);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
