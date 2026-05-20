@@ -15,8 +15,8 @@ const TIERS: Tier[] = ["High", "Medium", "Low", "Avoid"];
 
 const FLAGS: { id: UniverseFlag; label: string; wired: boolean; pending?: string }[] = [
   { id: "macro", label: "Macro gate hit", wired: true },
-  { id: "depr", label: "Depreciation flag", wired: false, pending: "THS-46" },
-  { id: "burry", label: "Burry overstatement", wired: false, pending: "THS-46" },
+  { id: "depr", label: "Depreciation flag", wired: true },
+  { id: "burry", label: "Burry overstatement", wired: true },
 ];
 
 interface Props {

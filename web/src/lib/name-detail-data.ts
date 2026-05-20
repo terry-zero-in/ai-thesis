@@ -402,7 +402,7 @@ function buildDetail(
 // ---------------------------------------------------------------------------
 // Fixture — deterministic seed for any ticker in the universe.
 // ---------------------------------------------------------------------------
-import { FIXTURE_INDEX } from "./universe-fixture";
+import { FIXTURE_INDEX, fixtureAiqByTicker } from "./universe-fixture";
 
 function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetail {
   const seed = universe ?? FIXTURE_INDEX[ticker];
@@ -437,11 +437,15 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
   }
 
   // Deterministic per-ticker scores keyed off a hash of the ticker chars.
+  // AIQ derives from the shared fixtureAiqByTicker helper so the headline
+  // score on /universe/[ticker] equals the sum-of-dims on the AIQ rubric
+  // panel — without this the same page used to show two different AIQs.
   const h = hash(seed.ticker);
   const q = 55 + (h % 40);
   const g = 50 + ((h * 3) % 45);
   const v = 45 + ((h * 7) % 50);
-  const aiq = 50 + ((h * 11) % 45);
+  const aiqBreakdown = fixtureAiqByTicker(seed.ticker);
+  const aiq = aiqBreakdown.total;
   const composite = Math.round(((q + g + v + aiq) / 4 + (seed.layer === 1 ? 5 : 0)) * 10) / 10;
   const macroMult = h % 11 === 0 ? 0.95 : 1.0;
   const gates = macroMult < 1 ? 1 : 0;
@@ -473,29 +477,21 @@ function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetai
     });
   }
 
-  const aiqRubric: NameAiqRubric | null =
-    seed.layer <= 3
-      ? {
-          scored_at: "2026-04-30",
-          disclosure_pts: 12 + (h % 9),
-          defensibility_pts: 12 + ((h * 2) % 9),
-          concentration_pts: 8 + (h % 8),
-          capex_eff_pts: 8 + ((h * 3) % 8),
-          indep_demand_pts: 7 + (h % 9),
-          accounting_pts: 7 + ((h * 5) % 9),
-          total: 0,
-          notes: "Fixture rubric — replaced by live data once THS-46 ships.",
-        }
-      : null;
-  if (aiqRubric) {
-    aiqRubric.total =
-      aiqRubric.disclosure_pts +
-      aiqRubric.defensibility_pts +
-      aiqRubric.concentration_pts +
-      aiqRubric.capex_eff_pts +
-      aiqRubric.indep_demand_pts +
-      aiqRubric.accounting_pts;
-  }
+  // Per-dim rubric — uses the same shared fixture helper as the AIQ editor
+  // so /universe/[ticker] rubric panel == /aiq/[ticker] editor exactly.
+  // (The previous layer ≤ 3 gate was a fixture artifact pending THS-46 —
+  // shipped session 8; rubric now applies to every name.)
+  const aiqRubric: NameAiqRubric = {
+    scored_at: "2026-04-30",
+    disclosure_pts: aiqBreakdown.disclosure,
+    defensibility_pts: aiqBreakdown.defensibility,
+    concentration_pts: aiqBreakdown.concentration,
+    capex_eff_pts: aiqBreakdown.capex_eff,
+    indep_demand_pts: aiqBreakdown.indep_demand,
+    accounting_pts: aiqBreakdown.accounting,
+    total: aiqBreakdown.total,
+    notes: "Fixture rubric — shared with /aiq editor for cross-surface consistency.",
+  };
 
   // Depreciation flags only for L2 hyperscalers (per algorithm spec) and only ~half of them in fixture.
   const depFlags: NameDepFlag[] =

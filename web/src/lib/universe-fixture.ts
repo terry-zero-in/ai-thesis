@@ -75,3 +75,59 @@ export const FIXTURE_UNIVERSE: SeedRow[] = [
 export const FIXTURE_INDEX: Record<string, SeedRow> = Object.fromEntries(
   FIXTURE_UNIVERSE.map((u) => [u.ticker, u]),
 );
+
+// ---------------------------------------------------------------------------
+// Per-ticker fixture math — single source of truth for the AIQ score across
+// /universe, /universe/[ticker], /aiq, and /aiq/[ticker]. Without this,
+// each fetcher synthesizes its own AIQ from a different formula and the
+// same ticker reads differently on each surface, which screams "broken."
+// ---------------------------------------------------------------------------
+
+/**
+ * FNV-1a hash for stable per-ticker fixture seeds. Used to derive
+ * deterministic Q/G/V/AIQ values for the same ticker across surfaces.
+ */
+export function hashTicker(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+/**
+ * Per-dim AIQ rubric for a ticker. Caps per spec §Part 3:
+ *   D 0..20 · F 0..20 · C 0..15 · X 0..15 · I 0..15 · A 0..15.
+ * Each dim seeded off the same FNV-1a hash so the editor (/aiq/[ticker]),
+ * the index (/aiq), and the name detail (/universe/[ticker]) all show
+ * identical numbers.
+ */
+export interface FixtureAiqBreakdown {
+  disclosure: number;
+  defensibility: number;
+  concentration: number;
+  capex_eff: number;
+  indep_demand: number;
+  accounting: number;
+  total: number;
+}
+
+export function fixtureAiqByTicker(ticker: string): FixtureAiqBreakdown {
+  const h = hashTicker(ticker);
+  const disclosure = 12 + (h % 9);
+  const defensibility = 12 + ((h * 2) % 9);
+  const concentration = 8 + (h % 8);
+  const capex_eff = 8 + ((h * 3) % 8);
+  const indep_demand = 7 + (h % 9);
+  const accounting = 7 + ((h * 5) % 9);
+  return {
+    disclosure,
+    defensibility,
+    concentration,
+    capex_eff,
+    indep_demand,
+    accounting,
+    total: disclosure + defensibility + concentration + capex_eff + indep_demand + accounting,
+  };
+}

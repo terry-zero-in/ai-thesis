@@ -8,7 +8,7 @@
  * the editor renders read-only.
  */
 import { getSupabaseServer } from "./supabase/server";
-import { FIXTURE_INDEX, type SeedRow } from "./universe-fixture";
+import { FIXTURE_INDEX, fixtureAiqByTicker, type SeedRow } from "./universe-fixture";
 import type { AiqRow } from "./aiq-types";
 
 export interface AiqContext {
@@ -26,9 +26,8 @@ const COLUMNS =
 
 export async function getAiqContext(ticker: string): Promise<AiqContext> {
   const t = ticker.toUpperCase();
-  const seed = FIXTURE_INDEX[t] ?? null;
   const sb = await getSupabaseServer();
-  if (!sb) return { seed, latest: null, history: [], envConfigured: false };
+  if (!sb) return synthesizeAiqContext(t);
 
   const { data, error } = await sb
     .from("aiq_rubric")
@@ -36,8 +35,14 @@ export async function getAiqContext(ticker: string): Promise<AiqContext> {
     .eq("ticker", t)
     .order("scored_at", { ascending: false })
     .limit(20);
-  if (error || !data) return { seed, latest: null, history: [], envConfigured: true };
+  if (error || !data || data.length === 0) {
+    // RLS denied / table empty in fixture-mode prod → fall back to the
+    // synthetic seed so the editor renders consistently with /universe.
+    const ctx = synthesizeAiqContext(t);
+    return { ...ctx, envConfigured: true };
+  }
 
+  const seed = FIXTURE_INDEX[t] ?? null;
   const rows = data as unknown as AiqRow[];
   return { seed, latest: rows[0] ?? null, history: rows, envConfigured: true };
 }
@@ -118,15 +123,54 @@ export async function getAiqIndex(): Promise<AiqIndexSnapshot> {
 }
 
 function synthesizeIndex(): AiqIndexSnapshot {
-  const rows: AiqIndexRow[] = Object.values(FIXTURE_INDEX).map((s) => ({
-    ticker: s.ticker,
-    name: s.name,
-    layer: s.layer,
-    layer_label: s.layer_label,
-    total: null,
-    scored_at: null,
-    disclosure_pts: null, defensibility_pts: null, concentration_pts: null,
-    capex_eff_pts: null, indep_demand_pts: null, accounting_pts: null,
-  }));
-  return { rows, asOf: null, synthetic: true, scoredCount: 0 };
+  const rows: AiqIndexRow[] = Object.values(FIXTURE_INDEX).map((s) => {
+    const b = fixtureAiqByTicker(s.ticker);
+    return {
+      ticker: s.ticker,
+      name: s.name,
+      layer: s.layer,
+      layer_label: s.layer_label,
+      total: b.total,
+      scored_at: "2026-05-09",
+      disclosure_pts: b.disclosure,
+      defensibility_pts: b.defensibility,
+      concentration_pts: b.concentration,
+      capex_eff_pts: b.capex_eff,
+      indep_demand_pts: b.indep_demand,
+      accounting_pts: b.accounting,
+    };
+  });
+  return { rows, asOf: "2026-05-09", synthetic: true, scoredCount: rows.length };
+}
+
+/**
+ * Per-name AIQ editor fixture — mirrors `synthesizeIndex` so /aiq/[ticker]
+ * shows a populated rubric in fixture mode. Editor is still read-only
+ * without auth (no service-role write path); `envConfigured: false` flag
+ * suppresses the Save action.
+ */
+function synthesizeAiqContext(ticker: string): AiqContext {
+  const seed = FIXTURE_INDEX[ticker] ?? null;
+  if (!seed) return { seed: null, latest: null, history: [], envConfigured: false };
+  const b = fixtureAiqByTicker(seed.ticker);
+  const latest = {
+    ticker: seed.ticker,
+    scored_at: "2026-05-09",
+    disclosure_pts: b.disclosure,
+    defensibility_pts: b.defensibility,
+    concentration_pts: b.concentration,
+    capex_eff_pts: b.capex_eff,
+    indep_demand_pts: b.indep_demand,
+    accounting_pts: b.accounting,
+    total: b.total,
+    notes: null,
+    disclosure_note: null,
+    defensibility_note: null,
+    concentration_note: null,
+    capex_eff_note: null,
+    indep_demand_note: null,
+    accounting_note: null,
+    sources: null,
+  } as unknown as AiqRow;
+  return { seed, latest, history: [latest], envConfigured: false };
 }

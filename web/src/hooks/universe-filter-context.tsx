@@ -12,8 +12,9 @@ import type { Tier } from "@/lib/universe-data";
  * the right rail is rendered by the shell, not by /universe's page tree.
  *
  * Spec §5.2 filter set: Layer chips, Tier chips, AIQ-min slider, FLAGS
- * (Depr / Burry / Macro). Layer/Tier/AIQ/Macro are wired; Depr and Burry
- * remain ghost-toggles until depreciation_flags ingestion lands (THS-46).
+ * (Depr / Burry / Macro). All three flags wired off scores_history +
+ * depreciation_flags as of 2026-05-20 (was: Depr/Burry ghost-toggled
+ * pending THS-46/E24).
  */
 export type UniverseFlag = "depr" | "burry" | "macro";
 
@@ -22,7 +23,7 @@ interface UniverseFilterCtx {
   tiers: Set<Tier>;
   /** AIQ floor 0..100. null = no floor. */
   aiqMin: number | null;
-  /** Active flag-filters. "macro" is wired; "depr"/"burry" are ghosts. */
+  /** Active flag-filters. All three (macro/depr/burry) live. */
   flags: Set<UniverseFlag>;
   toggleLayer: (l: number) => void;
   toggleTier: (t: Tier) => void;
