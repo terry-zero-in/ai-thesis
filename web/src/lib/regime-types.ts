@@ -18,6 +18,9 @@ export const GAUGES: ReadonlyArray<{
   range: [number, number];
   /** Short description rendered under the gauge title. */
   blurb: string;
+  /** Source attribution rendered in the GaugeCard footer — feed name + cadence.
+   *  /lambo "every computed number has a source attribution nearby." */
+  source: string;
 }> = [
   {
     key: "naaim",
@@ -25,6 +28,7 @@ export const GAUGES: ReadonlyArray<{
     threshold: 90,
     range: [0, 200],
     blurb: "Active-manager equity exposure index. Gate hits at > 90.",
+    source: "naaim · weekly",
   },
   {
     key: "aaii_3wk_spread",
@@ -32,6 +36,7 @@ export const GAUGES: ReadonlyArray<{
     threshold: 30,
     range: [-60, 60],
     blurb: "Retail bull − bear spread, three-week average. Gate hits at > 30.",
+    source: "aaii · weekly",
   },
   {
     key: "fear_greed",
@@ -39,6 +44,7 @@ export const GAUGES: ReadonlyArray<{
     threshold: 80,
     range: [0, 100],
     blurb: "Multi-factor sentiment 0…100. Gate hits at > 80.",
+    source: "cnn f&g · daily",
   },
 ];
 

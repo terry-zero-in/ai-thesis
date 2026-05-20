@@ -102,6 +102,8 @@ export function GaugeCard({
           borderTop: "1px solid var(--border-subtle)",
           display: "flex",
           justifyContent: "space-between",
+          gap: 8,
+          flexWrap: "wrap",
         }}
       >
         <span>
@@ -109,6 +111,11 @@ export function GaugeCard({
             ? "No crossings in last 52 weeks."
             : `${thresholdHistory.hits} crossing${thresholdHistory.hits === 1 ? "" : "s"} in last 52w`}
         </span>
+        {/* Source attribution — /lambo "every computed number has a source
+            attribution nearby." Sits right of crossings on the same hairline
+            so the eye reads: what happened recently · where this number comes
+            from · when it last fired. */}
+        <span style={{ color: "var(--text-4)" }}>{meta.source}</span>
         {thresholdHistory.last_hit_at && <span>last · {thresholdHistory.last_hit_at}</span>}
       </div>
     </div>
