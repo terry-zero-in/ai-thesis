@@ -106,7 +106,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   /* ─── SEMANTIC ALIASES (consumer interface, do not move) ──────────────── */
 
   --canvas:        var(--onyx);    /* L1 · #0A0B10 — main canvas */
-  --sidebar:       #070707;        /* L0 · sidebar bg (Terry eye-dropper 2026-05-20) — slight lift off pure jet so the right-rail/canvas hairline reads against it without going pure black. */
+  --sidebar:       var(--jet);     /* L0 · #000000 — darkest, sidebar */
   --surface:       var(--carbon);  /* L2 · #14171F — cards, right rail, palette, tooltips */
   --surface-2:     var(--carbon);  /* L2 · same as surface — cards within cards stay flat */
   --elevated:      var(--steel);   /* L3 · #2A2F3E — popovers, hover surfaces, elevated modals */
@@ -115,14 +115,17 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --hover-tint-strong: rgba(255,255,255,.06);
   --press-tint:        rgba(255,255,255,.085);
 
-  /* Sidebar-specific achromatic state surfaces (Terry eye-dropper 2026-05-20,
-     Linear-benchmarked). DISTINCT from the Iris-tinted --carbon family used
-     across canvas / right rail / cards — the sidebar is a true-neutral lane
-     and the rest of the app stays in the locked Iris-family blue-tinted
-     ladder. Do NOT collapse these back into --surface/--surface-2 because
-     they look "one shade off"; the chroma difference is intentional. */
-  --sidebar-hover:  #141415;       /* hover bar over inactive nav item */
-  --sidebar-active: #1D1D1F;       /* selected nav item surface */
+  /* Sidebar-scoped achromatic state surfaces. Step sizes lifted from Linear's
+     measured sidebar (base #070707 → hover #141415 = +13, hover → active
+     #1D1D1F = +9), applied to OUR jet base #000000. Result: pure-achromatic
+     ladder that matches Linear's visual rhythm without inheriting Linear's
+     literal colors. DISTINCT from the Iris-tinted --carbon family used on
+     canvas / right rail / cards — the sidebar is a true-neutral lane and
+     the rest of the app stays in the locked Iris blue-tinted ladder. Do
+     NOT collapse these back into --surface tokens; the chroma difference
+     is intentional. (Terry eye-dropper + step-calc 2026-05-20.) */
+  --sidebar-hover:  #0D0D0D;       /* hover bar over inactive nav item */
+  --sidebar-active: #161616;       /* selected nav item surface */
 
   /* Text — 4-level scale mapped onto Frost. */
   --text-1: var(--white);      /* display + headlines (was #ECEDEF) */
@@ -378,11 +381,13 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
 .accent-link>.accent-link-chev{display:inline-block;transition:transform var(--dur-fast) var(--ease-out)}
 .accent-link:hover>.accent-link-chev{transform:translateX(2px)}
 
-/* Logo link — subtle accent-hover lift on the brand mark. No bg change,
-   no transform; the color shift alone reads as "interactive" without
-   adding chrome to the most-restrained pixel on the page. */
-.logo-hov{transition:color var(--dur-fast) var(--ease-out)}
-.logo-hov:hover{color:var(--accent-hover)}
+/* Logo link — accent-color lift on the brand mark plus a sidebar-scoped
+   bg tint so the affordance reads on a near-black canvas (color-only
+   change was nearly invisible at hover-time per Terry 2026-05-20).
+   Wraps both hex icon and "AI Thesis" wordmark in one Link so the entire
+   brand cluster is the hover target. */
+.logo-hov{transition:color var(--dur-fast) var(--ease-out),background var(--dur-fast) var(--ease-out)}
+.logo-hov:hover{color:var(--accent-hover);background:var(--sidebar-hover)}
 
 /* Score-math trigger — composite numbers wrapped in <ScoreMathPopover> get a
    subtle dotted underline reveal on hover. Linear-class peel-back: affordance

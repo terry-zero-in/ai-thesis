@@ -81,16 +81,39 @@ export function Sidebar({
           <Link
             href="/"
             className="logo-hov"
-            style={{ color: "var(--accent)", display: "flex", padding: 4, borderRadius: 5, flexShrink: 0, cursor: "pointer" }}
+            style={{
+              // Wrap both icon and wordmark in one Link so the entire brand
+              // cluster is the hover target — previously the hover only
+              // fired on the 22x22 hex icon, easy to miss.
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              color: "var(--accent)",
+              padding: "4px 6px",
+              borderRadius: 5,
+              cursor: "pointer",
+              textDecoration: "none",
+              flex: col ? undefined : 1,
+              flexShrink: 0,
+              minWidth: 0,
+            }}
           >
             {I.hex}
+            {!col && (
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  letterSpacing: "-.014em",
+                  whiteSpace: "nowrap",
+                  color: "var(--text-1)",
+                }}
+              >
+                AI Thesis
+              </span>
+            )}
           </Link>
         </Tip>
-        {!col && (
-          <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-.014em", flex: 1, whiteSpace: "nowrap" }}>
-            AI Thesis
-          </span>
-        )}
         {!col && (
           <Tip label="Collapse sidebar" keys={["⌘", "B"]} side="bottom">
             <button className="icon-btn" onClick={() => setCol(!col)} style={{ padding: 4 }}>
