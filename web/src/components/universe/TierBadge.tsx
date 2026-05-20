@@ -15,10 +15,10 @@ import type { Tier } from "@/lib/universe-data";
  *   Avoid  = danger red      (do not touch)
  */
 const STYLES: Record<Tier, { fg: string; bg: string; border: string }> = {
-  High:   { fg: "var(--success)", bg: "var(--success-soft)", border: "rgba(91,184,128,.30)" },
+  High:   { fg: "var(--success)", bg: "var(--success-soft)", border: "rgba(48,209,88,.30)" },
   Medium: { fg: "var(--text-1)",  bg: "rgba(255,255,255,.04)", border: "var(--border)" },
   Low:    { fg: "var(--warning)", bg: "var(--warning-soft)", border: "rgba(221,168,90,.30)" },
-  Avoid:  { fg: "var(--danger)",  bg: "var(--danger-soft)",  border: "rgba(224,120,120,.32)" },
+  Avoid:  { fg: "var(--danger)",  bg: "var(--danger-soft)",  border: "rgba(229,72,77,.32)" },
 };
 
 export function TierBadge({ tier }: { tier: Tier | null }) {

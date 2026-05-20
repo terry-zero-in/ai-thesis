@@ -694,7 +694,7 @@ function AnchorPill({
 }) {
   const isHigh = kind === "high";
   const color = isHigh ? "var(--success)" : "var(--danger)";
-  const bg = isHigh ? "rgba(75,222,128,.10)" : "rgba(224,120,120,.10)";
+  const bg = isHigh ? "rgba(48,209,88,.10)" : "rgba(229,72,77,.10)";
   const border = isHigh
     ? "color-mix(in oklab, var(--success) 32%, transparent)"
     : "color-mix(in oklab, var(--danger) 32%, transparent)";

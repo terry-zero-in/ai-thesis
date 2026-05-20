@@ -39,7 +39,7 @@ export function WaitlistForm() {
             padding: "12px 16px",
             border: "1px solid var(--success)",
             borderRadius: 6,
-            background: "rgba(91,184,128,.08)",
+            background: "rgba(48,209,88,.08)",
           }}
         >
           <span

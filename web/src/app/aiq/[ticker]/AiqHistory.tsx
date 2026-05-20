@@ -108,7 +108,7 @@ function HistoryRow({
                   fontFamily: "var(--m)",
                   color: dlt > 0 ? "var(--success)" : "var(--danger)",
                   background: dlt > 0 ? "var(--success-soft)" : "var(--danger-soft)",
-                  border: `1px solid ${dlt > 0 ? "rgba(91,184,128,.30)" : "rgba(224,120,120,.30)"}`,
+                  border: `1px solid ${dlt > 0 ? "rgba(48,209,88,.30)" : "rgba(229,72,77,.30)"}`,
                   padding: "1px 5px",
                   borderRadius: 3,
                 }}

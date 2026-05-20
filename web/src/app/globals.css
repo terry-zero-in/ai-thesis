@@ -68,11 +68,12 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --frost-bg:    #D6DAE4;
 
   /* Surfaces — four solid elevation steps. Hover/popover/modal = next step up.
-     Never reach for shadows on a dark theme. */
-  --jet:    #050608;  /* L0 · canvas base (v1.1: was #000000, +5 lightness — warm-near-black, "very little more gray") */
-  --onyx:   #0B0C12;  /* L1 · card        (v1.1: was #0A0B10, +1 warmth) */
-  --carbon: #161920;  /* L2 · elevated    (v1.1: was #14171F, +2 lift) */
-  --steel:  #2C313F;  /* L3 · input       (v1.1: was #2A2F3E, +2 lift) */
+     Never reach for shadows on a dark theme. S20 RESTORED to v2.0 canonical
+     hex values (v1.1 "warm +1-2 lift" reverted). */
+  --jet:    #000000;  /* L0 · sidebar (darkest, true black) */
+  --onyx:   #0A0B10;  /* L1 · canvas */
+  --carbon: #14171F;  /* L2 · cards, right rail, palette, tooltips */
+  --steel:  #2A2F3E;  /* L3 · hover, popovers, elevated, input focus */
 
   /* Iris — the brand violet. Conviction signals only (composite ≥75, active-state
      arc, focus rings, links, selection, score bars, multiplier glow). Never decorative.
@@ -104,14 +105,12 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
   /* ─── SEMANTIC ALIASES (consumer interface, do not move) ──────────────── */
 
-  --canvas:        var(--jet);     /* L0 base · #050608 — warm near-black */
-  --sidebar:       var(--void);    /* S20: sidebar drops to true #000000 — darker
-                                      than canvas per Terry directive ("even if
-                                      just by a little bit"). Δ = ~5 lightness. */
-  --surface:       var(--onyx);    /* card surface — lift one step above canvas */
-  --surface-2:     var(--carbon);  /* (was #1B1E25) */
-  --elevated:      var(--carbon);  /* hover/popover surface (was #22262E) */
-  --hover-lift:    var(--steel);   /* (was #232730) */
+  --canvas:        var(--onyx);    /* L1 · #0A0B10 — main canvas */
+  --sidebar:       var(--jet);     /* L0 · #000000 — darkest, sidebar */
+  --surface:       var(--carbon);  /* L2 · #14171F — cards, right rail, palette, tooltips */
+  --surface-2:     var(--carbon);  /* L2 · same as surface — cards within cards stay flat */
+  --elevated:      var(--steel);   /* L3 · #2A2F3E — popovers, hover surfaces, elevated modals */
+  --hover-lift:    var(--steel);   /* L3 · #2A2F3E — hover backgrounds */
   --hover-tint:        rgba(255,255,255,.035);
   --hover-tint-strong: rgba(255,255,255,.06);
   --press-tint:        rgba(255,255,255,.085);
@@ -151,10 +150,19 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
   /* Semantic — truth states only, never decorative. Severity ladder is
      INDEPENDENT of accent (accent is brand/signal, not severity). --info
-     tracks --accent so info chips inherit the brand-current accent. */
-  --success:#4bde80; --warning:#DDA85A; --danger:#E07878; --info:var(--accent);
-  --success-soft:rgba(75,222,128,.10); --warning-soft:rgba(221,168,90,.10);
-  --danger-soft:rgba(224,120,120,.09); --info-soft:rgba(168,125,254,.08);
+     tracks --accent so info chips inherit the brand-current accent.
+
+     S20 retuned for Iris × Voltage v2.0:
+       success #4bde80 → #30D158 — was a warm vivid lime tuned for the
+         S19 mint-teal era; now a cooler emerald that harmonizes with
+         iris violet on a cool dark canvas.
+       danger  #E07878 → #E5484D — was warm coral; now Radix red-9
+         balanced crimson, more institutional, cooler undertone.
+       warning #DDA85A kept — already a calm institutional amber that
+         reads as alert without shouting against the cool palette. */
+  --success:#30D158; --warning:#DDA85A; --danger:#E5484D; --info:var(--accent);
+  --success-soft:rgba(48,209,88,.10); --warning-soft:rgba(221,168,90,.10);
+  --danger-soft:rgba(229,72,77,.10); --info-soft:rgba(168,125,254,.08);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
