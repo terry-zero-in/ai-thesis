@@ -361,7 +361,11 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
    Duration bumped from --dur-instant (80ms) → --dur-fast (140ms) to match Linear's
    measured 150ms hover timing; 80ms read as snappy/jittery on full rows. */
 .row-hov{transition:background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out);cursor:pointer}
-.row-hov:hover{background:var(--hover-tint)}
+/* Hover snaps to --surface (carbon #14171F) — same surface as KPI hover and
+   sidebar hover, system-coherent L2 lift off canvas. The earlier --hover-tint
+   rgba composite (#131418) was visible but achromatic-leaning; carbon snap
+   preserves the iris-tinted chroma cascade. (Terry 2026-05-20.) */
+.row-hov:hover{background:var(--surface)}
 .row-hov:active{background:var(--hover-tint-strong)}
 .row-hov .row-actions{opacity:0;transform:translateX(2px);transition:opacity 120ms var(--ease-out),transform 140ms var(--ease-out);pointer-events:none}
 .row-hov:hover .row-actions,.row-hov:focus-within .row-actions{opacity:1;transform:translateX(0);pointer-events:auto}
@@ -384,12 +388,11 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
 .lin-lift:active{transform:translateY(0)}
 
 /* Accent inline link ("View all ›", "Open book ›", "Clear filter ✕").
-   Color lifts to --accent-hover (iris-300), underline appears on hover offset 2px,
-   trailing chevron (last span of caller) nudges +2px right. Linear-class peel-back
-   affordance: link reads as plain accent text at rest, fully expresses interactivity
-   on intent. */
-.accent-link{color:var(--accent);text-decoration:underline transparent;text-underline-offset:2px;text-decoration-thickness:1px;transition:color var(--dur-fast) var(--ease-out),text-decoration-color var(--dur-fast) var(--ease-out);font-family:var(--m);cursor:pointer;display:inline-flex;align-items:baseline;gap:2px}
-.accent-link:hover{color:var(--accent-hover);text-decoration-color:var(--accent-hover)}
+   Color lifts to --accent-hover (iris-300), trailing chevron (last span of
+   caller) nudges +2px right. NO underline (Terry 2026-05-20 — color shift +
+   chevron is enough; the underline read as noisy on a quiet canvas). */
+.accent-link{color:var(--accent);text-decoration:none;transition:color var(--dur-fast) var(--ease-out);font-family:var(--m);cursor:pointer;display:inline-flex;align-items:baseline;gap:2px}
+.accent-link:hover{color:var(--accent-hover)}
 .accent-link>.accent-link-chev{display:inline-block;transition:transform var(--dur-fast) var(--ease-out)}
 .accent-link:hover>.accent-link-chev{transform:translateX(2px)}
 
