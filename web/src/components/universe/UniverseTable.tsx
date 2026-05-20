@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { Tier, UniverseRow } from "@/lib/universe-data";
 import { useFilter } from "@/hooks/filter-context";
@@ -235,12 +236,20 @@ function Row({
   // Dashboard / Portfolio aren't affected — they use the CSS-class default
   // 65ms cascade with ≤12 rows.
   const delayMs = Math.min(rowIndex * 25, 1200);
+  const router = useRouter();
+  // Full-row click → /universe/{ticker}. Matches Dashboard Score Movers
+  // (#100) and Portfolio Positions (#106). Inner Ticker + Name Links keep
+  // their hrefs so right-click "open in new tab" still works on those
+  // cells; ScoreMathPopover triggers already call e.stopPropagation() so
+  // opening the derivation popover does not navigate.
   return (
     <tr
       className="row-hov row-stagger-in"
+      onClick={() => router.push(`/universe/${r.ticker}`)}
       style={{
         borderBottom: "1px solid var(--border-subtle)",
         animationDelay: `${delayMs}ms`,
+        cursor: "pointer",
       }}
     >
       <Td>
