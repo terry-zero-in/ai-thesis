@@ -67,7 +67,7 @@ interface TaxRow {
 export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
   const sb = await getSupabaseServer();
   if (!sb) {
-    return emptySnapshot(false, false);
+    return emptySnapshot(false);
   }
 
   const [settingsRes, positionsRes] = await Promise.all([
@@ -87,7 +87,7 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
   if (positionDbRows.length === 0) {
     // Settings exist but no positions yet — render empty state with real settings.
     const [spySnap, vixSnap] = await Promise.all([fetchSpySnapshot(sb), fetchVixSnapshot(sb)]);
-    return finalizeSnapshot([], settings, spySnap, vixSnap, true, false);
+    return finalizeSnapshot([], settings, spySnap, vixSnap, true);
   }
 
   const tickers = positionDbRows.map((p) => p.ticker);
@@ -147,7 +147,7 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
 
   const [spySnap, vixSnap] = await Promise.all([fetchSpySnapshot(sb), fetchVixSnapshot(sb)]);
 
-  return finalizeSnapshot(positions, settings, spySnap, vixSnap, true, false);
+  return finalizeSnapshot(positions, settings, spySnap, vixSnap, true);
 }
 
 /**
@@ -166,8 +166,8 @@ export async function getUniverseChoices(): Promise<UniverseChoice[]> {
       name: u.name,
       layer: u.layer,
       layer_label: u.layer_label,
-      latest_price: fixtureClose(u.ticker),
-      latest_price_as_of: FIXTURE_PRICES_AS_OF,
+      latest_price: null,
+      latest_price_as_of: null,
     }));
   }
 
@@ -186,8 +186,8 @@ export async function getUniverseChoices(): Promise<UniverseChoice[]> {
       name: u.name,
       layer: u.layer,
       layer_label: u.layer_label,
-      latest_price: fixtureClose(u.ticker),
-      latest_price_as_of: FIXTURE_PRICES_AS_OF,
+      latest_price: null,
+      latest_price_as_of: null,
     }));
   }
 
@@ -223,84 +223,6 @@ function fixtureClose(ticker: string): number {
   let h = 0;
   for (let i = 0; i < ticker.length; i++) h = (h * 31 + ticker.charCodeAt(i)) >>> 0;
   return Math.round(((h % 4000) / 10 + 25) * 100) / 100;
-}
-
-// ---------------------------------------------------------------------------
-// Fixture-positions seed (lambo review §2.4 #1)
-// ---------------------------------------------------------------------------
-
-/**
- * Deterministic 12-position demo book spanning all 5 universe layers. Used
- * only when /portfolio is invoked with `?seed=fixture-positions` so the full
- * /lambo render (AggregateBar, PositionsTable, ReservePanel, triggers, rail)
- * can be reviewed without standing up live Supabase data. One position (AMD
- * at -8%) intentionally fires the position-drawdown trigger so the rail's
- * trigger surface is exercised in the demo path.
- *
- * Composition by layer (matches spec §5.4 mix):
- *   L1 Compute (3) · L2 Hyperscaler (3) · L3 App (2) · L4 Power (2) · L5 Incumbent (2)
- *
- * No DB call — this is pure synthetic data tagged `synthetic_prices: true`
- * so the empty-state branch + "data pending" affordances stay honest.
- */
-interface FixtureBookEntry {
-  ticker: string;
-  shares: number;
-  cost_basis: number;
-  current_price: number;
-  opened_at: string;
-  notes: string | null;
-  composite: number;
-  tier: Tier;
-  concentration_tax: number;
-}
-
-const FIXTURE_BOOK: FixtureBookEntry[] = [
-  { ticker: "NVDA",  shares:  30, cost_basis: 110.00, current_price: 145.20, opened_at: "2026-02-04", notes: "Compute spine — sized large; trim at +40%.", composite: 82.4, tier: "High",   concentration_tax: -4.2 },
-  { ticker: "TSM",   shares:  60, cost_basis: 160.00, current_price: 178.50, opened_at: "2026-01-22", notes: null,                                            composite: 71.6, tier: "Medium", concentration_tax: -2.1 },
-  { ticker: "AMD",   shares:  50, cost_basis: 168.00, current_price: 154.30, opened_at: "2026-03-14", notes: "Re-eval thesis if -10% from cost.",            composite: 58.3, tier: "Low",    concentration_tax: -1.4 },
-  { ticker: "MSFT",  shares:  20, cost_basis: 380.00, current_price: 425.10, opened_at: "2026-01-10", notes: null,                                            composite: 78.1, tier: "High",   concentration_tax: -3.6 },
-  { ticker: "GOOGL", shares:  40, cost_basis: 175.00, current_price: 192.60, opened_at: "2026-02-18", notes: null,                                            composite: 73.5, tier: "Medium", concentration_tax: -2.4 },
-  { ticker: "META",  shares:  15, cost_basis: 540.00, current_price: 590.20, opened_at: "2026-02-26", notes: null,                                            composite: 68.9, tier: "Medium", concentration_tax: -1.8 },
-  { ticker: "CRWD",  shares:  18, cost_basis: 360.00, current_price: 340.50, opened_at: "2026-04-02", notes: null,                                            composite: 62.4, tier: "Medium", concentration_tax: -1.1 },
-  { ticker: "PLTR",  shares: 120, cost_basis:  28.50, current_price:  35.80, opened_at: "2026-01-08", notes: "L3 App high-conviction.",                       composite: 76.8, tier: "High",   concentration_tax: -2.9 },
-  { ticker: "VST",   shares:  35, cost_basis: 175.00, current_price: 198.40, opened_at: "2026-03-05", notes: null,                                            composite: 69.2, tier: "Medium", concentration_tax: -2.0 },
-  { ticker: "CEG",   shares:  25, cost_basis: 215.00, current_price: 232.70, opened_at: "2026-03-19", notes: null,                                            composite: 64.7, tier: "Medium", concentration_tax: -1.6 },
-  { ticker: "AAPL",  shares:  35, cost_basis: 198.00, current_price: 205.40, opened_at: "2026-01-15", notes: null,                                            composite: 56.2, tier: "Low",    concentration_tax: -1.3 },
-  { ticker: "ADBE",  shares:  10, cost_basis: 520.00, current_price: 488.60, opened_at: "2026-04-21", notes: null,                                            composite: 41.9, tier: "Avoid",  concentration_tax: -0.7 },
-];
-
-const FIXTURE_PRICES_AS_OF = "2026-05-17";
-
-export function getFixturePortfolioSnapshot(): PortfolioSnapshot {
-  const settings = DEFAULT_SETTINGS;
-  const positions: PositionRow[] = FIXTURE_BOOK.map((p) => {
-    const u = FIXTURE_INDEX[p.ticker] ?? fallbackUniverseRow(p.ticker);
-    return {
-      ticker: p.ticker,
-      shares: p.shares,
-      cost_basis: p.cost_basis,
-      opened_at: p.opened_at,
-      closed_at: null,
-      notes: p.notes,
-      current_price: p.current_price,
-      current_price_as_of: FIXTURE_PRICES_AS_OF,
-      name: u.name,
-      layer: u.layer,
-      layer_label: u.layer_label,
-      composite: p.composite,
-      tier: p.tier,
-      concentration_tax: p.concentration_tax,
-    };
-  });
-
-  // Synthetic SPY: prior-close → current-close at -2% (no SPY trigger fired
-  // in demo — keeps the rail honest about which triggers are exercising).
-  // Position-drawdown trigger DOES fire (AMD at -8%).
-  const spy: SpySnap = { spy_close: 524.30, spy_close_prior: 534.80, spy_as_of: FIXTURE_PRICES_AS_OF };
-  const vix: VixSnap = { recent_closes: [18.4, 17.9, 18.1], vix_as_of: FIXTURE_PRICES_AS_OF };
-
-  return finalizeSnapshot(positions, settings, spy, vix, true, true);
 }
 
 // ---------------------------------------------------------------------------
@@ -383,7 +305,6 @@ function finalizeSnapshot(
   spy: SpySnap,
   vix: VixSnap,
   envConfigured: boolean,
-  synthetic_prices: boolean,
 ): PortfolioSnapshot {
   let total_deployed = 0;
   let total_market_value = 0;
@@ -444,7 +365,6 @@ function finalizeSnapshot(
     spy_as_of: spy.spy_as_of,
     empty: positions.length === 0,
     envConfigured,
-    synthetic_prices,
     portfolio_concentration_tax,
   };
 }
@@ -496,7 +416,7 @@ function computeMarketTriggers(spy: SpySnap, vix: VixSnap): MarketTrigger[] {
   return triggers;
 }
 
-function emptySnapshot(envConfigured: boolean, synthetic_prices: boolean): PortfolioSnapshot {
+function emptySnapshot(envConfigured: boolean): PortfolioSnapshot {
   return {
     ...emptyAggregate(DEFAULT_SETTINGS),
     spy_close: null,
@@ -516,7 +436,6 @@ function emptySnapshot(envConfigured: boolean, synthetic_prices: boolean): Portf
     ],
     empty: true,
     envConfigured,
-    synthetic_prices,
     settings: DEFAULT_SETTINGS,
     portfolio_concentration_tax: null,
   };

@@ -1,4 +1,4 @@
-import { getFixturePortfolioSnapshot, getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
+import { getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
 import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
@@ -15,17 +15,14 @@ export const revalidate = 300;
 export default async function PortfolioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ seed?: string; edit?: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }) {
-  // ?seed=fixture-positions populates a 12-position demo book for /lambo
-  // review (lambo §2.4 #1). Empty fixture mode otherwise.
   // ?edit=<TICKER> pre-selects that ticker in the add/edit form and
   // hydrates its fields from the existing portfolio_positions row.
   const params = await searchParams;
-  const demo = params.seed === "fixture-positions";
   const editTicker = params.edit ? params.edit.toUpperCase() : null;
   const [snap, choices] = await Promise.all([
-    demo ? Promise.resolve(getFixturePortfolioSnapshot()) : getPortfolioSnapshot(),
+    getPortfolioSnapshot(),
     getUniverseChoices(),
   ]);
   const taken = snap.positions.map((p) => p.ticker);
@@ -55,31 +52,7 @@ export default async function PortfolioPage({
       <PortfolioRailRegister data={railData} />
       <PageHeader
         title="Portfolio"
-        subtitle={
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-            <span>Live tracking · single book · manual cost-basis entry</span>
-            {demo && (
-              // Honest demo marker — spec §4.5 chip, --warning to signal
-              // "synthetic data, not live." Clears with /portfolio (no seed).
-              <span
-                style={{
-                  fontSize: 10,
-                  fontFamily: "var(--m)",
-                  color: "var(--warning-text)",
-                  background: "var(--warning-text-fill)",
-                  border: "1px solid var(--warning-text-border)",
-                  padding: "1px 7px",
-                  borderRadius: 6,
-                  letterSpacing: ".05em",
-                  textTransform: "uppercase",
-                }}
-                title="Pre-loaded 12-position book for product preview."
-              >
-                Sample book
-              </span>
-            )}
-          </span>
-        }
+        subtitle="Live tracking · single book · manual cost-basis entry"
         action={
           <PortfolioAddDrawer
             choices={choices}
@@ -92,25 +65,6 @@ export default async function PortfolioPage({
         meta={[
           { label: "positions", value: snap.positions.length },
           { label: "as_of", value: snap.spy_as_of ?? "—" },
-          {
-            label: "mode",
-            value: (
-              <span
-                style={{
-                  color: demo ? "var(--warning)" : "var(--success)",
-                  fontWeight: 600,
-                  letterSpacing: ".02em",
-                }}
-                title={
-                  demo
-                    ? "Sample data — pre-loaded 12-position book for product preview."
-                    : "Live data — your tracked positions and current market values."
-                }
-              >
-                {demo ? "Sample" : "Live"}
-              </span>
-            ),
-          },
           { label: "price chain", value: "FMP daily close · refreshes 5 min" },
         ]}
       />

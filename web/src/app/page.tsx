@@ -157,7 +157,6 @@ export default async function DashboardPage({
           currentValue={portfolio.total_market_value}
           costBasis={portfolio.total_deployed}
           empty={portfolio.empty}
-          synthetic={portfolio.synthetic_prices}
         />
 
         <Section

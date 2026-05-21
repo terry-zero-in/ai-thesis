@@ -78,8 +78,6 @@ export interface PortfolioSnapshot {
   /** True when Supabase env is unset OR when no positions exist yet. */
   empty: boolean;
   envConfigured: boolean;
-  /** True when current_price columns came from a deterministic fixture. */
-  synthetic_prices: boolean;
   /** Sum of per-position concentration_tax across all held names (≤ 0).
    * Surfaces total engine drag from over-concentration. Null when no
    * concentration_history rows joined (pre-engine or env unset). */

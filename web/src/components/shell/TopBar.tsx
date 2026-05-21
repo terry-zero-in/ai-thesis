@@ -6,17 +6,17 @@ import { I } from "@/components/primitives/icons";
 import { pathToCrumb } from "@/lib/screens";
 import { useCtxPanel } from "@/hooks/ctx-panel-context";
 import { Tip } from "./Tip";
-import { DemoBadge } from "./DemoBadge";
 
 export function TopBar({
   onCmd,
   onHelp,
   right,
-  userEmail,
 }: {
   onCmd: () => void;
   onHelp: () => void;
   right?: ReactNode;
+  /** Reserved — was used by the removed DemoBadge; kept on the prop shape
+   * for binary-compat with any caller still passing it. */
   userEmail?: string | null;
 }) {
   const pathname = usePathname();
@@ -44,7 +44,6 @@ export function TopBar({
         )}
       </div>
       <div style={{ flex: 1 }} />
-      <DemoBadge isDemo={!userEmail} />
       {right}
       {/* Search button removed per Terry — redundant with surface-level
           filters (e.g. Universe inline filter) and the Cmd+K global binding.

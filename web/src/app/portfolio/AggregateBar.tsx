@@ -1,41 +1,25 @@
 import type { PortfolioSnapshot } from "@/lib/portfolio-types";
 
 /**
- * Portfolio hero — Mercury "format on canvas" + Basis Rent-Roll pattern:
- * 4 protagonist columns, no vertical dividers, no card chrome, whitespace
- * as the separator.
+ * Portfolio hero — Mercury "format on canvas" + Basis Rent-Roll pattern.
  *
- * Count-up motion removed 2026-05-20 (Terry directive: count-up only on
- * very first Dashboard load ever, never on any other page). Numbers
- * render static — same scale/weight/color as before, just without the
- * 0 → value roll.
+ * Demo-data removal 2026-05-21 (Terry directive: personal tool, blank is
+ * OK if data isn't there). The deterministic walk that powered the 30D
+ * Performance column is gone — 30D now renders muted "—" until real NAV
+ * history wires up.
  *
  * Column weights (2fr / 1fr / 1fr / 1fr) — Market Value is the sole
  * protagonist; cols 2-4 are equal-weight supporting columns:
- *   1. MARKET VALUE        — protagonist hero ($77,992) + concentration drag
- *   2. 30D PERFORMANCE     — delta % (scalar, no sparkline)
- *   3. P&L · SINCE OPEN    — small hero (-$1,483)
- *   4. RESERVE             — small hero ($20,525)
+ *   1. MARKET VALUE        — protagonist hero + concentration drag
+ *   2. 30D PERFORMANCE     — pending until NAV history is tracked
+ *   3. P&L · SINCE OPEN    — small hero
+ *   4. RESERVE             — small hero
  *
- * Sparkline retired 2026-05-19 (Terry): the 80×20 inline sparkline made
- * tame fluctuations look dramatic AND broke vertical rhythm against
- * cols 1/3/4. The hero number carries direction; the historical shape
- * lives on the NAV chart in the Dashboard.
- *
- * Empty state: hero shows muted em-dash with an honest "no positions yet"
- * sub. Other 3 columns render as quiet em-dashes — no fake values.
+ * Empty state: every hero shows muted em-dash; honest, no fake values.
  */
-const CHART_DAYS = 30;
 
 export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
   const plPos = snap.total_pl >= 0;
-
-  // 30D sparkline data — same deterministic walk used in PortfolioHeroChart.
-  const sparkData = synthesize(snap.total_market_value, CHART_DAYS, snap.empty);
-  const sparkStart = sparkData[0];
-  const sparkChange = snap.total_market_value - sparkStart;
-  const sparkPct = sparkStart > 0 ? (sparkChange / sparkStart) * 100 : 0;
-  const sparkPos = sparkChange >= 0;
 
   return (
     <div
@@ -83,21 +67,14 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         )}
       </Column>
 
-      {/* Col 2 — 30D PERFORMANCE (scalar delta, no sparkline) */}
+      {/* Col 2 — 30D PERFORMANCE
+          Demo-data removal 2026-05-21: real 30D delta requires NAV history
+          which isn't wired yet. Renders muted "—" with the same honest sub
+          the Dashboard already uses on its 30D return tile. Wires up once
+          a portfolio_nav_daily source lands. */}
       <Column label="30D performance">
-        {snap.empty ? (
-          <BigNumber value="—" color="var(--text-4)" />
-        ) : (
-          <>
-            <BigNumber
-              value={`${sparkPos ? "+" : ""}${sparkPct.toFixed(2)}%`}
-              color={sparkPos ? "var(--success)" : "var(--danger)"}
-            />
-            <SubLine>
-              {sparkPos ? "+" : ""}${Math.abs(sparkChange).toLocaleString("en-US", { maximumFractionDigits: 0 })} on 30d
-            </SubLine>
-          </>
-        )}
+        <BigNumber value="—" color="var(--text-4)" />
+        <SubLine>tracks once positions have ≥30d of history</SubLine>
       </Column>
 
       {/* Col 3 — P&L · SINCE OPEN */}
@@ -193,23 +170,3 @@ function fmtUsd(n: number, signed = false): string {
   return `${sign}$${body}`;
 }
 
-/**
- * Same deterministic walk as PortfolioHeroChart so the two surfaces show
- * coherent data shapes. Inlined to keep AggregateBar self-contained.
- */
-function synthesize(currentValue: number, days: number, empty: boolean): number[] {
-  if (empty || currentValue <= 0) return Array(days).fill(0);
-  const seed = Math.floor(currentValue);
-  const result: number[] = [];
-  let v = currentValue;
-  let s = seed;
-  for (let i = 0; i < days; i++) {
-    result.unshift(v);
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    const noise = (s / 0x7fffffff - 0.5) * 0.012;
-    v = v / (1 + noise);
-    if (v < currentValue * 0.5) v = currentValue * 0.5;
-    if (v > currentValue * 2) v = currentValue * 2;
-  }
-  return result;
-}
