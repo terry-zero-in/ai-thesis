@@ -27,8 +27,11 @@ export function ConditionalShell({
 }) {
   const pathname = usePathname();
   const bare = BARE_PREFIXES.some((p) => pathname.startsWith(p));
-  const landingUnauthed = pathname === "/" && !userEmail;
-  if (bare || landingUnauthed) return <>{children}</>;
+  // THS-84 landing-unauthed branch temporarily disabled per Terry 2026-05-21
+  // ("hide the landing page for now"). With the gate off, / always gets the
+  // Shell. To restore, uncomment the line below and add it back to the if().
+  // const landingUnauthed = pathname === "/" && !userEmail;
+  if (bare) return <>{children}</>;
   return (
     <Shell userEmail={userEmail} unseenAlerts={unseenAlerts}>
       {children}

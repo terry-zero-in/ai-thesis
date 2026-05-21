@@ -12,8 +12,11 @@ import { TopPositionsList } from "@/components/dashboard/TopPositionsList";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
 import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
 import { AnimateNumber, type AnimateNumberKind } from "@/components/primitives/AnimateNumber";
-import { getSupabaseServer } from "@/lib/supabase/server";
-import { MarketingLanding } from "@/components/marketing/MarketingLanding";
+// THS-84 marketing-landing gate temporarily disabled per Terry 2026-05-21
+// ("hide the landing page for now"). To restore: re-add the two imports
+// below and uncomment the auth-gate block inside DashboardPage().
+// import { getSupabaseServer } from "@/lib/supabase/server";
+// import { MarketingLanding } from "@/components/marketing/MarketingLanding";
 
 /**
  * Revalidate every 30 min. Scores update on the Saturday chain;
@@ -41,15 +44,13 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ moverTier?: string }>;
 }) {
-  // Marketing-landing gate (THS-84): unauthenticated visitors to "/" see
-  // the paid-beta wedge; authed users get the dashboard below. The
-  // ConditionalShell sibling suppresses the operator Shell on the
-  // unauthed branch so the landing renders fullscreen without sidebar.
-  const sb = await getSupabaseServer();
-  const auth = sb ? await sb.auth.getUser() : { data: { user: null } };
-  if (!auth.data?.user) {
-    return <MarketingLanding />;
-  }
+  // THS-84 marketing-landing gate temporarily disabled per Terry 2026-05-21.
+  // To restore, uncomment the block below and the two imports at the top.
+  // const sb = await getSupabaseServer();
+  // const auth = sb ? await sb.auth.getUser() : { data: { user: null } };
+  // if (!auth.data?.user) {
+  //   return <MarketingLanding />;
+  // }
 
   // Parallel fetch — four independent server queries. MorningBrief was
   // moved off the Dashboard canvas (S8 redesign — Linear "calmer" principles);
