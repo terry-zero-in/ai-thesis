@@ -160,7 +160,7 @@ export function PageCreateDrawer({
             gap: 6,
             letterSpacing: ".01em",
             transition:
-              "background var(--dur-instant, 90ms) var(--ease-out, ease-out), color var(--dur-instant, 90ms) var(--ease-out, ease-out)",
+              "background var(--dur-instant, 80ms) var(--ease-out, ease-out), color var(--dur-instant, 80ms) var(--ease-out, ease-out)",
             whiteSpace: "nowrap",
           }}
         >
@@ -171,7 +171,7 @@ export function PageCreateDrawer({
             style={{
               display: "inline-block",
               transform: open ? "rotate(45deg)" : "rotate(0deg)",
-              transition: "transform var(--dur-fast, 150ms) var(--ease-out, ease-out)",
+              transition: "transform var(--dur-fast, 140ms) var(--ease-out, ease-out)",
               fontSize: 9,
               opacity: 0.7,
               lineHeight: 1,

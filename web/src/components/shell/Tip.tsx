@@ -104,7 +104,7 @@ export function Tip({ label, keys, children, side = "bottom", delay = 650, style
               zIndex: 300,
               boxShadow: "0 6px 18px rgba(0,0,0,.4)",
               letterSpacing: "-.005em",
-              animation: "fadeUpSm 140ms var(--ease-out) both",
+              animation: "fadeUpSm var(--dur-fast) var(--ease-out) both",
             }}
           >
             {label}

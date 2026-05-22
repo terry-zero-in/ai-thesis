@@ -103,7 +103,7 @@ export function MovingPillTabs({
               border: 0,
               cursor: "pointer",
               letterSpacing: "-.011em",
-              transition: "color 140ms var(--ease-out)",
+              transition: "color var(--dur-fast) var(--ease-out)",
               zIndex: 1,
               display: "inline-flex",
               alignItems: "center",

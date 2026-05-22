@@ -45,7 +45,7 @@ input[type="week"]::-webkit-calendar-picker-indicator{
   filter:invert(0.7);
   cursor:pointer;
   opacity:0.7;
-  transition:opacity 120ms ease;
+  transition:opacity var(--dur-fast) var(--ease-out);
 }
 input[type="date"]:hover::-webkit-calendar-picker-indicator,
 input[type="time"]:hover::-webkit-calendar-picker-indicator,
@@ -326,7 +326,7 @@ svg.ic.lg{width:16px;height:16px}
 
 /* Hover-reveal shortcut chips — hidden by default, fade+collapse-in on parent hover/focus.
    Tag a chip with class "hov" to opt in. Always-visible chips (cmd palette, shortcuts modal) stay as-is. */
-.k.hov{opacity:0;max-width:0;padding:0;margin:0;border-color:transparent;overflow:hidden;transition:opacity 120ms var(--ease-out),max-width 140ms var(--ease-out),padding 140ms var(--ease-out),margin 140ms var(--ease-out),border-color 140ms var(--ease-out)}
+.k.hov{opacity:0;max-width:0;padding:0;margin:0;border-color:transparent;overflow:hidden;transition:opacity var(--dur-fast) var(--ease-out),max-width var(--dur-fast) var(--ease-out),padding var(--dur-fast) var(--ease-out),margin var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out)}
 button:hover .k.hov,button:focus-visible .k.hov,.hov-reveal:hover .k.hov,.hov-reveal:focus-within .k.hov{opacity:1;max-width:80px;padding:1px 5px;margin-left:4px;border-color:var(--border)}
 button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov.inv,.hov-reveal:focus-within .k.hov.inv{border-color:transparent}
 
@@ -360,7 +360,7 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
    preserves the iris-tinted chroma cascade. (Terry 2026-05-20.) */
 .row-hov:hover{background:var(--surface)}
 .row-hov:active{background:var(--hover-tint-strong)}
-.row-hov .row-actions{opacity:0;transform:translateX(2px);transition:opacity 120ms var(--ease-out),transform 140ms var(--ease-out);pointer-events:none}
+.row-hov .row-actions{opacity:0;transform:translateX(2px);transition:opacity var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out);pointer-events:none}
 .row-hov:hover .row-actions,.row-hov:focus-within .row-actions{opacity:1;transform:translateX(0);pointer-events:auto}
 
 /* Icon button — subtle rounded-square on hover, icon opacity bumps up, slight press.

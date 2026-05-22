@@ -36,7 +36,7 @@ export function GoToPill({ active }: { active: boolean }) {
         alignItems: "center",
         gap: 10,
         boxShadow: "0 10px 32px rgba(0,0,0,.55), 0 0 0 1px var(--accent-soft)",
-        animation: "fadeUpSm 140ms var(--ease-out) both",
+        animation: "fadeUpSm var(--dur-fast) var(--ease-out) both",
         pointerEvents: "none",
       }}
     >

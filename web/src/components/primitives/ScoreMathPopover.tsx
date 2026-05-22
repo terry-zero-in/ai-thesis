@@ -123,7 +123,7 @@ export function ScoreMathPopover({
             boxShadow: "0 12px 32px -8px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.02)",
             padding: 14,
             zIndex: 80,
-            animation: "fadeUp 140ms var(--ease-out) both",
+            animation: "fadeUp var(--dur-fast) var(--ease-out) both",
           }}
         >
           <ScoreMath input={input} />

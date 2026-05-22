@@ -62,7 +62,7 @@ export function Sidebar({
         display: "flex",
         flexDirection: "column",
         flexShrink: 0,
-        transition: "width 240ms var(--ease)",
+        transition: "width var(--dur-mid) var(--ease)",
         overflow: "hidden",
       }}
     >

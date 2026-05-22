@@ -85,7 +85,7 @@ function CmdPaletteInner({ onClose }: { onClose: () => void }) {
         display: "flex",
         justifyContent: "center",
         paddingTop: "12vh",
-        animation: "modalBackdrop 140ms var(--ease-out) both",
+        animation: "modalBackdrop var(--dur-fast) var(--ease-out) both",
       }}
     >
       <div

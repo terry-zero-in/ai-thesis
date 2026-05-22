@@ -57,7 +57,7 @@ export function Modal({
         alignItems: "flex-start",
         justifyContent: "center",
         paddingTop: "12vh",
-        animation: "modalBackdrop 140ms var(--ease-out) both",
+        animation: "modalBackdrop var(--dur-fast) var(--ease-out) both",
       }}
     >
       <div
@@ -72,7 +72,7 @@ export function Modal({
           borderRadius: 9,
           overflow: "hidden",
           boxShadow: "0 24px 64px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.02)",
-          animation: "modalContent 240ms 40ms var(--spring) both",
+          animation: "modalContent var(--dur-mid) 40ms var(--spring) both",
           maxHeight: "82vh",
           display: "flex",
           flexDirection: "column",
