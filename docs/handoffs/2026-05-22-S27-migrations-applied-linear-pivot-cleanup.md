@@ -74,8 +74,14 @@ Terry's directive 2026-05-22 codified as a top-of-file RULE: run autonomously is
 
 ### Mom + Dad onboarding (Terry action — cannot be done via MCP)
 
-- `at-turner@sbcglobal.net` exists in `auth.users` (confirmed) but has never signed in. Likely a parent's email. Sign-in needed before that user can have their own portfolio.
-- The other parent has no auth.users row yet. Terry needs to add via Studio → Authentication → Users → Add user, then backfill `public.users` + `portfolio_settings` (SQL paste-ready in `docs/setup/2026-05-21-supabase-setup-checklist.md` §Gate 4 — but update emails before pasting).
+Email mapping confirmed by Terry late-S27:
+
+| Role | Email | auth.users status |
+|---|---|---|
+| Mom | `at-turner@sbcglobal.net` | Already in auth.users (confirmed but never signed in). She can magic-link from `/login`. |
+| Dad | `terryturner@gmail.com` | **Not in auth.users yet.** Terry creates via Studio → Authentication → Users → Add user. |
+
+The setup checklist (`docs/setup/2026-05-21-supabase-setup-checklist.md` §2b–2e) has been updated with these emails — the backfill SQL is paste-ready as written.
 
 ### Routine first-fire
 
@@ -92,9 +98,15 @@ If not yet set, S27 did not fire any routine. THS-71 in-flight work can pick up 
 
 **THS-71** — "Routines plumbing — finish Bucket A". In Progress, High, under THS-92. e80 migration blocker is resolved; this session's commit `8a826c5` is referenced in the ticket's threaded comment.
 
-### THS-96 follow-up migration
+### THS-96 follow-up migration — authored, awaiting apply
 
-Single follow-up migration to wrap all e80-introduced `auth.uid()` calls as `(select auth.uid())`, add 3 missing FK indexes, consolidate the 4 multiple-permissive-policy patterns. Medium priority; not blocking.
+S27 drafted `supabase/migrations/20260523000000_e80_advisor_cleanup.sql` (commit `<see git log>`). It:
+
+- Wraps all 10 e80-introduced `auth.uid()` policy calls as `(select auth.uid())`
+- Consolidates the 4 multiple-permissive-policy patterns (aiq_draft_queue, memo_proposals, universe_proposals, position_pulse) by splitting FOR ALL writes into per-action INSERT/UPDATE/DELETE so the `*_all_select` policies remain the sole SELECT path
+- Adds 3 missing FK covering indexes (memo_proposals.resolved_by, memo_proposals.ticker, universe_proposals.resolved_by)
+
+Idempotent + atomic. **Not yet applied to prod** — mission-critical (hard-to-reverse) per CLAUDE.md autonomy rule. Terry confirms → `apply_migration` → re-run `get_advisors performance` to confirm the e80 entries cleared.
 
 ## Verified facts (so the next session doesn't have to re-prove)
 

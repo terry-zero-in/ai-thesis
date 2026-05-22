@@ -129,8 +129,8 @@ Studio path: **Authentication → Users → Add user → Create new user**.
 
 | Role | Email | Password |
 |---|---|---|
-| Mom | `mom-placeholder@example.com` (use her real email) | strong random, share via 1Password / Signal |
-| Dad | `dad-placeholder@example.com` (use his real email) | strong random, share via 1Password / Signal |
+| Mom | `at-turner@sbcglobal.net` (already in auth.users as of 2026-05-22 — confirmed but never signed in; she can magic-link from /login) | n/a, magic-link only |
+| Dad | `terryturner@gmail.com` (NOT yet in auth.users — add via Studio) | strong random, share via 1Password / Signal |
 
 Click **Create user** for each. They appear in `auth.users` immediately.
 
@@ -143,8 +143,8 @@ SELECT id, email, created_at
 FROM auth.users
 WHERE email IN (
   'terry@zero-in.io',
-  'mom-placeholder@example.com',
-  'dad-placeholder@example.com'
+  'at-turner@sbcglobal.net',
+  'terryturner@gmail.com'
 )
 ORDER BY created_at;
 ```
@@ -160,8 +160,8 @@ INSERT INTO public.users (id, email, subscription_tier)
 SELECT id, email, 'free'
 FROM auth.users
 WHERE email IN (
-  'mom-placeholder@example.com',
-  'dad-placeholder@example.com'
+  'at-turner@sbcglobal.net',
+  'terryturner@gmail.com'
 )
 ON CONFLICT (id) DO NOTHING;
 ```
@@ -185,8 +185,8 @@ INSERT INTO public.portfolio_settings (user_id, total_capital, target_reserve)
 SELECT id, 100000, 20000
 FROM auth.users
 WHERE email IN (
-  'mom-placeholder@example.com',
-  'dad-placeholder@example.com'
+  'at-turner@sbcglobal.net',
+  'terryturner@gmail.com'
 )
 ON CONFLICT (user_id) DO NOTHING;
 ```
@@ -482,8 +482,8 @@ SELECT u.email,
 FROM auth.users u
 WHERE u.email IN (
   'terry@zero-in.io',
-  'mom-placeholder@example.com',
-  'dad-placeholder@example.com'
+  'at-turner@sbcglobal.net',
+  'terryturner@gmail.com'
 )
 ORDER BY u.created_at;
 ```
