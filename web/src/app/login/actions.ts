@@ -24,7 +24,7 @@ export async function sendMagicLink(prev: { ok: boolean; message: string }, form
   if (!sb) {
     return {
       ok: false,
-      message: "Supabase env not configured (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY). Dev runs in fixture mode without auth.",
+      message: "Supabase env not configured (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY). Auth is disabled until Supabase env is configured.",
     };
   }
 

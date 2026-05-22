@@ -10,7 +10,7 @@
  *   3. Freshness: MAX(timestamp) per data table. Stale checks help operators
  *      catch a silently-broken cron without opening Supabase logs.
  *
- * Returns nulls instead of throwing in fixture mode.
+ * Returns nulls instead of throwing when Supabase env is unset.
  */
 import { getSupabaseServer } from "./supabase/server";
 

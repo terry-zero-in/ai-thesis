@@ -12,7 +12,7 @@
  * reach them.
  *
  * When env vars are unset (dev without Supabase configured), proxy is a
- * no-op so the fixture-fed pages keep rendering.
+ * no-op so pages keep rendering.
  */
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
@@ -24,7 +24,7 @@ export async function proxy(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const { pathname } = request.nextUrl;
 
-  // No Supabase env → auth disabled (dev fixture mode). Let everything through.
+  // No Supabase env → auth disabled. Let everything through.
   if (!url || !key) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });

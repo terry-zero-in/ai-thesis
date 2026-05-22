@@ -37,7 +37,7 @@ export async function savePosition(
   const notes = strOrNull(formData.get("notes"));
 
   const sb = await getSupabaseServer();
-  if (!sb) return { ok: false, message: "Supabase env not configured — saves disabled in dev fixture mode." };
+  if (!sb) return { ok: false, message: "Supabase env not configured — saves disabled until Supabase env is configured." };
 
   const { error } = await sb
     .from("portfolio_positions")

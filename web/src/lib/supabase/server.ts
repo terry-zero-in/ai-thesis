@@ -2,7 +2,7 @@
  * Supabase server client for App Router server components / route handlers.
  *
  * Single-tenant v1 — anon role + RLS. Returns `null` when env is unset so
- * pages can fall back to fixtures during local dev.
+ * pages render empty state during local dev when env is unset.
  */
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";

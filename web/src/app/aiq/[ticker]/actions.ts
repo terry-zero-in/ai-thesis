@@ -39,7 +39,7 @@ export async function saveAiqRubric(_prev: SaveState, formData: FormData): Promi
   }
 
   const sb = await getSupabaseServer();
-  if (!sb) return { ok: false, message: "Supabase env not configured — saves disabled in dev fixture mode." };
+  if (!sb) return { ok: false, message: "Supabase env not configured — saves disabled until Supabase env is configured." };
 
   // Per-dim source URLs land in a JSONB column. Form fields are named
   // `source_<slug>` (e.g. source_disclosure) per sourceFieldName(). Only

@@ -49,7 +49,7 @@ export async function promoteAiqDraft(
   if (!id) return { ok: false, message: "Missing draft id." };
 
   const sb = await getSupabaseServer();
-  if (!sb) return { ok: false, message: "Supabase env not configured — promotion disabled in fixture mode." };
+  if (!sb) return { ok: false, message: "Supabase env not configured — promotion disabled until Supabase env is configured." };
 
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { ok: false, message: "Not authenticated." };

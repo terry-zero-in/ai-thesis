@@ -24,7 +24,7 @@ export async function ackAlert(_prev: AckState, formData: FormData): Promise<Ack
   const remove = String(formData.get("remove") ?? "") === "1";
 
   const sb = await getSupabaseServer();
-  if (!sb) return { ok: false, message: "Supabase env not configured — acks disabled in dev fixture mode." };
+  if (!sb) return { ok: false, message: "Supabase env not configured — acks disabled until Supabase env is configured." };
 
   if (remove) {
     const { error } = await sb.from("alert_acks").delete().eq("alert_key", key);
@@ -66,7 +66,7 @@ export async function ackAlerts(_prev: BulkAckState, formData: FormData): Promis
   if (!sb) {
     return {
       ok: false,
-      message: "Supabase env not configured — bulk acks disabled in dev fixture mode.",
+      message: "Supabase env not configured — bulk acks disabled until Supabase env is configured.",
       count: 0,
     };
   }

@@ -3,8 +3,7 @@
  *
  * RLS does the protection; anon key is safe to expose. Reads
  * `NEXT_PUBLIC_*` env vars at module load; returns `null` if absent so
- * pages can fall back to fixtures during local dev without a configured
- * project.
+ * pages render empty state during local dev when env is unset.
  */
 import { createBrowserClient } from "@supabase/ssr";
 
