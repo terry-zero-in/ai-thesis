@@ -7,9 +7,8 @@
  *   - Gate count + active multiplier (mirrors composite.ts countMacroGates)
  *   - Per-gauge threshold-crossing history (count + most recent as_of)
  *
- * Fixture: when env unset OR table empty, synthesizes 52 weeks of data
- * landing on the spec's May 14 2026 reading (NAAIM 96.67, AAII 5.36,
- * F&G 66) so the page renders without a deployed project.
+ * When env unset or the table is empty, returns an empty snapshot — the
+ * page renders empty state until the daily-batch routine writes rows.
  */
 import { getSupabaseServer } from "./supabase/server";
 import {
@@ -24,7 +23,7 @@ import {
 
 export async function getRegimeSnapshot(): Promise<RegimeSnapshot> {
   const sb = await getSupabaseServer();
-  if (!sb) return synthesize(false);
+  if (!sb) return finalize([], false, false);
 
   // 52 weekly rows ≈ 52 calendar rows. Pull a bit more in case of irregular
   // cadence; UI clamps to the most recent 52 on render.
@@ -44,8 +43,6 @@ export async function getRegimeSnapshot(): Promise<RegimeSnapshot> {
     .limit(60);
 
   const rows = ((data ?? []) as MacroGaugeRow[]).reverse();
-  if (rows.length === 0) return synthesize(true);
-
   return finalize(rows, true, false);
 }
 
@@ -164,47 +161,3 @@ function scanThreshold(history: MacroGaugeRow[], key: GaugeKey): ThresholdHistor
   return { hits, last_hit_at: last };
 }
 
-// ---------------------------------------------------------------------------
-// Fixture: 52 weeks ending on the spec's May 14 2026 reading.
-// Deterministic — same shape each render.
-// ---------------------------------------------------------------------------
-function synthesize(envConfigured: boolean): RegimeSnapshot {
-  const rows: MacroGaugeRow[] = [];
-  const end = new Date("2026-05-14T00:00:00Z");
-  for (let i = 51; i >= 0; i--) {
-    const d = new Date(end.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-    const t = (51 - i) / 51; // 0 (oldest) → 1 (latest)
-    // NAAIM walks from ~55 to 96.67. Crosses 90 in the last ~6 weeks.
-    const naaim = round(55 + t * 42 + sinNoise(i, 5, 2), 2);
-    // AAII spread oscillates between -10 and 25; never crosses 30 in fixture.
-    const aaii = round(7 + 15 * Math.sin(i / 4) - t * 4, 2);
-    // F&G ramps from 35 to 66; doesn't cross 80.
-    const fg = clamp(round(35 + t * 31 + sinNoise(i, 6, 3), 0), 0, 100);
-    rows.push({
-      as_of: d.toISOString().slice(0, 10),
-      naaim,
-      aaii_3wk_spread: aaii,
-      fear_greed: fg,
-    });
-  }
-  // Force the last row to match the spec exactly so the page mirrors §Part 2.
-  const last = rows[rows.length - 1];
-  last.naaim = 96.67;
-  last.aaii_3wk_spread = 5.36;
-  last.fear_greed = 66;
-
-  return finalize(rows, envConfigured, true);
-}
-
-function sinNoise(i: number, period: number, amp: number): number {
-  return Math.sin(i / period) * amp;
-}
-
-function round(n: number, digits: number): number {
-  const p = 10 ** digits;
-  return Math.round(n * p) / p;
-}
-
-function clamp(n: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, n));
-}
