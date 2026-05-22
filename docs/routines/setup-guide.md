@@ -2,8 +2,14 @@
 
 Step-by-step for getting the 4 AI Thesis routines running on claude.ai/code with the Supabase MCP connector writing to live production.
 
+> **Run the DB-setup checklist first.** This guide assumes the live Supabase
+> project is already migrated, users exist, RLS is per-user, and env/secrets
+> are wired. That work is covered click-by-click in
+> `docs/setup/2026-05-21-supabase-setup-checklist.md`. Finish Steps 1-5 of
+> that checklist before starting Step 1 below.
+
 **Prerequisite checklist:**
-- [ ] Migration `20260518000200_e80_routines_pr1.sql` has been applied to live Supabase (THS-71 task 1).
+- [ ] Migration `20260518000200_e80_routines_pr1.sql` has been applied to live Supabase (THS-71 task 1). Verified per `docs/setup/2026-05-21-supabase-setup-checklist.md` Step 1.
 - [ ] You've signed in at least once at https://ai-thesis-v2.vercel.app/login (creates your auth.users row).
 - [ ] You have your Supabase project's **service_role** key handy (Supabase Studio → Settings → API → `service_role`, NOT `anon`).
 - [ ] You're on a Claude Max plan (Routines require Max, not pay-per-token API).
@@ -61,7 +67,7 @@ Don't enable all 4 at once on day 1. Stagger:
 ### Day 1 — Fire `daily-batch` manually
 
 1. On claude.ai/code → Routines → `daily-batch` → **Fire Now**
-2. Watch the session: it should connect to Supabase MCP, run 4 tasks, report back with table writes.
+2. Watch the session: it should connect to Supabase MCP, run 3 tasks (insider digest → macro state → AIQ draft queue), report back with table writes. Drift detection → `memo_proposals` is NOT part of daily-batch — that work moved to weekly-rescore on 2026-05-21.
 3. After completion, run verification in Supabase Studio → SQL Editor:
    ```sql
    SELECT 'insider_summary' AS table, COUNT(*) FROM insider_summary WHERE as_of = CURRENT_DATE
@@ -89,7 +95,17 @@ If anything fails:
 
 ### Day 7 — Fire `weekly-rescore` manually
 
-On the first Saturday after setup. Verify scores_history grows by 50 rows (1 per ticker) and weekly_summary gets 1 new row.
+On the first Saturday after setup. Weekly-rescore runs 4 tasks: rescore all 50 tickers → top movers → drift detection → weekly narrative. It is the **only** routine that writes `memo_proposals` (writer moved here from daily-batch on 2026-05-21 — `scores_history` only updates Saturdays so daily drift polling wrote no useful rows).
+
+Verify:
+
+```sql
+SELECT 'scores_history' AS table_name, COUNT(*) FROM scores_history WHERE as_of = CURRENT_DATE
+UNION ALL SELECT 'weekly_summary', COUNT(*) FROM weekly_summary WHERE week_of = CURRENT_DATE
+UNION ALL SELECT 'memo_proposals_today', COUNT(*) FROM memo_proposals WHERE created_at::date = CURRENT_DATE;
+```
+
+Expected: `scores_history ≈ 50` (1 per active ticker), `weekly_summary = 1`, `memo_proposals_today` variable (drift-triggered — 0 is valid on a quiet week). After the fire, memo_proposals with `status='pending'` should surface in the app's `/memos` page.
 
 ### Day 30 — Fire `monthly-curator` manually
 
