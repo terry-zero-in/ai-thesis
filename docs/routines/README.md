@@ -26,10 +26,14 @@ These are paste-ready prompts for Anthropic's Claude Code Routines, scheduled to
 
 | File | Cadence | Writes to |
 |---|---|---|
-| `01-daily-batch.md` | Weekday 06:30 CT | `aiq_drafts` (up to 5/day), `insider_summary`, `macro_log`, `memo_proposals` (when drift triggered) |
-| `02-weekly-rescore.md` | Saturday 06:00 CT | `scores_history` (all 50 tickers), `weekly_summary` |
+| `01-daily-batch.md` | Weekday 06:30 CT | `aiq_drafts` (up to 5/day), `insider_summary`, `macro_log` |
+| `02-weekly-rescore.md` | Saturday 06:00 CT | `scores_history` (all 50 tickers), `memo_proposals` (when drift triggered), `weekly_summary` |
 | `03-monthly-curator.md` | First Saturday of month, 09:00 CT (after weekly) | `universe_proposals` |
 | `04-position-pulse.md` | Weekday 07:00 CT (after daily-batch) | `position_pulse` |
+
+> **2026-05-21:** Memo-proposal writer moved from daily-batch → weekly-rescore.
+> Rationale: `scores_history` only updates Saturdays, so daily drift polling
+> wrote no useful rows. Memo cadence is now weekly per Terry directive.
 
 **Total weekday fires: 3 per day** (daily-batch + position-pulse on weekdays; monthly-curator on first Saturday only). Comfortable under the 15/day cap.
 

@@ -1,9 +1,14 @@
 # Routine 02 — Weekly Rescore
 
 **Cadence:** Saturday 06:00 CT
-**Writes to:** `scores_history` (all 50 universe tickers), `weekly_summary`
+**Writes to:** `scores_history` (all 50 universe tickers), `memo_proposals` (when drift triggered), `weekly_summary`
 **MCP servers required:** Supabase (with service_role key)
-**Budget:** ~$1.50-2.50 per fire (largest routine — composite math for 50 tickers + narrative)
+**Budget:** ~$1.50-2.50 per fire (largest routine — composite math for 50 tickers + drift + narrative)
+
+> **Note (2026-05-21):** Drift detection → `memo_proposals` moved here from
+> `01-daily-batch.md` (was TASK 4). Reason: `scores_history` only updates
+> on Saturdays, so daily drift polling between rescores wrote no useful
+> rows. Memo cadence is weekly per Terry directive.
 
 ---
 
@@ -28,7 +33,7 @@ Tools: Supabase MCP only. No WebFetch needed — all inputs are DB-resident.
 ### User message
 
 ```
-Run the weekly rescore for week_of = today (Saturday date, YYYY-MM-DD). Three tasks:
+Run the weekly rescore for week_of = today (Saturday date, YYYY-MM-DD). Four tasks:
 
 TASK 1 — Recompute composite for all 50 tickers (writes scores_history)
 For each ticker in universe where is_active = true:
@@ -53,7 +58,13 @@ After all 50 rows written, query:
 
 For each mover, write 1-sentence reason (Q/G/V/AIQ sub-score change, macro multiplier change, concentration tax change, or stale-data flag).
 
-TASK 3 — Generate weekly narrative (writes weekly_summary)
+TASK 3 — Drift detection → memo_proposals
+- After scores_history is fully rewritten for this Saturday, SELECT ticker, composite, MAX(as_of) AS latest_as_of FROM scores_history GROUP BY ticker.
+- For each ticker: compare today's composite vs composite from 7 days ago (i.e., last Saturday).
+- If |drift_delta| >= 5.0 composite points: generate a one-paragraph "research note" describing what changed (factor drivers from Q/G/V/AIQ sub-scores) and UPSERT into memo_proposals (status='pending', drift_delta, suggested_memo, ticker). PK is (ticker, week_of) where week_of = today's Saturday — UPSERT on conflict so re-fires this Saturday overwrite.
+- Frame as observation, not recommendation. Example: "AVGO composite drifted +6.4 over the past week, driven by Q-factor improvement (margin expansion in Q1 print) and AIQ rescore. Suggested review: confirm Q-factor trend in next quarterly print before position adjustments."
+
+TASK 4 — Generate weekly narrative (writes weekly_summary)
 Author a 3-4 paragraph narrative covering:
 - Regime state today + multiplier vs last week (read latest macro_log)
 - Top 3 movers up + top 3 movers down with brief factor decomposition
@@ -63,9 +74,10 @@ Author a 3-4 paragraph narrative covering:
 
 UPSERT into weekly_summary (week_of=today, narrative, top_movers=[{ticker, delta, reason}, ...], regime_state, multiplier).
 
-After both tasks, report:
+After all four tasks, report:
 - Tickers rescored / total
 - Top movers (positive + negative) with deltas
+- Memo proposals generated (count + tickers + drift deltas)
 - Any tier transitions (list ticker old→new)
 - Any tickers skipped + reason
 - Weekly summary character count
@@ -86,6 +98,10 @@ ticker text · as_of date · q_score · g_score · v_score · aiq_score · compo
 
 -- weekly_summary (PK = week_of)
 week_of date · narrative text · top_movers jsonb · regime_state text · multiplier numeric · created_at
+
+-- memo_proposals (PK = id; drift writer moved here from daily-batch 2026-05-21)
+id uuid · ticker text · drift_delta numeric · suggested_memo text
+  · status text (pending|approved|dismissed) · created_at · resolved_at · resolved_by uuid
 ```
 
 ---
@@ -95,10 +111,11 @@ week_of date · narrative text · top_movers jsonb · regime_state text · multi
 After fire:
 
 ```sql
-SELECT COUNT(*) FROM scores_history WHERE as_of = CURRENT_DATE;        -- expect ~50
-SELECT * FROM weekly_summary WHERE week_of = CURRENT_DATE;             -- expect 1 row
+SELECT COUNT(*) FROM scores_history WHERE as_of = CURRENT_DATE;                          -- expect ~50
+SELECT * FROM weekly_summary WHERE week_of = CURRENT_DATE;                               -- expect 1 row
+SELECT COUNT(*) FROM memo_proposals WHERE created_at::date = CURRENT_DATE;               -- expect variable (drift-triggered)
 SELECT ticker, tier, composite, final_score FROM scores_history 
-  WHERE as_of = CURRENT_DATE ORDER BY final_score DESC LIMIT 10;       -- spot-check top 10
+  WHERE as_of = CURRENT_DATE ORDER BY final_score DESC LIMIT 10;                         -- spot-check top 10
 ```
 
 ---

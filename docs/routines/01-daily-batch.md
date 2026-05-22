@@ -1,9 +1,14 @@
 # Routine 01 — Daily Batch
 
 **Cadence:** Weekday 06:30 CT (Mon-Fri, before NYSE open)
-**Writes to:** `aiq_drafts`, `insider_summary`, `macro_log`, `memo_proposals` (when drift triggered)
+**Writes to:** `aiq_drafts`, `insider_summary`, `macro_log`
 **MCP servers required:** Supabase (with service_role key — bypasses RLS for writes)
 **Budget:** ~$0.50-1.00 per fire (Claude Max usage, no per-token billing)
+
+> **Note (2026-05-21):** Drift detection → `memo_proposals` was removed from
+> this routine and moved to `02-weekly-rescore.md` (TASK 3). Reason:
+> `scores_history` only updates on Saturdays, so daily drift polling did
+> nothing useful between rescores. Memo cadence is weekly per Terry directive.
 
 ---
 
@@ -34,7 +39,7 @@ Tools available: Supabase MCP for all DB operations. WebFetch if you need to ver
 ### User message (the trigger)
 
 ```
-Run the daily batch for today (date = current UTC date, written as YYYY-MM-DD). Four tasks, in order:
+Run the daily batch for today (date = current UTC date, written as YYYY-MM-DD). Three tasks, in order:
 
 TASK 1 — Insider digest (writes insider_summary)
 - Read insider_form4_raw rows where filing_date >= today - 1 day.
@@ -63,16 +68,9 @@ TASK 3 — AIQ draft queue processing (writes aiq_drafts)
   f. UPDATE aiq_draft_queue SET status='done', processed_at=now() WHERE id=row.id.
   g. On any error, UPDATE aiq_draft_queue SET status='failed', failed_reason=<msg>. Continue to next ticker.
 
-TASK 4 — Drift detection → memo_proposals
-- SELECT ticker, composite, MAX(as_of) AS latest_as_of FROM scores_history GROUP BY ticker.
-- For each ticker: compare latest composite vs composite from 7 days ago.
-- If |drift_delta| >= 5.0 composite points: generate a one-paragraph "research note" describing what changed (factor drivers from Q/G/V/AIQ sub-scores) and write to memo_proposals (status='pending', drift_delta, suggested_memo, ticker). 
-- Frame as observation, not recommendation. Example: "AVGO composite drifted +6.4 over the past 7 days, driven by Q-factor improvement (margin expansion in Q1 print) and AIQ rescore. Suggested review: confirm Q-factor trend in next quarterly print before position adjustments."
-
-After all four tasks complete, report:
+After all three tasks complete, report:
 - Counts written to each table
 - Any failed aiq_draft_queue rows + reasons
-- Any memo_proposals generated
 - Total time elapsed
 - Any honest data-gap notes
 
@@ -94,9 +92,7 @@ as_of date · regime_state text (neutral|tightened|cautious|defensive) · gates_
 -- aiq_drafts (existing table, see migrations/*_e15_aiq_drafts.sql)
 -- aiq_draft_queue (id, ticker, reason, status, requested_at, processed_at, failed_reason)
 
--- memo_proposals (PK = id)
-id uuid · ticker text · drift_delta numeric · suggested_memo text
-  · status text (pending|approved|dismissed) · created_at · resolved_at · resolved_by uuid
+-- memo_proposals schema lives in 02-weekly-rescore.md (writer moved there 2026-05-21).
 ```
 
 ---
@@ -108,8 +104,7 @@ Run after first fire to confirm writes landed:
 ```sql
 SELECT 'insider_summary' as table, COUNT(*) FROM insider_summary WHERE as_of = CURRENT_DATE
 UNION ALL SELECT 'macro_log', COUNT(*) FROM macro_log WHERE as_of = CURRENT_DATE
-UNION ALL SELECT 'aiq_drafts_today', COUNT(*) FROM aiq_drafts WHERE created_at::date = CURRENT_DATE
-UNION ALL SELECT 'memo_proposals_today', COUNT(*) FROM memo_proposals WHERE created_at::date = CURRENT_DATE;
+UNION ALL SELECT 'aiq_drafts_today', COUNT(*) FROM aiq_drafts WHERE created_at::date = CURRENT_DATE;
 ```
 
-Expected after first fire: `insider_summary=1, macro_log=1, aiq_drafts_today ≤ 5, memo_proposals_today = variable`.
+Expected after first fire: `insider_summary=1, macro_log=1, aiq_drafts_today ≤ 5`.
