@@ -8,6 +8,8 @@ This document tells you (Claude Code) how Terry wants you to operate on the AI T
 
 ## Operating posture: autonomous by default
 
+> **RULE (added 2026-05-22, Terry, applies to all future sessions):** Run autonomously from issue to issue. Only stop to ask about **mission-critical items** or decisions that will **materially impact the scope** of the build. Routine engineering choices, design judgment within the references, and ticket-to-ticket transitions never warrant a pause. "Mission-critical" means: hard-to-reverse production changes (DB migrations, force-pushes to main, paid API calls at scale), genuine spec/contract ambiguity the docs don't resolve, or external credentials/access prompts. Everything else: ship.
+
 Terry has set this project up so you can operate **largely autonomously and just crank through tickets each session**. He has:
 
 - Written the full algorithm spec (`docs/AI-Thesis-v2-Algorithm-and-Deployment.md`)
