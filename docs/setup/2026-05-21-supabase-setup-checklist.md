@@ -10,7 +10,7 @@ This is a **complement** to `docs/routines/setup-guide.md`, not a replacement. T
 
 Bring the live Supabase project from "migrations applied" to "production-ready for 3 users (Terry + Mom + Dad), 4 routines, and the Vercel deploy." Every step is paste-ready: SQL goes into Supabase Studio → SQL Editor; UI steps cite the exact menu path. By the end of this checklist, all MCP-gated work (routine fires, per-user RLS, Vercel deploy, claude.ai/code Supabase connector) is unblocked.
 
-The personal-tool pivot (3 users — Terry, Mom, Dad — each with private portfolios, shared research / scoring / memos) is already baked into the schema by migration `20260518000200_e80_routines_pr1.sql`. That migration converted `portfolio_positions` and `portfolio_settings` from single-tenant to multi-tenant with `auth.uid() = user_id` RLS. The work below is verification + creating the 2 additional users + wiring env + routines.
+The personal-tool pivot (3 users — Terry, Mom, Dad — each with private portfolios, shared research / scoring / memos) is encoded by migration `20260518000200_e80_routines_pr1.sql`. That migration converts `portfolio_positions` and `portfolio_settings` from single-tenant to multi-tenant with `auth.uid() = user_id` RLS, and creates the routine output tables. **As of 2026-05-22, this migration has NOT yet been applied to prod** (`mvxgnliwvoauwwarrlrr`) — Step 1 below will detect and push it. The work below is migration apply → verify → create the 2 additional users → wire env → wire routines.
 
 ---
 
@@ -25,6 +25,8 @@ The personal-tool pivot (3 users — Terry, Mom, Dad — each with private portf
 ---
 
 ## Step 1 — Verify migrations are applied
+
+> **2026-05-22 state confirmed via MCP:** prod has 50 migrations applied, latest = `20260517000100_e44_aiq_rubric_sources_jsonb`. **Two migrations on disk are NOT yet applied:** `20260518000100_e25_aiq_scores_cron` and `20260518000200_e80_routines_pr1`. You will need the `supabase db push` step below.
 
 Open Supabase Studio → SQL Editor → New query. Paste and run:
 
