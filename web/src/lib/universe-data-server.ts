@@ -9,7 +9,7 @@
  *   `getLatestUniverseScores()`. The original implementation used the
  *   browser supabase client (anon key, no cookies → no user JWT). RLS
  *   policies on `scores_history` and `universe` block anon reads, so the
- *   server-rendered dashboard silently fell back to `fixtureSnapshot()`
+ *   server-rendered dashboard silently fell back to an empty snapshot
  *   — producing the cosmetic giveaway of uniform ±1.6 mover deltas.
  *
  * This server variant uses `getSupabaseServer()`, which threads the user
@@ -21,7 +21,7 @@
 import { getSupabaseServer } from "./supabase/server";
 import {
   buildSnapshot,
-  fixtureSnapshot,
+  emptySnapshot,
   type UniverseSnapshot,
   type UniverseDbRow,
   type ScoresRow,
@@ -29,7 +29,7 @@ import {
 
 export async function getLatestUniverseScoresServer(): Promise<UniverseSnapshot> {
   const sb = await getSupabaseServer();
-  if (!sb) return fixtureSnapshot();
+  if (!sb) return emptySnapshot();
 
   // Parallelize the three independent queries so the RSC fetch isn't
   // serialized waiting for universe → scores → queue. Same pattern as the
@@ -49,8 +49,8 @@ export async function getLatestUniverseScoresServer(): Promise<UniverseSnapshot>
   const { data: universe, error: ue } = universeRes;
   const { data: scores, error: se } = scoresRes;
   const { data: queue } = queueRes; // queue errors are non-fatal — render scores without badges
-  if (ue || !universe || universe.length === 0) return fixtureSnapshot();
-  if (se || !scores || scores.length === 0) return fixtureSnapshot();
+  if (ue || !universe || universe.length === 0) return emptySnapshot();
+  if (se || !scores || scores.length === 0) return emptySnapshot();
 
   const queuedTickers = (queue ?? []).map((r) => (r as { ticker: string }).ticker);
   return { ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]), queuedTickers };

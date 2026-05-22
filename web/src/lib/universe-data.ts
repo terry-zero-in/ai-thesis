@@ -90,7 +90,7 @@ export async function getUniverseTickers(): Promise<string[]> {
 
 export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
   const sb = getSupabaseBrowser();
-  if (!sb) return fixtureSnapshot();
+  if (!sb) return emptySnapshot();
 
   const [universeRes, scoresRes, queueRes] = await Promise.all([
     sb.from("universe").select("ticker,name,layer,layer_label").eq("is_active", true).order("ticker"),
@@ -105,8 +105,8 @@ export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
   const { data: universe, error: ue } = universeRes;
   const { data: scores, error: se } = scoresRes;
   const { data: queue } = queueRes; // queue errors are non-fatal — render scores without badges
-  if (ue || !universe || universe.length === 0) return fixtureSnapshot();
-  if (se || !scores || scores.length === 0) return fixtureSnapshot();
+  if (ue || !universe || universe.length === 0) return emptySnapshot();
+  if (se || !scores || scores.length === 0) return emptySnapshot();
 
   const queuedTickers = (queue ?? []).map((r) => r.ticker as string);
   return { ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]), queuedTickers };
@@ -155,7 +155,7 @@ export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): U
   return { rows, asOf: maxAsOf, synthetic: false, queuedTickers: [] };
 }
 
-export function fixtureSnapshot(): UniverseSnapshot {
+export function emptySnapshot(): UniverseSnapshot {
   return { rows: [], asOf: null, synthetic: false, queuedTickers: [] };
 }
 
