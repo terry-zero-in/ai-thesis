@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { I } from "@/components/primitives/icons";
 import { useReducedMotion, staggerDelay } from "@/hooks/useReducedMotion";
 import { CRUMBS, SCREEN_TO_PATH, type ScreenId } from "@/lib/screens";
-import { FIXTURE_UNIVERSE } from "@/lib/universe-fixture";
 
 /**
  * CmdPalette — ported from Reticle. Backdrop fadeIn 140ms ease-out · content
@@ -39,11 +38,6 @@ function CmdPaletteInner({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
-  const goName = (ticker: string) => {
-    router.push(`/universe/${ticker}`);
-    onClose();
-  };
-
   const screenIds: ScreenId[] = [
     "dash",
     "universe",
@@ -54,24 +48,14 @@ function CmdPaletteInner({ onClose }: { onClose: () => void }) {
     "decisions",
     "settings",
   ];
-  const all: { k: string; l: string; a: () => void }[] = [
-    ...screenIds.map((s) => {
-      const [root, leaf] = CRUMBS[s] || [s, null];
-      return {
-        k: "go",
-        l: `Go to · ${root}${leaf ? " · " + leaf : ""}`,
-        a: () => goScreen(s),
-      };
-    }),
-    // Ticker jumps — universe seed (50 names). Closes the screen-only TODO at
-    // CmdPalette top comment. Format: "Name · NVDA · NVIDIA · Compute" so the
-    // typeahead matches by ticker OR by company name OR by layer.
-    ...FIXTURE_UNIVERSE.map((u) => ({
-      k: "name",
-      l: `${u.ticker} · ${u.name} · ${u.layer_label}`,
-      a: () => goName(u.ticker),
-    })),
-  ];
+  const all: { k: string; l: string; a: () => void }[] = screenIds.map((s) => {
+    const [root, leaf] = CRUMBS[s] || [s, null];
+    return {
+      k: "go",
+      l: `Go to · ${root}${leaf ? " · " + leaf : ""}`,
+      a: () => goScreen(s),
+    };
+  });
 
   const filt = q ? all.filter((x) => x.l.toLowerCase().includes(q.toLowerCase())) : all;
   const shown = filt.slice(0, 12);

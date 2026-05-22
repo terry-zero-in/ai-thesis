@@ -13,13 +13,8 @@
  *   - insider_cluster: BUY/SELL cluster newly fired this week vs prior (THS-61
  *                      `detectClusterOverride` semantics — replicated here so
  *                      web doesn't import from the Deno-targeted edge module)
- *
- * Fixture: when env unset OR scores_history empty, synthesizes a handful
- * of canonical events keyed to fixture universe tickers so the page
- * still renders meaningfully in dev.
  */
 import { getSupabaseServer } from "./supabase/server";
-import { FIXTURE_INDEX } from "./universe-fixture";
 import {
   ALERT_KIND_LABELS,
   AIQ_DRIFT_THRESHOLD,
@@ -83,7 +78,7 @@ export interface AlertsSnapshot {
 
 export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
   const sb = await getSupabaseServer();
-  if (!sb) return synthesize(false);
+  if (!sb) return emptySnapshot(false);
 
   const insiderFromIso = isoDateMinusDays(new Date().toISOString().slice(0, 10), INSIDER_LOOKBACK_DAYS);
 
@@ -126,7 +121,7 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
   const insider = (insiderRes.data ?? []) as Form4Row[];
 
   if (scores.length === 0 && macro.length === 0 && quarterly.length === 0 && insider.length === 0) {
-    return synthesize(true);
+    return emptySnapshot(true);
   }
 
   const events = deriveEvents(scores, macro);
@@ -448,92 +443,12 @@ function fmt(n: number | null): string {
   return n == null ? "—" : n.toFixed(1);
 }
 
-// ---------------------------------------------------------------------------
-// Fixture — deterministic canonical events so /decisions renders without env.
-// ---------------------------------------------------------------------------
-
-function synthesize(envConfigured: boolean): AlertsSnapshot {
-  const sample = (t: string) => FIXTURE_INDEX[t]?.ticker ?? t;
-  const events: AlertEvent[] = [
-    {
-      key: alertKey("tier_change", "AVGO", "2026-04-12"),
-      kind: "tier_change",
-      ticker: sample("AVGO"),
-      as_of: "2026-04-12",
-      prior_as_of: "2026-04-05",
-      title: "AVGO tier High → Medium",
-      detail: "Tier moved High → Medium between 2026-04-05 and 2026-04-12. Final score 78.0 → 74.1 (one-tier shift on 0.95× macro gate retained).",
-      severity: "high",
-      acked_at: null,
-      acked_note: null,
-    },
-    {
-      key: alertKey("conv_drop", "PLTR", "2026-05-09"),
-      kind: "conv_drop",
-      ticker: "PLTR",
-      as_of: "2026-05-09",
-      prior_as_of: "2026-05-02",
-      title: "PLTR -11.2pt drop from High",
-      detail: "PLTR was High at 2026-05-02 with final 75.6; 2026-05-09 final 64.4 (Δ -11.2). Burry put renewals reported in 13F.",
-      severity: "high",
-      acked_at: null,
-      acked_note: null,
-    },
-    {
-      key: alertKey("aiq_drift", "META", "2026-04-30"),
-      kind: "aiq_drift",
-      ticker: "META",
-      as_of: "2026-04-30",
-      prior_as_of: "2026-01-30",
-      title: "META AIQ -12.0",
-      detail: "META AIQ moved 66.0 → 54.0 (Δ -12.0) between 2026-01-30 and 2026-04-30 after server-life extension disclosure.",
-      severity: "warn",
-      acked_at: null,
-      acked_note: null,
-    },
-    {
-      key: alertKey("macro_flip", null, "2026-05-14"),
-      kind: "macro_flip",
-      ticker: null,
-      as_of: "2026-05-14",
-      prior_as_of: "2026-05-07",
-      title: "Macro gates 0 → 1",
-      detail: "Gates fired changed 0 → 1. NAAIM 96.7 crossed > 90 threshold this week. Multiplier 1.00 → 0.95.",
-      severity: "high",
-      acked_at: null,
-      acked_note: null,
-    },
-    {
-      key: alertKey("insider_cluster", "NVDA", "2026-05-09"),
-      kind: "insider_cluster",
-      ticker: sample("NVDA"),
-      as_of: "2026-05-09",
-      prior_as_of: null,
-      title: "NVDA insider BUY cluster — 4 insiders / $6.2M",
-      detail: "4 insiders met the $1M / 90d threshold in window 2026-02-08..2026-05-09. Aggregate qualifying value $6.2M. +5 override on S-score.",
-      severity: "info",
-      acked_at: null,
-      acked_note: null,
-    },
-    {
-      key: alertKey("quarterly_review", null, "2026-05-05"),
-      kind: "quarterly_review",
-      ticker: null,
-      as_of: "2026-05-05",
-      prior_as_of: null,
-      title: "Quarterly review 2026-05-05 — 1 high, 1 warn, 1 data gap",
-      detail:
-        "  • [high] 1 ticker(s) flagged this quarter: META\n  • [warn] 1 ticker(s) with AIQ drift > 10pt: GOOGL\n  • [info] No hyperscaler pair correlations moved > 0.2.\n  • [data_gap] Consensus capex column not yet ingested. Trailing-12mo capex proxy stable.",
-      severity: "high",
-      acked_at: null,
-      acked_note: null,
-    },
-  ];
+function emptySnapshot(envConfigured: boolean): AlertsSnapshot {
   return {
-    events,
-    unseen: events.length,
+    events: [],
+    unseen: 0,
     envConfigured,
-    synthetic: true,
+    synthetic: false,
   };
 }
 

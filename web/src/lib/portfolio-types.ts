@@ -4,8 +4,14 @@
  *
  * Matching server-only fetcher: `portfolio-data.ts`.
  */
-import type { SeedRow } from "./universe-fixture";
 import type { Tier } from "./universe-data";
+
+export interface SeedRow {
+  ticker: string;
+  name: string;
+  layer: number;
+  layer_label: string;
+}
 
 /** Position drawdown threshold (% from cost basis) that fires trigger 1. */
 export const POSITION_DRAWDOWN_TRIGGER = -0.07;

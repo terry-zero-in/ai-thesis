@@ -4,11 +4,11 @@
  * `aiq-types` instead — this module pulls in the server Supabase client
  * and cannot be loaded from the client bundle.
  *
- * When env is unset (dev fixture mode), returns null + empty history so
- * the editor renders read-only.
+ * When env is unset, returns null + empty history so the editor renders
+ * read-only.
  */
 import { getSupabaseServer } from "./supabase/server";
-import { FIXTURE_INDEX, type SeedRow } from "./universe-fixture";
+import type { SeedRow } from "./portfolio-types";
 import type { AiqRow } from "./aiq-types";
 
 export interface AiqContext {
@@ -26,7 +26,7 @@ const COLUMNS =
 
 export async function getAiqContext(ticker: string): Promise<AiqContext> {
   const t = ticker.toUpperCase();
-  const seed = FIXTURE_INDEX[t] ?? null;
+  const seed = null;
   const sb = await getSupabaseServer();
   if (!sb) return { seed, latest: null, history: [], envConfigured: false };
 
@@ -68,21 +68,21 @@ export interface AiqIndexSnapshot {
 
 export async function getAiqIndex(): Promise<AiqIndexSnapshot> {
   const sb = await getSupabaseServer();
-  if (!sb) return synthesizeIndex();
+  if (!sb) return emptyIndex();
 
   const { data: universe, error: ue } = await sb
     .from("universe")
     .select("ticker,name,layer,layer_label")
     .eq("is_active", true)
     .order("ticker");
-  if (ue || !universe || universe.length === 0) return synthesizeIndex();
+  if (ue || !universe || universe.length === 0) return emptyIndex();
 
   const { data: rubric, error: re } = await sb
     .from("aiq_rubric")
     .select("ticker,scored_at,total,disclosure_pts,defensibility_pts,concentration_pts,capex_eff_pts,indep_demand_pts,accounting_pts")
     .order("scored_at", { ascending: false })
     .limit(universe.length * 4);
-  if (re) return synthesizeIndex();
+  if (re) return emptyIndex();
 
   const latestByTicker = new Map<string, AiqRow>();
   for (const r of (rubric ?? []) as AiqRow[]) {
@@ -117,16 +117,6 @@ export async function getAiqIndex(): Promise<AiqIndexSnapshot> {
   };
 }
 
-function synthesizeIndex(): AiqIndexSnapshot {
-  const rows: AiqIndexRow[] = Object.values(FIXTURE_INDEX).map((s) => ({
-    ticker: s.ticker,
-    name: s.name,
-    layer: s.layer,
-    layer_label: s.layer_label,
-    total: null,
-    scored_at: null,
-    disclosure_pts: null, defensibility_pts: null, concentration_pts: null,
-    capex_eff_pts: null, indep_demand_pts: null, accounting_pts: null,
-  }));
-  return { rows, asOf: null, synthetic: true, scoredCount: 0 };
+function emptyIndex(): AiqIndexSnapshot {
+  return { rows: [], asOf: null, synthetic: false, scoredCount: 0 };
 }

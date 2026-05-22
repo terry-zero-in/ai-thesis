@@ -2,10 +2,7 @@
  * Universe table data fetcher.
  *
  * Returns one row per active investable ticker, joined to the latest
- * `scores_history` row (most recent `as_of`). When the DB is empty (pre-cron
- * dev) or Supabase env is unset, falls back to a fixture so the page still
- * renders. Fixture is keyed off the real seed (`20260515000200_e13_seed_universe.sql`)
- * with synthesized scores; clearly flagged in the return shape via `synthetic`.
+ * `scores_history` row (most recent `as_of`).
  *
  * Source tables:
  *   - public.universe (ticker, name, layer, layer_label, is_active)
@@ -16,8 +13,6 @@
  * same ticker (used to render a week-over-week delta column).
  */
 import { getSupabaseBrowser } from "./supabase/client";
-import { FIXTURE_UNIVERSE } from "./universe-fixture";
-import { classifyTier } from "./scoring-weights";
 
 export type Tier = "High" | "Medium" | "Low" | "Avoid";
 
@@ -79,19 +74,17 @@ export interface UniverseDbRow {
 
 /**
  * Lean tickers-only fetcher for the name-detail prev/next pager. Single
- * query, alphabetical (matches the universe table's natural order and the
- * fixture seed ordering). Falls back to FIXTURE_UNIVERSE tickers when env
- * is unset so the pager renders in dev.
+ * query, alphabetical (matches the universe table's natural order).
  */
 export async function getUniverseTickers(): Promise<string[]> {
   const sb = getSupabaseBrowser();
-  if (!sb) return FIXTURE_UNIVERSE.map((u) => u.ticker).sort();
+  if (!sb) return [];
   const { data, error } = await sb
     .from("universe")
     .select("ticker")
     .eq("is_active", true)
     .order("ticker");
-  if (error || !data || data.length === 0) return FIXTURE_UNIVERSE.map((u) => u.ticker).sort();
+  if (error || !data || data.length === 0) return [];
   return (data as Array<{ ticker: string }>).map((r) => r.ticker);
 }
 
@@ -162,51 +155,7 @@ export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): U
   return { rows, asOf: maxAsOf, synthetic: false, queuedTickers: [] };
 }
 
-// ---------------------------------------------------------------------------
-// Fixture — deterministic synthesized scores keyed off the seed universe.
-// Replaced by live data once the Saturday cron runs against a deployed project.
-// ---------------------------------------------------------------------------
 export function fixtureSnapshot(): UniverseSnapshot {
-  const seed = FIXTURE_UNIVERSE.map((u, i) => {
-    const baseQ = 55 + ((i * 7) % 40);
-    const baseG = 50 + ((i * 11) % 45);
-    const baseV = 45 + ((i * 13) % 50);
-    const baseAiq = 50 + ((i * 5) % 45);
-    const composite = Math.round(
-      ((baseQ + baseG + baseV + baseAiq) / 4 + (u.layer === 1 ? 5 : 0)) * 10,
-    ) / 10;
-    const macroMult = i % 9 === 0 ? 0.95 : 1.0;
-    const gates = macroMult < 1 ? 1 : 0;
-    const final = Math.round(composite * macroMult * 10) / 10;
-    // Use the canonical spec cutoffs (75/60/45 — scoring-weights.ts:60). The
-    // inline ternary here previously used 85/75/60 — a +10 drift that silently
-    // shifted every fixture row one band lower than spec. Hit on /universe
-    // review 2026-05-19 (MU at 79.7 rendered Medium here, High elsewhere).
-    const tier: Tier = classifyTier(final);
-    const prior = Math.round((composite - ((i % 5) - 2) * 0.8) * 10) / 10;
-    return {
-      ticker: u.ticker,
-      name: u.name,
-      layer: u.layer,
-      layer_label: u.layer_label,
-      composite,
-      final_score: final,
-      tier,
-      q: baseQ,
-      g: baseG,
-      v: baseV,
-      aiq: baseAiq,
-      prior_q: baseQ - ((i % 5) - 2),
-      prior_g: baseG - ((i % 4) - 1),
-      prior_v: baseV - ((i % 3) - 1),
-      prior_aiq: baseAiq,
-      prior_composite: prior,
-      delta: Math.round((composite - prior) * 10) / 10,
-      macro_gates_hit: gates,
-      macro_multiplier: macroMult,
-      as_of: "2026-05-09",
-    };
-  });
-  return { rows: seed, asOf: "2026-05-09", synthetic: true, queuedTickers: [] };
+  return { rows: [], asOf: null, synthetic: false, queuedTickers: [] };
 }
 

@@ -10,18 +10,12 @@
  * Computes derived aggregates (deployed, market value, P&L) and trigger
  * states in pure JS so the page can server-render without any client math.
  *
- * Fixture mode: when env is unset, returns an empty portfolio with the
- * default settings (100K capital / 20K reserve) so the page renders the
- * empty state cleanly. Current prices for any seeded positions get
- * fixture closes via a deterministic per-ticker hash.
- *
  * VIX trigger (trigger 2b) is flagged as "data pending" — VIX ingestion
  * isn't shipped yet (open follow-on, THS-61 candidate). The market_triggers
  * array still includes a stub MarketTrigger record so the UI can render
  * the pending state next to the SPY trigger.
  */
 import { getSupabaseServer } from "./supabase/server";
-import { FIXTURE_INDEX, FIXTURE_UNIVERSE } from "./universe-fixture";
 import {
   POSITION_DRAWDOWN_TRIGGER,
   SPY_DAILY_DROP_TRIGGER,
@@ -124,7 +118,7 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
 
   const positions: PositionRow[] = positionDbRows.map((p) => {
     const price = priceMap.get(p.ticker) ?? null;
-    const u = univMap.get(p.ticker) ?? FIXTURE_INDEX[p.ticker] ?? fallbackUniverseRow(p.ticker);
+    const u = univMap.get(p.ticker) ?? fallbackUniverseRow(p.ticker);
     const score = scoreMap.get(p.ticker) ?? null;
     const tax = taxMap.get(p.ticker) ?? null;
     return {
@@ -155,21 +149,11 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
  *
  * Async now because we join latest close from prices_raw — the form needs
  * this to (a) auto-fill cost_basis when opening today, (b) compute shares
- * from a dollar amount in Dollar-mode. Falls back to fixture prices when
- * env unset OR when a ticker has no prices_raw row yet.
+ * from a dollar amount in Dollar-mode.
  */
 export async function getUniverseChoices(): Promise<UniverseChoice[]> {
   const sb = await getSupabaseServer();
-  if (!sb) {
-    return FIXTURE_UNIVERSE.filter((u) => u.layer >= 1).map((u) => ({
-      ticker: u.ticker,
-      name: u.name,
-      layer: u.layer,
-      layer_label: u.layer_label,
-      latest_price: null,
-      latest_price_as_of: null,
-    }));
-  }
+  if (!sb) return [];
 
   const { data: univData } = await sb
     .from("universe")
@@ -177,19 +161,7 @@ export async function getUniverseChoices(): Promise<UniverseChoice[]> {
     .eq("is_active", true)
     .order("ticker");
   const univ = (univData ?? []) as { ticker: string; name: string; layer: number; layer_label: string }[];
-  if (univ.length === 0) {
-    // RLS blocked or table empty — surface the fixture universe so the form
-    // still works locally (unauthenticated dev requests) and isn't dead in
-    // an edge case where universe is unexpectedly empty in prod.
-    return FIXTURE_UNIVERSE.filter((u) => u.layer >= 1).map((u) => ({
-      ticker: u.ticker,
-      name: u.name,
-      layer: u.layer,
-      layer_label: u.layer_label,
-      latest_price: null,
-      latest_price_as_of: null,
-    }));
-  }
+  if (univ.length === 0) return [];
 
   // One round-trip for latest closes — limit is loose because we only
   // need the most-recent date per ticker (filtered client-side via
@@ -214,15 +186,6 @@ export async function getUniverseChoices(): Promise<UniverseChoice[]> {
       latest_price_as_of: price?.date ?? null,
     };
   });
-}
-
-/** Deterministic per-ticker close used in fixture mode. Keeps the
- * dollar-amount math stable across renders so the form preview doesn't
- * jitter when env is unset. */
-function fixtureClose(ticker: string): number {
-  let h = 0;
-  for (let i = 0; i < ticker.length; i++) h = (h * 31 + ticker.charCodeAt(i)) >>> 0;
-  return Math.round(((h % 4000) / 10 + 25) * 100) / 100;
 }
 
 // ---------------------------------------------------------------------------

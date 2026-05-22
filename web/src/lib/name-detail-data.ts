@@ -11,10 +11,6 @@
  * Mirrors the shape produced by `compute-composite-scores/index.ts.buildBreakdown`
  * and the per-factor compute jobs (compute-q-scores writes `factor_breakdown.q`,
  * etc.) — keep this file in sync with those producers.
- *
- * Falls back to a deterministic synthesized fixture when the browser
- * supabase client is null (env unset) OR when the DB returns no row for the
- * ticker (pre-cron dev). `synthetic: true` lets the UI label the source.
  */
 import { getSupabaseBrowser } from "./supabase/client";
 import type { Tier } from "./universe-data";
@@ -189,7 +185,7 @@ interface UniverseRow {
 export async function getNameDetail(ticker: string): Promise<NameDetail> {
   const t = ticker.toUpperCase();
   const sb = getSupabaseBrowser();
-  if (!sb) return fixtureDetail(t);
+  if (!sb) return emptyDetail(t);
 
   const [universeRes, historyRes, aiqRes, depRes, form4Res, concRes, posAllRes] = await Promise.all([
     sb.from("universe").select("ticker,name,layer,layer_label").eq("ticker", t).maybeSingle(),
@@ -240,7 +236,7 @@ export async function getNameDetail(ticker: string): Promise<NameDetail> {
 
   const universe = universeRes.data as UniverseRow | null;
   const history = (historyRes.data ?? []) as ScoresRow[];
-  if (!universe || history.length === 0) return fixtureDetail(t, universe);
+  if (!universe || history.length === 0) return emptyDetail(t, universe);
 
   // Portfolio context — only joined when env is configured. Reads current
   // prices for all open positions so the weight denominator is honest.
@@ -399,175 +395,33 @@ function buildDetail(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Fixture — deterministic seed for any ticker in the universe.
-// ---------------------------------------------------------------------------
-import { FIXTURE_INDEX } from "./universe-fixture";
-
-function fixtureDetail(ticker: string, universe?: UniverseRow | null): NameDetail {
-  const seed = universe ?? FIXTURE_INDEX[ticker];
-  if (!seed) {
-    return {
-      ticker,
-      name: ticker,
-      layer: 0,
-      layer_label: "Unknown",
-      as_of: null,
-      q_score: null,
-      g_score: null,
-      v_score: null,
-      aiq_score: null,
-      composite: null,
-      final_score: null,
-      tier: null,
-      macro_gates_hit: 0,
-      macro_multiplier: 1,
-      q: null,
-      g: null,
-      v: null,
-      history: [],
-      aiq_rubric: null,
-      dep_flags: [],
-      form4_recent: [],
-      concentration_tax: null,
-      portfolio: { held: false, single_name_cap_pct: SINGLE_NAME_CAP_PCT },
-      synthetic: true,
-      found: false,
-    };
-  }
-
-  // Deterministic per-ticker scores keyed off a hash of the ticker chars.
-  const h = hash(seed.ticker);
-  const q = 55 + (h % 40);
-  const g = 50 + ((h * 3) % 45);
-  const v = 45 + ((h * 7) % 50);
-  const aiq = 50 + ((h * 11) % 45);
-  const composite = Math.round(((q + g + v + aiq) / 4 + (seed.layer === 1 ? 5 : 0)) * 10) / 10;
-  const macroMult = h % 11 === 0 ? 0.95 : 1.0;
-  const gates = macroMult < 1 ? 1 : 0;
-  const final = Math.round(composite * macroMult * 10) / 10;
-  const tier: Tier = final >= 85 ? "High" : final >= 75 ? "Medium" : final >= 60 ? "Low" : "Avoid";
-
-  // Anchor history to the latest fixture date (2026-05-09, the same as
-  // the universe + dashboard fixtures) and walk back 7 days per index.
-  // Prior dates were hardcoded 2026-02-01..04-22, leaving the chart
-  // ending ~25 days before "today" (review §2.3 #7).
-  const history: NameSparkPoint[] = [];
-  const anchor = new Date("2026-05-09T00:00:00Z");
-  // Deterministic price walk parallel to the score walk so the dual-line
-  // chart has a believable shape in fixture mode. Base price keyed off the
-  // same hash; ~$25-$425 range; weekly drift ±3%.
-  const basePrice = ((h % 4000) / 10) + 25; // 25.0 .. 425.0
-  for (let i = 11; i >= 0; i--) {
-    const noise = (((h + i) % 7) - 3) * 0.8;
-    const c = Math.max(40, Math.min(95, composite + noise));
-    const fc = Math.max(40, Math.min(95, final + noise));
-    const priceDrift = (((h * (i + 1)) % 11) - 5) * 0.006; // [-3%, +3.6%]
-    const p = basePrice * (1 + priceDrift * (12 - i) * 0.15);
-    const d = new Date(anchor.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-    history.push({
-      as_of: d.toISOString().slice(0, 10),
-      composite: Math.round(c * 10) / 10,
-      final_score: Math.round(fc * 10) / 10,
-      price: Math.round(p * 100) / 100,
-    });
-  }
-
-  const aiqRubric: NameAiqRubric | null =
-    seed.layer <= 3
-      ? {
-          scored_at: "2026-04-30",
-          disclosure_pts: 12 + (h % 9),
-          defensibility_pts: 12 + ((h * 2) % 9),
-          concentration_pts: 8 + (h % 8),
-          capex_eff_pts: 8 + ((h * 3) % 8),
-          indep_demand_pts: 7 + (h % 9),
-          accounting_pts: 7 + ((h * 5) % 9),
-          total: 0,
-          notes: "Fixture rubric — replaced by live data once THS-46 ships.",
-        }
-      : null;
-  if (aiqRubric) {
-    aiqRubric.total =
-      aiqRubric.disclosure_pts +
-      aiqRubric.defensibility_pts +
-      aiqRubric.concentration_pts +
-      aiqRubric.capex_eff_pts +
-      aiqRubric.indep_demand_pts +
-      aiqRubric.accounting_pts;
-  }
-
-  // Depreciation flags only for L2 hyperscalers (per algorithm spec) and only ~half of them in fixture.
-  const depFlags: NameDepFlag[] =
-    seed.layer === 2 && h % 2 === 0
-      ? [
-          {
-            flagged_at: "2026-02-15",
-            extension_years: 1.5,
-            penalty_v: -6,
-            burry_overstatement_pct: 12.4,
-            source_url: null,
-          },
-        ]
-      : [];
-
+function emptyDetail(ticker: string, universe?: UniverseRow | null): NameDetail {
   return {
-    ticker: seed.ticker,
-    name: seed.name,
-    layer: seed.layer,
-    layer_label: seed.layer_label,
-    as_of: "2026-05-09",
-    q_score: q,
-    g_score: g,
-    v_score: v,
-    aiq_score: aiq,
-    composite,
-    final_score: final,
-    tier,
-    macro_gates_hit: gates,
-    macro_multiplier: macroMult,
-    q: {
-      composite_z: round((h % 100) / 50 - 1, 2),
-      pillars: {
-        profitability: round((h % 80) / 40 - 1, 2),
-        growth: round(((h * 3) % 80) / 40 - 1, 2),
-        safety: round(((h * 5) % 80) / 40 - 1, 2),
-        payout: round(((h * 7) % 80) / 40 - 1, 2),
-      },
-    },
-    g: {
-      composite_z: round((h % 90) / 45 - 1, 2),
-      signals: {
-        ntmGrowth: round(0.1 + ((h % 50) / 100), 3),
-        aiSegment: seed.layer <= 3 ? round(0.05 + ((h % 30) / 100), 3) : null,
-        capexEfficiency: round(0.6 + ((h % 60) / 100), 3),
-      },
-    },
-    v: {
-      composite_z: round((h % 70) / 35 - 1, 2),
-      raw_v: round(((h * 2) % 60) / 30 - 1, 2),
-      penalty: depFlags.length > 0 ? depFlags[0].penalty_v ?? 0 : 0,
-      signals: {
-        pegLike: round(0.8 + ((h % 90) / 100), 2),
-        adjFcfYield: round(0.02 + ((h % 25) / 1000), 4),
-        ownHistoryFwdPeZ: round((h % 60) / 30 - 1, 2),
-        forwardPeMean: 18 + (h % 35),
-      },
-    },
-    history,
-    aiq_rubric: aiqRubric,
-    dep_flags: depFlags,
+    ticker: universe?.ticker ?? ticker,
+    name: universe?.name ?? ticker,
+    layer: universe?.layer ?? 0,
+    layer_label: universe?.layer_label ?? "Unknown",
+    as_of: null,
+    q_score: null,
+    g_score: null,
+    v_score: null,
+    aiq_score: null,
+    composite: null,
+    final_score: null,
+    tier: null,
+    macro_gates_hit: 0,
+    macro_multiplier: 1,
+    q: null,
+    g: null,
+    v: null,
+    history: [],
+    aiq_rubric: null,
+    dep_flags: [],
     form4_recent: [],
-    // Fixture concentration tax: deterministic per-ticker, in [-3.5, 0].
-    // Matches the live-data range (compute-concentration scales to [-15, 0]
-    // but the AI-Thesis slate typically lands in the [-3, 0] band, deepest
-    // hit on the L1 trio per §"High-conviction aggregate").
-    concentration_tax: -Math.round(((h % 7) * 0.5) * 10) / 10,
-    // Fixture portfolio context — not-held by default. Live prod with a
-    // populated portfolio_positions table will render the held variant.
+    concentration_tax: null,
     portfolio: { held: false, single_name_cap_pct: SINGLE_NAME_CAP_PCT },
-    synthetic: true,
-    found: true,
+    synthetic: false,
+    found: universe != null,
   };
 }
 
@@ -575,19 +429,4 @@ function shiftDays(isoDate: string, deltaDays: number): string {
   const d = new Date(`${isoDate}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + deltaDays);
   return d.toISOString().slice(0, 10);
-}
-
-function hash(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return Math.abs(h);
-}
-
-function round(n: number | null, digits: number): number | null {
-  if (n == null || !Number.isFinite(n)) return null;
-  const p = 10 ** digits;
-  return Math.round(n * p) / p;
 }
