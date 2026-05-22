@@ -15,7 +15,7 @@
 -- Atomic: wrapped in BEGIN/COMMIT. If any step fails, nothing applies.
 --
 -- Prereq: Terry has signed in at least once (auth.users row exists for
--- terryturner2026@gmail.com). Migration raises if not.
+-- terry@zero-in.io). Migration raises if not.
 
 BEGIN;
 
@@ -65,16 +65,16 @@ DECLARE
 BEGIN
   SELECT id INTO v_user_id
     FROM auth.users
-   WHERE email = 'terryturner2026@gmail.com'
+   WHERE email = 'terry@zero-in.io'
    LIMIT 1;
 
   IF v_user_id IS NULL THEN
-    RAISE EXCEPTION 'No auth.users row for terryturner2026@gmail.com. Sign in to the app once before running this migration.';
+    RAISE EXCEPTION 'No auth.users row for terry@zero-in.io. Sign in to the app once before running this migration.';
   END IF;
 
   -- Insert Terry's public.users row at 'owner' tier (above 'free').
   INSERT INTO public.users (id, email, subscription_tier)
-  VALUES (v_user_id, 'terryturner2026@gmail.com', 'owner')
+  VALUES (v_user_id, 'terry@zero-in.io', 'owner')
   ON CONFLICT (id) DO UPDATE SET subscription_tier = 'owner';
 
   -- Stash for use later in this migration via a temp table (DO-block scope
@@ -94,7 +94,7 @@ ALTER TABLE public.portfolio_settings
   ADD COLUMN IF NOT EXISTS user_id uuid;
 
 UPDATE public.portfolio_settings
-   SET user_id = (SELECT id FROM auth.users WHERE email = 'terryturner2026@gmail.com' LIMIT 1)
+   SET user_id = (SELECT id FROM auth.users WHERE email = 'terry@zero-in.io' LIMIT 1)
  WHERE user_id IS NULL;
 
 -- Drop old PK (id) only if it exists. Safe re-run.
@@ -154,7 +154,7 @@ ALTER TABLE public.portfolio_positions
   ADD COLUMN IF NOT EXISTS user_id uuid;
 
 UPDATE public.portfolio_positions
-   SET user_id = (SELECT id FROM auth.users WHERE email = 'terryturner2026@gmail.com' LIMIT 1)
+   SET user_id = (SELECT id FROM auth.users WHERE email = 'terry@zero-in.io' LIMIT 1)
  WHERE user_id IS NULL;
 
 DO $$
@@ -211,7 +211,7 @@ ALTER TABLE public.alert_acks
   ADD COLUMN IF NOT EXISTS user_id uuid;
 
 UPDATE public.alert_acks
-   SET user_id = (SELECT id FROM auth.users WHERE email = 'terryturner2026@gmail.com' LIMIT 1)
+   SET user_id = (SELECT id FROM auth.users WHERE email = 'terry@zero-in.io' LIMIT 1)
  WHERE user_id IS NULL;
 
 DO $$

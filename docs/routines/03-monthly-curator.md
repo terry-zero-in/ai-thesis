@@ -110,6 +110,6 @@ Expect one row per month going forward. status = 'pending' until Terry reviews.
 
 ## Gotcha: don't trim Terry's owned positions
 
-Before suggesting a TRIM, check `portfolio_positions` for that ticker across all users (currently just Terry). If a TRIM candidate is held, write the trim suggestion BUT add a strong note in `reason`: "currently held by user terryturner2026@gmail.com — trim suggestion reflects engine signal, not position management."
+Before suggesting a TRIM, check `portfolio_positions` for that ticker across all users (currently just Terry). If a TRIM candidate is held, write the trim suggestion BUT add a strong note in `reason`: "currently held by user terry@zero-in.io — trim suggestion reflects engine signal, not position management."
 
 Position management decisions are user-controlled. Engine produces research signal; user holds the trigger.

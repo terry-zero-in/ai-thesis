@@ -18,7 +18,7 @@ The personal-tool pivot (3 users — Terry, Mom, Dad — each with private portf
 
 - [ ] Supabase project exists with the `optimize-claude/ai-thesis` (or equivalent) ref
 - [ ] You have admin access to Supabase Studio for that project
-- [ ] You have signed in **at least once** at `https://ai-thesis-v2.vercel.app/login` using `terryturner2026@gmail.com` — this creates your `auth.users` row, which migration `20260518000200_e80_routines_pr1.sql` requires to backfill ownership of `portfolio_settings` / `portfolio_positions` / `alert_acks`
+- [ ] You have signed in **at least once** at `https://ai-thesis-v2.vercel.app/login` using `terry@zero-in.io` — this creates your `auth.users` row, which migration `20260518000200_e80_routines_pr1.sql` requires to backfill ownership of `portfolio_settings` / `portfolio_positions` / `alert_acks`
 - [ ] You have the `service_role` key from Studio → Settings → API on hand (you'll need it for the Supabase MCP connector and for Edge Function secrets)
 - [ ] You're on a Claude Max plan (routines require Max, not pay-per-token)
 
@@ -115,7 +115,7 @@ Migration `20260518000200_e80_routines_pr1.sql` requires Terry's `auth.users` ro
 ```sql
 SELECT id, email, created_at
 FROM auth.users
-WHERE email = 'terryturner2026@gmail.com';
+WHERE email = 'terry@zero-in.io';
 ```
 
 Expected: exactly 1 row. If 0 rows, you skipped the prerequisite — sign in at `https://ai-thesis-v2.vercel.app/login` first, then re-run the migration (`supabase db push`).
@@ -142,7 +142,7 @@ Paste into SQL Editor:
 SELECT id, email, created_at
 FROM auth.users
 WHERE email IN (
-  'terryturner2026@gmail.com',
+  'terry@zero-in.io',
   'mom-placeholder@example.com',
   'dad-placeholder@example.com'
 )
@@ -481,7 +481,7 @@ SELECT u.email,
        (SELECT COUNT(*) FROM public.portfolio_positions WHERE user_id = u.id) AS positions_count
 FROM auth.users u
 WHERE u.email IN (
-  'terryturner2026@gmail.com',
+  'terry@zero-in.io',
   'mom-placeholder@example.com',
   'dad-placeholder@example.com'
 )
