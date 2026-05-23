@@ -29,6 +29,21 @@ export interface GreetingResult {
   marketOpen: boolean;
 }
 
+/**
+ * Bare time-of-day greeting (no name suffix). NYC-time aware per THS-74
+ * spec ("time-of-day-aware greeting in NYC time"). Returns one of:
+ *   "Good morning" / "Good afternoon" / "Good evening" / "Up late"
+ *
+ * Prefer this when a caller only needs the salutation token (e.g., a
+ * route layout that composes its own subject). For the full greeting
+ * line, market clock, and live wall clock, use computeGreeting().
+ */
+export function getGreeting(now: Date = new Date()): string {
+  const mkt = partsFor(now, MARKET_TZ);
+  const mktHour = parseInt(mkt.hour, 10);
+  return greetingFor(mktHour);
+}
+
 export function computeGreeting(now: Date = new Date()): GreetingResult {
   const wall = partsFor(now, WALL_TZ);
   const wallHour = parseInt(wall.hour, 10);
@@ -90,12 +105,11 @@ function partsFor(now: Date, tz: string): DatePartsBundle {
 
 /**
  * Market clock subtitle. Doesn't honor holiday calendar — that's a v1.1
- * upgrade. For now: weekend → "NYSE closed · opens Mon 8:30 AM CT";
- * pre-open / post-close → "opens ... CT" / "closed · reopens ... CT";
- * regular session → "NYSE open · {hh}m to close" or "{h}h {m}m to close".
- *
- * Times in subtitle expressed in Terry's wall-clock TZ (Chicago) to match
- * the dateLabel and to be more readable than ET for a US user not in NY.
+ * upgrade. Spec (THS-74) format: `NYSE open · 2h 14m to close` during the
+ * regular 9:30–16:00 ET session, `NYSE closed` outside it. Minute
+ * precision intentional — second precision in a static subtitle reads as
+ * theatrical, not informative (the live wall clock in GreetingStrip ticks
+ * the seconds anyway).
  */
 function computeMarketLabel(now: Date): { label: string; open: boolean } {
   const mkt = partsFor(now, MARKET_TZ);
@@ -108,32 +122,33 @@ function computeMarketLabel(now: Date): { label: string; open: boolean } {
 
   // Weekend
   if (mkt.dow === 0 || mkt.dow === 6) {
-    return { label: "NYSE closed · weekend", open: false };
+    return { label: "NYSE closed", open: false };
   }
   // Pre-open weekday
   if (secondsIntoDay < OPEN) {
     const secs = OPEN - secondsIntoDay;
-    return { label: `NYSE closed · opens in ${clockDuration(secs)}`, open: false };
+    return { label: `NYSE closed · opens in ${minuteDuration(secs)}`, open: false };
   }
   // Regular session
   if (secondsIntoDay < CLOSE) {
     const secs = CLOSE - secondsIntoDay;
-    return { label: `NYSE open · ${clockDuration(secs)} to close`, open: true };
+    return { label: `NYSE open · ${minuteDuration(secs)} to close`, open: true };
   }
   // Post-close weekday
-  return { label: "NYSE closed · reopens tomorrow 8:30 AM CT", open: false };
+  return { label: "NYSE closed", open: false };
 }
 
 /**
- * Format total seconds as H:MM:SS (or M:SS when under an hour). The seconds
- * precision is the "this thing is alive" tick — readers see the colon-flicker
- * every second and trust that the page is live, not stale.
+ * Format total seconds as "2h 14m" (or "14m" when under an hour, or
+ * "<1m" when under a minute). Minute-precision deliberate per THS-74 spec
+ * — the live wall-clock seconds ticker lives on GreetingStrip; this
+ * helper drives the static subtitle that's stable for 30+ seconds.
  */
-function clockDuration(totalSeconds: number): string {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = totalSeconds % 60;
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
-  return `${m}:${pad(s)}`;
+function minuteDuration(totalSeconds: number): string {
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  if (totalMinutes < 1) return "<1m";
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
 }
