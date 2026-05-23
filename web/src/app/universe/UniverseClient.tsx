@@ -7,6 +7,7 @@ import { useFilter } from "@/hooks/filter-context";
 import { UniverseTable } from "@/components/universe/UniverseTable";
 import { PageHeader } from "@/components/primitives/PageHeader";
 import { EngineStatusStrip } from "@/components/primitives/EngineStatusStrip";
+import { LiveStubbedStrip } from "@/components/primitives/LiveStubbedStrip";
 import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
 
 /**
@@ -34,6 +35,7 @@ export function UniverseClient({ snap, engineStatus }: { snap: UniverseSnapshot;
       <UniverseRailRegister snap={snap} />
       <UniverseHeader snap={snap} />
       <EngineStatusStrip status={engineStatus} />
+      <LiveStubbedStrip />
       <UniverseTable
         rows={snap.rows}
         asOf={snap.asOf}
