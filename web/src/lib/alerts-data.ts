@@ -69,6 +69,16 @@ interface QuarterlyReviewRow {
   reviewed_note: string | null;
 }
 
+interface PositionPulseRow {
+  ticker: string;
+  as_of: string;
+  verdict: "intact" | "weakening" | "broken";
+  reasoning: string;
+  score_delta: number | null;
+  insider_signal: string | null;
+  created_at: string;
+}
+
 export interface AlertsSnapshot {
   events: AlertEvent[];
   unseen: number;
@@ -82,7 +92,7 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
 
   const insiderFromIso = isoDateMinusDays(new Date().toISOString().slice(0, 10), INSIDER_LOOKBACK_DAYS);
 
-  const [scoresRes, macroRes, acksRes, qrRes, insiderRes] = await Promise.all([
+  const [scoresRes, macroRes, acksRes, qrRes, insiderRes, pulseRes] = await Promise.all([
     sb
       .from("scores_history")
       .select("ticker,as_of,composite,final_score,aiq_score,tier")
@@ -110,6 +120,15 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
       .order("ticker", { ascending: true })
       .order("transaction_date", { ascending: false })
       .limit(5000),
+    // position_pulse — RLS scopes to caller's auth.uid(); no manual user
+    // filter needed. We only surface broken verdicts as alerts; intact /
+    // weakening render elsewhere (portfolio rows, dashboard).
+    sb
+      .from("position_pulse")
+      .select("ticker,as_of,verdict,reasoning,score_delta,insider_signal,created_at")
+      .eq("verdict", "broken")
+      .order("as_of", { ascending: false })
+      .limit(200),
   ]);
 
   const scores = (scoresRes.data ?? []) as ScoresRow[];
@@ -119,14 +138,22 @@ export async function getAlertsSnapshot(): Promise<AlertsSnapshot> {
   );
   const quarterly = (qrRes.data ?? []) as QuarterlyReviewRow[];
   const insider = (insiderRes.data ?? []) as Form4Row[];
+  const pulses = (pulseRes.data ?? []) as PositionPulseRow[];
 
-  if (scores.length === 0 && macro.length === 0 && quarterly.length === 0 && insider.length === 0) {
+  if (
+    scores.length === 0 &&
+    macro.length === 0 &&
+    quarterly.length === 0 &&
+    insider.length === 0 &&
+    pulses.length === 0
+  ) {
     return emptySnapshot(true);
   }
 
   const events = deriveEvents(scores, macro);
   for (const qr of quarterly) events.push(quarterlyEvent(qr));
   for (const e of deriveInsiderClusters(insider)) events.push(e);
+  for (const p of pulses) events.push(thesisBrokenEvent(p));
   hydrateAcks(events, acks);
 
   events.sort((a, b) => (a.as_of < b.as_of ? 1 : a.as_of > b.as_of ? -1 : 0));
@@ -409,6 +436,39 @@ function quarterlyEvent(qr: QuarterlyReviewRow): AlertEvent {
     severity,
     acked_at: qr.reviewed_at,
     acked_note: qr.reviewed_note,
+  };
+}
+
+/**
+ * Thesis-broken event from a position_pulse row (weekly-rescore Routine
+ * writes these). Title intentionally reads "Thesis broken — {ticker}" per
+ * spec. Detail is the Routine's prose reasoning; score_delta + insider
+ * signal append as supplementary lines when present.
+ */
+function thesisBrokenEvent(p: PositionPulseRow): AlertEvent {
+  const lines: string[] = [p.reasoning?.trim() || "No reasoning recorded."];
+  if (p.score_delta != null && Number.isFinite(p.score_delta)) {
+    const sign = p.score_delta > 0 ? "+" : "";
+    lines.push(`Score Δ ${sign}${p.score_delta.toFixed(1)} since prior pulse.`);
+  }
+  if (p.insider_signal && p.insider_signal.trim().length > 0) {
+    lines.push(`Insider signal: ${p.insider_signal.trim()}`);
+  }
+  const deltaSuffix =
+    p.score_delta != null && Number.isFinite(p.score_delta)
+      ? ` (Δ ${p.score_delta > 0 ? "+" : ""}${p.score_delta.toFixed(1)})`
+      : "";
+  return {
+    key: alertKey("thesis_broken", p.ticker, p.as_of),
+    kind: "thesis_broken",
+    ticker: p.ticker,
+    as_of: p.as_of,
+    prior_as_of: null,
+    title: `Thesis broken — ${p.ticker}${deltaSuffix}`,
+    detail: lines.join("\n"),
+    severity: "high",
+    acked_at: null,
+    acked_note: null,
   };
 }
 

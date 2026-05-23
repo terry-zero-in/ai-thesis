@@ -14,7 +14,8 @@ export type AlertKind =
   | "aiq_drift"
   | "macro_flip"
   | "insider_cluster"
-  | "quarterly_review";
+  | "quarterly_review"
+  | "thesis_broken";
 
 export const ALERT_KIND_LABELS: Record<AlertKind, string> = {
   tier_change: "Tier change",
@@ -23,6 +24,7 @@ export const ALERT_KIND_LABELS: Record<AlertKind, string> = {
   macro_flip: "Macro gate flip",
   insider_cluster: "Insider cluster",
   quarterly_review: "Quarterly review",
+  thesis_broken: "Thesis broken",
 };
 
 /** Magnitude thresholds. */
