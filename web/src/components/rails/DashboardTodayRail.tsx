@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { DashboardInsiderRow, DashboardMover } from "@/lib/dashboard-data";
+import type { DashboardInsider24hRow, DashboardInsiderRow, DashboardMover } from "@/lib/dashboard-data";
 import type { Tier } from "@/lib/universe-data";
 import { GAUGES, type GaugeKey } from "@/lib/regime-types";
 import { RailHeader, RailSection, RailEmpty, RailFooter } from "./RailChrome";
@@ -43,6 +43,12 @@ export interface DashboardTodayRailData {
   gateState: Record<GaugeKey, boolean>;
   /** Real insider P/S transactions from last 14 days (top 5 by date desc). */
   recentInsider: DashboardInsiderRow[];
+  /**
+   * 24-hour insider window for the rail "Insider 24h" section (THS-74).
+   * Optional during commit 1 of THS-74; the rail rewrite in commit 2
+   * surfaces this and removes Top Movers / MoversByTier.
+   */
+  insider24h: DashboardInsider24hRow[];
   asOf: string | null;
   synthetic: boolean;
   /**

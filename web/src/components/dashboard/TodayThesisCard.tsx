@@ -1,304 +1,433 @@
 import Link from "next/link";
-import type { DashboardSnapshot, DashboardMover } from "@/lib/dashboard-data";
-import { classifyTier } from "@/lib/scoring-weights";
+import type { MacroLog } from "@/lib/routine-outputs";
+import type { PositionRow } from "@/lib/portfolio-types";
+import type { UniverseRow } from "@/lib/universe-data";
+import type { AlertEvent } from "@/lib/alerts-types";
 
 /**
- * Today's Thesis — Dashboard signature pattern #1 (THS-74).
+ * "Today's Thesis" — Dashboard signature command-center module (THS-74).
  *
- * The engine's daily briefing card. One scannable hero anchored above the
- * KPI row that answers "where does the research stand right now" in five
- * seconds: macro regime, high-tier count + drift, top movers summary.
+ * Renders below the greeting + EngineStatusStrip, above the KPI tiles. A
+ * five-row scannable hero card that answers, in one glance:
  *
- * Reads as a Bloomberg-class daily morning note — calm, dense, fact-only.
- * No CTAs that read as "trade this" (compliance discipline THS-86): the
- * card surfaces engine state and links to drill-in surfaces; it never
- * tells the user what to do.
+ *   - what is the macro saying
+ *   - how is the book deployed
+ *   - which layers/themes is the engine leaning into
+ *   - what's pressing on the watchlist
+ *   - what (if anything) needs operator action
  *
- * /lambo doctrine:
- *   - signature pattern #1 (recognizable across surfaces — this primitive
- *     can be lifted onto Universe / Portfolio later as "research state")
- *   - earned (answers the first question a user opens the app to ask)
- *   - quiet chrome (no fill, hairline border, three info rows + footer)
- *   - math reconciles (numbers shown derive from snap; no fabrication)
+ * Anatomy:
+ *   - Header: TODAY'S THESIS (tracked-caps label) + mono date/time RIGHT.
+ *   - 5 ThesisRow rows separated by --border-subtle hairlines.
+ *   - Required-action row gets accent treatment + chevron CTA → /decisions.
+ *   - Card has surface fill + 6px radius like other dashboard hero
+ *     primitives (TopPositions, PortfolioValueChart).
  *
- * Placement: between the GreetingStrip+MonoMetaSpine and the AlertCallout
- * on the Dashboard canvas. Above the KPI row.
+ * Every row degrades gracefully to a single dim string when its data
+ * source has no rows yet — no fixture invention, no placeholder text that
+ * could be mistaken for real numbers.
+ *
+ * Inputs are pre-computed by `page.tsx` (server component) so this card
+ * stays a pure rendering primitive. Server-side dynamic date/time keeps
+ * the chrome alive without a client island.
  */
-export function TodayThesisCard({
-  snap,
-  movers,
-  regimeState,
-}: {
-  snap: DashboardSnapshot;
-  /** Unified top movers (winners + losers, sorted by abs delta). */
-  movers: DashboardMover[];
-  /** Pre-computed regime state from page.tsx (Neutral / Tightened / Cautious / Defensive). */
-  regimeState: { label: string; color: string };
-}) {
-  const high = snap.tiers.find((t) => t.tier === "High");
-  const highCurrent = high?.current ?? 0;
-  const highPrior = high?.prior ?? 0;
-  const highDelta = highCurrent - highPrior;
-  const avgHighComposite = computeAvgHighComposite(movers, highCurrent);
-  const top3 = movers.slice(0, 3);
+export interface TodayThesisCardProps {
+  macro: MacroLog | null;
+  /**
+   * Pre-computed bias derivation. `layers` is the top-two layer labels
+   * (ordered most-concentrated-first). `highestDeprecHyperscaler` is the
+   * ticker of the held name with the heaviest depreciation penalty when
+   * any is held; null otherwise.
+   */
+  bias: {
+    layers: string[];
+    /**
+     * `true` means "no positions yet — these layers come from the universe
+     * top-2 tiers, not held composite concentration." Drives the "Lean"
+     * vs "Watching" verb choice so the row stays honest.
+     */
+    fromUniverse: boolean;
+    highestDeprecHyperscaler: string | null;
+  };
+  posture: {
+    deployedPct: number;
+    reservePct: number;
+    positionsCount: number;
+    empty: boolean;
+  };
+  watchlistPressure: {
+    /** Count of High-tier names not currently held. */
+    notHeld: number;
+    /** True when there are zero High-tier names in the universe at all. */
+    noHighTier: boolean;
+  };
+  /**
+   * Alerts snapshot reduced to the bits this card needs:
+   *   - unseenCount — total unacked alerts (drives "All clear" vs CTA)
+   *   - leadKind     — kind of the most recent unacked event (drives the
+   *                    row text verb, e.g., "insider-cluster alerts")
+   *   - leadKindCount — count of unacked alerts matching leadKind
+   */
+  action: {
+    unseenCount: number;
+    leadKind: AlertEvent["kind"] | null;
+    leadKindCount: number;
+  };
+  /** Server-rendered NYC-time stamp e.g. "Mon May 18 · 9:34 AM CT". */
+  nowLabel: string;
+}
 
+export function TodayThesisCard(props: TodayThesisCardProps) {
   return (
     <section
-      aria-label="Today's research thesis"
+      aria-label="Today's thesis — engine + portfolio snapshot"
       style={{
-        // Inset-card surface fill per docs/design/instrument-field-pattern.md
-        // §3.1 — `var(--surface)` (not `var(--canvas)`) so the card READS as a
-        // card. Canvas-on-canvas + hairline-only read as wispy; surface-fill
-        // gives the card the chrome confidence the drawer earns. Border
-        // stays `--border-subtle` because this is an inset card (not floating).
         border: "1px solid var(--border-subtle)",
         borderRadius: 6,
         background: "var(--surface)",
-        padding: "16px 20px 14px",
+        padding: "18px 22px 6px",
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        // 60% breathing-room moment per spec: the rows + header carry
+        // their own internal vertical rhythm; the card itself sits with
+        // 28px gap above/below from the parent page's flex gap.
       }}
     >
-      <Header
-        gatesHit={snap.macroGatesHit}
-        multiplier={snap.macroMultiplier}
-        regimeState={regimeState}
-        synthetic={snap.synthetic}
-      />
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 20,
-        }}
-      >
-        <Cell
-          label="Macro regime"
-          value={`${regimeState.label} · ${snap.macroMultiplier.toFixed(2)}×`}
-          valueColor={regimeState.color}
-          sub={`${snap.macroGatesHit} of 3 gates hit`}
-          href="/regime"
-          hrefLabel="Open regime"
+      <CardHeader nowLabel={props.nowLabel} />
+      <div role="list">
+        <ThesisRow
+          label="Macro state"
+          value={renderMacro(props.macro)}
+          dim={props.macro == null}
         />
-        <Cell
-          label="High-tier holdings"
-          value={`${highCurrent} of ${snap.universeSize}`}
-          sub={
-            highDelta === 0
-              ? `flat vs prior week · avg composite ${avgHighComposite ?? "—"}`
-              : `${highDelta > 0 ? "↑" : "↓"} ${Math.abs(highDelta)} vs prior week · avg composite ${avgHighComposite ?? "—"}`
-          }
-          subColor={highDelta > 0 ? "var(--success)" : highDelta < 0 ? "var(--danger)" : "var(--text-3)"}
-          href="/universe?tier=High"
-          hrefLabel="Open universe"
+        <ThesisRow
+          label="Portfolio posture"
+          value={renderPosture(props.posture)}
+          dim={props.posture.empty}
         />
-        <Cell
-          label="Top movers · 7D"
-          value={
-            top3.length === 0
-              ? "—"
-              : top3.map((m) => fmtMover(m)).join(" · ")
-          }
-          valueMono
-          sub={
-            top3.length === 0
-              ? "no composite movement this week"
-              : "research note · click any composite for derivation"
+        <ThesisRow
+          label="Current bias"
+          value={renderBias(props.bias)}
+          dim={props.bias.layers.length === 0}
+        />
+        <ThesisRow
+          label="Watchlist pressure"
+          value={renderWatchlist(props.watchlistPressure)}
+          dim={props.watchlistPressure.noHighTier}
+        />
+        <ThesisRow
+          label="Required action"
+          value={renderAction(props.action)}
+          dim={props.action.unseenCount === 0}
+          last
+          accent={props.action.unseenCount > 0}
+          cta={
+            props.action.unseenCount > 0 && props.action.leadKind
+              ? {
+                  href: `/decisions?kind=${props.action.leadKind}`,
+                  ariaLabel: `Review ${props.action.leadKindCount} ${actionKindLabel(props.action.leadKind)} alerts`,
+                }
+              : undefined
           }
         />
       </div>
-
-      <Footer asOf={snap.asOf} engine="composite v1.0" />
     </section>
   );
 }
 
 /* ---------------- chrome ---------------- */
 
-function Header({
-  gatesHit,
-  multiplier,
-  regimeState,
-  synthetic,
-}: {
-  gatesHit: number;
-  multiplier: number;
-  regimeState: { label: string; color: string };
-  synthetic: boolean;
-}) {
-  // Reserved for "fired N hours ago" once the daily-batch routine output
-  // is plumbed through. Currently we name the card and surface mode.
+function CardHeader({ nowLabel }: { nowLabel: string }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "baseline",
-        gap: 10,
-        paddingBottom: 10,
+        gap: 12,
+        paddingBottom: 12,
         borderBottom: "1px solid var(--border-subtle)",
       }}
     >
       <span
         style={{
-          fontFamily: "var(--f)",
-          fontSize: 14,
-          fontWeight: 600,
-          color: "var(--text-1)",
-          letterSpacing: "-.008em",
-        }}
-      >
-        Today's thesis
-      </span>
-      <span
-        style={{
+          fontSize: 10.5,
           fontFamily: "var(--m)",
-          fontSize: 11,
           color: "var(--text-3)",
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+          fontWeight: 500,
         }}
       >
-        composite engine + macro regime
+        Today&rsquo;s thesis
       </span>
       <span style={{ flex: 1 }} />
       <span
         style={{
+          fontSize: 11,
           fontFamily: "var(--m)",
-          fontSize: 10.5,
-          color: synthetic ? "var(--warning)" : "var(--success)",
-          fontWeight: 600,
-          letterSpacing: ".04em",
-          textTransform: "uppercase",
+          color: "var(--text-3)",
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: ".02em",
+          whiteSpace: "nowrap",
         }}
-        title={
-          synthetic
-            ? "Sample data — thesis shown against a pre-generated dataset for product preview."
-            : "Live data — thesis built from your account's latest scores."
-        }
+        title="NYC time — engine + market reference clock"
       >
-        {synthetic ? "Sample" : "Live"}
+        {nowLabel}
       </span>
     </div>
   );
 }
 
-function Cell({
+function ThesisRow({
   label,
   value,
-  valueColor,
-  valueMono = false,
-  sub,
-  subColor,
-  href,
-  hrefLabel,
+  dim = false,
+  last = false,
+  accent = false,
+  cta,
 }: {
   label: string;
-  value: string;
-  valueColor?: string;
-  valueMono?: boolean;
-  sub: string;
-  subColor?: string;
-  href?: string;
-  hrefLabel?: string;
+  value: React.ReactNode;
+  dim?: boolean;
+  last?: boolean;
+  accent?: boolean;
+  cta?: { href: string; ariaLabel: string };
 }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+  const content = (
+    <div
+      role="listitem"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "180px minmax(0, 1fr) auto",
+        columnGap: 16,
+        alignItems: "baseline",
+        padding: "12px 0",
+        borderBottom: last ? undefined : "1px solid var(--border-subtle)",
+      }}
+    >
       <span
         style={{
-          fontSize: 10,
-          fontFamily: "var(--m)",
+          fontSize: 12,
+          fontFamily: "var(--f)",
           color: "var(--text-3)",
-          letterSpacing: ".08em",
-          textTransform: "uppercase",
+          letterSpacing: ".01em",
         }}
       >
         {label}
       </span>
       <span
         style={{
-          fontSize: valueMono ? 12.5 : 15,
-          fontFamily: valueMono ? "var(--m)" : "var(--f)",
-          fontWeight: 600,
-          color: valueColor ?? "var(--text-1)",
-          fontVariantNumeric: valueMono ? "tabular-nums" : undefined,
-          lineHeight: 1.3,
+          fontSize: 13.5,
+          fontFamily: "var(--f)",
+          color: dim ? "var(--text-3)" : accent ? "var(--accent)" : "var(--text-1)",
+          fontVariantNumeric: "tabular-nums",
+          lineHeight: 1.4,
         }}
       >
         {value}
       </span>
-      <span
-        style={{
-          fontSize: 11,
-          fontFamily: "var(--m)",
-          color: subColor ?? "var(--text-3)",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      >
-        {sub}
-      </span>
-      {href && hrefLabel && (
-        <Link
-          href={href}
+      {cta ? (
+        <span
+          aria-hidden
+          className="accent-link-chev"
           style={{
-            fontSize: 11,
+            fontSize: 13,
             fontFamily: "var(--m)",
             color: "var(--accent)",
-            textDecoration: "none",
-            marginTop: 2,
-            letterSpacing: ".02em",
+            paddingLeft: 12,
           }}
         >
-          {hrefLabel} ›
-        </Link>
+          ›
+        </span>
+      ) : (
+        <span aria-hidden style={{ width: 12 }} />
       )}
     </div>
   );
+
+  if (cta) {
+    return (
+      <Link
+        href={cta.href}
+        aria-label={cta.ariaLabel}
+        className="row-hov"
+        style={{
+          display: "block",
+          textDecoration: "none",
+          color: "inherit",
+          margin: "0 -10px",
+          padding: "0 10px",
+          borderRadius: 4,
+        }}
+      >
+        {content}
+      </Link>
+    );
+  }
+  return content;
 }
 
-function Footer({ asOf, engine }: { asOf: string | null; engine: string }) {
+/* ---------------- row renderers ---------------- */
+
+function renderMacro(macro: MacroLog | null): React.ReactNode {
+  if (!macro) return "No macro snapshot yet";
   return (
-    <div
-      style={{
-        paddingTop: 8,
-        borderTop: "1px solid var(--border-subtle)",
-        display: "flex",
-        alignItems: "baseline",
-        gap: 12,
-        fontSize: 10.5,
-        fontFamily: "var(--m)",
-        color: "var(--text-4)",
-      }}
-    >
-      <span>engine · {engine}</span>
-      <span aria-hidden style={{ color: "var(--text-4)" }}>·</span>
-      <span>as_of {asOf ?? "—"}</span>
-      <span style={{ flex: 1 }} />
-      <span style={{ color: "var(--text-3)" }}>research output · not advice</span>
-    </div>
+    <>
+      <Num>{macro.gates_hit}</Num> of <Num>3</Num> gates hit ·{" "}
+      <Num>{macro.multiplier.toFixed(2)}×</Num> applied to High-conviction
+    </>
   );
 }
 
-/* ---------------- math ---------------- */
-
-/**
- * Average composite of currently-High-tier movers (proxy for avg high-tier
- * composite when we don't have full snap.tiers detail). Returns null if no
- * High-tier movers in the visible top-N set.
- *
- * NOTE: this uses the top-N movers list which is a sample, not the full
- * 50-name set. For an exact avg we'd need to thread the full filtered
- * snap.rows through to this card. Sampled value is honest as a directional
- * read; rounded to 1 decimal.
- */
-function computeAvgHighComposite(movers: DashboardMover[], highCount: number): string | null {
-  if (highCount === 0) return null;
-  const highMovers = movers.filter((m) => m.final_score != null && classifyTier(m.final_score) === "High");
-  if (highMovers.length === 0) return null;
-  const sum = highMovers.reduce((acc, m) => acc + (m.final_score ?? 0), 0);
-  return (sum / highMovers.length).toFixed(1);
+function renderPosture(p: TodayThesisCardProps["posture"]): React.ReactNode {
+  if (p.empty) return "No positions yet";
+  return (
+    <>
+      <Num>{p.deployedPct}%</Num> deployed · <Num>{p.reservePct}%</Num> reserve ·{" "}
+      <Num>{p.positionsCount}</Num> position{p.positionsCount === 1 ? "" : "s"}
+    </>
+  );
 }
 
-function fmtMover(m: DashboardMover): string {
-  const sign = m.delta > 0 ? "+" : "";
-  return `${m.ticker} ${sign}${m.delta.toFixed(1)}`;
+function renderBias(b: TodayThesisCardProps["bias"]): React.ReactNode {
+  if (b.layers.length === 0) return "Universe not scored yet";
+  const verb = b.fromUniverse ? "Watching" : "Lean";
+  const layerText = b.layers.slice(0, 2).join(" + ");
+  if (b.highestDeprecHyperscaler && !b.fromUniverse) {
+    return (
+      <>
+        {verb} {layerText} · avoid highest deprec-risk hyperscaler (
+        <Num>{b.highestDeprecHyperscaler}</Num>)
+      </>
+    );
+  }
+  return (
+    <>
+      {verb} {layerText}
+    </>
+  );
+}
+
+function renderWatchlist(w: TodayThesisCardProps["watchlistPressure"]): React.ReactNode {
+  if (w.noHighTier) return "No High-tier names in universe yet";
+  if (w.notHeld === 0) return "All High-tier names currently held";
+  return (
+    <>
+      <Num>{w.notHeld}</Num> High-tier name{w.notHeld === 1 ? "" : "s"} not yet held
+    </>
+  );
+}
+
+function renderAction(a: TodayThesisCardProps["action"]): React.ReactNode {
+  if (a.unseenCount === 0) return "All clear";
+  if (a.leadKind && a.leadKindCount > 0) {
+    return (
+      <>
+        Review <Num>{a.leadKindCount}</Num> {actionKindLabel(a.leadKind)} alert
+        {a.leadKindCount === 1 ? "" : "s"}
+      </>
+    );
+  }
+  return (
+    <>
+      Review <Num>{a.unseenCount}</Num> unread alert{a.unseenCount === 1 ? "" : "s"}
+    </>
+  );
+}
+
+/**
+ * Mono-numeric inline span. Numbers + tickers in the rows render through
+ * this so the mono/sans mix lands consistently (sans prose with tabular
+ * mono numerals per ticket spec).
+ */
+function Num({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        fontFamily: "var(--m)",
+        fontVariantNumeric: "tabular-nums",
+        color: "inherit",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Human-readable verb for the row text per alert kind. Different from the
+ * `ALERT_KIND_LABELS` table — those are title-case sentence fragments meant
+ * for the /decisions kind sidebar. Here we want lowercased adjective form
+ * that flows in prose: "Review 2 insider-cluster alerts".
+ */
+function actionKindLabel(kind: AlertEvent["kind"]): string {
+  switch (kind) {
+    case "tier_change":
+      return "tier-change";
+    case "conv_drop":
+      return "high-conviction drop";
+    case "aiq_drift":
+      return "AIQ drift";
+    case "macro_flip":
+      return "macro-flip";
+    case "insider_cluster":
+      return "insider-cluster";
+    case "quarterly_review":
+      return "quarterly-review";
+    case "thesis_broken":
+      return "thesis-broken";
+    default:
+      return "alert";
+  }
+}
+
+/* ---------------- server-side data prep ---------------- */
+
+/**
+ * Pure derivation: given universe rows + held positions, return the top-2
+ * layer labels by composite-score concentration in held names. When no
+ * positions are held, falls back to the top-2 layers in the universe by
+ * average composite (so the row still has content pre-portfolio).
+ *
+ * Exported so page.tsx can call this server-side and pass the result
+ * through to TodayThesisCard as part of `bias`.
+ */
+export function deriveBiasLayers(
+  positions: PositionRow[],
+  universeRows: UniverseRow[],
+): { layers: string[]; fromUniverse: boolean } {
+  // Phase 1 — concentration weighted by composite when positions exist.
+  const held = positions.filter((p) => p.layer_label && p.composite != null);
+  if (held.length > 0) {
+    const byLayer = new Map<string, number>();
+    for (const p of held) {
+      const w = Math.max(0, p.composite ?? 0);
+      byLayer.set(p.layer_label, (byLayer.get(p.layer_label) ?? 0) + w);
+    }
+    const top = Array.from(byLayer.entries())
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([label]) => label);
+    if (top.length > 0) return { layers: top, fromUniverse: false };
+  }
+
+  // Phase 2 — fall back to the universe's top-2 layers by avg composite of
+  // High-/Medium-tier names (so a pre-positions dashboard still reads as
+  // intentional).
+  const scored = universeRows.filter((r) => r.composite != null && (r.tier === "High" || r.tier === "Medium"));
+  if (scored.length === 0) return { layers: [], fromUniverse: true };
+  const agg = new Map<string, { sum: number; n: number }>();
+  for (const r of scored) {
+    const entry = agg.get(r.layer_label) ?? { sum: 0, n: 0 };
+    entry.sum += r.composite ?? 0;
+    entry.n += 1;
+    agg.set(r.layer_label, entry);
+  }
+  const ranked = Array.from(agg.entries())
+    .map(([label, { sum, n }]) => ({ label, avg: sum / Math.max(1, n) }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 2)
+    .map((x) => x.label);
+  return { layers: ranked, fromUniverse: true };
 }

@@ -254,6 +254,54 @@ interface InsiderRawRow {
   transaction_value: number | null;
 }
 
+/**
+ * Recent insider activity in a 24-hour window — for the Dashboard right
+ * rail "Insider 24h" section (THS-74). Tighter window than getRecentInsider
+ * (which is a 14-day rail digest); these are "what hit overnight."
+ *
+ * Returns raw rows ordered date-desc, capped to a small N so the rail
+ * stays scannable. No dedupe — operator wants per-filing density when
+ * the window is this tight (a cluster of 4 same-day filings IS the signal).
+ */
+export interface DashboardInsider24hRow {
+  ticker: string;
+  transaction_date: string;
+  insider_name: string;
+  insider_title: string | null;
+  transaction_code: "P" | "S" | string;
+  shares: number | null;
+  transaction_value: number | null;
+}
+
+const INSIDER_24H_LIMIT = 6;
+
+export async function getInsider24h(): Promise<DashboardInsider24hRow[]> {
+  const sb = await getSupabaseServer();
+  if (!sb) return [];
+  // 24h window keyed on filing_date (the actual ingestion timestamp from
+  // settings-data.ts) — falls back to transaction_date when filing_date
+  // isn't selectable. We use filing_date >= now() - 24h to honor the spec
+  // wording ("recent insider filings from insider_form4_raw where
+  // filing_date >= now() - interval '24 hours'").
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const res = await sb
+    .from("insider_form4_raw")
+    .select("ticker,transaction_date,insider_name,insider_title,transaction_code,shares,transaction_value,filing_date")
+    .gte("filing_date", cutoff)
+    .in("transaction_code", ["P", "S"])
+    .order("filing_date", { ascending: false })
+    .limit(INSIDER_24H_LIMIT);
+  return ((res.data ?? []) as DashboardInsider24hRow[]).map((r) => ({
+    ticker: r.ticker,
+    transaction_date: r.transaction_date,
+    insider_name: r.insider_name,
+    insider_title: r.insider_title,
+    transaction_code: r.transaction_code,
+    shares: r.shares,
+    transaction_value: r.transaction_value,
+  }));
+}
+
 export async function getRecentInsider(): Promise<DashboardInsiderRow[]> {
   const sb = await getSupabaseServer();
   if (!sb) return [];

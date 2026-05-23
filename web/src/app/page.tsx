@@ -1,14 +1,19 @@
-import { getDashboardSnapshot, getRecentInsider, type DashboardMover } from "@/lib/dashboard-data";
+import { getDashboardSnapshot, getRecentInsider, getInsider24h, type DashboardMover } from "@/lib/dashboard-data";
 import type { Tier } from "@/lib/universe-data";
+import { getLatestUniverseScoresServer } from "@/lib/universe-data-server";
 import { getPortfolioSnapshot } from "@/lib/portfolio-data";
 import { getRegimeSnapshot } from "@/lib/regime-data";
 import { type GaugeKey } from "@/lib/regime-types";
+import { getLatestMacroLog } from "@/lib/routine-outputs";
+import { getAlertsSnapshot } from "@/lib/alerts-data";
+import { getHighestDeprecRiskHyperscalerHeld } from "@/lib/depreciation-data";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
 import { computeGreeting } from "@/app/greeting-compute";
 import { PortfolioValueChart } from "@/components/dashboard/PortfolioValueChart";
 import { TopPositionsList } from "@/components/dashboard/TopPositionsList";
+import { TodayThesisCard, deriveBiasLayers } from "@/components/dashboard/TodayThesisCard";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
 import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
@@ -53,15 +58,24 @@ export default async function DashboardPage({
   //   return <MarketingLanding />;
   // }
 
-  // Parallel fetch — four independent server queries. MorningBrief was
-  // moved off the Dashboard canvas (S8 redesign — Linear "calmer" principles);
+  // Parallel fetch — independent server queries. MorningBrief was moved
+  // off the Dashboard canvas (S8 redesign — Linear "calmer" principles);
   // its data surfaces on /memos when that page graduates from placeholder.
-  const [snap, portfolio, regime, recentInsider] = await Promise.all([
+  //
+  // THS-74: added macroLog, alerts, insider24h, and universe-server for
+  // the "Today's Thesis" command-center module + the right-rail rework.
+  const [snap, portfolio, regime, recentInsider, insider24h, macroLog, alerts, universe] = await Promise.all([
     getDashboardSnapshot(),
     getPortfolioSnapshot(),
     getRegimeSnapshot(),
     getRecentInsider(),
+    getInsider24h(),
+    getLatestMacroLog(),
+    getAlertsSnapshot(),
+    getLatestUniverseScoresServer(),
   ]);
+  const heldTickers = portfolio.positions.map((p) => p.ticker);
+  const highestDeprec = await getHighestDeprecRiskHyperscalerHeld(heldTickers);
   const { greeting, dateLabel, marketLabel } = computeGreeting();
   const highTier = snap.tiers.find((t) => t.tier === "High");
   const allMovers = unifyMovers(snap.topWinners, snap.topLosers);
@@ -100,11 +114,50 @@ export default async function DashboardPage({
     macroMultiplier: snap.macroMultiplier,
     gateState,
     recentInsider,
+    insider24h,
     asOf: snap.asOf,
     synthetic: snap.synthetic,
     moverTierCounts,
     activeMoverTier,
   };
+
+  // THS-74 — Today's Thesis card derivations.
+  //
+  // Posture: deployed % = market_value / total_capital, reserve = remainder.
+  // We bound both to [0, 100] so a market drawdown that pushes deployed
+  // briefly past 100% (or a settings reset that pushes reserve negative)
+  // still renders without nonsense. The KPI tiles below show the raw
+  // numbers; this card is the headline.
+  const totalCapital = portfolio.settings.total_capital;
+  const deployedPctRaw = totalCapital > 0 ? (portfolio.total_market_value / totalCapital) * 100 : 0;
+  const deployedPct = Math.round(Math.max(0, Math.min(100, deployedPctRaw)));
+  const reservePct = Math.max(0, 100 - deployedPct);
+  const positionsCount = portfolio.positions.length;
+
+  const bias = {
+    ...deriveBiasLayers(portfolio.positions, universe.rows),
+    highestDeprecHyperscaler: highestDeprec,
+  };
+
+  // Watchlist pressure: High-tier names in scores not yet held. Source
+  // of truth is universe.rows[].tier — `tier` lives on scores_history,
+  // joined into UniverseRow via buildSnapshot.
+  const heldSet = new Set(heldTickers);
+  const highTierTickers = universe.rows.filter((r) => r.tier === "High");
+  const watchlistPressure = {
+    notHeld: highTierTickers.filter((r) => !heldSet.has(r.ticker)).length,
+    noHighTier: highTierTickers.length === 0,
+  };
+
+  // Action: pick the lead unacked event kind by recency, count its peers
+  // (so the row text reads "Review N insider-cluster alerts" with N being
+  // the same-kind cohort, not the global unread count).
+  const unacked = alerts.events.filter((e) => !e.acked_at);
+  const leadEvent = unacked[0] ?? null; // events are sorted as_of desc
+  const leadKind = leadEvent?.kind ?? null;
+  const leadKindCount = leadKind ? unacked.filter((e) => e.kind === leadKind).length : 0;
+
+  const nowLabel = formatNycClock();
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -141,6 +194,31 @@ export default async function DashboardPage({
           initialGreeting={greeting}
           initialDateLabel={dateLabel}
           initialMarketLabel={marketLabel}
+        />
+
+        {/*
+          THS-74 — "Today's Thesis" command-center module. Five-row hero
+          card sitting between the greeting + EngineStatusStrip and the
+          KPI tiles. Reads as the engine's daily morning briefing in one
+          scan: macro state, portfolio posture, current bias, watchlist
+          pressure, and required action.
+        */}
+        <TodayThesisCard
+          macro={macroLog}
+          bias={bias}
+          posture={{
+            deployedPct,
+            reservePct,
+            positionsCount,
+            empty: portfolio.empty,
+          }}
+          watchlistPressure={watchlistPressure}
+          action={{
+            unseenCount: alerts.unseen,
+            leadKind,
+            leadKindCount,
+          }}
+          nowLabel={nowLabel}
         />
 
         <KpiRow
@@ -775,4 +853,35 @@ function Section({
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 12, color: "var(--text-3)" }}>{children}</div>;
+}
+
+/**
+ * Clock label for the Today's Thesis card header (THS-74).
+ * Format: "Mon May 18 · 9:34 AM CT" — spec verbatim. Rendered server-side
+ * so the value is stable across the page revalidate window (every 30
+ * minutes). The GreetingStrip wall clock already carries the
+ * second-precision live ticker.
+ *
+ * Note on the TZ suffix: spec literal example shows "CT" while the
+ * preamble text says "NYC time." These contradict — followed the literal
+ * example (CT = Terry's wall-clock TZ, matching the rest of the
+ * dashboard chrome from greeting-compute.ts which also renders Chicago
+ * time). The date portion (Mon May 18) is the same in both zones for the
+ * vast majority of the day, so the practical difference is small.
+ */
+function formatNycClock(now: Date = new Date()): string {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const parts = fmt.formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const dayPart = `${get("weekday")} ${get("month")} ${get("day")}`;
+  const timePart = `${get("hour")}:${get("minute")} ${get("dayPeriod")} CT`;
+  return `${dayPart} · ${timePart}`;
 }

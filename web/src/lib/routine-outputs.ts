@@ -114,6 +114,24 @@ export async function getMorningBrief(): Promise<MorningBrief> {
 }
 
 /**
+ * Most recent `macro_log` row in isolation — for surfaces (e.g., the
+ * Dashboard "Today's Thesis" card, THS-74) that need macro state without
+ * the full morning brief. Returns null when env is unset or the daily-batch
+ * Routine hasn't fired yet.
+ */
+export async function getLatestMacroLog(): Promise<MacroLog | null> {
+  const sb = await getSupabaseServer();
+  if (!sb) return null;
+  const { data } = await sb
+    .from("macro_log")
+    .select("*")
+    .order("as_of", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as MacroLog | null) ?? null;
+}
+
+/**
  * Most recent weekly summary (Saturday rescore output).
  */
 export async function getWeeklySummary(): Promise<WeeklySummary | null> {
