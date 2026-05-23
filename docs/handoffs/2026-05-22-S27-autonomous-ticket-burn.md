@@ -164,3 +164,46 @@ Plus the carried-forward routine first-fires + Vercel deploy on THS-71 — Terry
 - `/verification-before-completion`
 - `/dispatching-parallel-agents`
 - `/subagent-driven-development`
+
+---
+
+## Recommendations for S28 (captured at handoff time, Terry to decide)
+
+### Pause UI work until the In Review tickets resolve
+
+S27 shipped 4 UI surfaces (THS-71 items 3a+3b, THS-73, THS-74, THS-75) without Terry having seen any of them in a browser — remote container, no dev server. If THS-73's Score Math drawer needs spacing changes, or THS-74's Today's Thesis card needs a different row treatment, every subsequent ticket built on top of those primitives inherits the wrong baseline. **Continuing to dispatch UI subagents without a visual-review checkpoint compounds review debt.**
+
+Suggested S28 entry sequence:
+
+1. Terry runs `npm run dev` locally and walks through: `/` (dashboard), `/universe`, `/universe/AVGO` (score math drawer), `/aiq` (needs-review queue), `/aiq/NVDA` (cockpit), `/aiq-drafts` (Pending tab), `/decisions` (thesis_broken alert kind).
+2. Reconcile Score Math math on 3 sample tickers (THS-73's remaining acceptance line).
+3. File any visual / behavioral feedback as Linear comments on the In Review tickets.
+4. Resolve those 4 tickets to Done.
+5. Then continue with THS-76 → THS-77 → THS-78 → etc. under THS-92.
+
+### Mom + Dad onboarding (small, blocking the engine routines)
+
+- Terry adds `terryturner@gmail.com` (Dad) in Studio → Authentication → Users → Add user (auto-confirm ON, strong password).
+- Mom (`at-turner@sbcglobal.net`) already exists but has never signed in — she can magic-link from `/login` when ready.
+- Once Dad exists in `auth.users`, paste the `public.users` + `portfolio_settings` backfill SQL from `docs/setup/2026-05-21-supabase-setup-checklist.md` §2c–2e (or ask me to run it).
+
+### Env secrets + routines (THS-71 remaining gate)
+
+Terry sets in Supabase Edge Function Secrets: `ANTHROPIC_API_KEY`, `FMP_API_KEY`, `POLYGON_API_KEY`, `CRON_INVOKE_SECRET`. Then wires the 4 routines in claude.ai/code per `docs/routines/setup-guide.md`. First fire of daily-batch + weekly-rescore validates the UI surfaces shipped in S27.
+
+### Vercel prod deploy
+
+Once visual review is done locally, `vercel --prod --yes` from Terry's terminal confirms the build. THS-71 final acceptance.
+
+### Small data tasks Claude can do solo in S28 if Terry wants UI to settle
+
+- **THS-97** (CRM universe reclassification — Low priority). Single migration. Doesn't need visual review.
+- **Pre-existing Epic 1-3 advisor cleanup** — NOT YET FILED as a ticket. THS-96 explicitly out-of-scoped these. ~20 `auth.uid()` direct-call warnings on universe / fundamentals_raw / consensus / prices_raw / revisions / aiq_rubric / depreciation_flags / scores_history / ai_segment_overrides / macro_gauges / short_interest_raw / insider_form4_raw / supply_chain_deps / concentration_history / quarterly_reviews / backtest_runs / options_raw / memos / aiq_drafts. Plus pre-existing `multiple_permissive_policies` on `concentration_history` + `supply_chain_deps`. Plus 4 security warnings (function search_path mutable ×2, pg_net in public, materialized views API-exposed, SECURITY DEFINER funcs callable by anon, auth leaked-password protection). If Terry wants me to file this as THS-99 and tackle it autonomously next session, say so.
+
+### Next ticket in build order (after In Review tickets close)
+
+Per the Linear audit done in S27, THS-92's children in build order: **THS-71** (in flight, gated on Terry) → **THS-73** (In Review) → **THS-74** (In Review) → **THS-75** (In Review) → **THS-76** → **THS-77** → **THS-78** (Universe row hierarchy) → **THS-79** / **THS-80** / **THS-82** (polish). I have not inspected THS-76 / 77 yet — first task next session is to read them and decide if they're autonomous-feasible.
+
+### Context posture for S28
+
+This session was a long autonomous run with multiple subagent dispatches. Next session should start fresh — read CLAUDE.md, this doc, and the In Review ticket comments, then proceed. Don't try to extend this session's context further; the gains are diminishing.
