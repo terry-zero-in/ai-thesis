@@ -53,6 +53,17 @@ export async function saveAiqRubric(_prev: SaveState, formData: FormData): Promi
   }
   const sourcesValue: AiqSources | null = Object.keys(sources).length > 0 ? sources : null;
 
+  // THS-75: validate confidence — UI restricts to High/Medium/Low but the
+  // column is plain text. Coerce empty → null; reject any other token so
+  // we don't pollute the chip palette with operator typos.
+  const confidenceRaw = strOrNull(formData.get("confidence"));
+  const confidence =
+    confidenceRaw == null
+      ? null
+      : ["High", "Medium", "Low"].includes(confidenceRaw)
+        ? confidenceRaw
+        : null;
+
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
   const row = {
     ticker,
@@ -66,6 +77,8 @@ export async function saveAiqRubric(_prev: SaveState, formData: FormData): Promi
     indep_demand_note:  strOrNull(formData.get("indep_demand_note")),
     accounting_note:    strOrNull(formData.get("accounting_note")),
     sources:            sourcesValue,
+    confidence,
+    last_change_reason: strOrNull(formData.get("last_change_reason")),
   };
 
   // UPSERT on the (ticker, scored_at) PK: a same-day re-save overwrites

@@ -34,6 +34,40 @@ export function sourceFieldName(slug: DimSlug): string {
   return `source_${slug}`;
 }
 
+/** Qualitative operator confidence in a scoring (THS-75 cockpit). */
+export type AiqConfidence = "High" | "Medium" | "Low";
+export const AIQ_CONFIDENCE_LEVELS: AiqConfidence[] = ["High", "Medium", "Low"];
+
+/** Quarterly cadence: a ticker is "needs review" if its latest row is older
+ * than this many days. Aligns with docs/Algorithm §Part 5 caveat 2:
+ * "AIQ should be re-scored after every Q1 earnings cycle." 90 days is a
+ * pragmatic proxy for "next earnings cycle" without per-ticker fiscal
+ * calendars. */
+export const AIQ_REVIEW_CADENCE_DAYS = 90;
+
+/** Days since last scoring. Null when never scored. UTC midnight basis to
+ * keep server/client renders deterministic. */
+export function aiqDaysSinceScored(scoredAt: string | null): number | null {
+  if (!scoredAt) return null;
+  const last = new Date(scoredAt + "T00:00:00Z").getTime();
+  const now = Date.now();
+  return Math.floor((now - last) / 86_400_000);
+}
+
+/** Next-review date (YYYY-MM-DD) = scored_at + 90d. Null when never scored. */
+export function aiqNextReviewDate(scoredAt: string | null): string | null {
+  if (!scoredAt) return null;
+  const next = new Date(scoredAt + "T00:00:00Z").getTime() + AIQ_REVIEW_CADENCE_DAYS * 86_400_000;
+  return new Date(next).toISOString().slice(0, 10);
+}
+
+/** True when the latest scoring is older than the review cadence (or never scored). */
+export function aiqNeedsReview(scoredAt: string | null): boolean {
+  if (!scoredAt) return true;
+  const days = aiqDaysSinceScored(scoredAt);
+  return days != null && days > AIQ_REVIEW_CADENCE_DAYS;
+}
+
 export interface AiqRow {
   ticker: string;
   scored_at: string;
@@ -52,4 +86,8 @@ export interface AiqRow {
   indep_demand_note: string | null;
   accounting_note: string | null;
   sources: AiqSources | null;
+  /** THS-75: operator qualitative confidence. Free text in DB; UI restricts to High/Medium/Low. */
+  confidence: AiqConfidence | string | null;
+  /** THS-75: free-text rationale for the most-recent edit to this row. */
+  last_change_reason: string | null;
 }

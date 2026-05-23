@@ -1,7 +1,17 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { DIMS, dimSlug, sourceFieldName, type AiqRow, type DimKey, type NoteKey } from "@/lib/aiq-types";
+import {
+  AIQ_CONFIDENCE_LEVELS,
+  DIMS,
+  aiqNextReviewDate,
+  dimSlug,
+  sourceFieldName,
+  type AiqConfidence,
+  type AiqRow,
+  type DimKey,
+  type NoteKey,
+} from "@/lib/aiq-types";
 import { saveAiqRubric, SAVE_INITIAL, type SaveState } from "./actions";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
 
@@ -22,9 +32,30 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
   }, [latest]);
   const [vals, setVals] = useState(initial);
   const total = DIMS.reduce((s, d) => s + (vals[d.key] || 0), 0);
-  const dirty = DIMS.some((d) => vals[d.key] !== initial[d.key]);
+
+  // THS-75: confidence is a tri-state pill (High/Medium/Low). DB column is
+  // free text but UI restricts; existing free-text values that don't match
+  // surface as "—" via initialConfidence below.
+  const initialConfidence: AiqConfidence | null =
+    latest?.confidence && (AIQ_CONFIDENCE_LEVELS as string[]).includes(latest.confidence)
+      ? (latest.confidence as AiqConfidence)
+      : null;
+  const [confidence, setConfidence] = useState<AiqConfidence | null>(initialConfidence);
+
+  // THS-75: reason-for-last-change is tracked client-side so the dirty chip
+  // can fire when only the rationale changed (e.g. operator clarifying why
+  // a score was set the way it was, without touching the numbers).
+  const [reason, setReason] = useState<string>(latest?.last_change_reason ?? "");
+
+  const dimsDirty = DIMS.some((d) => vals[d.key] !== initial[d.key]);
+  const confidenceDirty = confidence !== initialConfidence;
+  const reasonDirty = reason.trim() !== (latest?.last_change_reason ?? "").trim();
+  const dirty = dimsDirty || confidenceDirty || reasonDirty;
 
   const set = (k: string, v: number) => setVals((p) => ({ ...p, [k]: v }));
+
+  const today = new Date().toISOString().slice(0, 10);
+  const nextReview = aiqNextReviewDate(latest?.scored_at ?? null);
 
   return (
     <form
@@ -36,6 +67,40 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
       }}
     >
       <input type="hidden" name="ticker" value={ticker} />
+      {/* THS-75: confidence chip selection persists alongside the row. */}
+      <input type="hidden" name="confidence" value={confidence ?? ""} />
+
+      {/* THS-75 cockpit header strip — "AIQ SCORE — {TICKER}" with right-aligned
+          Last scored / Next review metadata. Sits above the hero so the entire
+          state of the scoring (composite + cadence + confidence) is legible in
+          one vertical glance. */}
+      <div
+        style={{
+          padding: "12px 22px 12px",
+          borderTop: "1px solid var(--border-subtle)",
+          display: "flex",
+          alignItems: "baseline",
+          gap: 14,
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: ".10em",
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          AIQ Score — {ticker}
+        </div>
+        <CockpitMeta label="Last scored" value={latest?.scored_at ?? "—"} />
+        <CockpitMeta label="Next review" value={nextReview ?? today} />
+        <ConfidencePill value={confidence} onChange={setConfidence} />
+      </div>
 
       {/* Mercury decard: hero sits on canvas, framed by top + bottom hairlines. */}
       <div
@@ -46,7 +111,7 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
         }}
       >
         <HeroNumber
-          label="Total"
+          label="Composite"
           value={total}
           unit=" / 100"
           precision={0}
@@ -83,10 +148,57 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
         placeholder="Cross-cutting rationale — what changed since the last scoring, key risks to revisit, etc."
       />
 
+      {/* THS-75: reason-for-last-change. Free text; persisted to
+          aiq_rubric.last_change_reason. Audit-only — the (ticker, scored_at)
+          PK provides versioning, this column provides the *why* on a
+          same-day re-save. */}
+      <div
+        style={{
+          padding: "14px 22px",
+          borderBottom: "1px solid var(--border-subtle)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: ".08em",
+          }}
+        >
+          Reason for last change
+        </span>
+        <textarea
+          name="last_change_reason"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={2}
+          placeholder="Why did this scoring change? (e.g. Q1 print confirmed segment disclosure, raising Disclosure 14→18.)"
+          style={textareaStyle()}
+        />
+        {latest?.last_change_reason && latest.last_change_reason.trim() === reason.trim() && (
+          <div
+            style={{
+              fontSize: 11,
+              fontFamily: "var(--m)",
+              color: "var(--text-4)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            ↳ recorded {latest.scored_at}
+          </div>
+        )}
+      </div>
+
       {/* Submit row sits on canvas with breathing room above.
           Spec §5.6 line 705: [Discard] ... [Save → 93] — Discard is dirty-only,
           resets dim numbers + textarea DOM via form.reset() back to `latest`
-          (or zeros when no prior version). */}
+          (or zeros when no prior version).
+          THS-75: dirty chip surfaces unsaved state inline (Linear pattern). */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "18px 22px 0" }}>
         <button
           type="submit"
@@ -128,8 +240,31 @@ export function AiqEditor({ ticker, latest, envConfigured }: Props) {
         >
           Discard
         </button>
+        {/* THS-75: dirty chip — Linear's "unsaved" pattern. Visible whenever
+            any input differs from the latest saved row. */}
+        {dirty && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "3px 8px",
+              fontSize: 10.5,
+              fontFamily: "var(--m)",
+              color: "var(--warning)",
+              background: "color-mix(in oklab, var(--warning) 8%, transparent)",
+              border: "1px solid color-mix(in oklab, var(--warning) 25%, transparent)",
+              borderRadius: 999,
+              letterSpacing: ".06em",
+              textTransform: "uppercase",
+            }}
+          >
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--warning)" }} />
+            Unsaved
+          </span>
+        )}
         <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
-          Saves as {new Date().toISOString().slice(0, 10)} · same-day re-save overwrites, next day creates a new history row.
+          Saves as {today} · same-day re-save overwrites, next day creates a new history row.
         </span>
       </div>
 
@@ -382,4 +517,104 @@ function textareaStyle(): React.CSSProperties {
 function clamp(n: number, lo: number, hi: number): number {
   if (Number.isNaN(n)) return lo;
   return Math.max(lo, Math.min(hi, n));
+}
+
+/** THS-75 cockpit header meta — quiet `label · value` pair, tabular-num value. */
+function CockpitMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: 6,
+        fontFamily: "var(--m)",
+        fontVariantNumeric: "tabular-nums",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10,
+          color: "var(--text-4)",
+          textTransform: "uppercase",
+          letterSpacing: ".08em",
+        }}
+      >
+        {label}
+      </span>
+      <span style={{ fontSize: 11.5, color: "var(--text-2)" }}>{value}</span>
+    </div>
+  );
+}
+
+/** THS-75 confidence pill — tri-state High/Medium/Low selector. Severity
+ * palette (success/text-2/warning) rather than iris/categorical, per the
+ * /lambo Q-lock: categorical color is reserved for tier signal, severity
+ * is reserved for actionable risk states. Confidence is risk-flavoured
+ * metadata so severity is the correct lane. */
+function ConfidencePill({
+  value,
+  onChange,
+}: {
+  value: AiqConfidence | null;
+  onChange: (v: AiqConfidence | null) => void;
+}) {
+  const colorFor = (v: AiqConfidence | null): string => {
+    if (v === "High") return "var(--success)";
+    if (v === "Medium") return "var(--text-2)";
+    if (v === "Low") return "var(--warning)";
+    return "var(--text-4)";
+  };
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Confidence"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 10,
+          fontFamily: "var(--m)",
+          color: "var(--text-4)",
+          textTransform: "uppercase",
+          letterSpacing: ".08em",
+          marginRight: 4,
+        }}
+      >
+        Confidence
+      </span>
+      {AIQ_CONFIDENCE_LEVELS.map((lvl) => {
+        const active = value === lvl;
+        const c = colorFor(lvl);
+        return (
+          <button
+            key={lvl}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(active ? null : lvl)}
+            style={{
+              padding: "2px 8px",
+              fontSize: 10.5,
+              fontFamily: "var(--m)",
+              letterSpacing: ".04em",
+              textTransform: "uppercase",
+              borderRadius: 999,
+              cursor: "pointer",
+              color: active ? c : "var(--text-3)",
+              background: active ? `color-mix(in oklab, ${c} 10%, transparent)` : "transparent",
+              border: `1px solid ${active ? `color-mix(in oklab, ${c} 35%, transparent)` : "var(--border)"}`,
+              transition: "background var(--dur-instant) var(--ease-out), color var(--dur-instant) var(--ease-out)",
+            }}
+          >
+            {lvl}
+          </button>
+        );
+      })}
+    </div>
+  );
 }

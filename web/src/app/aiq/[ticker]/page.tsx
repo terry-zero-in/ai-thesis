@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAiqContext } from "@/lib/aiq-data";
+import { aiqDaysSinceScored, aiqNextReviewDate, AIQ_REVIEW_CADENCE_DAYS } from "@/lib/aiq-types";
 import { AiqEditor } from "./AiqEditor";
 import { AiqHistory } from "./AiqHistory";
 import { LayerChip } from "@/components/universe/LayerChip";
@@ -71,17 +72,45 @@ export default async function AiqEditorPage({ params }: { params: Promise<Params
               <LayerChip layer={ctx.seed.layer} label={ctx.seed.layer_label} />
             </span>
           </div>
-          {/* spec §5.6 meta line — "Last scored {date} · {total}/100" */}
-          {ctx.latest ? (
-            <div style={{ fontSize: 12, color: "var(--text-2)", fontFamily: "var(--m)", fontVariantNumeric: "tabular-nums" }}>
-              Last scored <span style={{ color: "var(--text-1)" }}>{ctx.latest.scored_at}</span>
-              <span style={{ color: "var(--text-3)" }}> · </span>
-              <span style={{ color: "var(--text-1)" }}>{ctx.latest.total}</span>
-              <span style={{ color: "var(--text-3)" }}>/100</span>
-            </div>
-          ) : (
+          {/* spec §5.6 meta line — "Last scored {date} · {total}/100".
+              THS-75 adds Next-review (scored_at + 90d) and an overdue chip
+              when the latest scoring exceeds the quarterly cadence. */}
+          {ctx.latest ? (() => {
+            const days = aiqDaysSinceScored(ctx.latest.scored_at) ?? 0;
+            const overdue = days > AIQ_REVIEW_CADENCE_DAYS;
+            const next = aiqNextReviewDate(ctx.latest.scored_at);
+            return (
+              <div style={{ fontSize: 12, color: "var(--text-2)", fontFamily: "var(--m)", fontVariantNumeric: "tabular-nums", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "baseline" }}>
+                <span>
+                  Last scored <span style={{ color: "var(--text-1)" }}>{ctx.latest.scored_at}</span>
+                  <span style={{ color: "var(--text-3)" }}> · </span>
+                  <span style={{ color: "var(--text-1)" }}>{ctx.latest.total}</span>
+                  <span style={{ color: "var(--text-3)" }}>/100</span>
+                </span>
+                <span style={{ color: "var(--text-3)" }}>
+                  Next review <span style={{ color: overdue ? "var(--warning)" : "var(--text-2)" }}>{next}</span>
+                </span>
+                {overdue && (
+                  <span
+                    style={{
+                      fontSize: 10.5,
+                      letterSpacing: ".06em",
+                      textTransform: "uppercase",
+                      color: "var(--warning)",
+                      padding: "1px 7px",
+                      border: "1px solid color-mix(in oklab, var(--warning) 30%, transparent)",
+                      background: "color-mix(in oklab, var(--warning) 8%, transparent)",
+                      borderRadius: 999,
+                    }}
+                  >
+                    Overdue · {days - AIQ_REVIEW_CADENCE_DAYS}d
+                  </span>
+                )}
+              </div>
+            );
+          })() : (
             <div style={{ fontSize: 12, color: "var(--text-3)", fontStyle: "italic" }}>
-              Not yet scored
+              Not yet scored — fill the rubric below to record the first AIQ scoring for {ctx.seed.ticker}.
             </div>
           )}
           <div style={{ fontSize: 11, color: "var(--text-3)" }}>

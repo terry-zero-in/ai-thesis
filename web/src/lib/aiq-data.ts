@@ -22,13 +22,31 @@ const COLUMNS =
   "ticker,scored_at,disclosure_pts,defensibility_pts,concentration_pts,capex_eff_pts," +
   "indep_demand_pts,accounting_pts,total,notes," +
   "disclosure_note,defensibility_note,concentration_note,capex_eff_note,indep_demand_note,accounting_note," +
-  "sources";
+  "sources,confidence,last_change_reason";
 
 export async function getAiqContext(ticker: string): Promise<AiqContext> {
   const t = ticker.toUpperCase();
-  const seed = null;
   const sb = await getSupabaseServer();
-  if (!sb) return { seed, latest: null, history: [], envConfigured: false };
+  if (!sb) return { seed: null, latest: null, history: [], envConfigured: false };
+
+  // Real universe lookup — replaces the legacy FIXTURE_INDEX seed (stripped
+  // in `strip FIXTURE_UNIVERSE/...` 2026-05-22). Without this, every
+  // editor route rendered "not in universe" even when the ticker was an
+  // active universe row.
+  const { data: seedRow } = await sb
+    .from("universe")
+    .select("ticker,name,layer,layer_label")
+    .eq("ticker", t)
+    .eq("is_active", true)
+    .maybeSingle();
+  const seed: SeedRow | null = seedRow
+    ? {
+        ticker: (seedRow as { ticker: string }).ticker,
+        name: (seedRow as { name: string }).name,
+        layer: (seedRow as { layer: number }).layer,
+        layer_label: (seedRow as { layer_label: string }).layer_label,
+      }
+    : null;
 
   const { data, error } = await sb
     .from("aiq_rubric")
