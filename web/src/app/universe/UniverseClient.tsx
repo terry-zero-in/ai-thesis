@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { type UniverseSnapshot } from "@/lib/universe-data";
+import type { EngineStatus } from "@/lib/engine-status";
 import { useFilter } from "@/hooks/filter-context";
 import { UniverseTable } from "@/components/universe/UniverseTable";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { EngineStatusStrip } from "@/components/primitives/EngineStatusStrip";
 import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
 
 /**
@@ -17,7 +19,7 @@ import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
  * a client boundary (search input bound to filter-context, table sort/filter
  * state, rail register effect).
  */
-export function UniverseClient({ snap }: { snap: UniverseSnapshot }) {
+export function UniverseClient({ snap, engineStatus }: { snap: UniverseSnapshot; engineStatus: EngineStatus }) {
   return (
     <div
       style={{
@@ -31,6 +33,7 @@ export function UniverseClient({ snap }: { snap: UniverseSnapshot }) {
     >
       <UniverseRailRegister snap={snap} />
       <UniverseHeader snap={snap} />
+      <EngineStatusStrip status={engineStatus} />
       <UniverseTable
         rows={snap.rows}
         asOf={snap.asOf}

@@ -1,4 +1,5 @@
 import { getLatestUniverseScoresServer } from "@/lib/universe-data-server";
+import { getEngineStatus } from "@/lib/engine-status";
 import { UniverseClient } from "./UniverseClient";
 
 /**
@@ -9,6 +10,9 @@ import { UniverseClient } from "./UniverseClient";
 export const revalidate = 1800;
 
 export default async function UniversePage() {
-  const snap = await getLatestUniverseScoresServer();
-  return <UniverseClient snap={snap} />;
+  const [snap, engineStatus] = await Promise.all([
+    getLatestUniverseScoresServer(),
+    getEngineStatus(),
+  ]);
+  return <UniverseClient snap={snap} engineStatus={engineStatus} />;
 }

@@ -7,6 +7,7 @@ import { GateHistory } from "./GateHistory";
 import { RegimeRailRegister } from "@/components/rails/RegimeRailRegister";
 import type { RegimeLegendItem } from "@/components/rails/RegimeLegendRail";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 
 /**
  * Revalidate every 30 minutes so the page picks up new weekly macro_gauges
@@ -62,6 +63,7 @@ export default async function RegimePage() {
           { label: "macro chain", value: "Tue 22:00 UTC weekly" },
         ]}
       />
+      <EngineStatusStripAsync />
 
       <div
         style={{

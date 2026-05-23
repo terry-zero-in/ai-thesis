@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAiqIndex } from "@/lib/aiq-data";
 import { NoRail } from "@/components/shell/NoRail";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 import { LayerChip } from "@/components/universe/LayerChip";
 
 type ShowFilter = "scored" | "unscored" | "all";
@@ -89,6 +90,7 @@ export default async function AiqIndexPage({
           ...(nextRescore ? [{ label: "next rescore", value: nextRescore }] : []),
         ]}
       />
+      <EngineStatusStripAsync />
       <div style={{ padding: "10px 32px 0", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
           <div style={{ flex: 1 }} />

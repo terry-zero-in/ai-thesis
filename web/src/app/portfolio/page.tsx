@@ -4,6 +4,7 @@ import { PositionsTable } from "./PositionsTable";
 import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -68,6 +69,7 @@ export default async function PortfolioPage({
           { label: "price chain", value: "FMP daily close · refreshes 5 min" },
         ]}
       />
+      <EngineStatusStripAsync />
 
       <div
         style={{
