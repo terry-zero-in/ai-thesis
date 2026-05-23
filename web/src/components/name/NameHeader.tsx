@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
@@ -49,7 +49,7 @@ function TierLegend({ tier }: { tier: Tier | null }) {
   );
 }
 
-export function NameHeader({ d }: { d: NameDetail }) {
+export function NameHeader({ d, scoreMathSlot }: { d: NameDetail; scoreMathSlot?: ReactNode }) {
   // 7-day delta: history is weekly per spec §7.3. history[-1] is latest,
   // history[-2] is the prior week. Compute on final_score (the actionable number).
   const lastTwo = d.history.slice(-2);
@@ -121,6 +121,7 @@ export function NameHeader({ d }: { d: NameDetail }) {
                   discoverable on-canvas control rather than a quiet text. */}
               <SwitchNameChip />
               <TierBadge tier={d.tier} />
+              {scoreMathSlot && <span style={{ marginLeft: "auto" }}>{scoreMathSlot}</span>}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
               <LayerChip layer={d.layer} label={d.layer_label} />

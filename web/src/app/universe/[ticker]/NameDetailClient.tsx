@@ -15,9 +15,19 @@ import { Form4Section } from "@/components/name/Form4Section";
 import { NameRailRegister } from "@/components/rails/NameRailRegister";
 import type { NameActivityEvent, NameActivityRailData } from "@/components/rails/NameActivityRail";
 import { EngineStatusStrip } from "@/components/primitives/EngineStatusStrip";
+import { ScoreMathDrawer } from "@/components/primitives/ScoreMathDrawer";
 import type { EngineStatus } from "@/lib/engine-status";
+import type { ScoreMathRow } from "@/lib/score-math";
 
-export function NameDetailClient({ ticker, engineStatus }: { ticker: string; engineStatus: EngineStatus }) {
+export function NameDetailClient({
+  ticker,
+  engineStatus,
+  scoreMath,
+}: {
+  ticker: string;
+  engineStatus: EngineStatus;
+  scoreMath: ScoreMathRow;
+}) {
   const [d, setD] = useState<NameDetail | null>(null);
   const [tickers, setTickers] = useState<string[]>([]);
   useEffect(() => {
@@ -112,7 +122,36 @@ export function NameDetailClient({ ticker, engineStatus }: { ticker: string; eng
           NameHeader so navigation chrome sits at the top of the canvas,
           consistent with Linear's issue-prev/next pattern. */}
       <NamePager ticker={ticker} tickers={tickers} />
-      <NameHeader d={d} />
+      <NameHeader
+        d={d}
+        scoreMathSlot={
+          <ScoreMathDrawer
+            row={scoreMath}
+            ariaLabel={`Open Score Math drawer for ${ticker.toUpperCase()}`}
+            trigger={
+              <span
+                className="lin-hov"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 11,
+                  fontFamily: "var(--m)",
+                  letterSpacing: ".04em",
+                  textTransform: "uppercase",
+                  color: "var(--text-2)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                  padding: "3px 8px",
+                  cursor: "pointer",
+                }}
+              >
+                ƒ Score math
+              </span>
+            }
+          />
+        }
+      />
       <EngineStatusStrip status={engineStatus} />
       {/* Portfolio context strip — sits between header and chart so the
           "is this in my book?" question is answered before the score chart
