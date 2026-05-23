@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAiqIndex } from "@/lib/aiq-data";
+import { aiqDaysSinceScored, AIQ_REVIEW_CADENCE_DAYS } from "@/lib/aiq-types";
 import { NoRail } from "@/components/shell/NoRail";
 import { PageHeader } from "@/components/primitives/PageHeader";
 import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
@@ -91,6 +92,7 @@ export default async function AiqIndexPage({
         ]}
       />
       <EngineStatusStripAsync />
+      <NeedsReviewQueue rows={snap.rows} />
       <div style={{ padding: "10px 32px 0", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
           <div style={{ flex: 1 }} />
@@ -256,5 +258,115 @@ function Td({ children, align = "right", muted = false }: { children?: React.Rea
     >
       {children}
     </td>
+  );
+}
+
+/**
+ * THS-75 needs-review queue.
+ *
+ * Lists tickers whose latest AIQ row is older than the quarterly cadence
+ * (AIQ_REVIEW_CADENCE_DAYS = 90). Sorted most-overdue first. Unscored
+ * tickers are intentionally NOT surfaced here — they have their own
+ * "Unscored" filter chip in the main table. This queue is specifically
+ * for tickers that were scored and are now stale.
+ *
+ * Empty state: cleanly hidden when nothing is overdue (rather than
+ * rendering a "you're all caught up" empty card on every load — that
+ * gets noisy fast).
+ */
+function NeedsReviewQueue({ rows }: { rows: import("@/lib/aiq-data").AiqIndexRow[] }) {
+  type Overdue = { row: import("@/lib/aiq-data").AiqIndexRow; daysOverdue: number };
+  const overdue: Overdue[] = [];
+  for (const r of rows) {
+    if (!r.scored_at) continue;
+    const days = aiqDaysSinceScored(r.scored_at);
+    if (days != null && days > AIQ_REVIEW_CADENCE_DAYS) {
+      overdue.push({ row: r, daysOverdue: days - AIQ_REVIEW_CADENCE_DAYS });
+    }
+  }
+  if (overdue.length === 0) return null;
+  overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
+
+  return (
+    <div
+      style={{
+        padding: "12px 32px 14px",
+        borderBottom: "1px solid var(--border-subtle)",
+        background: "color-mix(in oklab, var(--warning) 3%, transparent)",
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: 10,
+          marginBottom: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            fontFamily: "var(--m)",
+            color: "var(--warning)",
+            textTransform: "uppercase",
+            letterSpacing: ".10em",
+            fontWeight: 600,
+          }}
+        >
+          Needs Review
+        </span>
+        <span
+          style={{
+            fontSize: 10.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            letterSpacing: ".04em",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          · {overdue.length} {overdue.length === 1 ? "ticker" : "tickers"} past the {AIQ_REVIEW_CADENCE_DAYS}-day cadence
+        </span>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+          gap: 0,
+        }}
+      >
+        {overdue.map(({ row, daysOverdue }) => {
+          const sinceScored = aiqDaysSinceScored(row.scored_at) ?? 0;
+          return (
+            <Link
+              key={row.ticker}
+              href={`/aiq/${row.ticker}`}
+              className="row-hov"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "6px 10px",
+                fontSize: 12,
+                fontFamily: "var(--m)",
+                fontVariantNumeric: "tabular-nums",
+                textDecoration: "none",
+                color: "var(--text-1)",
+              }}
+              title={`${row.ticker} last scored ${row.scored_at} (${sinceScored}d ago) — ${daysOverdue}d past cadence.`}
+            >
+              <span style={{ fontWeight: 600, minWidth: 48 }}>{row.ticker}</span>
+              <span style={{ color: "var(--text-3)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                last scored {row.scored_at}
+              </span>
+              <span style={{ color: "var(--warning)", fontSize: 11 }}>
+                {sinceScored}d ago
+              </span>
+              <span style={{ color: "var(--accent)", fontSize: 11 }}>Open ›</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }
