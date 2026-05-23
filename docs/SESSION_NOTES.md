@@ -1139,3 +1139,25 @@ All six are in `~/.claude/skills/` and surface via the Skill tool when Terry typ
 3. Check PR #2 status (`subscribe_pr_activity` was set up — events arrive in the thread)
 4. If Terry's ready, mark THS-29 Done and start Epic 2 — Tier-A Scoring Engine (THS-30). First sub-issue under it is the next thing to build.
 5. If Epic 4 is firing, FIRST `git clone https://github.com/terry-zero-in/optimize-claude-docs` (Reticle base). If the clone fails (private repo / auth), escalate immediately.
+
+---
+
+## SESSION S27 (2026-05-22, autonomous batch)
+
+**Note:** Sessions S10–S27 are logged in `docs/handoffs/` per-session. This entry is a pointer to keep `SESSION_NOTES.md` discoverable for the next cold start.
+
+S27 picked up from S26's MCP-disconnected handoff and executed autonomously through 5 Linear tickets + 2 follow-ups. **Branch: `claude/peaceful-rubin-KqluN` (15 commits, all pushed).** Highlights:
+
+- 4 prod migrations applied to `mvxgnliwvoauwwarrlrr`: e25_aiq_scores_cron, e80_routines_pr1 (multi-tenant pivot), e80_advisor_cleanup (THS-96), e34_ibm_depreciation_flag (THS-48), e44_aiq_rubric_edit_audit (THS-75).
+- THS-71 (UI items 3a+3b), THS-73 (Score Math + engine-status strip on 7 pages), THS-74 (dashboard Today's Thesis + rail rework), THS-75 (AIQ Editor cockpit + needs-review queue) all shipped — In Review pending Terry's local visual checks.
+- Linear: canceled THS-70 monetization epic, created **THS-92** "Personal-tool v1 polish" as successor, re-parented 10 sub-issues, filed THS-93/94/95 retro + THS-96/97/98 follow-ups.
+- CLAUDE.md updated with autonomous-by-default rule.
+
+**Full S27 record:**
+- Part 1: `docs/handoffs/2026-05-22-S27-migrations-applied-linear-pivot-cleanup.md`
+- Part 2: `docs/handoffs/2026-05-22-S27-autonomous-ticket-burn.md`
+
+**Next session — start here:**
+1. Read `CLAUDE.md` for the autonomy rule
+2. Read `docs/handoffs/2026-05-22-S27-autonomous-ticket-burn.md` for current state + what's pending Terry
+3. Check Linear THS-92 children for the next ticket in build order (after In Review tickets close to Done, likely THS-76)
