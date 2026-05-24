@@ -1161,3 +1161,23 @@ S27 picked up from S26's MCP-disconnected handoff and executed autonomously thro
 1. Read `CLAUDE.md` for the autonomy rule
 2. Read `docs/handoffs/2026-05-22-S27-autonomous-ticket-burn.md` for current state + what's pending Terry
 3. Check Linear THS-92 children for the next ticket in build order (after In Review tickets close to Done, likely THS-76)
+
+---
+
+## SESSION S28 (2026-05-24, /sch command + dashboard density fix)
+
+**Note:** Sessions S10–S28 are logged in `docs/handoffs/` per-session. This entry is a pointer.
+
+Tail of S27's autonomous run: Terry shared screenshots of the deployed Vercel preview, flagged the Score Movers + Top Positions tables as looking airy vs Linear/Lambo standard, and asked me to register `/sch` as a real slash command instead of treating it as verbal shorthand.
+
+- `7c84be8` — dashboard table density fix (row padding 10px→7px, explicit lineHeight: 1.3, Driver column becomes the 1fr flex column instead of Layer)
+- `1ecdcf2` — `.claude/commands/sch.md` registered so `/sch` is a real project slash command from now on
+- THS-74 commented with the density fix details; remains In Review pending Terry's local re-screenshot
+- No new prod migrations, no Linear scope changes
+
+**Full record:** `docs/handoffs/2026-05-24-S28-sch-command-and-dashboard-density-fix.md`
+
+**Next session — start here:**
+1. Read `CLAUDE.md`
+2. Read the S28 handoff above (which references S27 part 2 for the bulk of the autonomous run)
+3. Check the In Review comments on THS-73 / 74 / 75 for any visual feedback Terry posted
