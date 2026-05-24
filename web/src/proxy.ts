@@ -17,7 +17,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PUBLIC_PREFIXES = ["/login", "/auth/callback", "/logout", "/_next", "/favicon"];
+const PUBLIC_PREFIXES = ["/login", "/auth/callback", "/logout", "/_next", "/favicon", "/learn"];
 
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

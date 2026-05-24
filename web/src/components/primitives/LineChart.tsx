@@ -35,6 +35,13 @@ export function LineChart({
   filled = false,
   paddingY = 2,
 }: LineChartProps) {
+  // useId gives a stable, SSR-safe unique ID per render-instance. Suffix
+  // with "-grad" so the SVG <linearGradient id> stays distinct from any
+  // other useId() user in the same subtree. Hoisted above the early-return
+  // to satisfy react-hooks/rules-of-hooks — hooks must run in the same
+  // order on every render.
+  const gradientId = `${useId()}-grad`;
+
   if (data.length < 2) {
     return <svg width={width} height={height} aria-hidden />;
   }
@@ -54,11 +61,6 @@ export function LineChart({
   const areaPath = filled
     ? `${path} L${points[points.length - 1][0]},${height} L0,${height} Z`
     : null;
-
-  // useId gives a stable, SSR-safe unique ID per render-instance. Suffix
-  // with "-grad" so the SVG <linearGradient id> stays distinct from any
-  // other useId() user in the same subtree.
-  const gradientId = `${useId()}-grad`;
 
   // SVG sizing: viewBox owns coordinate space (path math is against
   // width/height props); style:100% lets the rendered SVG fill its

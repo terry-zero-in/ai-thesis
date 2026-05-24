@@ -28,6 +28,8 @@ const ITEMS: NavItem[] = [
   { ic: I.chk,     label: "Decisions",  id: "decisions", href: "/decisions",  keys: ["G", "then", "X"] },
   { ic: I.plus,    label: "Proposals",  id: "proposals", href: "/proposals",  keys: ["G", "then", "C"] },
   { ic: I.refresh, label: "Backtest",   id: "backtest",  href: "/backtest",   keys: ["G", "then", "B"] },
+  // Reference
+  { ic: I.help,    label: "Learn",      id: "learn",     href: "/learn",      keys: ["G", "then", "L"] },
 ];
 
 // Nav-item hover tips are deliberately terse — just the page name + keybinding.
@@ -178,7 +180,25 @@ export function Sidebar({
           </div>
         )}
         {col && <div style={{ height: 1, background: "var(--border-subtle)", margin: "6px 4px" }} />}
-        {items.slice(4).map((it) => (
+        {items.slice(4, 9).map((it) => (
+          <SbItem key={it.id} {...it} active={isActive(it.id)} col={col} />
+        ))}
+        {!col && (
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: "var(--text-3)",
+              padding: "10px 8px 4px",
+              letterSpacing: ".06em",
+              textTransform: "uppercase",
+            }}
+          >
+            Reference
+          </div>
+        )}
+        {col && <div style={{ height: 1, background: "var(--border-subtle)", margin: "6px 4px" }} />}
+        {items.slice(9).map((it) => (
           <SbItem key={it.id} {...it} active={isActive(it.id)} col={col} />
         ))}
       </nav>
