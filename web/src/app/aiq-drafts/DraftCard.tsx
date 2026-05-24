@@ -34,7 +34,7 @@ export function DraftCard({ draft }: { draft: AiqDraftRow }) {
       >
         <Meta draft={draft} />
         <div style={{ fontSize: 13, marginTop: 6, color: "var(--text-1)" }}>
-          Parse error — Claude output didn't match the schema:
+          Parse error — Claude output didn&apos;t match the schema:
           <pre
             style={{
               margin: "6px 0 0 0",

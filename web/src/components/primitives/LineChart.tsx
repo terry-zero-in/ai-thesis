@@ -10,6 +10,7 @@
  * v1 = single-series only. Multi-series (e.g., score + price overlay)
  * is a v1.1 extension.
  */
+import { useId } from "react";
 
 interface LineChartProps {
   data: number[];
@@ -54,7 +55,10 @@ export function LineChart({
     ? `${path} L${points[points.length - 1][0]},${height} L0,${height} Z`
     : null;
 
-  const gradientId = `lc-grad-${Math.random().toString(36).slice(2, 9)}`;
+  // useId gives a stable, SSR-safe unique ID per render-instance. Suffix
+  // with "-grad" so the SVG <linearGradient id> stays distinct from any
+  // other useId() user in the same subtree.
+  const gradientId = `${useId()}-grad`;
 
   // SVG sizing: viewBox owns coordinate space (path math is against
   // width/height props); style:100% lets the rendered SVG fill its

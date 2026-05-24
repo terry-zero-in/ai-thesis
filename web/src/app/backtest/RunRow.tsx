@@ -8,11 +8,15 @@ export function RunRow({ run }: { run: BacktestRun }) {
   const sparkPath = useMemo(() => {
     const series = run.series?.monthly_returns_net ?? [];
     if (series.length === 0) return null;
-    let cum = 1;
-    const pts = series.map((p) => {
-      cum *= 1 + p.ret;
-      return cum;
-    });
+    // Cumulative compounding without an outer `let` — React 19's
+    // react-hooks lint rule flags re-assigned outer variables inside
+    // map callbacks. Pushing into a const array within useMemo is
+    // render-deterministic and lint-clean.
+    const pts: number[] = [];
+    for (const p of series) {
+      const prev = pts.length === 0 ? 1 : pts[pts.length - 1];
+      pts.push(prev * (1 + p.ret));
+    }
     const min = Math.min(...pts);
     const max = Math.max(...pts);
     const w = 200;
