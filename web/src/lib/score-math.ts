@@ -1,5 +1,5 @@
 /**
- * Score Math derivation — THS-73 sub-pattern #2.
+ * Score Math derivation — THS-73 sub-pattern #2 (server fetcher).
  *
  * Builds a single `ScoreMath` object for one ticker, derived end-to-end
  * from prod tables:
@@ -27,46 +27,14 @@
  *               ≥ 60 → Medium
  *               ≥ 45 → Low
  *               <    → Avoid
+ *
+ * Types + pure derivations live in `./score-math-types.ts` so client
+ * components can import them without dragging this server-only fetcher
+ * (and its `next/headers` transitive dep) into the browser bundle.
  */
 import { getSupabaseServer } from "./supabase/server";
-import { classifyTier, type LayerCode } from "./scoring-weights";
-
-export interface ScoreMathRow {
-  ticker: string;
-  /** Layer code 1..5, or null if the ticker is unknown / outside universe. */
-  layer: number | null;
-  /** Display label for the layer. */
-  layerLabel: string;
-  /** Raw factor scores (0..100 each). null when the engine hasn't scored. */
-  q: number | null;
-  g: number | null;
-  v: number | null;
-  aiq: number | null;
-  /** Engine-computed weighted Tier-A composite (pre-tax, pre-multiplier). */
-  composite: number | null;
-  /** Concentration-tax dollar value applied additively (negative). */
-  concentrationTax: number;
-  /** Most-recent depreciation v_penalty (negative, already inside `v`). */
-  depreciationPenalty: number | null;
-  /** True when a depreciation_flags row exists for this ticker. */
-  depreciationFlagged: boolean;
-  /** Macro multiplier (0.85..1.00) applied at composite ≥ 75 only. */
-  macroMultiplier: number;
-  /** Number of macro gates hit (0..3). */
-  macroGatesHit: number;
-  /** Engine-computed final score after tax + multiplier. */
-  finalScore: number | null;
-  /** Tier classification from finalScore (cutpoints in scoring-weights.ts). */
-  tier: "High" | "Medium" | "Low" | "Avoid" | null;
-  /** Latest scores_history.as_of for this ticker. */
-  asOf: string | null;
-  /** Latest concentration_history.as_of for this ticker. */
-  concentrationAsOf: string | null;
-  /** Most-recent depreciation_flags.flagged_at for this ticker. */
-  depreciationFlaggedAt: string | null;
-  /** True when at least the universe row was found. */
-  found: boolean;
-}
+import { classifyTier } from "./scoring-weights";
+import type { ScoreMathRow } from "./score-math-types";
 
 /**
  * Fetch a single ticker's full score derivation. Returns `found: false`
@@ -129,10 +97,6 @@ export async function getScoreMath(ticker: string): Promise<ScoreMathRow> {
   const conc = concRes.data as { as_of: string; tax: number } | null;
   const dep = depRes.data as { flagged_at: string; penalty_v: number | null; extension_years: number | null } | null;
 
-  // The composite stored in scores_history is the post-(tax + multiplier) value
-  // when the engine writes "composite" the way compute_composite_scores does
-  // — actually scores_history.composite is the PRE-tax value (see composite.ts),
-  // so use it directly. final_score is the post-everything value.
   return {
     ticker: t,
     layer: u.layer,
@@ -180,16 +144,7 @@ function emptyScoreMath(ticker: string): ScoreMathRow {
   };
 }
 
-/**
- * Reconcile final_score from the derivation rows. Mirrors the engine
- * arithmetic in `composite.ts`. Useful for the drawer's "derived"
- * annotation so the math is verifiable on screen.
- */
-export function deriveFinalScore(row: ScoreMathRow): number | null {
-  if (row.composite == null) return null;
-  const taxed = row.composite + (row.concentrationTax ?? 0);
-  return taxed >= 75 ? taxed * row.macroMultiplier : taxed;
-}
-
-/** Convenience type re-export for layer code casting in UI consumers. */
-export type { LayerCode };
+// Re-export client-safe types and pure derivations so callers that
+// previously imported them from this module keep working.
+export { deriveFinalScore } from "./score-math-types";
+export type { ScoreMathRow, LayerCode } from "./score-math-types";

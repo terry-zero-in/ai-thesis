@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Tip } from "@/components/shell/Tip";
-import { deriveFinalScore, type ScoreMathRow } from "@/lib/score-math";
+import { deriveFinalScore, type ScoreMathRow } from "@/lib/score-math-types";
 
 /**
  * Score Math Drawer — THS-73 sub-pattern #2.
