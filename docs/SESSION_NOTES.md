@@ -1181,3 +1181,19 @@ Tail of S27's autonomous run: Terry shared screenshots of the deployed Vercel pr
 1. Read `CLAUDE.md`
 2. Read the S28 handoff above (which references S27 part 2 for the bulk of the autonomous run)
 3. Check the In Review comments on THS-73 / 74 / 75 for any visual feedback Terry posted
+
+---
+
+## SESSION S28 update (2026-05-24, critical-path framing)
+
+Terry pushed back mid-S28 with "what do we need to do to get this 100% ready to be used personally and by parents?" Re-framed the work: there are exactly **6 critical-path steps** between current state and "fully usable for Terry + Mom + Dad on the real prod URL." Polish tickets (THS-76+, THS-97, THS-98, THS-99) are noise relative to those 6.
+
+- **The 6 steps** are at the top of `docs/handoffs/2026-05-24-S28-sch-command-and-dashboard-density-fix.md` (§"CRITICAL PATH TO 100% READY")
+- Most are Terry-only (~50 min of his work total)
+- One ambiguity Claude couldn't validate from the container: whether the Supabase edge functions are actually deployed (cron jobs need them). Check via `supabase functions list`.
+- Suggested next-session shape: Terry pre-does steps 1/2/3 himself; next Claude session drives step 4 (firing daily-batch) → step 5 (merge + deploy) → step 6 (RLS smoke). 60-80% of the way to "100% ready" in one session.
+
+**Next session — start here:**
+1. Read the CRITICAL PATH section at the top of the S28 handoff doc.
+2. If Terry has done steps 1/2/3 — drive step 4. If not — restart from step 1.
+3. Do NOT crank polish tickets until the critical path is green.

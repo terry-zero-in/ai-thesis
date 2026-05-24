@@ -7,6 +7,34 @@
 
 ---
 
+## 🎯 CRITICAL PATH TO "100% READY FOR PERSONAL USE" (Terry's framing 2026-05-24)
+
+Honest answer to "what do we need to do to get this 100% ready to be used personally and by parents?" — the foundations are laid, but **none of it has been stitched together end-to-end with real users on the real prod URL.** That's the gap. Polish tickets (THS-76+, THS-97, THS-98, THS-99) are noise relative to this.
+
+**6 steps gate "fully usable." Stop cranking polish tickets until these are green.**
+
+| # | Step | Who | Time | Status |
+|---|---|---|---|---|
+| 1 | Visual review of THS-73 / 74 / 75 in local dev or branch preview (NOT prod URL — that's stale) | Terry | ~30 min | not done |
+| 2 | Onboard Mom + Dad to auth (Mom signs in once; Dad's account created in Studio + sign-in) | Terry | ~5 min | not done |
+| 3 | Set 4 env secrets in Supabase Edge Functions (ANTHROPIC / FMP / POLYGON / CRON-INVOKE) | Terry | ~3 min | not done |
+| 4 | Fire daily-batch routine ONCE via claude.ai/code (the moment of truth — populates dashboard with real data) | Terry drives, Claude can co-pilot | ~15 min | not done |
+| 5 | Merge `claude/peaceful-rubin-KqluN` → `main` + `vercel --prod --yes` (so prod URL reflects S27 work) | Terry | ~5 min | not done |
+| 6 | Smoke-test multi-user RLS (each of 3 users adds 1 position, verifies they see only their own portfolio + shared universe/scores/memos) | Terry + Mom + Dad | ~5 min | not done |
+
+**Critical-path risk Claude could not validate from inside the container:** The edge functions (`compute-q-scores`, `compute-g-scores`, `compute-v-scores`, `compute-aiq-scores`, `compute-composite`, `ingest-fundamentals`, `ingest-prices`, `ingest-consensus`, `ingest-macro`, etc.) need to be **deployed** to Supabase for cron jobs + routines to invoke them. The migrations schedule cron, but if the functions aren't deployed, cron calls 404 silently. To check: `supabase functions list` from Terry's terminal. If missing: `supabase functions deploy <name>` per function.
+
+**Polish that is NOT on the critical path** (file them away mentally):
+- THS-76, 77, 78, 79, 80, 82 — UI polish tickets under THS-92
+- THS-97 (CRM L2→L3 reclassification) — cosmetic universe fix
+- THS-98 (earnings calendar schema + ingest) — feature, not blocking
+- THS-99 (Epic 1-3 advisor cleanup, not yet filed) — perf optimization
+- 3 of 4 routines (weekly-rescore, monthly-curator, position-pulse) — fire weekly/monthly; only daily-batch matters for first-use
+
+**Suggested S29 shape:** Terry pre-does steps 1, 2, 3 (all you-only). Tells the next session "secrets set, Mom+Dad in auth, ready to fire daily-batch" → Claude drives step 4 (firing daily-batch via co-pilot pattern), verifies writes land in Supabase, then walks Terry through step 5 (merge + deploy) and step 6 (RLS smoke). One session, 60-80% of the way to "100% ready." Polish tickets resume after.
+
+---
+
 ## ⚠️ Read this first
 
 **Why Terry didn't see the dashboard density change in his preview:** all 20 S27+S28 commits live on `claude/peaceful-rubin-KqluN`, NOT on `main`. The canonical prod URL `https://ai-thesis-v2.vercel.app` serves whatever's deployed from `main`, which is stale relative to this branch. To see ANY S27 or S28 work in a browser:
