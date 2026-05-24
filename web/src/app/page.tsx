@@ -683,7 +683,7 @@ function unifyMovers(winners: DashboardMover[], losers: DashboardMover[]): Dashb
  * Grid template:
  *   [ticker 92px][layer 1fr][composite 96px][Δ7D 80px][driver 110px]
  */
-const MOVERS_GRID = "92px minmax(0, 1fr) 96px 80px 110px";
+const MOVERS_GRID = "68px 140px 100px 80px minmax(120px, 1fr)";
 
 function MoversTable({ movers, asOf }: { movers: DashboardMover[]; asOf: string | null }) {
   return (
@@ -743,24 +743,25 @@ function MoverRow({ m, isLast, asOf, rowIndex }: { m: DashboardMover; isLast: bo
   // opens the popover instead of navigating. Linear-class affordance: the
   // whole row is the navigation surface (no hunt for the ticker hot-zone).
   return (
-    <Link
-      href={`/universe/${m.ticker}`}
-      aria-label={`Open ${m.ticker} detail`}
-      className="row-hov row-stagger-in"
-      style={{
-        display: "grid",
-        gridTemplateColumns: MOVERS_GRID,
-        columnGap: 16,
-        padding: "10px 14px",
-        borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
-        whiteSpace: "nowrap",
-        alignItems: "baseline",
-        textDecoration: "none",
-        color: "inherit",
-        // Cascade index for .row-stagger-in animation-delay calc.
-        ["--row-i" as never]: Math.min(rowIndex, 12),
-      }}
-    >
+      <Link
+        href={`/universe/${m.ticker}`}
+        aria-label={`Open ${m.ticker} detail`}
+        className="row-hov row-stagger-in"
+        style={{
+          display: "grid",
+          gridTemplateColumns: MOVERS_GRID,
+          columnGap: 16,
+          padding: "7px 14px",
+          lineHeight: 1.3,
+          borderBottom: isLast ? undefined : "1px solid var(--border-subtle)",
+          whiteSpace: "nowrap",
+          alignItems: "baseline",
+          textDecoration: "none",
+          color: "inherit",
+          // Cascade index for .row-stagger-in animation-delay calc.
+          ["--row-i" as never]: Math.min(rowIndex, 12),
+        }}
+      >
       <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{m.ticker}</span>
       <span style={{ color: "var(--text-3)", fontSize: 11 }}>{m.layer_label}</span>
       <ScoreMathPopover input={scoreMathInput}>
