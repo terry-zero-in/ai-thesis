@@ -7,6 +7,8 @@ import { type GaugeKey } from "@/lib/regime-types";
 import { getLatestMacroLog } from "@/lib/routine-outputs";
 import { getAlertsSnapshot } from "@/lib/alerts-data";
 import { getHighestDeprecRiskHyperscalerHeld } from "@/lib/depreciation-data";
+import { getConvictionTapeItems } from "@/lib/conviction-tape-data";
+import { ConvictionTape } from "@/components/conviction/ConvictionTape";
 import { DashboardRailRegister } from "@/components/rails/DashboardRailRegister";
 import Link from "next/link";
 import { GreetingStrip } from "@/app/GreetingStrip";
@@ -64,7 +66,7 @@ export default async function DashboardPage({
   //
   // THS-74: added macroLog, alerts, insider24h, and universe-server for
   // the "Today's Thesis" command-center module + the right-rail rework.
-  const [snap, portfolio, regime, recentInsider, insider24h, macroLog, alerts, universe] = await Promise.all([
+  const [snap, portfolio, regime, recentInsider, insider24h, macroLog, alerts, universe, tapeItems] = await Promise.all([
     getDashboardSnapshot(),
     getPortfolioSnapshot(),
     getRegimeSnapshot(),
@@ -73,6 +75,7 @@ export default async function DashboardPage({
     getLatestMacroLog(),
     getAlertsSnapshot(),
     getLatestUniverseScoresServer(),
+    getConvictionTapeItems(),
   ]);
   const heldTickers = portfolio.positions.map((p) => p.ticker);
   const highestDeprec = await getHighestDeprecRiskHyperscalerHeld(heldTickers);
@@ -161,6 +164,7 @@ export default async function DashboardPage({
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <ConvictionTape items={tapeItems} />
       <DashboardRailRegister data={railData} />
       <EngineStatusStripAsync />
       <div
