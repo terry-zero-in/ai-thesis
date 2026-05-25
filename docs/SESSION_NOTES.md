@@ -1197,3 +1197,24 @@ Terry pushed back mid-S28 with "what do we need to do to get this 100% ready to 
 1. Read the CRITICAL PATH section at the top of the S28 handoff doc.
 2. If Terry has done steps 1/2/3 — drive step 4. If not — restart from step 1.
 3. Do NOT crank polish tickets until the critical path is green.
+
+---
+
+## SESSION S29 (2026-05-24, Learn page + auth sync + pre-launch bug triage)
+
+**Note:** Sessions S10–S29 are logged in `docs/handoffs/` per-session. This entry is a pointer.
+
+S29 shipped 6 commits across three concerns: (1) a `/learn` methodology page with sticky TOC for non-quant users, (2) the auth → public.users sync trigger that closes the gap that would have blocked Mom + Dad from writing anything (THS-100), and (3) caught + fixed a build-breaking bug in the S28 Score Math drawer work before it could fail `vercel --prod`. Late session, Terry pasted a comprehensive Claude-browser app review that we triaged into two new tickets: **THS-101 pre-launch bug-fix bundle (8 items, ~2.5h)** and **THS-102 post-launch polish queue (~13 items, ~5h)**.
+
+- **Mom + Dad can now sign in cleanly** — public.users backfilled + permanent trigger added (THS-100 Done). Dad's email corrected from `terryturner2027@gmail.com` typo → `terryturner@gmail.com`.
+- **/learn shipped** — 10 sections + 43-entry glossary, voice-tuned for Mom/Dad with formulas demoted to `<details>` expansions, sticky TOC sidebar with scroll-spy.
+- **Vercel build no longer broken** — split `score-math.ts` to keep `next/headers` out of the client bundle. Would have failed `vercel --prod` at critical-path step 5.
+- **THS-101 filed (Todo, High):** 8 must-fix bugs from Claude-browser review (^VIX URL decode, /universe?tier= filter, popover overlap, env-var leak, Proposals breadcrumb, Backtest month roll, right-panel toggle, ^VIX in universe list). Single PR, ~2.5h, ideal for autonomous next-session crank.
+- **Dashboard density second pass** — first pass (S28) wasn't tight enough; went 7px→4px on row padding, 1.3→1.2 line-height.
+
+**Full record:** `docs/handoffs/2026-05-24-S29-learn-page-auth-sync-bug-triage.md`
+
+**Next session — start here:**
+1. Load skills per CLAUDE.md.
+2. Read the S29 handoff doc (especially the THS-101 section with exact fix locations for the 8 items).
+3. Crank THS-101 as a single PR. Then surface to Terry for visual check before he drives critical-path steps 2-6.
