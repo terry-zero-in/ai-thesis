@@ -16,13 +16,16 @@ import { NameRailRegister } from "@/components/rails/NameRailRegister";
 import type { NameActivityEvent, NameActivityRailData } from "@/components/rails/NameActivityRail";
 import { ScoreMathDrawer } from "@/components/primitives/ScoreMathDrawer";
 import type { ScoreMathRow } from "@/lib/score-math";
+import type { TraceData } from "@/components/conviction/TraceProvider";
 
 export function NameDetailClient({
   ticker,
   scoreMath,
+  trace,
 }: {
   ticker: string;
   scoreMath: ScoreMathRow;
+  trace: TraceData | null;
 }) {
   const [d, setD] = useState<NameDetail | null>(null);
   const [tickers, setTickers] = useState<string[]>([]);
@@ -120,6 +123,7 @@ export function NameDetailClient({
       <NamePager ticker={ticker} tickers={tickers} />
       <NameHeader
         d={d}
+        trace={trace}
         scoreMathSlot={
           <ScoreMathDrawer
             row={scoreMath}

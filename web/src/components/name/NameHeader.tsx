@@ -3,8 +3,11 @@ import Link from "next/link";
 import { LayerChip } from "@/components/universe/LayerChip";
 import { TierBadge } from "@/components/universe/TierBadge";
 import { HeroNumber } from "@/components/primitives/HeroNumber";
+import { DerivationLadder } from "@/components/primitives/DerivationLadder";
 import { SwitchNameChip } from "@/components/name/SwitchNameChip";
 import { MonoMetaSpine } from "@/components/primitives/MonoMetaSpine";
+import { TraceTarget } from "@/components/conviction/TraceTarget";
+import type { TraceData } from "@/components/conviction/TraceProvider";
 import type { NameDetail } from "@/lib/name-detail-data";
 import type { Tier } from "@/lib/universe-data";
 
@@ -49,7 +52,15 @@ function TierLegend({ tier }: { tier: Tier | null }) {
   );
 }
 
-export function NameHeader({ d, scoreMathSlot }: { d: NameDetail; scoreMathSlot?: ReactNode }) {
+export function NameHeader({
+  d,
+  scoreMathSlot,
+  trace,
+}: {
+  d: NameDetail;
+  scoreMathSlot?: ReactNode;
+  trace?: TraceData | null;
+}) {
   // 7-day delta: history is weekly per spec §7.3. history[-1] is latest,
   // history[-2] is the prior week. Compute on final_score (the actionable number).
   const lastTwo = d.history.slice(-2);
@@ -58,20 +69,49 @@ export function NameHeader({ d, scoreMathSlot }: { d: NameDetail; scoreMathSlot?
       ? { value: Number((lastTwo[1].final_score - lastTwo[0].final_score).toFixed(1)), period: "7d" }
       : null;
 
-  // Derivation chain — only renders the macro step when a multiplier was applied.
-  // Composite is the raw score; Final = Composite × macro_multiplier.
-  const derivation =
-    d.composite != null && d.final_score != null && d.macro_multiplier < 1
-      ? `Raw ${d.composite.toFixed(1)} · ×${d.macro_multiplier.toFixed(2)} macro (${d.macro_gates_hit} gate${
-          d.macro_gates_hit === 1 ? "" : "s"
-        } hit) · = ${d.final_score.toFixed(1)} effective`
-      : d.composite != null && d.final_score != null
-        ? `Raw ${d.composite.toFixed(1)} · macro ×1.00 (0/3 gates) · = ${d.final_score.toFixed(1)} effective`
-        : undefined;
+  // Derivation chain — composite → macro → effective, rendered as a
+  // <DerivationLadder> pipeline (signature pattern #2 per /lambo) so the
+  // math reads as a directed flow (→ glyphs) rather than an equation with
+  // mid-dots. Replaces the legacy hand-rolled string passed to HeroNumber's
+  // `derivation` prop. Always renders when composite + final exist so the
+  // "show your work" affordance is consistent regardless of whether macro
+  // is active (1.00× still earns a row — the engine ran, the gate count is
+  // public information).
+  const ladderSteps =
+    d.composite != null && d.final_score != null
+      ? [
+          { label: "raw", value: d.composite.toFixed(1) },
+          {
+            label: "macro",
+            value: `×${d.macro_multiplier.toFixed(2)}`,
+            note: `${d.macro_gates_hit}/3`,
+          },
+          { label: "effective", value: d.final_score.toFixed(1) },
+        ]
+      : null;
 
   const attribution = d.as_of
     ? `scored ${d.as_of} · composite engine${d.synthetic ? " · fixture" : ""}`
     : undefined;
+
+  // T-trace hint chip — quiet 10px mono affordance signaling the keyboard
+  // shortcut to users who don't know about it yet. Only renders when trace
+  // data exists (engine has run twice on this name) so we never hint at a
+  // shortcut that will produce an empty overlay.
+  const traceHint = trace ? (
+    <span
+      title="Press T while hovering the score to open the provenance trace"
+      style={{
+        fontFamily: "var(--m)",
+        fontSize: 10,
+        color: "var(--text-4)",
+        letterSpacing: ".04em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      T trace ↗
+    </span>
+  ) : null;
 
   return (
     // Single-column hero. Earlier two-column variant (S22) put a 12-week
@@ -121,7 +161,19 @@ export function NameHeader({ d, scoreMathSlot }: { d: NameDetail; scoreMathSlot?
                   discoverable on-canvas control rather than a quiet text. */}
               <SwitchNameChip />
               <TierBadge tier={d.tier} />
-              {scoreMathSlot && <span style={{ marginLeft: "auto" }}>{scoreMathSlot}</span>}
+              {(scoreMathSlot || traceHint) && (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  {traceHint}
+                  {scoreMathSlot}
+                </span>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, flexWrap: "wrap" }}>
               <LayerChip layer={d.layer} label={d.layer_label} />
@@ -170,14 +222,29 @@ export function NameHeader({ d, scoreMathSlot }: { d: NameDetail; scoreMathSlot?
             </div>
         </div>
 
-        {/* Hero — Final is the protagonist per spec §1.7 + §5.3 */}
+        {/* Hero — Final is the protagonist per spec §1.7 + §5.3.
+            The composite number is wrapped in <TraceTarget> when trace data
+            is available so pressing T arms the Score Provenance Trace
+            overlay (Lambo Pass §G feature 1). The derivation chain renders
+            as <DerivationLadder> inline beneath via the `footer` slot —
+            replaces the legacy mid-dot string with → glyphs so the math
+            reads as a pipeline, not an equation. */}
         <HeroNumber
           label="Final score"
           value={d.final_score}
           delta={delta}
-          derivation={derivation}
           attribution={attribution}
           size="lg"
+          wrapValue={
+            trace
+              ? (node) => <TraceTarget data={trace}>{node}</TraceTarget>
+              : undefined
+          }
+          footer={
+            ladderSteps ? (
+              <DerivationLadder steps={ladderSteps} fontSize={12.5} />
+            ) : null
+          }
         />
 
         {/* Tier-cutoff legend — spec cutoffs from scoring-weights.ts

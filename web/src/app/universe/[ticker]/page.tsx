@@ -1,4 +1,5 @@
 import { getScoreMath } from "@/lib/score-math";
+import { getNameTraceData } from "@/lib/name-trace-data";
 import { NameDetailClient } from "./NameDetailClient";
 
 /**
@@ -22,8 +23,13 @@ export default async function NameDetailPage({ params }: { params: Promise<Param
   // Tickers like ^VIX arrive URL-encoded (%5EVIX). Decode before any downstream
   // use — otherwise the heading reads "%5EVIX" and the DB lookup misses.
   const ticker = safeDecode(raw);
-  const scoreMath = await getScoreMath(ticker);
-  return <NameDetailClient ticker={ticker} scoreMath={scoreMath} />;
+  // Parallel: score math (Drawer source) + trace data (TraceOverlay source).
+  // Both are server-only Supabase reads → no point sequencing them.
+  const [scoreMath, trace] = await Promise.all([
+    getScoreMath(ticker),
+    getNameTraceData(ticker),
+  ]);
+  return <NameDetailClient ticker={ticker} scoreMath={scoreMath} trace={trace} />;
 }
 
 function safeDecode(s: string): string {
