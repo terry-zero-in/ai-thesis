@@ -16,7 +16,7 @@
  * same ticker (used to render a week-over-week delta column).
  */
 import { getSupabaseBrowser } from "./supabase/client";
-import { FIXTURE_UNIVERSE } from "./universe-fixture";
+import { FIXTURE_UNIVERSE, fixtureAiqByTicker } from "./universe-fixture";
 import { classifyTier } from "./scoring-weights";
 
 export type Tier = "High" | "Medium" | "Low" | "Avoid";
@@ -42,6 +42,18 @@ export interface UniverseRow {
   macro_gates_hit: number;
   macro_multiplier: number;
   as_of: string | null;
+  /** Latest depreciation_flags row has penalty_v < 0 (V-score penalty active). */
+  has_dep_flag: boolean;
+  /** Latest depreciation_flags row carries a non-null burry_overstatement_pct. */
+  has_burry_overstatement: boolean;
+}
+
+/** Latest depreciation_flags row per ticker — drives Universe row chips + filter. */
+export interface DepFlagRow {
+  ticker: string;
+  flagged_at: string;
+  penalty_v: number | null;
+  burry_overstatement_pct: number | null;
 }
 
 export interface UniverseSnapshot {
@@ -99,7 +111,7 @@ export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
   const sb = getSupabaseBrowser();
   if (!sb) return fixtureSnapshot();
 
-  const [universeRes, scoresRes, queueRes] = await Promise.all([
+  const [universeRes, scoresRes, queueRes, depFlagsRes] = await Promise.all([
     sb.from("universe").select("ticker,name,layer,layer_label").eq("is_active", true).order("ticker"),
     sb
       .from("scores_history")
@@ -107,19 +119,31 @@ export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
       .order("as_of", { ascending: false })
       .limit(400), // ~50 names × 8 history rows; safe upper bound when universe count is unknown
     sb.from("aiq_draft_queue").select("ticker").in("status", ["queued", "processing"]),
+    sb
+      .from("depreciation_flags")
+      .select("ticker,flagged_at,penalty_v,burry_overstatement_pct")
+      .order("flagged_at", { ascending: false }),
   ]);
 
   const { data: universe, error: ue } = universeRes;
   const { data: scores, error: se } = scoresRes;
   const { data: queue } = queueRes; // queue errors are non-fatal — render scores without badges
+  const { data: depFlags } = depFlagsRes; // dep flag errors are non-fatal — render rows without chips/filter
   if (ue || !universe || universe.length === 0) return fixtureSnapshot();
   if (se || !scores || scores.length === 0) return fixtureSnapshot();
 
   const queuedTickers = (queue ?? []).map((r) => r.ticker as string);
-  return { ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]), queuedTickers };
+  return {
+    ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[], (depFlags ?? []) as DepFlagRow[]),
+    queuedTickers,
+  };
 }
 
-export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): UniverseSnapshot {
+export function buildSnapshot(
+  universe: UniverseDbRow[],
+  scores: ScoresRow[],
+  depFlags: DepFlagRow[] = [],
+): UniverseSnapshot {
   // Group history descending per ticker so [0] is latest, [1] is prior.
   const byTicker = new Map<string, ScoresRow[]>();
   for (const s of scores) {
@@ -127,12 +151,20 @@ export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): U
     list.push(s);
     byTicker.set(s.ticker, list);
   }
+  // Reader semantics from name-detail-data: latest flagged_at per ticker wins.
+  // The dep_flags query is already ordered descending by flagged_at, so first
+  // row per ticker is canonical.
+  const latestDepByTicker = new Map<string, DepFlagRow>();
+  for (const d of depFlags) {
+    if (!latestDepByTicker.has(d.ticker)) latestDepByTicker.set(d.ticker, d);
+  }
   let maxAsOf: string | null = null;
   const rows: UniverseRow[] = universe.map((u) => {
     const hist = byTicker.get(u.ticker) ?? [];
     const latest = hist[0];
     const prior = hist[1];
     if (latest && (!maxAsOf || latest.as_of > maxAsOf)) maxAsOf = latest.as_of;
+    const latestDep = latestDepByTicker.get(u.ticker);
     return {
       ticker: u.ticker,
       name: u.name,
@@ -157,6 +189,8 @@ export function buildSnapshot(universe: UniverseDbRow[], scores: ScoresRow[]): U
       macro_gates_hit: latest?.macro_gates_hit ?? 0,
       macro_multiplier: latest?.macro_multiplier ?? 1.0,
       as_of: latest?.as_of ?? null,
+      has_dep_flag: latestDep != null && latestDep.penalty_v != null && latestDep.penalty_v < 0,
+      has_burry_overstatement: latestDep != null && latestDep.burry_overstatement_pct != null,
     };
   });
   return { rows, asOf: maxAsOf, synthetic: false, queuedTickers: [] };
@@ -171,7 +205,10 @@ export function fixtureSnapshot(): UniverseSnapshot {
     const baseQ = 55 + ((i * 7) % 40);
     const baseG = 50 + ((i * 11) % 45);
     const baseV = 45 + ((i * 13) % 50);
-    const baseAiq = 50 + ((i * 5) % 45);
+    // AIQ comes from the shared per-ticker fixture so the universe table,
+    // the name-detail page, and the AIQ editor all show the same value
+    // for the same ticker in fixture mode.
+    const baseAiq = fixtureAiqByTicker(u.ticker).total;
     const composite = Math.round(
       ((baseQ + baseG + baseV + baseAiq) / 4 + (u.layer === 1 ? 5 : 0)) * 10,
     ) / 10;
@@ -205,6 +242,12 @@ export function fixtureSnapshot(): UniverseSnapshot {
       macro_gates_hit: gates,
       macro_multiplier: macroMult,
       as_of: "2026-05-09",
+      // Fixture dep-flag distribution mirrors the spec'd L2 hyperscaler set
+      // (seeded in 20260515002000_e23_seed_depreciation_flags.sql +
+      // 20260517000000_e24_extend_depreciation_flags.sql). META carries the
+      // sole Burry overstatement entry per spec §Fix 5.
+      has_dep_flag: ["META", "ORCL", "MSFT", "GOOGL", "AMZN"].includes(u.ticker),
+      has_burry_overstatement: u.ticker === "META",
     };
   });
   return { rows: seed, asOf: "2026-05-09", synthetic: true, queuedTickers: [] };

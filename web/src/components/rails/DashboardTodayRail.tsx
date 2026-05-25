@@ -328,14 +328,14 @@ function MoversByTier({
                 flex: 1,
                 height: `${heightPct}%`,
                 background: TIER_COLORS[t],
+                // opacity:0.3 already reads as muted; saturate filter (paint-
+                // tier C) was redundant on top of opacity (compositor S).
                 opacity: dim ? 0.3 : 1,
-                filter: dim ? "saturate(0.4)" : undefined,
                 border: "none",
                 borderRadius: 2,
                 cursor: count === 0 ? "default" : "pointer",
                 padding: 0,
-                transition:
-                  "opacity var(--dur-instant) var(--ease-out), filter var(--dur-instant) var(--ease-out)",
+                transition: "opacity var(--dur-instant) var(--ease-out)",
               }}
             />
           );

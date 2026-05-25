@@ -61,11 +61,13 @@ export function UniverseTable({ rows, asOf, synthetic, queuedTickers = [] }: Pro
       if (tiers.size > 0 && (!r.tier || !tiers.has(r.tier))) return false;
       if (qNorm && !r.ticker.includes(qNorm) && !r.name.toUpperCase().includes(qNorm)) return false;
       if (aiqMin != null && (r.aiq == null || r.aiq < aiqMin)) return false;
-      // Macro flag — only wired flag in fixture; rows must currently have ≥1 gate hit.
+      // Macro flag — rows must currently have ≥1 macro gate hit.
       if (flags.has("macro") && r.macro_gates_hit < 1) return false;
-      // "depr" and "burry" remain unwired (pending THS-46 depreciation_flags
-      // ingestion). They don't restrict the result set yet — the rail-side
-      // toggle disables clicks + shows a pending note to match.
+      // Dep / Burry — latest depreciation_flags row carries an active V-penalty
+      // (depr) or Burry overstatement (burry). Both wired off the depFlags fetch
+      // added in 2026-05-20.
+      if (flags.has("depr") && !r.has_dep_flag) return false;
+      if (flags.has("burry") && !r.has_burry_overstatement) return false;
       return true;
     });
   }, [rows, layers, tiers, q, aiqMin, flags]);
@@ -284,6 +286,33 @@ function Row({
               }}
             >
               Q
+            </span>
+          )}
+          {r.has_dep_flag && (
+            <span
+              className="chip-fade-in"
+              // Use mute warning chrome — depreciation flag is a quiet caution,
+              // not the active "Q" CTA. Hover surfaces the Burry overstatement
+              // when present so the chip carries its own provenance.
+              title={
+                r.has_burry_overstatement
+                  ? "Depreciation extension active — Burry overstatement flagged. Click row for source filing."
+                  : "Depreciation extension active — V-score penalty applied. Click row for source filing."
+              }
+              style={{
+                fontSize: 9,
+                fontFamily: "var(--m)",
+                color: "var(--warning-text)",
+                background: "var(--warning-text-fill)",
+                border: "1px solid var(--warning-text-border)",
+                padding: "0 4px",
+                borderRadius: 3,
+                letterSpacing: ".06em",
+                textTransform: "uppercase",
+                lineHeight: 1.6,
+              }}
+            >
+              {r.has_burry_overstatement ? "DEP·B" : "DEP"}
             </span>
           )}
         </span>

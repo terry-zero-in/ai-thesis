@@ -25,16 +25,16 @@ import {
   type UniverseSnapshot,
   type UniverseDbRow,
   type ScoresRow,
+  type DepFlagRow,
 } from "./universe-data";
 
 export async function getLatestUniverseScoresServer(): Promise<UniverseSnapshot> {
   const sb = await getSupabaseServer();
   if (!sb) return fixtureSnapshot();
 
-  // Parallelize the three independent queries so the RSC fetch isn't
-  // serialized waiting for universe → scores → queue. Same pattern as the
-  // browser variant in `universe-data.ts`.
-  const [universeRes, scoresRes, queueRes] = await Promise.all([
+  // Parallelize the four independent queries so the RSC fetch isn't
+  // serialized. Same pattern as the browser variant in `universe-data.ts`.
+  const [universeRes, scoresRes, queueRes, depFlagsRes] = await Promise.all([
     sb.from("universe").select("ticker,name,layer,layer_label").eq("is_active", true).order("ticker"),
     sb
       .from("scores_history")
@@ -44,14 +44,22 @@ export async function getLatestUniverseScoresServer(): Promise<UniverseSnapshot>
       .order("as_of", { ascending: false })
       .limit(400),
     sb.from("aiq_draft_queue").select("ticker").in("status", ["queued", "processing"]),
+    sb
+      .from("depreciation_flags")
+      .select("ticker,flagged_at,penalty_v,burry_overstatement_pct")
+      .order("flagged_at", { ascending: false }),
   ]);
 
   const { data: universe, error: ue } = universeRes;
   const { data: scores, error: se } = scoresRes;
   const { data: queue } = queueRes; // queue errors are non-fatal — render scores without badges
+  const { data: depFlags } = depFlagsRes; // dep flag errors are non-fatal — render rows without chips/filter
   if (ue || !universe || universe.length === 0) return fixtureSnapshot();
   if (se || !scores || scores.length === 0) return fixtureSnapshot();
 
   const queuedTickers = (queue ?? []).map((r) => (r as { ticker: string }).ticker);
-  return { ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[]), queuedTickers };
+  return {
+    ...buildSnapshot(universe as UniverseDbRow[], scores as ScoresRow[], (depFlags ?? []) as DepFlagRow[]),
+    queuedTickers,
+  };
 }
