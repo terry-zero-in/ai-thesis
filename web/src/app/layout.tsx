@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConditionalShell } from "@/components/shell/ConditionalShell";
-import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getUnseenAlertCount } from "@/lib/alerts-data";
 
@@ -35,11 +34,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <ConditionalShell
-          userEmail={userEmail}
-          unseenAlerts={unseenAlerts}
-          engineStrip={<EngineStatusStripAsync />}
-        >
+        <ConditionalShell userEmail={userEmail} unseenAlerts={unseenAlerts}>
           {children}
         </ConditionalShell>
       </body>

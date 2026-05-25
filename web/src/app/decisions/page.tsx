@@ -5,6 +5,7 @@ import { BulkAckButton } from "./BulkAckButton";
 import { ALERT_KIND_LABELS, type AlertKind } from "@/lib/alerts-types";
 import { NoRail } from "@/components/shell/NoRail";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 
 /**
  * Revalidate every 10 minutes so newly-derived alerts (from
@@ -82,6 +83,7 @@ export default async function DecisionsPage({
           },
         ]}
       />
+      <EngineStatusStripAsync />
       {activeKind && (
         <div style={{ padding: "10px 32px 0", flexShrink: 0 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>

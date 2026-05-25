@@ -5,6 +5,7 @@ import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
 import { SellDrawer } from "./SellDrawer";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 import { PageHeader } from "@/components/primitives/PageHeader";
+import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 import type { SellablePositionPrefill } from "@/lib/portfolio-types";
 
 /**
@@ -96,6 +97,7 @@ export default async function PortfolioPage({
           { label: "price chain", value: "FMP daily close · refreshes 5 min" },
         ]}
       />
+      <EngineStatusStripAsync />
 
       <div
         style={{
