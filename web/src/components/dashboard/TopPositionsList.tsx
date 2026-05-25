@@ -142,7 +142,6 @@ function PositionRowRender({ r, isLast, rowIndex }: { r: Row; isLast: boolean; r
       </span>
       <ThesisCell score={r.score} />
       <span style={{ textAlign: "right", color: plColor, fontVariantNumeric: "tabular-nums" }}>
-        {positive ? "+" : ""}
         {fmtUsd(r.pl, true)}
       </span>
       <span style={{ textAlign: "right", color: plColor, fontVariantNumeric: "tabular-nums" }}>
@@ -329,7 +328,6 @@ function TotalRow({
         book {fmtUsd(totalMv)}
       </span>
       <span style={{ textAlign: "right", color: plColor, fontVariantNumeric: "tabular-nums" }}>
-        {positive ? "+" : ""}
         {fmtUsd(booklevelPl, true)}
       </span>
       <span style={{ textAlign: "right", color: plColor, fontVariantNumeric: "tabular-nums" }}>

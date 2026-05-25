@@ -39,15 +39,20 @@ export async function savePosition(
   const sb = await getSupabaseServer();
   if (!sb) return { ok: false, message: "Supabase env not configured — saves disabled until Supabase env is configured." };
 
+  const { data: userData, error: userErr } = await sb.auth.getUser();
+  if (userErr || !userData?.user) return { ok: false, message: "Sign in to save positions." };
+  const user_id = userData.user.id;
+
   const { error } = await sb
     .from("portfolio_positions")
     .upsert(
-      { ticker, shares, cost_basis, opened_at, notes, closed_at: null },
-      { onConflict: "ticker" },
+      { user_id, ticker, shares, cost_basis, opened_at, notes, closed_at: null },
+      { onConflict: "user_id,ticker" },
     );
   if (error) return { ok: false, message: `Save failed: ${error.message}` };
 
   revalidatePath("/portfolio");
+  revalidatePath("/");
   return { ok: true, message: `Saved ${ticker} — ${shares} @ $${cost_basis.toFixed(2)}.`, ticker };
 }
 
@@ -91,11 +96,16 @@ export async function sellPosition(
   const sb = await getSupabaseServer();
   if (!sb) return { ok: false, message: "Supabase env not configured." };
 
+  const { data: userData, error: userErr } = await sb.auth.getUser();
+  if (userErr || !userData?.user) return { ok: false, message: "Sign in to sell positions." };
+  const user_id = userData.user.id;
+
   // Lookup the open row. RLS scopes to the caller's user_id so non-owners
   // get a null row (treated as "no open position").
   const { data: row, error: fetchError } = await sb
     .from("portfolio_positions")
     .select("shares,cost_basis,opened_at,original_shares,realized_pl,realized_proceeds")
+    .eq("user_id", user_id)
     .eq("ticker", ticker)
     .is("closed_at", null)
     .maybeSingle();
@@ -147,13 +157,14 @@ export async function sellPosition(
   const { error } = await sb
     .from("portfolio_positions")
     .update(update)
+    .eq("user_id", user_id)
     .eq("ticker", ticker)
     .is("closed_at", null);
 
   if (error) return { ok: false, message: `Sell failed: ${error.message}` };
 
   revalidatePath("/portfolio");
-  revalidatePath("/dashboard");
+  revalidatePath("/");
 
   const plSign = pl_this_sale >= 0 ? "+" : "−";
   const plAbs = Math.abs(pl_this_sale).toFixed(2);
