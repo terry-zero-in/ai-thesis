@@ -13,6 +13,8 @@ import { FilterProvider } from "@/hooks/filter-context";
 import { CtxPanelProvider, useCtxPanel } from "@/hooks/ctx-panel-context";
 import { UniverseFilterProvider } from "@/hooks/universe-filter-context";
 import { ShellControlsProvider } from "@/hooks/shell-controls-context";
+import { TraceProvider } from "@/components/conviction/TraceProvider";
+import { TraceOverlay } from "@/components/conviction/TraceOverlay";
 
 /**
  * Shell — top-level client component wrapping every page.
@@ -37,9 +39,11 @@ export function Shell({
     <FilterProvider>
       <CtxPanelProvider>
         <UniverseFilterProvider>
-          <ShellInner userEmail={userEmail ?? null} unseenAlerts={unseenAlerts}>
-            {children}
-          </ShellInner>
+          <TraceProvider>
+            <ShellInner userEmail={userEmail ?? null} unseenAlerts={unseenAlerts}>
+              {children}
+            </ShellInner>
+          </TraceProvider>
         </UniverseFilterProvider>
       </CtxPanelProvider>
     </FilterProvider>
@@ -118,6 +122,7 @@ function ShellInner({
 
       <CmdPalette open={cmd} onClose={() => setCmd(false)} />
       <ShortcutsOverlay open={shortcuts} onClose={() => setShortcuts(false)} />
+      <TraceOverlay />
       <GoToPill active={gMode} />
     </div>
   );

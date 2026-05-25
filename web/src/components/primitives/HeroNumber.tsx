@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 /**
  * HeroNumber — the protagonist number on a page, rendered at hero scale.
  *
@@ -54,6 +56,22 @@ interface HeroNumberProps {
    * danger coloring independently.
    */
   valueColor?: string;
+  /**
+   * Optional wrapper applied to the rendered value span. Used by Universe
+   * Detail to arm <TraceTarget> on the composite number for the T-shortcut
+   * (Score Provenance Trace, Lambo Pass §G feature 1). Layout-neutral
+   * wrappers only — anything that reflows the hero baseline is on the
+   * caller. Defaults to identity.
+   */
+  wrapValue?: (node: ReactNode) => ReactNode;
+  /**
+   * Optional slot rendered immediately after the attribution row. Used by
+   * Universe Detail to render the DerivationLadder inline beneath the
+   * composite without re-introducing the derivation string. Keeps the hero
+   * stack vertically contiguous (label → value → derivation → attribution →
+   * footer) without requiring callers to reach into HeroNumber internals.
+   */
+  footer?: ReactNode;
 }
 
 const SIZE_PX: Record<NonNullable<HeroNumberProps["size"]>, number> = {
@@ -73,6 +91,8 @@ export function HeroNumber({
   attribution,
   size = "lg",
   valueColor = "var(--text-1)",
+  wrapValue,
+  footer,
 }: HeroNumberProps) {
   // For currency hero (prefix "$") use locale thousands separators.
   const formatted =
@@ -118,25 +138,30 @@ export function HeroNumber({
         </div>
       )}
       <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
-        <span
-          className="hero-arrive"
-          style={{
-            fontFamily: "var(--m)",
-            fontSize: SIZE_PX[size],
-            fontWeight: 600,
-            color: valueColor,
-            fontVariantNumeric: "tabular-nums",
-            lineHeight: 1,
-            letterSpacing: "-.018em",
-          }}
-        >
-          {valueStr}
-          {unit && (
-            <span style={{ fontSize: SIZE_PX[size] * 0.55, marginLeft: 2, color: "var(--text-2)", fontWeight: 500 }}>
-              {unit}
+        {(() => {
+          const valueNode = (
+            <span
+              className="hero-arrive"
+              style={{
+                fontFamily: "var(--m)",
+                fontSize: SIZE_PX[size],
+                fontWeight: 600,
+                color: valueColor,
+                fontVariantNumeric: "tabular-nums",
+                lineHeight: 1,
+                letterSpacing: "-.018em",
+              }}
+            >
+              {valueStr}
+              {unit && (
+                <span style={{ fontSize: SIZE_PX[size] * 0.55, marginLeft: 2, color: "var(--text-2)", fontWeight: 500 }}>
+                  {unit}
+                </span>
+              )}
             </span>
-          )}
-        </span>
+          );
+          return wrapValue ? wrapValue(valueNode) : valueNode;
+        })()}
         {delta != null && value != null && delta.value !== 0 && (
           // Suppress the delta block when value is exactly 0 — "· 0 (since open)"
           // at 14px next to a 48px hero number reads as a malformed trailing
@@ -182,6 +207,7 @@ export function HeroNumber({
           {attribution}
         </div>
       )}
+      {footer && <div style={{ marginTop: 2 }}>{footer}</div>}
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { getLatestUniverseScoresServer } from "@/lib/universe-data-server";
-import { getEngineStatus } from "@/lib/engine-status";
 import type { Tier } from "@/lib/universe-data";
 import { UniverseClient } from "./UniverseClient";
 
@@ -17,9 +16,8 @@ export default async function UniversePage({
 }: {
   searchParams: Promise<{ tier?: string | string[] }>;
 }) {
-  const [snap, engineStatus, sp] = await Promise.all([
+  const [snap, sp] = await Promise.all([
     getLatestUniverseScoresServer(),
-    getEngineStatus(),
     searchParams,
   ]);
   // ?tier=High lands the Universe pre-filtered to that tier. Dashboard's
@@ -27,5 +25,5 @@ export default async function UniversePage({
   // Tier union so a stray param can't seed a non-existent chip.
   const tierRaw = Array.isArray(sp.tier) ? sp.tier[0] : sp.tier;
   const initialTier = tierRaw && VALID_TIERS.has(tierRaw as Tier) ? (tierRaw as Tier) : null;
-  return <UniverseClient snap={snap} engineStatus={engineStatus} initialTier={initialTier} />;
+  return <UniverseClient snap={snap} initialTier={initialTier} />;
 }

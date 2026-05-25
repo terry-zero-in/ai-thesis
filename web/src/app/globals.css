@@ -363,6 +363,21 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
 .row-hov .row-actions{opacity:0;transform:translateX(2px);transition:opacity var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out);pointer-events:none}
 .row-hov:hover .row-actions,.row-hov:focus-within .row-actions{opacity:1;transform:translateX(0);pointer-events:auto}
 
+/* Quiet actions — signature pattern #3 (per Lambo Pass §F).
+   Borderless mono text-only action pills (edit, sell, close, detail ↗)
+   hidden by default and revealed on row hover OR keyboard focus.
+   Replaces the four-buttons-per-row clutter on Portfolio / AIQ Editor /
+   Decisions. The :focus-within branch is critical for keyboard users —
+   tabbing onto an inner link must reveal the actions so focus is never
+   trapped on something invisible. Pair with parent class .row-hov; the
+   container itself also opens on direct :focus-within (e.g. when actions
+   are tabbed into without the row receiving hover). */
+.quiet-actions{opacity:0;display:inline-flex;align-items:center;gap:6px;transition:opacity var(--dur-fast,140ms) var(--ease-out,ease-out);pointer-events:none}
+.row-hov:hover .quiet-actions,.row-hov:focus-within .quiet-actions,.quiet-actions:focus-within{opacity:1;pointer-events:auto}
+@media (prefers-reduced-motion: reduce){
+  .quiet-actions{transition:none}
+}
+
 /* Icon button — subtle rounded-square on hover, icon opacity bumps up, slight press.
    Duration matched to Linear (--dur-fast 140ms ≈ Linear 150ms). */
 .icon-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px;border-radius:5px;color:var(--text-3);opacity:.7;cursor:pointer;transition:background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),opacity var(--dur-fast) var(--ease-out),transform 60ms var(--ease-in)}

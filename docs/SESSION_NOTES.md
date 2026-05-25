@@ -1239,3 +1239,24 @@ S30 shipped 2 commits and a wholesale Linear cleanup. The THS-101 8-item bug bun
 1. Load skills per CLAUDE.md.
 2. Read the S30 handoff (especially the THS-107 section — the Vercel mismatch is the active blocker).
 3. **Do NOT crank THS-103 yet.** First, work with Terry to resolve THS-107 (operational, 10 min) + THS-104 (env secrets, 30 min). Only when the deploy pipeline is verifiably alive should code work resume.
+
+---
+
+## SESSION S31 (2026-05-25, THS-103 sell flow + password auth + launch runbook + Lambo Pass foundations)
+
+**Note:** Sessions S10–S31 are logged in `docs/handoffs/` per-session. This entry is a pointer.
+
+S31 shipped 9 commits across two unrelated chunks. First half: THS-103 sell flow (migration + SellDrawer + sellPosition action + closed-positions section + Realized P&L AggregateBar + reserve reconciliation), magic-link → email+password auth rewrite, and `docs/runbooks/launch.md` covering all Mac-side launch steps end-to-end (commit `b559ae7`, fast-forwarded to `main` mid-session). Second half: Lambo Pass v1 foundations — §A spine fix (revised to Universe-only after Terry's mid-flight clarification), §F three signature primitives (`DerivationLadder`, `QuietActionRow`, `TraceOverlay`), §G two industry-first features (TraceOverlay wired on Universe Detail, ConvictionTape wired on Dashboard). Polish layer deferred to THS-108.
+
+- **THS-103 → In Review** — sell flow shipped + verified by inspection. Smoke pending Terry's runbook execution.
+- **Auth flipped to password-only** — `/login` rewritten, magic-link removed, runbook Step 6 provisions all 3 passwords via admin API curl (no email delivery dependency).
+- **Lambo Pass foundations (8 branch-only commits, NOT on `main` yet)** — §A spine fix narrowed to Universe only after Terry's clarification "look at universe i think it just means duplicate spine on like that one." §E accent-desaturation was a typo per Terry; severities only. Two new features (TraceOverlay + ConvictionTape) wired with real data using `Promise.allSettled` per source for graceful degradation when tables are empty.
+- **Schema discovery** — `scores_history` is denormalized: `q_score / g_score / v_score / aiq_score / composite / macro_multiplier` all live as columns on the same row. No separate per-factor tables. (Discovered while wiring TraceOverlay.)
+- **THS-108 filed** — Lambo Pass §B/C/D/E polish + §G follow-ons (TraceOverlay deep-link from URL, insider BUY severity remap, NameDetail strip restoration). Medium, parent THS-92. Deferred to a follow-on pass after Terry visually reviews the foundations.
+
+**Full record:** `docs/handoffs/2026-05-25-S31-ths-103-auth-rewrite-lambo-pass-foundations.md`
+
+**Next session — start here:**
+1. Load skills per CLAUDE.md.
+2. Read the S31 handoff (especially the Pending Terry Actions table — merge to main + runbook execution + visual review are the unblock path).
+3. **Do NOT dispatch THS-108 cold.** First confirm Terry has eyeballed the §A/F/G Lambo Pass foundations on a working Vercel deploy. THS-108's items are mostly judgment calls that depend on his direction post-review.
