@@ -15,7 +15,6 @@ import { PortfolioValueChart } from "@/components/dashboard/PortfolioValueChart"
 import { TopPositionsList } from "@/components/dashboard/TopPositionsList";
 import { TodayThesisCard, deriveBiasLayers } from "@/components/dashboard/TodayThesisCard";
 import { ScoreMathPopover } from "@/components/primitives/ScoreMathPopover";
-import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 import type { ScoreMathInput } from "@/components/primitives/ScoreMath";
 import { AnimateNumber, type AnimateNumberKind } from "@/components/primitives/AnimateNumber";
 // THS-84 marketing-landing gate temporarily disabled per Terry 2026-05-21
@@ -162,7 +161,6 @@ export default async function DashboardPage({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <DashboardRailRegister data={railData} />
-      <EngineStatusStripAsync />
       <div
         style={{
           flex: 1,

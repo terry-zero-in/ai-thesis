@@ -28,16 +28,25 @@ export function Shell({
   children,
   userEmail,
   unseenAlerts = 0,
+  engineStrip = null,
 }: {
   children: ReactNode;
   userEmail?: string | null;
   unseenAlerts?: number;
+  /**
+   * Mono Meta Spine (signature pattern #1) — mounted ONCE at shell level
+   * below TopBar so every analytical surface inherits the same single
+   * provenance row. Per-page chrome should NEVER render this — it would
+   * produce the duplicate-meta-spine top-of-screen failure the Lambo Pass
+   * surfaced in S31.
+   */
+  engineStrip?: ReactNode;
 }) {
   return (
     <FilterProvider>
       <CtxPanelProvider>
         <UniverseFilterProvider>
-          <ShellInner userEmail={userEmail ?? null} unseenAlerts={unseenAlerts}>
+          <ShellInner userEmail={userEmail ?? null} unseenAlerts={unseenAlerts} engineStrip={engineStrip}>
             {children}
           </ShellInner>
         </UniverseFilterProvider>
@@ -50,10 +59,12 @@ function ShellInner({
   children,
   userEmail,
   unseenAlerts,
+  engineStrip,
 }: {
   children: ReactNode;
   userEmail: string | null;
   unseenAlerts: number;
+  engineStrip: ReactNode;
 }) {
   const [col, setCol] = useState(false);
   const [cmd, setCmd] = useState(false);
@@ -97,6 +108,7 @@ function ShellInner({
           onHelp={() => setShortcuts(true)}
           userEmail={userEmail}
         />
+        {engineStrip}
         <ShellControlsProvider openCmd={() => setCmd(true)} openShortcuts={() => setShortcuts(true)}>
           <div
             style={{

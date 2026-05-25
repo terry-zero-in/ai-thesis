@@ -1,4 +1,3 @@
-import { getEngineStatus } from "@/lib/engine-status";
 import { getScoreMath } from "@/lib/score-math";
 import { NameDetailClient } from "./NameDetailClient";
 
@@ -23,11 +22,8 @@ export default async function NameDetailPage({ params }: { params: Promise<Param
   // Tickers like ^VIX arrive URL-encoded (%5EVIX). Decode before any downstream
   // use — otherwise the heading reads "%5EVIX" and the DB lookup misses.
   const ticker = safeDecode(raw);
-  const [engineStatus, scoreMath] = await Promise.all([
-    getEngineStatus(),
-    getScoreMath(ticker),
-  ]);
-  return <NameDetailClient ticker={ticker} engineStatus={engineStatus} scoreMath={scoreMath} />;
+  const scoreMath = await getScoreMath(ticker);
+  return <NameDetailClient ticker={ticker} scoreMath={scoreMath} />;
 }
 
 function safeDecode(s: string): string {

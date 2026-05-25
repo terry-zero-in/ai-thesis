@@ -3,12 +3,10 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { type Tier, type UniverseSnapshot } from "@/lib/universe-data";
-import type { EngineStatus } from "@/lib/engine-status";
 import { useFilter } from "@/hooks/filter-context";
 import { useUniverseFilter } from "@/hooks/universe-filter-context";
 import { UniverseTable } from "@/components/universe/UniverseTable";
 import { PageHeader } from "@/components/primitives/PageHeader";
-import { EngineStatusStrip } from "@/components/primitives/EngineStatusStrip";
 import { LiveStubbedStrip } from "@/components/primitives/LiveStubbedStrip";
 import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
 
@@ -24,11 +22,9 @@ import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
  */
 export function UniverseClient({
   snap,
-  engineStatus,
   initialTier,
 }: {
   snap: UniverseSnapshot;
-  engineStatus: EngineStatus;
   initialTier?: Tier | null;
 }) {
   // Seed the universe filter from a URL ?tier= param exactly once on mount.
@@ -61,7 +57,6 @@ export function UniverseClient({
     >
       <UniverseRailRegister snap={snap} />
       <UniverseHeader snap={snap} />
-      <EngineStatusStrip status={engineStatus} />
       <LiveStubbedStrip />
       <UniverseTable
         rows={snap.rows}

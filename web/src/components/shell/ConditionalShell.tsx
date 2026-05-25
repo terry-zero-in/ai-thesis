@@ -20,10 +20,14 @@ export function ConditionalShell({
   children,
   userEmail,
   unseenAlerts,
+  engineStrip,
 }: {
   children: ReactNode;
   userEmail: string | null;
   unseenAlerts: number;
+  /** Server-rendered Mono Meta Spine, forwarded into Shell. Bare-page
+   * routes (login/auth) never render it. */
+  engineStrip: ReactNode;
 }) {
   const pathname = usePathname();
   const bare = BARE_PREFIXES.some((p) => pathname.startsWith(p));
@@ -33,7 +37,7 @@ export function ConditionalShell({
   // const landingUnauthed = pathname === "/" && !userEmail;
   if (bare) return <>{children}</>;
   return (
-    <Shell userEmail={userEmail} unseenAlerts={unseenAlerts}>
+    <Shell userEmail={userEmail} unseenAlerts={unseenAlerts} engineStrip={engineStrip}>
       {children}
     </Shell>
   );

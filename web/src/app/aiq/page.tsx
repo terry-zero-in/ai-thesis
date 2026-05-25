@@ -3,7 +3,6 @@ import { getAiqIndex } from "@/lib/aiq-data";
 import { aiqDaysSinceScored, AIQ_REVIEW_CADENCE_DAYS } from "@/lib/aiq-types";
 import { NoRail } from "@/components/shell/NoRail";
 import { PageHeader } from "@/components/primitives/PageHeader";
-import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
 import { LayerChip } from "@/components/universe/LayerChip";
 
 type ShowFilter = "scored" | "unscored" | "all";
@@ -91,7 +90,6 @@ export default async function AiqIndexPage({
           ...(nextRescore ? [{ label: "next rescore", value: nextRescore }] : []),
         ]}
       />
-      <EngineStatusStripAsync />
       <NeedsReviewQueue rows={snap.rows} />
       <div style={{ padding: "10px 32px 0", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>

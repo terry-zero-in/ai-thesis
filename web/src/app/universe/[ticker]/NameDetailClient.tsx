@@ -14,18 +14,14 @@ import { DataPendingCard } from "@/components/name/DataPendingCard";
 import { Form4Section } from "@/components/name/Form4Section";
 import { NameRailRegister } from "@/components/rails/NameRailRegister";
 import type { NameActivityEvent, NameActivityRailData } from "@/components/rails/NameActivityRail";
-import { EngineStatusStrip } from "@/components/primitives/EngineStatusStrip";
 import { ScoreMathDrawer } from "@/components/primitives/ScoreMathDrawer";
-import type { EngineStatus } from "@/lib/engine-status";
 import type { ScoreMathRow } from "@/lib/score-math";
 
 export function NameDetailClient({
   ticker,
-  engineStatus,
   scoreMath,
 }: {
   ticker: string;
-  engineStatus: EngineStatus;
   scoreMath: ScoreMathRow;
 }) {
   const [d, setD] = useState<NameDetail | null>(null);
@@ -152,7 +148,6 @@ export function NameDetailClient({
           />
         }
       />
-      <EngineStatusStrip status={engineStatus} />
       {/* Portfolio context strip — sits between header and chart so the
           "is this in my book?" question is answered before the score chart
           asks the reader to interpret history (Bucket 4 review item 7). */}
