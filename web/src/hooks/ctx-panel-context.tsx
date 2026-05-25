@@ -92,7 +92,12 @@ export function CtxPanelProvider({ children }: { children: ReactNode }) {
   // available so authenticated server renders don't flicker.
   const [open, setOpen] = useState(true);
   useEffect(() => {
+    // matchMedia is only safe to call client-side; runs once post-mount to
+    // correct the SSR-default of `true` on narrow viewports. Intentional
+    // setState in effect — viewport detection isn't available at useState
+    // init time without breaking SSR.
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1599px)").matches) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpen(false);
     }
   }, []);

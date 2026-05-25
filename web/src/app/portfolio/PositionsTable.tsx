@@ -1,20 +1,70 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { LayerChip } from "@/components/universe/LayerChip";
-import type { PositionRow } from "@/lib/portfolio-types";
+import type { ClosedPositionRow, PositionRow } from "@/lib/portfolio-types";
 import { POSITION_DRAWDOWN_TRIGGER } from "@/lib/portfolio-types";
 import type { Tier } from "@/lib/universe-data";
-import { closePosition } from "./actions";
-import { POSITION_INITIAL, type PositionFormState } from "./action-types";
 
 /**
  * Positions table — one row per open position with cost / market / P&L
- * columns and a per-row "close" button that fires a server action.
+ * columns and a per-row "sell" affordance that opens the SellDrawer (via
+ * ?sell=<TICKER>). The closed-positions section below renders any
+ * historical sells with realized P&L.
  */
 export function PositionsTable({
+  positions,
+  closedPositions,
+  totalDeployed,
+  highlightTicker,
+}: {
+  positions: PositionRow[];
+  closedPositions: ClosedPositionRow[];
+  totalDeployed: number;
+  highlightTicker?: string;
+}) {
+  const hasOpen = positions.length > 0;
+  const hasClosed = closedPositions.length > 0;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {!hasOpen && !hasClosed ? (
+        <EmptyState />
+      ) : (
+        <>
+          {hasOpen && (
+            <OpenTable
+              positions={positions}
+              totalDeployed={totalDeployed}
+              highlightTicker={highlightTicker}
+            />
+          )}
+          {hasClosed && <ClosedTable rows={closedPositions} />}
+        </>
+      )}
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div
+      style={{
+        padding: "40px 16px",
+        fontSize: 13,
+        color: "var(--text-3)",
+        textAlign: "center",
+        borderTop: "1px solid var(--border-subtle)",
+        borderBottom: "1px solid var(--border-subtle)",
+      }}
+    >
+      No positions yet. Click <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>Add position</span> in the top-right to start tracking your book.
+    </div>
+  );
+}
+
+function OpenTable({
   positions,
   totalDeployed,
   highlightTicker,
@@ -23,23 +73,7 @@ export function PositionsTable({
   totalDeployed: number;
   highlightTicker?: string;
 }) {
-  if (positions.length === 0) {
-    return (
-      <div
-        style={{
-          padding: "40px 16px",
-          fontSize: 13,
-          color: "var(--text-3)",
-          textAlign: "center",
-          borderTop: "1px solid var(--border-subtle)",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-      >
-        No open positions yet. Click <span style={{ fontFamily: "var(--m)", color: "var(--text-2)" }}>Add position</span> in the top-right to start tracking your book.
-      </div>
-    );
-  }
-
+  if (positions.length === 0) return null;
   // Mercury decard: table sits on canvas with top + bottom hairlines, row
   // separators only. No outer card chrome.
   return (
@@ -97,7 +131,7 @@ function PositionRowView({
   const drawdownTriggered = hasPrice && plPct <= POSITION_DRAWDOWN_TRIGGER;
 
   // Whole-row click → /universe/{ticker}. Mirrors the Score Movers pattern
-  // (S16). Edit/Close cells contain their own interactive elements (Link,
+  // (S16). Edit/Sell cells contain their own interactive elements (Link,
   // form button) which handle their own click and don't bubble navigation.
   // .closest() check is the safety net.
   const onRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
@@ -145,6 +179,20 @@ function PositionRowView({
           {p.ticker}
         </a>
         <div style={{ fontSize: 11, color: "var(--text-3)" }}>{p.name}</div>
+        {p.realized_pl !== 0 && (
+          <div
+            style={{
+              fontSize: 10,
+              fontFamily: "var(--m)",
+              color: p.realized_pl >= 0 ? "var(--success)" : "var(--danger)",
+              marginTop: 2,
+              fontVariantNumeric: "tabular-nums",
+            }}
+            title={`Realized ${fmtUsd(p.realized_pl, true)} from prior partial sales on this position. Cumulative.`}
+          >
+            realized {fmtUsd(p.realized_pl, true)}
+          </div>
+        )}
       </Td>
       <Td align="left">
         <LayerChip layer={p.layer} label={p.layer_label} />
@@ -152,7 +200,22 @@ function PositionRowView({
       <Td align="left">
         <ThesisCell tier={p.tier} composite={p.composite} tax={p.concentration_tax} />
       </Td>
-      <Td align="right">{p.shares}</Td>
+      <Td align="right">
+        {p.shares}
+        {p.original_shares != null && p.original_shares > p.shares && (
+          <div
+            style={{
+              fontSize: 10,
+              color: "var(--text-4)",
+              fontFamily: "var(--m)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+            title={`Originally ${p.original_shares} shares; ${p.original_shares - p.shares} sold.`}
+          >
+            of {p.original_shares}
+          </div>
+        )}
+      </Td>
       <Td align="right">{fmtUsd(p.cost_basis)}</Td>
       <Td align="right">
         {hasPrice ? (
@@ -192,7 +255,7 @@ function PositionRowView({
       <Td align="right">
         <div style={{ display: "inline-flex", gap: 6, justifyContent: "flex-end" }}>
           <EditLink ticker={p.ticker} />
-          <CloseButton ticker={p.ticker} />
+          <SellLink ticker={p.ticker} />
         </div>
       </Td>
     </tr>
@@ -210,53 +273,174 @@ function EditLink({ ticker }: { ticker: string }) {
       href={`/portfolio?edit=${encodeURIComponent(ticker)}#add-position`}
       title="Edit position — opens the drawer with this ticker hydrated"
       className="lin-hov"
-      style={{
-        height: 22,
-        padding: "0 8px",
-        fontSize: 10.5,
-        fontFamily: "var(--m)",
-        color: "var(--text-3)",
-        background: "transparent",
-        border: "1px solid var(--border)",
-        borderRadius: 3,
-        textDecoration: "none",
-        display: "inline-flex",
-        alignItems: "center",
-        cursor: "pointer",
-      }}
+      style={pillStyle}
     >
       edit
     </Link>
   );
 }
 
-function CloseButton({ ticker }: { ticker: string }) {
-  const [state, formAction, pending] = useActionState<PositionFormState, FormData>(closePosition, POSITION_INITIAL);
+/**
+ * Per-row Sell affordance. Routes to ?sell=<ticker> which mounts the
+ * SellDrawer pre-filled with the ticker's current shares + cost basis.
+ */
+function SellLink({ ticker }: { ticker: string }) {
   return (
-    <form action={formAction}>
-      <input type="hidden" name="ticker" value={ticker} />
-      <button
-        type="submit"
-        disabled={pending}
-        title={state.message || "Mark position closed — removes from book, archives the row"}
-        className="lin-hov"
-        style={{
-          height: 22,
-          padding: "0 8px",
-          fontSize: 10.5,
-          fontFamily: "var(--m)",
-          color: "var(--text-3)",
-          background: "transparent",
-          border: "1px solid var(--border)",
-          borderRadius: 3,
-          cursor: pending ? "wait" : "pointer",
-        }}
-      >
-        {pending ? "…" : "close"}
-      </button>
-    </form>
+    <Link
+      href={`/portfolio?sell=${encodeURIComponent(ticker)}`}
+      title={`Sell shares of ${ticker} — opens the sell drawer with shares + mark prefilled`}
+      className="lin-hov"
+      style={pillStyle}
+    >
+      sell
+    </Link>
   );
 }
+
+const pillStyle: React.CSSProperties = {
+  height: 22,
+  padding: "0 8px",
+  fontSize: 10.5,
+  fontFamily: "var(--m)",
+  color: "var(--text-3)",
+  background: "transparent",
+  border: "1px solid var(--border)",
+  borderRadius: 3,
+  textDecoration: "none",
+  display: "inline-flex",
+  alignItems: "center",
+  cursor: "pointer",
+};
+
+/* ---------------- closed positions section ---------------- */
+
+function ClosedTable({ rows }: { rows: ClosedPositionRow[] }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          padding: "0 4px",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10.5,
+            fontFamily: "var(--m)",
+            color: "var(--text-3)",
+            letterSpacing: ".08em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          Closed positions
+        </span>
+        <span style={{ fontSize: 10.5, color: "var(--text-4)", fontFamily: "var(--m)" }}>
+          {rows.length} {rows.length === 1 ? "row" : "rows"} · realized P&L per name
+        </span>
+      </div>
+      <div style={{ borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+          <thead>
+            <tr>
+              <Th align="left">Ticker</Th>
+              <Th align="left">Layer</Th>
+              <Th align="right" title="Total shares sold on this position">Sold</Th>
+              <Th align="right" title="Cost basis per share at the time of opening">Cost</Th>
+              <Th align="right" title="Most recent exit price (one or many sales)">Last exit</Th>
+              <Th align="right" title="Date the position fully closed (shares reached 0)">Closed</Th>
+              <Th align="right" title="Realized P&L = (exit − cost) × shares_sold, summed across sales">Realized $</Th>
+              <Th align="right" title="Realized P&L as % of total cost basis (cost × shares_sold)">Realized %</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <ClosedRowView key={`${r.ticker}-${r.closed_at}-${i}`} r={r} rowIndex={i} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ClosedRowView({ r, rowIndex }: { r: ClosedPositionRow; rowIndex: number }) {
+  const router = useRouter();
+  const pos = r.realized_pl >= 0;
+  return (
+    <tr
+      className="row-hov row-stagger-in"
+      onClick={(e) => {
+        const t = e.target as HTMLElement;
+        if (t.closest("a, button, input, label, form")) return;
+        router.push(`/universe/${r.ticker}`);
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const t = e.target as HTMLElement;
+        if (t !== e.currentTarget && t.closest("a, button, input, label, form")) return;
+        e.preventDefault();
+        router.push(`/universe/${r.ticker}`);
+      }}
+      tabIndex={0}
+      aria-label={`Open ${r.ticker} detail`}
+      style={{
+        borderTop: "1px solid var(--border-subtle)",
+        ["--row-i" as never]: Math.min(rowIndex, 12),
+      }}
+    >
+      <Td align="left">
+        <a
+          href={`/universe/${r.ticker}`}
+          style={{
+            color: "var(--text-2)",
+            textDecoration: "none",
+            fontFamily: "var(--m)",
+            fontWeight: 600,
+          }}
+        >
+          {r.ticker}
+        </a>
+        <div style={{ fontSize: 11, color: "var(--text-3)" }}>{r.name}</div>
+      </Td>
+      <Td align="left">
+        <LayerChip layer={r.layer} label={r.layer_label} />
+      </Td>
+      <Td align="right">
+        {r.shares_sold}
+        <div
+          style={{
+            fontSize: 10,
+            color: "var(--text-4)",
+            fontFamily: "var(--m)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          opened {r.opened_at}
+        </div>
+      </Td>
+      <Td align="right">{fmtUsd(r.cost_basis)}</Td>
+      <Td align="right">
+        {r.exit_price != null ? fmtUsd(r.exit_price) : <span style={{ color: "var(--text-4)" }}>—</span>}
+      </Td>
+      <Td align="right">{r.closed_at}</Td>
+      <Td align="right">
+        <span style={{ color: pos ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
+          {fmtUsd(r.realized_pl, true)}
+        </span>
+      </Td>
+      <Td align="right">
+        <span style={{ color: pos ? "var(--success)" : "var(--danger)" }}>
+          {r.realized_pl_pct != null ? fmtPct(r.realized_pl_pct, true) : <span style={{ color: "var(--text-4)" }}>—</span>}
+        </span>
+      </Td>
+    </tr>
+  );
+}
+
+/* ---------------- thesis cell ---------------- */
 
 function Th({
   children,

@@ -97,6 +97,9 @@ export function AnimateNumber({ value, kind, decimals, duration = 800, style, cl
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
+      // External prop → internal animated state sync. The setState is the
+      // sync, not a cascading-render artifact.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplay(value);
       fromRef.current = value;
       return;

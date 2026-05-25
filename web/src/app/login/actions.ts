@@ -1,23 +1,33 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 /**
- * Sends a magic-link email via Supabase OTP. The redirect URL points back at
- * `/auth/callback?next=<preserved>` so the callback handler can hand the
- * user off to their originally-requested route.
+ * Email + password sign-in. Calls Supabase `signInWithPassword` which sets
+ * the session cookie via the SSR client wired in `lib/supabase/server.ts`.
  *
- * Returns a state object for the client to render success/error. Throws
- * `redirect()` on env-missing so the caller sees a clear message.
+ * On success: redirect() throws NEXT_REDIRECT which Next intercepts to
+ * navigate the client to the originally-requested route (or `/`).
+ *
+ * On failure: returns a generic "Invalid email or password" message —
+ * deliberately doesn't disclose which half is wrong (anti-enumeration).
+ *
+ * Closed system (Terry + Mom + Dad in v1) — no sign-up route. Operator
+ * provisions accounts via Supabase admin API; users sign in with the
+ * credentials they're emailed. Magic link removed S31 — sbcglobal.net
+ * delivery for parents was unreliable.
  */
-export async function sendMagicLink(prev: { ok: boolean; message: string }, formData: FormData) {
+export async function signInAction(prev: { ok: boolean; message: string }, formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/");
 
   if (!email || !email.includes("@")) {
     return { ok: false, message: "Enter a valid email." };
+  }
+  if (!password) {
+    return { ok: false, message: "Enter your password." };
   }
 
   const sb = await getSupabaseServer();
@@ -28,19 +38,15 @@ export async function sendMagicLink(prev: { ok: boolean; message: string }, form
     };
   }
 
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const callback = `${proto}://${host}/auth/callback?next=${encodeURIComponent(next)}`;
-
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: callback },
-  });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
-    return { ok: false, message: `Supabase error: ${error.message}` };
+    // Generic message — never tell the attacker whether the email exists.
+    return { ok: false, message: "Invalid email or password." };
   }
-  return { ok: true, message: `Magic link sent to ${email}. Check your inbox.` };
+
+  // Same-origin only — never honour an external `next` URL.
+  const target = next.startsWith("/") ? next : "/";
+  redirect(target);
 }
 
 export async function signOut() {

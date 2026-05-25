@@ -302,7 +302,9 @@ function shortGaugeLabel(key: GaugeKey): string {
 function TodayClock() {
   const [label, setLabel] = useState(() => formatNow());
   useEffect(() => {
-    setLabel(formatNow());
+    // useState(() => formatNow()) already initialised label; just start the
+    // 60s tick. setInterval callback fires outside the effect body, so it's
+    // not subject to react-hooks/set-state-in-effect.
     const id = setInterval(() => setLabel(formatNow()), 60_000);
     return () => clearInterval(id);
   }, []);

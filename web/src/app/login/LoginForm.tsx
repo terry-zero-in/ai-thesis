@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { sendMagicLink } from "./actions";
+import { signInAction } from "./actions";
 
 interface State {
   ok: boolean;
@@ -11,7 +11,7 @@ interface State {
 const INITIAL: State = { ok: false, message: "" };
 
 export function LoginForm({ next, envConfigured }: { next: string; envConfigured: boolean }) {
-  const [state, formAction, pending] = useActionState<State, FormData>(sendMagicLink, INITIAL);
+  const [state, formAction, pending] = useActionState<State, FormData>(signInAction, INITIAL);
   return (
     <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <input type="hidden" name="next" value={next} />
@@ -21,19 +21,18 @@ export function LoginForm({ next, envConfigured }: { next: string; envConfigured
         required
         autoComplete="email"
         autoFocus
-        placeholder="you@example.com"
+        placeholder="Email"
         disabled={pending || !envConfigured}
-        style={{
-          height: 36,
-          padding: "0 12px",
-          fontSize: 13,
-          color: "var(--text-1)",
-          background: "rgba(255,255,255,.03)",
-          border: "1px solid var(--border)",
-          borderRadius: 5,
-          fontFamily: "var(--f)",
-          outline: "none",
-        }}
+        style={fieldStyle}
+      />
+      <input
+        name="password"
+        type="password"
+        required
+        autoComplete="current-password"
+        placeholder="Password"
+        disabled={pending || !envConfigured}
+        style={fieldStyle}
       />
       <button
         type="submit"
@@ -49,10 +48,11 @@ export function LoginForm({ next, envConfigured }: { next: string; envConfigured
           borderRadius: 9999,
           cursor: pending ? "wait" : "pointer",
           opacity: !envConfigured ? 0.5 : 1,
+          marginTop: 2,
           transition: "background var(--dur-instant) var(--ease-out)",
         }}
       >
-        {pending ? "Sending…" : "Send magic link"}
+        {pending ? "Signing in…" : "Sign in"}
       </button>
       {state.message && (
         <div
@@ -91,3 +91,15 @@ export function LoginForm({ next, envConfigured }: { next: string; envConfigured
     </form>
   );
 }
+
+const fieldStyle: React.CSSProperties = {
+  height: 36,
+  padding: "0 12px",
+  fontSize: 13,
+  color: "var(--text-1)",
+  background: "rgba(255,255,255,.03)",
+  border: "1px solid var(--border)",
+  borderRadius: 5,
+  fontFamily: "var(--f)",
+  outline: "none",
+};

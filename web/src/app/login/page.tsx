@@ -47,15 +47,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             fontSize: 18,
             fontWeight: 600,
             color: "var(--text-1)",
-            marginBottom: 6,
+            marginBottom: 18,
             letterSpacing: "-.014em",
           }}
         >
           Sign in
         </h1>
-        <p style={{ fontSize: 12.5, color: "var(--text-3)", marginBottom: 18, lineHeight: 1.5 }}>
-          Magic-link sign-in via Supabase. Submit your email; we&rsquo;ll send a link that signs you in for ~1 hour.
-        </p>
         <LoginForm next={next} envConfigured={envConfigured} />
       </div>
     </div>

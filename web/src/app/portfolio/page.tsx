@@ -2,9 +2,11 @@ import { getPortfolioSnapshot, getUniverseChoices } from "@/lib/portfolio-data";
 import { AggregateBar } from "./AggregateBar";
 import { PositionsTable } from "./PositionsTable";
 import { PortfolioAddDrawer } from "./PortfolioAddDrawer";
+import { SellDrawer } from "./SellDrawer";
 import { PortfolioRailRegister } from "@/components/rails/PortfolioRailRegister";
 import { PageHeader } from "@/components/primitives/PageHeader";
 import { EngineStatusStripAsync } from "@/components/primitives/EngineStatusStripAsync";
+import type { SellablePositionPrefill } from "@/lib/portfolio-types";
 
 /**
  * Revalidate every 5 minutes so current prices refresh without the
@@ -16,12 +18,14 @@ export const revalidate = 300;
 export default async function PortfolioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; sell?: string }>;
 }) {
   // ?edit=<TICKER> pre-selects that ticker in the add/edit form and
   // hydrates its fields from the existing portfolio_positions row.
+  // ?sell=<TICKER> mounts the SellDrawer for that held position.
   const params = await searchParams;
   const editTicker = params.edit ? params.edit.toUpperCase() : null;
+  const sellTicker = params.sell ? params.sell.toUpperCase() : null;
   const [snap, choices] = await Promise.all([
     getPortfolioSnapshot(),
     getUniverseChoices(),
@@ -34,6 +38,27 @@ export default async function PortfolioPage({
     opened_at: p.opened_at,
     notes: p.notes,
   }));
+
+  // Sell-context prefill — only built when ?sell=<T> matches an open
+  // position. If the ticker isn't open (typo, closed since URL was crafted,
+  // RLS denied), prefill is null and SellDrawer renders nothing — the page
+  // gracefully falls back to its idle state.
+  const sellPrefill: SellablePositionPrefill | null = sellTicker
+    ? (() => {
+        const p = snap.positions.find((x) => x.ticker === sellTicker);
+        if (!p) return null;
+        return {
+          ticker: p.ticker,
+          name: p.name,
+          shares: p.shares,
+          cost_basis: p.cost_basis,
+          opened_at: p.opened_at,
+          current_price: p.current_price,
+          current_price_as_of: p.current_price_as_of,
+        };
+      })()
+    : null;
+
   const railData = {
     reserveActual: snap.reserve_actual,
     reserveTarget: snap.settings.target_reserve,
@@ -55,13 +80,16 @@ export default async function PortfolioPage({
         title="Portfolio"
         subtitle="Live tracking · single book · manual cost-basis entry"
         action={
-          <PortfolioAddDrawer
-            choices={choices}
-            envConfigured={snap.envConfigured}
-            takenTickers={taken}
-            heldPrefill={heldPrefill}
-            initialTicker={editTicker}
-          />
+          <div style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+            <SellDrawer position={sellPrefill} envConfigured={snap.envConfigured} />
+            <PortfolioAddDrawer
+              choices={choices}
+              envConfigured={snap.envConfigured}
+              takenTickers={taken}
+              heldPrefill={heldPrefill}
+              initialTicker={editTicker}
+            />
+          </div>
         }
         meta={[
           { label: "positions", value: snap.positions.length },
@@ -85,12 +113,12 @@ export default async function PortfolioPage({
 
         {/*
           NAV chart deliberately lives ONLY on /dashboard. /portfolio's job
-          is the positions book (add/edit/close); duplicating the chart here
+          is the positions book (add/edit/sell); duplicating the chart here
           made the two pages read too similar AND pushed the positions table
           below the fold on standard viewports (Terry feedback 2026-05-19).
-          AggregateBar still carries the 30D delta + sparkline in column 2 —
-          enough at-a-glance trend signal for a positions-management surface.
-          Dashboard owns the range-selectable drill-down.
+          AggregateBar carries Realized P&L in column 2 — concrete dollar
+          impact of closed positions — instead of a placeholder 30D row.
+          Dashboard owns the range-selectable NAV drill-down.
 
           Positions table now claims the full canvas height — no inner
           scroll-trap, no fold cutoff. The outer overflow:auto on the
@@ -105,7 +133,11 @@ export default async function PortfolioPage({
             overflowX: "auto",
           }}
         >
-          <PositionsTable positions={snap.positions} totalDeployed={snap.total_deployed} />
+          <PositionsTable
+            positions={snap.positions}
+            closedPositions={snap.closed_positions}
+            totalDeployed={snap.total_deployed}
+          />
         </div>
       </div>
     </div>

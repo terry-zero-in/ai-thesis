@@ -3,23 +3,28 @@ import type { PortfolioSnapshot } from "@/lib/portfolio-types";
 /**
  * Portfolio hero — Mercury "format on canvas" + Basis Rent-Roll pattern.
  *
- * Demo-data removal 2026-05-21 (Terry directive: personal tool, blank is
- * OK if data isn't there). The deterministic walk that powered the 30D
- * Performance column is gone — 30D now renders muted "—" until real NAV
- * history wires up.
- *
  * Column weights (2fr / 1fr / 1fr / 1fr) — Market Value is the sole
  * protagonist; cols 2-4 are equal-weight supporting columns:
  *   1. MARKET VALUE        — protagonist hero + concentration drag
- *   2. 30D PERFORMANCE     — pending until NAV history is tracked
- *   3. P&L · SINCE OPEN    — small hero
- *   4. RESERVE             — small hero
+ *   2. REALIZED P&L        — cumulative across all sells (THS-103)
+ *   3. P&L · SINCE OPEN    — unrealized (open positions only)
+ *   4. RESERVE             — cash + realized P&L − deployed
+ *
+ * S31 (THS-103) replaced the previous "30D Performance" column with
+ * Realized P&L. 30D required NAV history that doesn't wire up until daily
+ * price ingestion is firing; Realized P&L is concrete the moment any sell
+ * lands. The dashboard NAV chart owns 30D trend at the system level.
  *
  * Empty state: every hero shows muted em-dash; honest, no fake values.
  */
 
 export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
   const plPos = snap.total_pl >= 0;
+  const realizedPos = snap.total_realized_pl >= 0;
+  const hasRealizedActivity = snap.total_realized_proceeds > 0;
+  const realizedPctOnProceeds = hasRealizedActivity
+    ? snap.total_realized_pl / snap.total_realized_proceeds
+    : null;
 
   return (
     <div
@@ -67,17 +72,30 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         )}
       </Column>
 
-      {/* Col 2 — 30D PERFORMANCE
-          Demo-data removal 2026-05-21: real 30D delta requires NAV history
-          which isn't wired yet. Renders muted "—" with the same honest sub
-          the Dashboard already uses on its 30D return tile. Wires up once
-          a portfolio_nav_daily source lands. */}
-      <Column label="30D performance">
-        <BigNumber value="—" color="var(--text-4)" />
-        <SubLine>tracks once positions have ≥30d of history</SubLine>
+      {/* Col 2 — REALIZED P&L · all time.
+          Cumulative across every sale (partial or full). Replaces the 30D
+          Performance column that required NAV history not yet wired. The
+          subline shows the realized return as a % of gross proceeds — the
+          honest "what % of cash that flowed back was profit" framing. */}
+      <Column label="Realized P&L">
+        {hasRealizedActivity ? (
+          <BigNumber
+            value={fmtUsd(snap.total_realized_pl, true)}
+            color={realizedPos ? "var(--success)" : "var(--danger)"}
+          />
+        ) : (
+          <BigNumber value="—" color="var(--text-4)" />
+        )}
+        <SubLine>
+          {hasRealizedActivity && realizedPctOnProceeds != null
+            ? `${realizedPos ? "+" : ""}${(realizedPctOnProceeds * 100).toFixed(2)}% on ${fmtUsd(
+                snap.total_realized_proceeds,
+              )} proceeds`
+            : "no sells yet — populates when you close a position"}
+        </SubLine>
       </Column>
 
-      {/* Col 3 — P&L · SINCE OPEN */}
+      {/* Col 3 — P&L · SINCE OPEN (unrealized on currently-held positions) */}
       <Column label="P&L · since open">
         {snap.empty ? (
           <BigNumber value="—" color="var(--text-4)" />
@@ -90,11 +108,13 @@ export function AggregateBar({ snap }: { snap: PortfolioSnapshot }) {
         <SubLine>
           {snap.empty
             ? "no positions yet"
-            : `${plPos ? "+" : ""}${(snap.total_pl_pct * 100).toFixed(2)}%`}
+            : `${plPos ? "+" : ""}${(snap.total_pl_pct * 100).toFixed(2)}% unrealized`}
         </SubLine>
       </Column>
 
-      {/* Col 4 — RESERVE */}
+      {/* Col 4 — RESERVE
+          Formula: capital + realized_pl − deployed-in-open. Realized profits
+          grow the pool; losses shrink it. Sub-line shows target. */}
       <Column label="Reserve">
         <BigNumber
           value={fmtUsd(snap.reserve_actual)}
@@ -169,4 +189,3 @@ function fmtUsd(n: number, signed = false): string {
   const body = Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0, minimumFractionDigits: 0 });
   return `${sign}$${body}`;
 }
-

@@ -38,6 +38,10 @@ export function GreetingStrip({
   });
 
   useEffect(() => {
+    // First-tick swap from server-rendered placeholders to real clock /
+    // market state. SSR can't compute either (no window, no Date.now drift
+    // tolerance), so we render shell-safe defaults and correct on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState(computeGreeting());
     const id = setInterval(() => setState(computeGreeting()), 1000);
     return () => clearInterval(id);

@@ -4,11 +4,19 @@
  * Pulls in one round-trip:
  *   - portfolio_settings (singleton with total_capital, target_reserve)
  *   - portfolio_positions (open positions only — closed_at IS NULL)
+ *   - portfolio_positions (closed — closed_at IS NOT NULL) for the
+ *     Realized P&L history section (THS-103)
  *   - latest prices_raw.close for each held ticker (joined client-side)
  *   - last 2 SPY closes (for the SPY -5% single-day trigger)
  *
- * Computes derived aggregates (deployed, market value, P&L) and trigger
- * states in pure JS so the page can server-render without any client math.
+ * Computes derived aggregates (deployed, market value, P&L, realized P&L,
+ * reserve) and trigger states in pure JS so the page can server-render
+ * without any client math.
+ *
+ * Reserve formula (THS-103):
+ *   reserve_actual = total_capital + total_realized_pl − Σ(cost_basis × open_shares)
+ * The realized_pl term reconciles: proceeds from past sales return to the
+ * pool; profit accumulates, loss subtracts.
  *
  * VIX trigger (trigger 2b) is flagged as "data pending" — VIX ingestion
  * isn't shipped yet (open follow-on, THS-61 candidate). The market_triggers
@@ -20,6 +28,7 @@ import {
   POSITION_DRAWDOWN_TRIGGER,
   SPY_DAILY_DROP_TRIGGER,
   VIX_LEVEL_TRIGGER,
+  type ClosedPositionRow,
   type MarketTrigger,
   type PortfolioSnapshot,
   type PositionRow,
@@ -37,6 +46,10 @@ interface PositionDbRow {
   opened_at: string;
   closed_at: string | null;
   notes: string | null;
+  exit_price: number | null;
+  realized_pl: number | null;
+  realized_proceeds: number | null;
+  original_shares: number | null;
 }
 
 interface PriceRow {
@@ -64,59 +77,76 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
     return emptySnapshot(false);
   }
 
-  const [settingsRes, positionsRes] = await Promise.all([
+  const [settingsRes, openRes, closedRes] = await Promise.all([
     sb.from("portfolio_settings").select("total_capital,target_reserve").eq("id", 1).maybeSingle(),
     sb
       .from("portfolio_positions")
-      .select("ticker,shares,cost_basis,opened_at,closed_at,notes")
+      .select(
+        "ticker,shares,cost_basis,opened_at,closed_at,notes,exit_price,realized_pl,realized_proceeds,original_shares",
+      )
       .is("closed_at", null)
       .order("opened_at", { ascending: true }),
+    sb
+      .from("portfolio_positions")
+      .select(
+        "ticker,shares,cost_basis,opened_at,closed_at,notes,exit_price,realized_pl,realized_proceeds,original_shares",
+      )
+      .not("closed_at", "is", null)
+      .order("closed_at", { ascending: false }),
   ]);
 
   const settings = settingsRes.data
     ? { total_capital: Number(settingsRes.data.total_capital), target_reserve: Number(settingsRes.data.target_reserve) }
     : DEFAULT_SETTINGS;
-  const positionDbRows = (positionsRes.data ?? []) as PositionDbRow[];
+  const openDbRows = (openRes.data ?? []) as PositionDbRow[];
+  const closedDbRows = (closedRes.data ?? []) as PositionDbRow[];
 
-  if (positionDbRows.length === 0) {
-    // Settings exist but no positions yet — render empty state with real settings.
+  // Tickers we need joined universe / price / score / tax data for. Open
+  // positions need the full join chain (current price, score, concentration
+  // tax). Closed positions only need universe (name + layer).
+  const openTickers = openDbRows.map((p) => p.ticker);
+  const closedTickers = closedDbRows.map((p) => p.ticker);
+  const allTickers = Array.from(new Set([...openTickers, ...closedTickers]));
+
+  if (allTickers.length === 0) {
     const [spySnap, vixSnap] = await Promise.all([fetchSpySnapshot(sb), fetchVixSnapshot(sb)]);
-    return finalizeSnapshot([], settings, spySnap, vixSnap, true);
+    return finalizeSnapshot([], [], settings, spySnap, vixSnap, true);
   }
 
-  const tickers = positionDbRows.map((p) => p.ticker);
-
-  // Latest close per ticker — uses the (ticker, date DESC) index from THS-35.
-  // One round trip pulling 5 rows per ticker is fine for v1 (<=50 names).
-  // Score + concentration_tax joins added per Perplexity #5/#9 — same pattern
-  // as name-detail-data.ts: order desc, group by ticker via Map filter.
   const [priceRes, univRes, scoreRes, taxRes] = await Promise.all([
-    sb
-      .from("prices_raw")
-      .select("ticker,date,close")
-      .in("ticker", tickers)
-      .order("date", { ascending: false })
-      .limit(tickers.length * 3),
-    sb.from("universe").select("ticker,name,layer,layer_label").in("ticker", tickers),
-    sb
-      .from("scores_history")
-      .select("ticker,as_of,composite,tier")
-      .in("ticker", tickers)
-      .order("as_of", { ascending: false })
-      .limit(tickers.length * 2),
-    sb
-      .from("concentration_history")
-      .select("ticker,as_of,tax")
-      .in("ticker", tickers)
-      .order("as_of", { ascending: false })
-      .limit(tickers.length * 2),
+    openTickers.length > 0
+      ? sb
+          .from("prices_raw")
+          .select("ticker,date,close")
+          .in("ticker", openTickers)
+          .order("date", { ascending: false })
+          .limit(Math.max(openTickers.length, 1) * 3)
+      : Promise.resolve({ data: [] as PriceRow[] }),
+    sb.from("universe").select("ticker,name,layer,layer_label").in("ticker", allTickers),
+    openTickers.length > 0
+      ? sb
+          .from("scores_history")
+          .select("ticker,as_of,composite,tier")
+          .in("ticker", openTickers)
+          .order("as_of", { ascending: false })
+          .limit(Math.max(openTickers.length, 1) * 2)
+      : Promise.resolve({ data: [] as ScoreRow[] }),
+    openTickers.length > 0
+      ? sb
+          .from("concentration_history")
+          .select("ticker,as_of,tax")
+          .in("ticker", openTickers)
+          .order("as_of", { ascending: false })
+          .limit(Math.max(openTickers.length, 1) * 2)
+      : Promise.resolve({ data: [] as TaxRow[] }),
   ]);
+
   const priceMap = latestPriceMap((priceRes.data ?? []) as PriceRow[]);
   const univMap = new Map(((univRes.data ?? []) as UniverseChoice[]).map((u) => [u.ticker, u]));
   const scoreMap = latestScoreMap((scoreRes.data ?? []) as ScoreRow[]);
   const taxMap = latestTaxMap((taxRes.data ?? []) as TaxRow[]);
 
-  const positions: PositionRow[] = positionDbRows.map((p) => {
+  const positions: PositionRow[] = openDbRows.map((p) => {
     const price = priceMap.get(p.ticker) ?? null;
     const u = univMap.get(p.ticker) ?? fallbackUniverseRow(p.ticker);
     const score = scoreMap.get(p.ticker) ?? null;
@@ -136,12 +166,46 @@ export async function getPortfolioSnapshot(): Promise<PortfolioSnapshot> {
       composite: score?.composite != null ? Number(score.composite) : null,
       tier: score?.tier ?? null,
       concentration_tax: tax?.tax != null ? Number(tax.tax) : null,
+      realized_pl: p.realized_pl != null ? Number(p.realized_pl) : 0,
+      realized_proceeds: p.realized_proceeds != null ? Number(p.realized_proceeds) : 0,
+      original_shares: p.original_shares != null ? Number(p.original_shares) : null,
+    };
+  });
+
+  const closed_positions: ClosedPositionRow[] = closedDbRows.map((p) => {
+    const u = univMap.get(p.ticker) ?? fallbackUniverseRow(p.ticker);
+    const realized_pl = p.realized_pl != null ? Number(p.realized_pl) : 0;
+    const realized_proceeds = p.realized_proceeds != null ? Number(p.realized_proceeds) : 0;
+    const cost_basis = Number(p.cost_basis);
+    // shares_sold = original_shares (every share is sold by the time
+    // closed_at is set). Legacy rows closed via the old closePosition flow
+    // have original_shares=NULL — fall back to the remaining shares value
+    // they were closed with (typically equals what they were holding then).
+    const original_shares =
+      p.original_shares != null ? Number(p.original_shares) : Number(p.shares);
+    const shares_sold = original_shares;
+    const total_cost = cost_basis * shares_sold;
+    const realized_pl_pct = total_cost > 0 ? realized_pl / total_cost : null;
+    return {
+      ticker: p.ticker,
+      name: u.name,
+      layer: u.layer,
+      layer_label: u.layer_label,
+      cost_basis,
+      shares_sold,
+      original_shares,
+      exit_price: p.exit_price != null ? Number(p.exit_price) : null,
+      closed_at: String(p.closed_at),
+      opened_at: p.opened_at,
+      realized_pl,
+      realized_proceeds,
+      realized_pl_pct,
     };
   });
 
   const [spySnap, vixSnap] = await Promise.all([fetchSpySnapshot(sb), fetchVixSnapshot(sb)]);
 
-  return finalizeSnapshot(positions, settings, spySnap, vixSnap, true);
+  return finalizeSnapshot(positions, closed_positions, settings, spySnap, vixSnap, true);
 }
 
 /**
@@ -264,6 +328,7 @@ async function fetchVixSnapshot(sb: NonNullable<Awaited<ReturnType<typeof getSup
 
 function finalizeSnapshot(
   positions: PositionRow[],
+  closed_positions: ClosedPositionRow[],
   settings: { total_capital: number; target_reserve: number },
   spy: SpySnap,
   vix: VixSnap,
@@ -271,11 +336,15 @@ function finalizeSnapshot(
 ): PortfolioSnapshot {
   let total_deployed = 0;
   let total_market_value = 0;
+  let total_realized_pl_open = 0;
+  let total_realized_proceeds_open = 0;
   const position_triggers: PositionTrigger[] = [];
 
   for (const p of positions) {
     const cost = p.cost_basis * p.shares;
     total_deployed += cost;
+    total_realized_pl_open += p.realized_pl;
+    total_realized_proceeds_open += p.realized_proceeds;
     if (p.current_price != null) {
       const mv = p.current_price * p.shares;
       total_market_value += mv;
@@ -295,9 +364,24 @@ function finalizeSnapshot(
     }
   }
 
+  let total_realized_pl_closed = 0;
+  let total_realized_proceeds_closed = 0;
+  for (const c of closed_positions) {
+    total_realized_pl_closed += c.realized_pl;
+    total_realized_proceeds_closed += c.realized_proceeds;
+  }
+
+  const total_realized_pl = total_realized_pl_open + total_realized_pl_closed;
+  const total_realized_proceeds = total_realized_proceeds_open + total_realized_proceeds_closed;
+
   const total_pl = total_market_value - total_deployed;
   const total_pl_pct = total_deployed > 0 ? total_pl / total_deployed : 0;
-  const reserve_actual = settings.total_capital - total_deployed;
+  // Reserve formula (THS-103): capital + realized_pl − deployed-in-open.
+  // Realized P&L reconciles past sales: profit grows the pool, loss shrinks
+  // it. Open deployments still tie up cost basis. The cost basis component
+  // of past sales is already returned (it was subtracted from deployed when
+  // shares dropped to zero); realized_pl is the net delta on top.
+  const reserve_actual = settings.total_capital + total_realized_pl - total_deployed;
   const market_triggers = computeMarketTriggers(spy, vix);
 
   // Sum concentration tax across held names where the engine has computed
@@ -315,18 +399,21 @@ function finalizeSnapshot(
 
   return {
     positions,
+    closed_positions,
     settings,
     total_deployed,
     total_market_value,
     total_pl,
     total_pl_pct,
+    total_realized_pl,
+    total_realized_proceeds,
     reserve_actual,
     position_triggers,
     market_triggers,
     spy_close: spy.spy_close,
     spy_close_prior: spy.spy_close_prior,
     spy_as_of: spy.spy_as_of,
-    empty: positions.length === 0,
+    empty: positions.length === 0 && closed_positions.length === 0,
     envConfigured,
     portfolio_concentration_tax,
   };
@@ -407,10 +494,13 @@ function emptySnapshot(envConfigured: boolean): PortfolioSnapshot {
 function emptyAggregate(settings: { total_capital: number; target_reserve: number }) {
   return {
     positions: [] as PositionRow[],
+    closed_positions: [] as ClosedPositionRow[],
     total_deployed: 0,
     total_market_value: 0,
     total_pl: 0,
     total_pl_pct: 0,
+    total_realized_pl: 0,
+    total_realized_proceeds: 0,
     reserve_actual: settings.total_capital,
     position_triggers: [] as PositionTrigger[],
   };

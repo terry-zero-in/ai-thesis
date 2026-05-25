@@ -50,6 +50,35 @@ export interface PositionRow {
   /** Joined: latest concentration_history.tax for this ticker (-15..0 range). null
    * when concentration engine hasn't computed for this ticker yet. */
   concentration_tax: number | null;
+  /** Cumulative realized P&L from prior sales on this position (THS-103). */
+  realized_pl: number;
+  /** Cumulative gross proceeds from prior sales (THS-103). */
+  realized_proceeds: number;
+  /** Pre-first-sale share count. null when never sold (shares is original). */
+  original_shares: number | null;
+}
+
+/** Closed-position row — shape mirrors PositionRow but trimmed to the fields
+ *  the closed-positions section actually renders. realized_* are canonical;
+ *  exit_price is the last sale price (display). */
+export interface ClosedPositionRow {
+  ticker: string;
+  name: string;
+  layer: number;
+  layer_label: string;
+  cost_basis: number;
+  /** Total shares sold across all sales on this position. */
+  shares_sold: number;
+  /** Pre-first-sale share count (= shares_sold when fully closed). */
+  original_shares: number;
+  exit_price: number | null;
+  /** Date of the final sale that fully closed the position. */
+  closed_at: string;
+  opened_at: string;
+  realized_pl: number;
+  realized_proceeds: number;
+  /** realized_pl / (cost_basis * shares_sold) — null when cost basis is zero. */
+  realized_pl_pct: number | null;
 }
 
 export interface PositionTrigger {
@@ -68,11 +97,17 @@ export interface MarketTrigger {
 
 export interface PortfolioSnapshot {
   positions: PositionRow[];
+  /** Fully-closed positions (shares=0, closed_at set), newest sale first. */
+  closed_positions: ClosedPositionRow[];
   settings: PortfolioSettings;
   total_deployed: number;
   total_market_value: number;
   total_pl: number;
   total_pl_pct: number;
+  /** Sum of realized_pl across ALL positions (open + closed). */
+  total_realized_pl: number;
+  /** Sum of realized_proceeds across ALL positions (open + closed). */
+  total_realized_proceeds: number;
   reserve_actual: number;
   /** Triggered positions (≥7% drawdown from cost basis). */
   position_triggers: PositionTrigger[];
@@ -108,4 +143,17 @@ export interface HeldPositionPrefill {
   cost_basis: number;
   opened_at: string;
   notes: string | null;
+}
+
+/** Compact prefill snapshot for the SellDrawer (THS-103). Provides the
+ * currently-held share count + cost basis + opened_at so the sell form can
+ * default + validate without an extra DB round-trip. */
+export interface SellablePositionPrefill {
+  ticker: string;
+  name: string;
+  shares: number;
+  cost_basis: number;
+  opened_at: string;
+  current_price: number | null;
+  current_price_as_of: string | null;
 }

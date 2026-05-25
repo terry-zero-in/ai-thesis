@@ -74,6 +74,10 @@ export function AddPositionForm({
   // close (overrideable). Resetting costBasisOverridden each ticker change
   // means re-picking a ticker after an override starts fresh.
   useEffect(() => {
+    // Hydrate form state from external ticker selection — legitimate
+    // external→internal sync. The deps array gates the effect to only fire
+    // when ticker / held / selected actually change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCostBasisOverridden(false);
     if (!ticker) return;
     if (held) {
