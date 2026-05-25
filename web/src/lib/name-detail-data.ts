@@ -395,6 +395,9 @@ function buildDetail(
   };
 }
 
+// S25 directive (Terry 2026-05-21): empty over fixture. fixtureDetail was
+// removed in the demo-data strip; emptyDetail returns a real-shaped empty
+// NameDetail so the page renders honest blanks instead of synthesized scores.
 function emptyDetail(ticker: string, universe?: UniverseRow | null): NameDetail {
   return {
     ticker: universe?.ticker ?? ticker,

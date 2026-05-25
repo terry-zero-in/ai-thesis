@@ -332,8 +332,10 @@ function BarColumn({
           background: TIER_FILL[tier],
           borderTop: `2px solid ${TIER_CAP[tier]}`,
           borderRadius: 2,
-          filter: dimmed ? "saturate(0.4)" : undefined,
-          transition: "filter var(--dur-fast) var(--ease-out)",
+          opacity: dimmed ? 0.45 : 1,
+          // S-tier (compositor) — replaces a prior `filter: saturate(0.4)`
+          // (paint-tier C) so dim transitions stay off the main thread.
+          transition: "opacity var(--dur-fast) var(--ease-out)",
         }}
       />
     </button>

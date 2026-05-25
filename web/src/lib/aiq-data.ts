@@ -30,9 +30,9 @@ export async function getAiqContext(ticker: string): Promise<AiqContext> {
   if (!sb) return { seed: null, latest: null, history: [], envConfigured: false };
 
   // Real universe lookup — replaces the legacy FIXTURE_INDEX seed (stripped
-  // in `strip FIXTURE_UNIVERSE/...` 2026-05-22). Without this, every
-  // editor route rendered "not in universe" even when the ticker was an
-  // active universe row.
+  // in S25 demo-data removal 2026-05-22, Terry directive). Without this,
+  // every editor route rendered "not in universe" even when the ticker
+  // was an active universe row.
   const { data: seedRow } = await sb
     .from("universe")
     .select("ticker,name,layer,layer_label")

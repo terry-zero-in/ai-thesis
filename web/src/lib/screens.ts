@@ -17,8 +17,8 @@ export type ScreenId =
   | "memos"
   | "memo-detail"
   | "decisions"
-  | "backtest"
   | "proposals"
+  | "backtest"
   | "learn"
   | "settings"
   | "login";
@@ -35,8 +35,8 @@ export const CRUMBS: Record<ScreenId, [string, string | null]> = {
   memos:         ["Memos", "List"],
   "memo-detail": ["Memos", "Detail"],
   decisions:     ["Decisions", "Log"],
+  proposals:     ["Proposals", "Pending"],
   backtest:      ["Backtest", null],
-  proposals:     ["Proposals", null],
   learn:         ["Learn", null],
   settings:      ["Settings", null],
   login:         ["Sign in", null],
@@ -55,8 +55,8 @@ export function pathToScreen(pathname: string): ScreenId {
   if (pathname.startsWith("/memos/") && pathname !== "/memos") return "memo-detail";
   if (pathname.startsWith("/memos")) return "memos";
   if (pathname.startsWith("/decisions")) return "decisions";
-  if (pathname.startsWith("/backtest")) return "backtest";
   if (pathname.startsWith("/proposals")) return "proposals";
+  if (pathname.startsWith("/backtest")) return "backtest";
   if (pathname.startsWith("/learn")) return "learn";
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname.startsWith("/login")) return "login";
@@ -107,8 +107,8 @@ export const SCREEN_TO_PATH: Record<ScreenId, string> = {
   memos:         "/memos",
   "memo-detail": "/memos",
   decisions:     "/decisions",
-  backtest:      "/backtest",
   proposals:     "/proposals",
+  backtest:      "/backtest",
   learn:         "/learn",
   settings:      "/settings",
   login:         "/login",
