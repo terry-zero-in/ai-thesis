@@ -1218,3 +1218,24 @@ S29 shipped 6 commits across three concerns: (1) a `/learn` methodology page wit
 1. Load skills per CLAUDE.md.
 2. Read the S29 handoff doc (especially the THS-101 section with exact fix locations for the 8 items).
 3. Crank THS-101 as a single PR. Then surface to Terry for visual check before he drives critical-path steps 2-6.
+
+---
+
+## SESSION S30 (2026-05-25, Linear cleanup + merge to main + Vercel project mismatch finding)
+
+**Note:** Sessions S10–S30 are logged in `docs/handoffs/` per-session. This entry is a pointer.
+
+S30 shipped 2 commits and a wholesale Linear cleanup. The THS-101 8-item bug bundle landed (commit `154e818`), then the branch was merged into `main` (commit `56458d6`) and fast-forwarded — making `main` finally current with all S25-S29 work. Discovered at the very end: Terry has TWO Vercel projects in his account, and his Mac is linked to the wrong one. `ai-thesis-v2.vercel.app` (the URL Mom + Dad were going to use) is still serving 8h-old code. New ticket THS-107 captures this blocker.
+
+- **THS-101 shipped (Done)** — 8 pre-launch fixes in `154e818`: ^VIX URL decode, ?tier= filter wiring, popover background, memo env-var leak sanitized, Proposals breadcrumb, Backtest year-roll, right-panel toggle, ^VIX filtered from universe. 18 routes build, lint baseline unchanged.
+- **`main` is current** — `60e465f → 56458d6`, includes all S25-S29 work. Resolved 7 conflicts from PR #10 (dep/burry filter chips) keeping the new dep_flag plumbing but reverting fixture-fallback to S25's "empty over fake" directive.
+- **Linear hygiene** — closed THS-6, 7, 14, 24, 31 (stale). Created THS-103 (sell flow + realized P&L + retro entry — full spec), THS-104 (env secrets), THS-105 (daily-batch fire + RLS smoke test), THS-106 (merge — Done), THS-107 (Vercel project mismatch — High, Todo).
+- **Vercel project mismatch (THS-107)** — `vercel --prod` from Terry's Mac deployed to `ai-thesis-three.vercel.app` instead of `ai-thesis-v2.vercel.app`. The default subdomain returns Vercel-level 404. Resolution recommended in ticket: re-link Mac to `ai-thesis-v2`, redeploy.
+- **Sell feature scoped (THS-103)** — schema migration + `sellPosition()` server action + `SellDrawer.tsx` + closed positions table + realized P&L tile. Partial sells supported. Retro exit dates editable. ~4h Claude autonomous work. Reconciliation math worked end-to-end in ticket body.
+
+**Full record:** `docs/handoffs/2026-05-25-S30-linear-cleanup-merge-main-vercel-mismatch.md`
+
+**Next session — start here:**
+1. Load skills per CLAUDE.md.
+2. Read the S30 handoff (especially the THS-107 section — the Vercel mismatch is the active blocker).
+3. **Do NOT crank THS-103 yet.** First, work with Terry to resolve THS-107 (operational, 10 min) + THS-104 (env secrets, 30 min). Only when the deploy pipeline is verifiably alive should code work resume.
