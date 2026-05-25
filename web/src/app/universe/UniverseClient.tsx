@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { type UniverseSnapshot } from "@/lib/universe-data";
+import { type Tier, type UniverseSnapshot } from "@/lib/universe-data";
 import type { EngineStatus } from "@/lib/engine-status";
 import { useFilter } from "@/hooks/filter-context";
+import { useUniverseFilter } from "@/hooks/universe-filter-context";
 import { UniverseTable } from "@/components/universe/UniverseTable";
 import { PageHeader } from "@/components/primitives/PageHeader";
 import { EngineStatusStrip } from "@/components/primitives/EngineStatusStrip";
@@ -20,7 +22,32 @@ import { UniverseRailRegister } from "@/components/rails/UniverseRailRegister";
  * a client boundary (search input bound to filter-context, table sort/filter
  * state, rail register effect).
  */
-export function UniverseClient({ snap, engineStatus }: { snap: UniverseSnapshot; engineStatus: EngineStatus }) {
+export function UniverseClient({
+  snap,
+  engineStatus,
+  initialTier,
+}: {
+  snap: UniverseSnapshot;
+  engineStatus: EngineStatus;
+  initialTier?: Tier | null;
+}) {
+  // Seed the universe filter from a URL ?tier= param exactly once on mount.
+  // Dashboard KPI tiles deep-link to /universe?tier=High; without this the
+  // table would render unfiltered and the link would be a lie (THS-101 #2).
+  // Guarded by a ref so a re-render (e.g. user toggling the same chip off)
+  // doesn't re-arm the filter and trap the user.
+  const { tiers, toggleTier } = useUniverseFilter();
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current) return;
+    if (initialTier && !tiers.has(initialTier)) {
+      toggleTier(initialTier);
+    }
+    seeded.current = true;
+    // tiers / toggleTier intentionally omitted — this is a one-shot seed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTier]);
+
   return (
     <div
       style={{

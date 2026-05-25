@@ -19,10 +19,21 @@ interface Params {
 }
 
 export default async function NameDetailPage({ params }: { params: Promise<Params> }) {
-  const { ticker } = await params;
+  const { ticker: raw } = await params;
+  // Tickers like ^VIX arrive URL-encoded (%5EVIX). Decode before any downstream
+  // use — otherwise the heading reads "%5EVIX" and the DB lookup misses.
+  const ticker = safeDecode(raw);
   const [engineStatus, scoreMath] = await Promise.all([
     getEngineStatus(),
     getScoreMath(ticker),
   ]);
   return <NameDetailClient ticker={ticker} engineStatus={engineStatus} scoreMath={scoreMath} />;
+}
+
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }

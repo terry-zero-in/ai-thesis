@@ -117,12 +117,16 @@ export function ScoreMathPopover({
             width: 360,
             maxHeight: "calc(100vh - 24px)",
             overflowY: "auto",
-            background: "var(--canvas)",
+            // --surface-elevated (not --canvas) so the popover sits visually
+            // ABOVE the row, not flush with it — the prior --canvas value
+            // matched the row background and read as transparent bleed-through.
+            // z-index bumped above the ctx-rail (z:80) so cross-rail overlays land clean.
+            background: "var(--surface-elevated)",
             border: "1px solid var(--border)",
             borderRadius: 6,
             boxShadow: "0 12px 32px -8px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.02)",
             padding: 14,
-            zIndex: 80,
+            zIndex: 90,
             animation: "fadeUp var(--dur-fast) var(--ease-out) both",
           }}
         >

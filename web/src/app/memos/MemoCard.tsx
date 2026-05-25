@@ -30,8 +30,11 @@ export function MemoCard({ memo }: { memo: MemoRow }) {
       >
         <Meta memo={memo} />
         <div style={{ fontSize: 13, color: "var(--text-1)", marginTop: 6 }}>
-          Memo failed to generate. {memo.error ?? "No error message recorded."}
+          This memo couldn&apos;t be generated. Operator notified.
         </div>
+        {/* Raw error stays in memos.error in the DB for operator-only inspection.
+            Not surfaced to the user — earlier leaks exposed ANTHROPIC_API_KEY
+            verbatim in failure messages (THS-101 item 4). */}
       </div>
     );
   }

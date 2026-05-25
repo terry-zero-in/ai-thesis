@@ -12,7 +12,14 @@ interface Params {
 }
 
 export default async function AiqEditorPage({ params }: { params: Promise<Params> }) {
-  const { ticker } = await params;
+  const { ticker: raw } = await params;
+  // Decode URL-encoded tickers (^VIX → %5EVIX in the URL).
+  let ticker = raw;
+  try {
+    ticker = decodeURIComponent(raw);
+  } catch {
+    // malformed encoding — fall back to raw value
+  }
   const tickerUpper = ticker.toUpperCase();
   const ctx = await getAiqContext(tickerUpper);
 

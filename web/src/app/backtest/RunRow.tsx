@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { BacktestRun } from "@/lib/backtest-data";
+import type { BacktestPoint, BacktestRun, TurnoverPoint } from "@/lib/backtest-data";
 
 export function RunRow({ run }: { run: BacktestRun }) {
   const [expanded, setExpanded] = useState(false);
@@ -12,10 +12,13 @@ export function RunRow({ run }: { run: BacktestRun }) {
     // react-hooks lint rule flags re-assigned outer variables inside
     // map callbacks. Pushing into a const array within useMemo is
     // render-deterministic and lint-clean.
+    // Series payload may be raw `number[]` (current edge function shape)
+    // or `{as_of, ret}[]` (older shape); coerce both to a numeric return.
     const pts: number[] = [];
     for (const p of series) {
+      const ret = typeof p === "number" ? p : p.ret;
       const prev = pts.length === 0 ? 1 : pts[pts.length - 1];
-      pts.push(prev * (1 + p.ret));
+      pts.push(prev * (1 + ret));
     }
     const min = Math.min(...pts);
     const max = Math.max(...pts);
@@ -86,12 +89,55 @@ export function RunRow({ run }: { run: BacktestRun }) {
             color: "var(--text-2)",
           }}
         >
-          <SeriesGrid label="Monthly returns (net)" series={run.series.monthly_returns_net.map((p) => ({ as_of: p.as_of, value: p.ret }))} format={(v) => pct(v) + ""} signColor />
-          <SeriesGrid label="Turnover" series={run.series.turnover.map((p) => ({ as_of: p.as_of, value: p.turnover }))} format={(v) => pct(v) + ""} />
+          <SeriesGrid
+            label="Monthly returns (net)"
+            series={zipMonthLabels(run.start_date, run.series.monthly_returns_net)}
+            format={(v) => pct(v) + ""}
+            signColor
+          />
+          <SeriesGrid
+            label="Turnover"
+            series={zipMonthLabels(run.start_date, run.series.turnover)}
+            format={(v) => pct(v) + ""}
+          />
         </div>
       )}
     </div>
   );
+}
+
+/**
+ * Walk forward from `start_date` one month at a time and pair each step
+ * with the corresponding numeric series value. The edge function stores
+ * series as `number[]` (not `{as_of, ret}[]` like the TS type implies),
+ * so labels MUST be derived here — and Date.setMonth(getMonth()+1) is the
+ * only path that rolls the year correctly on December → January.
+ * Prior bug: slicing a typed-but-undefined `as_of` produced "—" labels
+ * and the year never rolled (THS-101 item 6).
+ */
+function zipMonthLabels(
+  startDate: string,
+  values: ReadonlyArray<BacktestPoint | TurnoverPoint>,
+): Array<{ as_of: string; value: number }> {
+  // Parse start_date as UTC midnight so DST shifts don't bump months around.
+  const d = new Date(`${startDate}T00:00:00Z`);
+  const out: Array<{ as_of: string; value: number }> = [];
+  for (let i = 0; i < values.length; i++) {
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const v = values[i];
+    let num: number;
+    if (typeof v === "number") {
+      num = v;
+    } else if ("ret" in v) {
+      num = v.ret;
+    } else {
+      num = v.turnover;
+    }
+    out.push({ as_of: `${yyyy}-${mm}-01`, value: num });
+    d.setUTCMonth(d.getUTCMonth() + 1);
+  }
+  return out;
 }
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {

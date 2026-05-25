@@ -1,6 +1,16 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 
 /**
  * CtxPanel rail keys.
@@ -41,7 +51,11 @@ interface CtxPanelCtx {
   rail: CtxRailKey;
   setRail: (k: CtxRailKey) => void;
   open: boolean;
-  setOpen: (b: boolean) => void;
+  /** Accepts either a boolean or a functional updater. Functional updater
+   * form is REQUIRED for any toggle call that fires from an event handler
+   * captured before the latest state — otherwise `setOpen(!open)` reads
+   * a stale closure value and the panel "doesn't close on second click". */
+  setOpen: Dispatch<SetStateAction<boolean>>;
   /** Open the panel and switch to a specific rail in one call. */
   openTo: (k: CtxRailKey) => void;
   /**

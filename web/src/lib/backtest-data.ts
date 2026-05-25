@@ -21,9 +21,15 @@ export interface BacktestSummary {
   rebalance_count: number | null;
 }
 
+// Edge function `run-backtest` stores series as raw `number[]`; an older
+// shape persisted `{as_of, ret}[]`. The renderer accepts either — see
+// `zipMonthLabels()` in RunRow.tsx (THS-101 item 6).
+export type BacktestPoint = number | { as_of: string; ret: number };
+export type TurnoverPoint = number | { as_of: string; turnover: number };
+
 export interface BacktestSeries {
-  monthly_returns_net: Array<{ as_of: string; ret: number }>;
-  turnover: Array<{ as_of: string; turnover: number }>;
+  monthly_returns_net: BacktestPoint[];
+  turnover: TurnoverPoint[];
 }
 
 export interface BacktestRun {

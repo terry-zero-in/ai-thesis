@@ -18,6 +18,8 @@ export type ScreenId =
   | "memo-detail"
   | "decisions"
   | "backtest"
+  | "proposals"
+  | "learn"
   | "settings"
   | "login";
 
@@ -34,6 +36,8 @@ export const CRUMBS: Record<ScreenId, [string, string | null]> = {
   "memo-detail": ["Memos", "Detail"],
   decisions:     ["Decisions", "Log"],
   backtest:      ["Backtest", null],
+  proposals:     ["Proposals", null],
+  learn:         ["Learn", null],
   settings:      ["Settings", null],
   login:         ["Sign in", null],
 };
@@ -52,6 +56,8 @@ export function pathToScreen(pathname: string): ScreenId {
   if (pathname.startsWith("/memos")) return "memos";
   if (pathname.startsWith("/decisions")) return "decisions";
   if (pathname.startsWith("/backtest")) return "backtest";
+  if (pathname.startsWith("/proposals")) return "proposals";
+  if (pathname.startsWith("/learn")) return "learn";
   if (pathname.startsWith("/settings")) return "settings";
   if (pathname.startsWith("/login")) return "login";
   return "dash";
@@ -66,14 +72,27 @@ export function pathToCrumb(pathname: string): [string, string | null] {
   const screen = pathToScreen(pathname);
   const [root, leaf] = CRUMBS[screen];
   if (screen === "name-detail") {
-    const ticker = pathname.replace(/^\/universe\//, "").split("/")[0];
-    return [root, ticker ? ticker.toUpperCase() : leaf];
+    const raw = pathname.replace(/^\/universe\//, "").split("/")[0];
+    const ticker = raw ? safeDecodeTicker(raw).toUpperCase() : null;
+    return [root, ticker ?? leaf];
   }
   if (screen === "aiq-detail") {
-    const ticker = pathname.replace(/^\/aiq\//, "").split("/")[0];
-    return [root, ticker ? ticker.toUpperCase() : leaf];
+    const raw = pathname.replace(/^\/aiq\//, "").split("/")[0];
+    const ticker = raw ? safeDecodeTicker(raw).toUpperCase() : null;
+    return [root, ticker ?? leaf];
   }
   return [root, leaf];
+}
+
+// URL-encoded tickers like %5EVIX (^VIX) need decoding before display.
+// decodeURIComponent throws on malformed input — guard so a stray %
+// can't crash the breadcrumb render.
+function safeDecodeTicker(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
 }
 
 export const SCREEN_TO_PATH: Record<ScreenId, string> = {
@@ -89,6 +108,8 @@ export const SCREEN_TO_PATH: Record<ScreenId, string> = {
   "memo-detail": "/memos",
   decisions:     "/decisions",
   backtest:      "/backtest",
+  proposals:     "/proposals",
+  learn:         "/learn",
   settings:      "/settings",
   login:         "/login",
 };

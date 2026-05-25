@@ -83,6 +83,7 @@ export async function getUniverseTickers(): Promise<string[]> {
     .from("universe")
     .select("ticker")
     .eq("is_active", true)
+    .not("ticker", "like", "^%")
     .order("ticker");
   if (error || !data || data.length === 0) return [];
   return (data as Array<{ ticker: string }>).map((r) => r.ticker);
@@ -93,7 +94,12 @@ export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
   if (!sb) return emptySnapshot();
 
   const [universeRes, scoresRes, queueRes] = await Promise.all([
-    sb.from("universe").select("ticker,name,layer,layer_label").eq("is_active", true).order("ticker"),
+    sb
+      .from("universe")
+      .select("ticker,name,layer,layer_label")
+      .eq("is_active", true)
+      .not("ticker", "like", "^%")
+      .order("ticker"),
     sb
       .from("scores_history")
       .select("ticker,as_of,q_score,g_score,v_score,aiq_score,composite,final_score,tier,macro_gates_hit,macro_multiplier")

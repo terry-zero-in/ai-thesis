@@ -53,7 +53,10 @@ export function TopBar({
         <TBBtn onClick={onHelp}>{I.help}</TBBtn>
       </Tip>
       <Tip label={panelOpen ? "Close context panel" : "Open context panel"} keys={["⌘", "\\"]}>
-        <TBBtn onClick={() => setPanelOpen(!panelOpen)}>{I.panel}</TBBtn>
+        {/* Functional updater — avoids the stale-closure trap where the
+            click handler captures `panelOpen` from an earlier render and
+            the panel refuses to close on a second click (THS-101 item 7). */}
+        <TBBtn onClick={() => setPanelOpen((v) => !v)}>{I.panel}</TBBtn>
       </Tip>
       {/* UserChip removed per Terry — username took too much chrome space.
           Sign-out still reachable at /logout direct URL. If discoverability

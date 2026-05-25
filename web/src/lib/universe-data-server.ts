@@ -35,7 +35,16 @@ export async function getLatestUniverseScoresServer(): Promise<UniverseSnapshot>
   // serialized waiting for universe → scores → queue. Same pattern as the
   // browser variant in `universe-data.ts`.
   const [universeRes, scoresRes, queueRes] = await Promise.all([
-    sb.from("universe").select("ticker,name,layer,layer_label").eq("is_active", true).order("ticker"),
+    // `not('ticker', 'like', '^%')` filters macro indices (^VIX, ^SPX, ^DXY)
+    // out of the equity universe — they're carried in the same table for
+    // macro-gauge scoring but should never appear in the scored-name list.
+    // ^VIX still surfaces on /regime via a separate query (THS-101 item 8).
+    sb
+      .from("universe")
+      .select("ticker,name,layer,layer_label")
+      .eq("is_active", true)
+      .not("ticker", "like", "^%")
+      .order("ticker"),
     sb
       .from("scores_history")
       .select(
