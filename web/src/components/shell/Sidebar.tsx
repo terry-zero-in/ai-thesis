@@ -60,7 +60,8 @@ export function Sidebar({
       style={{
         width: col ? 56 : 240,
         background: "var(--sidebar)",
-        borderRight: "1px solid var(--border-subtle)",
+        // No right border — the rail meets the --frame gutter; the floating
+        // canvas carries its own border, so no full-height line divides them.
         display: "flex",
         flexDirection: "column",
         flexShrink: 0,
