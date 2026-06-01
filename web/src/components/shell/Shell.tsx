@@ -85,11 +85,11 @@ function ShellInner({
   });
 
   return (
-    // Basis app shell — Linear-style frame: the --frame gutter (#0a0a0a) shows
-    // in the 8px margins around a floating, rounded, hairline-bordered canvas.
-    // The sidebar (rail) has no right border; an 8px gutter (not a hard line)
-    // separates it from the canvas, which floats 8px off all four edges.
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--frame)" }}>
+    // Basis app shell — Linear-style frame. The surround matches the sidebar
+    // (--sidebar) so the rail and the 8px gutter around the canvas read as one
+    // continuous plane; the floating, rounded, hairline-bordered canvas sits
+    // 8px off all four edges. The sidebar has no right border — no hard line.
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--sidebar)" }}>
       <Sidebar col={col} setCol={setCol} unseenAlerts={unseenAlerts} />
       <div
         style={{
