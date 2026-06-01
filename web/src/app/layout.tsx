@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ConditionalShell } from "@/components/shell/ConditionalShell";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -17,6 +17,15 @@ const geistMono = Geist_Mono({
   weight: ["400", "500"],
 });
 
+// JetBrains Mono — the Basis design-system monospace companion for every
+// number, eyebrow, hex, keycap, and pill. Bound to --font-jetbrains-mono,
+// which globals.css points --m at.
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "AI Thesis",
   description: "Multi-factor AI investing scoring engine + portfolio dashboard",
@@ -32,7 +41,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const unseenAlerts = await getUnseenAlertCount();
 
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable}`}>
       <body>
         <ConditionalShell userEmail={userEmail} unseenAlerts={unseenAlerts}>
           {children}
