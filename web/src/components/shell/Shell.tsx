@@ -85,7 +85,11 @@ function ShellInner({
   });
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    // Basis app shell — Linear-style frame: the --frame gutter (#0a0a0a) shows
+    // in the 8px margins around a floating, rounded, hairline-bordered canvas.
+    // The sidebar (rail) is flush left; the canvas is flush to the rail and
+    // floats 8px off the top / right / bottom screen edges.
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--frame)" }}>
       <Sidebar col={col} setCol={setCol} unseenAlerts={unseenAlerts} />
       <div
         style={{
@@ -94,6 +98,10 @@ function ShellInner({
           flexDirection: "column",
           overflow: "hidden",
           minWidth: 0,
+          margin: "8px 8px 8px 0",
+          background: "var(--canvas)",
+          border: "1px solid var(--border-hairline)",
+          borderRadius: 12,
         }}
       >
         <TopBar

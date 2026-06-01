@@ -83,7 +83,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   /* Surfaces — Basis dark elevation ladder (no shadows; the ladder is depth). */
   --jet:    #0f0f11;  /* L0 · sidebar fill (rail) */
   --onyx:   #131316;  /* L1 · canvas */
-  --carbon: #212126;  /* L2 · cards, rows, panels */
+  --carbon: #1e1e23;  /* L2 · cards, rows, panels (Basis doctrine-card tone) */
   --steel:  #232527;  /* L3 · borders / elevated neutral */
 
   /* Indigo — the brand signal (was Iris violet). Conviction ≥75, active state,
@@ -116,7 +116,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
   --canvas:        var(--onyx);    /* L1 · #131316 — main canvas */
   --sidebar:       var(--jet);     /* L0 · #0f0f11 — sidebar rail fill */
-  --surface:       var(--carbon);  /* L2 · #212126 — cards, right rail, palette, tooltips */
+  --surface:       var(--carbon);  /* L2 · #1e1e23 — cards, right rail, palette, tooltips */
   --surface-2:     var(--carbon);  /* L2 · same as surface — cards within cards stay flat */
   --elevated:      #191C22;        /* L3 · popovers, elevated modals, table header */
   --hover-lift:    #1D2027;        /* row / list hover (lifts past the header) */
@@ -402,7 +402,7 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
    Duration bumped from --dur-instant (80ms) → --dur-fast (140ms) to match Linear's
    measured 150ms hover timing; 80ms read as snappy/jittery on full rows. */
 .row-hov{transition:background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out);cursor:pointer}
-/* Hover snaps to --surface (carbon #212126) — same surface as KPI hover and
+/* Hover snaps to --surface (carbon #1e1e23) — same surface as KPI hover and
    sidebar hover, a system-coherent L2 lift off the canvas. */
 .row-hov:hover{background:var(--surface)}
 .row-hov:active{background:var(--hover-tint-strong)}
@@ -472,7 +472,7 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
 /* KPI hover — Dashboard KPI cells are clickthroughs to their detail page
    (Portfolio/P&L/30D → /portfolio; Macro mult → /regime; High-tier →
    /universe?tier=High). Hover lifts the cell bg to --surface (carbon
-   #212126) — same surface as the chart card directly below the KPI row,
+   #1e1e23) — same surface as the chart card directly below the KPI row,
    so a hovered KPI reads as "lifted to the graph surface" rather than a
    flat tint. Mirrors the Basis onyx→carbon ladder. */
 .kpi-hov{transition:background var(--dur-fast) var(--ease-out);border-radius:6px;cursor:pointer}

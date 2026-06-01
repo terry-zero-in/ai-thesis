@@ -133,11 +133,11 @@ function Hero() {
         position: "relative",
         padding: "clamp(60px, 10vw, 120px) clamp(20px, 5vw, 48px) clamp(80px, 12vw, 140px)",
         overflow: "hidden",
-        // Atmosphere gradient — Iris × Voltage v1.1, marketing-only.
-        // Radial soft glow from top-center; falls to jet by ~70%. Layered
-        // over jet base for the deep-violet shading without dominating.
+        // Atmosphere gradient — Basis Indigo, marketing-only. Radial soft glow
+        // from top-center (deep-indigo #2C3C95 → #1A2156) falling to the rail
+        // by ~70%. Layered over the near-black base without dominating.
         background:
-          "radial-gradient(ellipse 90% 65% at 50% 0%, rgba(46,32,137,.55) 0%, rgba(26,15,74,.28) 32%, var(--jet) 70%)",
+          "radial-gradient(ellipse 90% 65% at 50% 0%, rgba(44,60,149,.55) 0%, rgba(26,33,86,.28) 32%, var(--jet) 70%)",
       }}
     >
       {/* Hairline horizon — single 1px iris-300 line at the very top,
