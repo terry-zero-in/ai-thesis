@@ -85,7 +85,11 @@ function ShellInner({
   });
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    // Basis app shell — Linear-style frame. The surround matches the sidebar
+    // (--sidebar) so the rail and the 8px gutter around the canvas read as one
+    // continuous plane; the floating, rounded, hairline-bordered canvas sits
+    // 8px off all four edges. The sidebar has no right border — no hard line.
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--sidebar)" }}>
       <Sidebar col={col} setCol={setCol} unseenAlerts={unseenAlerts} />
       <div
         style={{
@@ -94,6 +98,10 @@ function ShellInner({
           flexDirection: "column",
           overflow: "hidden",
           minWidth: 0,
+          margin: 8,
+          background: "var(--canvas)",
+          border: "1px solid var(--border-hairline)",
+          borderRadius: 12,
         }}
       >
         <TopBar
