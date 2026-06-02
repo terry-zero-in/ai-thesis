@@ -110,6 +110,8 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --surface:       var(--carbon);  /* L2 · #14171F — cards, right rail, palette, tooltips */
   --surface-2:     var(--carbon);  /* L2 · same as surface — cards within cards stay flat */
   --elevated:      var(--steel);   /* L3 · #2A2F3E — popovers, hover surfaces, elevated modals */
+  --surface-1:        var(--surface);  /* L2 · #14171F — alias: card/row backgrounds (settings, learn, memos, backtest, aiq cards) */
+  --surface-elevated: var(--elevated); /* L3 · #2A2F3E — alias: elevated popovers (ScoreMathPopover) */
   --hover-lift:    var(--steel);   /* L3 · #2A2F3E — hover backgrounds */
   --hover-tint:        rgba(255,255,255,.035);
   --hover-tint-strong: rgba(255,255,255,.06);
