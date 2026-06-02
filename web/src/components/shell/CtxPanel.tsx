@@ -46,14 +46,11 @@ export function CtxPanel() {
     <aside
       className="ctx-panel-aside"
       style={{
-        // Basis App `.side` floating panel — rounded, bordered, 8px gaps. Kept
-        // as a flex sibling (compresses the canvas, never overlays) per Terry's
-        // S9 lock; globals.css `.ctx-panel-aside` pins position:static.
-        width: 360,
-        background: "var(--surface-panel)",
+        width: 320,
+        background: "var(--surface)",
         margin: "8px 8px 8px 0",
-        borderRadius: 12,
-        border: "1px solid var(--border-control)",
+        borderRadius: 8,
+        border: "1px solid var(--border-subtle)",
         display: "flex",
         flexDirection: "column",
         flexShrink: 0,

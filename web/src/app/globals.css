@@ -1,27 +1,29 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   AI Thesis — BASIS INDIGO theme. Re-skinned 2026-06-01 from the Basis app
-   design system (Basis App.html / basis-design-system.css). Replaces the prior
-   Iris × Voltage v2.0 violet+lime system with the unified Basis language:
-   indigo #4F6BD6 signal, near-black surfaces, Geist + JetBrains Mono,
-   ~95% monochrome / 3% semantic / 2% signal. "Dark default · Light parity."
+   AI Thesis — Iris × Voltage v2.0 color system
+   RESTORED 2026-05-20 (S20). Reverts the S5 (v1.1 Persian indigo), S14 (v1.2
+   Apex Blue) and S19 (v1.3 Granite mint-teal) accent drift back to the
+   canonical Iris × Voltage system Terry locked 2026-05-18. The mint adoption
+   crept color into chrome that was supposed to stay achromatic — accent now
+   reserved for THE signal moment again. Sidebar drops to true black (--void)
+   so it reads darker than the canvas, per Terry's S20 directive.
 
-   Roles:
-     • Indigo (#4F6BD6) = the signal — conviction ≥75, active state, focus
-                          rings, links, selection, score arcs, forecast line.
-                          Never a fill or decoration. CTA fills step DOWN to
-                          --accent-active (#3B51C0) so white labels pass; never
-                          white text on the bright signal.
-     • Semantic         = truth states only (success/warning/danger/neutral).
-     • Frost / mono     = text, borders, quiet UI on the near-black canvas.
+   Three roles, three families:
+     • Iris   = the signal     (conviction ≥ 75, active-state arc, focus rings,
+                                links, selection, charts, multiplier glow).
+                                Never decorative — if a page is loud with Iris,
+                                something important is happening.
+     • Voltage= the verb       (the ONE primary CTA per page. Pill radius 9999px,
+                                voltage-ink text on voltage fill. Never on data,
+                                labels, or icons. The eye finds it instantly.)
+     • Frost  = the vocabulary (text + borders + quiet UI on the dark canvas).
 
-   Re-skin shape: token VALUES changed; token NAMES preserved so the ~682
-   component refs don't move. Raw palette names (--iris-*, --voltage*,
-   --frost-*, --jet/--onyx/--carbon/--steel) are repointed onto the Basis
-   ladder so components that reference them directly inherit the theme too.
-   App-shell tokens (--frame/--rail/--doctrine-card/--surface-sunken/--grid-line
-   /state fills/border ramp) are added from the Basis app shell.
+   Migration shape: NEW palette tokens (--iris-*, --voltage*, --frost-*, --jet,
+   --onyx, --carbon, --steel) are the source of truth. Existing semantic names
+   (--canvas, --surface, --text-1, --accent, etc.) survive as aliases so the
+   ~682 component refs don't move. Only primary-CTA buttons are migrated to
+   use --voltage directly.
    ============================================================================ */
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -31,7 +33,7 @@
    time / color pickers. `color-scheme: dark` flips Chrome / Edge / Safari to
    their dark calendar UI; `accent-color` colors the selected-day highlight
    and any focus ring with the Iris-300 signal violet. */
-html{color-scheme:dark;accent-color:#4F6BD6}
+html{color-scheme:dark;accent-color:#8B5CF6}
 
 /* Calendar glyph inside <input type="date|time|month|week"> renders as a
    black icon on dark backgrounds by default in Chromium. Invert it so it
@@ -53,97 +55,89 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 }
 
 :root{
-  /* ─── PALETTE SOURCE OF TRUTH · BASIS INDIGO ───────────────────────────────
-     Re-skinned 2026-06-01 to the Basis app theme (Basis App.html /
-     basis-design-system.css): indigo #4F6BD6 signal, near-black surfaces,
-     Geist + JetBrains Mono, ~95% monochrome / 3% semantic / 2% signal. The
-     prior Iris × Voltage v2.0 violet+lime system is retired. Token NAMES are
-     preserved so the ~682 component refs don't move — only VALUES change;
-     raw palette names (--iris-*, --voltage*, --frost-*, --jet/onyx/carbon/
-     steel) are repointed onto the Basis ladder so direct refs inherit it. */
+  /* ─── PALETTE SOURCE OF TRUTH ─────────────────────────────────────────── */
 
-  /* App-shell structural surfaces — Linear-style frame (Basis App). */
-  --app-black:     #000000;
-  --frame:         #0a0a0a;  /* deepest gutter behind the shell */
-  --rail:          #0f0f11;  /* sidebar fill */
-  --doctrine-card: #1e1e23;  /* raised canvas cards (callouts) */
-  --surface-panel: #1c1c1f;  /* right inspector panel */
-  --surface-sunken:#17171a;  /* recessed wells: charts, tables */
-  --tile:          #42434d;  /* workspace cube / avatar chip */
-
-  /* Atmosphere — marketing/onboarding gradients ONLY (never data UI). */
+  /* Atmosphere — 7-stop vertical gradient (defined for marketing/onboarding
+     surfaces ONLY; never applied to data pages, never used as UI fill). */
   --void:        #000000;
-  --pitch:       #0a0a0a;
-  --atm-carbon:  #131316;
-  --atm-graphite:#212126;
-  --atm-steel:   #2E3238;
-  --mist:        #A6AEB8;
+  --pitch:       #07080C;
+  --atm-carbon:  #14171F;
+  --atm-graphite:#2A2F3E;
+  --atm-steel:   #5C637A;
+  --mist:        #A8AFC0;
   --frost-bg:    #D6DAE4;
 
-  /* Surfaces — Basis dark elevation ladder (no shadows; the ladder is depth). */
-  --jet:    #0f0f11;  /* L0 · sidebar fill (rail) */
-  --onyx:   #131316;  /* L1 · canvas */
-  --carbon: #1e1e23;  /* L2 · cards, rows, panels (Basis doctrine-card tone) */
-  --steel:  #232527;  /* L3 · borders / elevated neutral */
+  /* Surfaces — four solid elevation steps. Hover/popover/modal = next step up.
+     Never reach for shadows on a dark theme. S20 RESTORED to v2.0 canonical
+     hex values (v1.1 "warm +1-2 lift" reverted). */
+  --jet:    #000000;  /* L0 · sidebar (darkest, true black) */
+  --onyx:   #0A0B10;  /* L1 · canvas */
+  --carbon: #14171F;  /* L2 · cards, right rail, palette, tooltips */
+  --steel:  #2A2F3E;  /* L3 · hover, popovers, elevated, input focus */
 
-  /* Indigo — the brand signal (was Iris violet). Conviction ≥75, active state,
-     focus rings, links, selection, score bars, forecast. Never decorative. */
-  --iris-50:  #EEF1FB;
-  --iris-100: #D6DEF7;
-  --iris-200: #B3C0EE;  /* light signal text */
-  --iris-300: #8AA0EE;  /* bridge · hover lift · forecast */
-  --iris-500: #6B83E2;  /* vivid hover */
-  --iris-600: #4F6BD6;  /* BRAND BASE — the signal */
-  --iris-700: #2C3C95;  /* pressed · deep */
-  --iris-900: #1A2156;  /* deepest */
+  /* Iris — the brand violet. Conviction signals only (composite ≥75, active-state
+     arc, focus rings, links, selection, score bars, multiplier glow). Never decorative.
+     v2.0 RESTORED 2026-05-20 (S20): the v1.1 Persian-indigo and S14 electric-blue
+     pivots are reverted. Iris is vivid violet, not blue, not indigo. */
+  --iris-50:  #F5EEFF;
+  --iris-100: #E4D2FF;
+  --iris-200: #C7A6FF;  /* highlight — top of arc */
+  --iris-300: #B696FF;  /* bridge — between 200 and 500 */
+  --iris-500: #A87DFE;  /* mid arc · vivid — THE signal violet */
+  --iris-600: #8B5CF6;  /* brand base */
+  --iris-700: #5B2E88;  /* pressed */
+  --iris-900: #2E1166;  /* deepest */
 
-  /* Voltage — retired as neon-lime. Repointed to the Basis primary-CTA indigo
-     ramp so existing one-CTA-per-page buttons render on-theme (indigo fill,
-     white label, hover steps DEEPER so contrast holds — the Basis rule). */
-  --voltage:     #3B51C0;  /* primary CTA fill (= --accent-active) */
-  --voltage-hi:  #2C3C95;  /* hover — steps deeper, label stays legible */
-  --voltage-lo:  #22306E;  /* active · pressed */
-  --voltage-ink: #FFFFFF;  /* label on indigo CTA — white passes */
+  /* Voltage — the single neon CTA per page. Pill radius 9999px. Voltage-ink
+     text on voltage fill. Never on data, labels, or icons. */
+  --voltage:     #CCFF33;  /* base · primary CTA */
+  --voltage-hi:  #E2FF73;  /* hover · brighter */
+  --voltage-lo:  #A4D016;  /* active · pressed */
+  --voltage-ink: #0B0C0F;  /* text on voltage · near-black */
 
-  /* Frost — text + neutrals against the dark (Basis text scale). */
+  /* Frost — text + neutrals against the dark. Five steps from pure white
+     down to dividing-line gray. Entire vocabulary for type, borders, quiet UI. */
   --white:    #FFFFFF;
-  --frost-100:#A6AEB8;  /* secondary text */
-  --frost-300:#69737F;  /* tertiary text */
-  --frost-500:#565E68;  /* muted text */
-  --frost-700:#2E3238;  /* emphasis border */
+  --frost-100:#ECEEF3;
+  --frost-300:#B6BCC8;
+  --frost-500:#6E7689;
+  --frost-700:#3C4151;
 
   /* ─── SEMANTIC ALIASES (consumer interface, do not move) ──────────────── */
 
-  --canvas:        var(--onyx);    /* L1 · #131316 — main canvas */
-  --sidebar:       var(--jet);     /* L0 · #0f0f11 — sidebar rail fill */
-  --surface:       var(--carbon);  /* L2 · #1e1e23 — cards, right rail, palette, tooltips */
+  --canvas:        var(--onyx);    /* L1 · #0A0B10 — main canvas */
+  --sidebar:       var(--jet);     /* L0 · #000000 — darkest, sidebar */
+  --surface:       var(--carbon);  /* L2 · #14171F — cards, right rail, palette, tooltips */
   --surface-2:     var(--carbon);  /* L2 · same as surface — cards within cards stay flat */
-  --elevated:      #191C22;        /* L3 · popovers, elevated modals, table header */
-  --hover-lift:    #1D2027;        /* row / list hover (lifts past the header) */
-  --row-hover:     #1D2027;        /* alias — Basis app-shell row hover */
+  --elevated:      var(--steel);   /* L3 · #2A2F3E — popovers, hover surfaces, elevated modals */
+  --hover-lift:    var(--steel);   /* L3 · #2A2F3E — hover backgrounds */
   --hover-tint:        rgba(255,255,255,.035);
   --hover-tint-strong: rgba(255,255,255,.06);
   --press-tint:        rgba(255,255,255,.085);
 
-  /* --surface-hover — hover for items WITHIN a carbon-family parent (right-rail
-     rows, card list items, popover items); not canvas hover (that's --hover-tint). */
-  --surface-hover:     #1C1E24;
+  /* --surface-hover — bumped one Linear-step off --surface (#14171F). Step
+     calc from Linear right-rail: base #171718 → hover #1F2023 = ΔR=+8,
+     ΔG=+9, ΔB=+11. Applied to our --surface: #14171F + (8,9,11) = #1C202A.
+     Use on hoverable items WITHIN any carbon-family parent (right rail
+     rows, card list items, popover items) — not for hover on the canvas
+     itself (that's --hover-tint). Terry 2026-05-20. */
+  --surface-hover:     #1C202A;
 
-  /* Sidebar-scoped state surfaces. The rail base sits at --jet #0f0f11; state
-     surfaces lift up the Basis near-black ladder (hover → active) so the lift
-     carries on the dark rail without introducing chroma. */
-  --sidebar-hover:  #15171C;  /* nav row hover on the near-black rail */
-  --sidebar-active: #191C22;  /* nav active row */
-
-  /* App-shell interactive state fills (Basis App) — transparent rows pick
-     these up on hover / selection. */
-  --bg-hover:       #202025;  /* nav + rail row hover */
-  --bg-active:      #27272d;  /* nav active row */
-  --bg-active-soft: #1d1d20;  /* selected KPI · active tab · icon hover */
-  --bg-hover-soft:  #1a1a1d;  /* KPI hover */
-  --bg-segment:     #1e1e21;  /* segmented-control active cell */
-  --control:        #242528;  /* dropdown / select fill */
-  --control-hover:  #2a2a2e;  /* dropdown / select hover */
+  /* Sidebar-scoped state surfaces. The sidebar base stays at jet #000000
+     (flat, the only achromatic surface in the system — locked). State
+     surfaces lift through the iris-tinted ladder. Mapping:
+       L0 base   = jet     #000000     (flat)
+       L2 hover  = carbon  #14171F     (+11 cool tint — same lightness as card/rail; lifts above the perceptual floor on near-black)
+       L2.5 active = #1D222D            (+16 cool tint — sidebar-specific intermediate between carbon and steel; Linear-active lightness)
+     Earlier iterations sat at onyx (#0A0B10) for hover but R=10 is below
+     the visibility floor on a jet base — Terry: "still nearly impossible
+     to see." Bumped to carbon for hover so the lift carries. Active needs
+     to be visibly distinct from the (now-stronger) hover, so it lifts to
+     a new L2.5 surface between carbon (R=20) and steel (R=42). Chroma
+     grows from 0 (base) → +11 (hover) → +16 (active), mirroring the
+     system's L0→L1→L2→L3 chroma growth pattern. (Terry 2026-05-20.) */
+  --sidebar-hover:  var(--carbon);   /* L2 lift — carbon lightness w/ +11 chroma */
+  --sidebar-active: #1D222D;         /* L2.5 lift — between carbon and steel, +16 chroma */
 
   /* Text — 4-level scale mapped onto Frost. */
   --text-1: var(--white);      /* display + headlines (was #ECEDEF) */
@@ -151,45 +145,57 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --text-3: var(--frost-300);  /* secondary (was #7A818D) */
   --text-4: var(--frost-500);  /* muted (was #5F6571) */
 
-  /* Borders — hairline → subtle → default → strong → focus. */
-  --border-hairline: rgba(255,255,255,.06);  /* lightest separator */
-  --border-subtle:   #1F2022;                /* default divider */
-  --border:          var(--steel);           /* #232527 · table / form border */
-  --border-strong:   var(--frost-700);       /* #2E3238 · emphasis, chart bars */
-  --border-focus:    var(--iris-300);        /* focus rings, active selection */
-  /* App-shell border ramp + grid lines (Basis App). */
-  --border-card:     #25252a;  /* card + insight edges */
-  --border-control:  #2b2b2e;  /* control + panel edges */
-  --border-emphasis: #3a3b42;  /* hover-emphasis edge + team chip */
-  --border-inset:    #202329;  /* inner card dividers */
-  --border-sunken:   #1b1b1e;  /* recessed-well edge */
-  --border-plot:     #252530;  /* empty-slot placeholder edge */
-  --grid-line:       #26262c;  /* chart grid + table row separators */
+  /* Borders — hairline → subtle → default → strong → focus.
+     v2.0 deck (S20) standardizes 4 weights of divider, ramping from Frost
+     900 (subtle) → Frost 700 (strong), with hairline as the lightest cue
+     and focus rings on iris-300. */
+  --border-hairline: rgba(255,255,255,.06);  /* lightest separator (deck "Hairline") */
+  --border-subtle:   #1F2229;                /* default divider (deck "Default · Frost 900") */
+  --border:          var(--steel);           /* table / form border */
+  --border-strong:   var(--frost-700);       /* high-visibility / input focus edge */
+  --border-focus:    var(--iris-300);        /* focus rings, active selection — iris-300 #B696FF */
 
-  /* Accent — Basis Indigo #4F6BD6 (was Iris violet). The SIGNAL only:
-     interaction states, links, focus rings, score arcs, active nav, selection,
-     forecast line. Never a fill or decoration. CTA fills step DOWN to
-     --accent-active so white labels pass contrast — never white on the bright
-     signal. Severity ladder is independent of accent. */
-  --accent:         var(--iris-600);     /* #4F6BD6 · indigo — THE signal */
-  --accent-hover:   var(--iris-300);     /* #8AA0EE · bridge for hover lift */
-  --accent-pressed: var(--iris-700);     /* #2C3C95 · deepest on active/pressed */
-  --accent-active:  #3B51C0;             /* primary CTA fill — white label passes */
-  --accent-deep:    #2C3C95;             /* primary CTA hover — stays deep */
-  --accent-bg:      #181D38;             /* selected-row / conviction-chip bg */
-  --accent-soft:    rgba(79,107,214,.12);
-  --accent-border:  rgba(79,107,214,.40);
-  --accent-glow:    rgba(79,107,214,.22);
-  --on-accent:      var(--white);        /* white on indigo CTA — readable */
-  --forecast-line:  #8AA0EE;             /* forecast stroke — lightened indigo */
+  /* Accent — v2.0 RESTORED (S20, 2026-05-20). Reverts S5 Persian-indigo,
+     S14 Apex Blue, and S19 Granite mint-teal back to canonical Iris vivid
+     violet #A87DFE. The mint adoption crept color into chrome that was
+     supposed to stay achromatic — accent is now reserved for THE signal
+     moment again. Surfaces and severity ladder untouched.
 
-  /* Semantic — truth states only, never decorative (Basis values). Severity
-     ladder is INDEPENDENT of accent. --info tracks --accent so info chips
-     inherit the brand current. success emerald / warning amber / danger red /
-     neutral slate. */
-  --success:#34D399; --warning:#E2A33C; --danger:#EE585C; --neutral:#8893A0; --info:var(--accent);
-  --success-soft:rgba(52,211,153,.10); --warning-soft:rgba(226,163,60,.10);
-  --danger-soft:rgba(238,88,92,.10); --info-soft:rgba(79,107,214,.08);
+     Role split (Iris × Voltage system):
+       --accent (Iris)   = SIGNAL — interaction states, links, focus rings,
+                           score arcs, active nav, selection, chart NAV line.
+                           Never decorative.
+       --voltage         = THE primary CTA per page (one per page rule).
+                           voltage-ink text on voltage fill. Never on data.
+       severity ladder   = state colors (success/warning/danger) — independent
+                           of accent; never replaced. */
+  --accent:         var(--iris-600);     /* #8B5CF6 · violet — THE signal.
+                                            S20 step-darker from iris-500 #A87DFE
+                                            per Terry feedback: pastel-500 read
+                                            weak on canvas/sidebar; iris-600 holds
+                                            its weight while same hue family. */
+  --accent-hover:   var(--iris-300);     /* #B696FF · bridge for hover lift */
+  --accent-pressed: var(--iris-700);     /* #5B2E88 · deepest on active/pressed */
+  --accent-soft:    rgba(139,92,246,.12);
+  --accent-border:  rgba(139,92,246,.40);
+  --accent-glow:    rgba(139,92,246,.22);
+  --on-accent:      var(--white);        /* white on violet — readable contrast */
+
+  /* Semantic — truth states only, never decorative. Severity ladder is
+     INDEPENDENT of accent (accent is brand/signal, not severity). --info
+     tracks --accent so info chips inherit the brand-current accent.
+
+     S20 retuned for Iris × Voltage v2.0:
+       success #4bde80 → #30D158 — was a warm vivid lime tuned for the
+         S19 mint-teal era; now a cooler emerald that harmonizes with
+         iris violet on a cool dark canvas.
+       danger  #E07878 → #E5484D — was warm coral; now Radix red-9
+         balanced crimson, more institutional, cooler undertone.
+       warning #DDA85A kept — already a calm institutional amber that
+         reads as alert without shouting against the cool palette. */
+  --success:#30D158; --warning:#DDA85A; --danger:#E5484D; --info:var(--accent);
+  --success-soft:rgba(48,209,88,.10); --warning-soft:rgba(221,168,90,.10);
+  --danger-soft:rgba(229,72,77,.10); --info-soft:rgba(139,92,246,.08);
 
   /* ── Pastel-tier semantic colors (Iris × Voltage v2.0 chip system) ────
      The chip system uses a SOFTER, more pastel value for chip text on
@@ -212,9 +218,9 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --danger-text-fill:    rgba(252,165,165,.08);
   --danger-text-border:  rgba(252,165,165,.25);
 
-  --info-text:           var(--iris-300);     /* indigo pastel #8AA0EE — Info/Link */
-  --info-text-fill:      rgba(138,160,238,.08);
-  --info-text-border:    rgba(138,160,238,.25);
+  --info-text:           var(--iris-300);     /* iris pastel #B696FF — Info/Link */
+  --info-text-fill:      rgba(182,150,255,.08);
+  --info-text-border:    rgba(182,150,255,.25);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
@@ -224,7 +230,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   /* Type families — bound to next/font Geist via the CSS vars next/font sets in <html>.
      If next/font fails to load, the OS sans/mono fallback chain still renders. */
   --f: var(--font-geist-sans), Geist, -apple-system, BlinkMacSystemFont, sans-serif;
-  --m: var(--font-jetbrains-mono), 'JetBrains Mono', var(--font-geist-mono), 'SFMono-Regular', ui-monospace, monospace;
+  --m: var(--font-geist-mono), 'Geist Mono', 'SFMono-Regular', ui-monospace, monospace;
 
   /* MOTION SYSTEM
      ─────────────────────────────────────────────────────────────────
@@ -270,60 +276,6 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --spring-soft:cubic-bezier(.2,.9,.4,1.1);
   --ring:0 0 0 2px var(--canvas),0 0 0 4px var(--accent);
   --ring-soft:0 0 0 2px var(--canvas),0 0 0 3px color-mix(in oklab, var(--accent) 55%, transparent);
-}
-
-/* ─── LIGHT · parity theme (Basis App "Light parity") ──────────────────────
-   Inverted mechanics: cards are the lightest layer (#FFF), the canvas is a
-   mid gray, separation comes from BORDERS not fill. Indigo + semantic step
-   down in value so labels clear AA on near-white. Additive — only active when
-   <html data-theme="light"> is set; the app ships dark by default. */
-:root[data-theme="light"]{
-  color-scheme:light;
-
-  --void:#FFFFFF; --pitch:#E4E5E9;
-  --app-black:#000000;
-  --frame:#E4E5E9; --rail:#F1F2F4; --doctrine-card:#FFFFFF;
-  --surface-panel:#FFFFFF; --surface-sunken:#F6F7F9; --tile:#D3D5DA;
-  --atm-carbon:#FBFBFC; --atm-graphite:#FFFFFF; --atm-steel:#D3D5DA; --mist:#4F5A66; --frost-bg:#11151A;
-
-  --jet:#F1F2F4; --onyx:#FBFBFC; --carbon:#FFFFFF; --steel:#E6E7EA;
-
-  --iris-50:#22306E; --iris-100:#2C3C8C; --iris-200:#3D4FB5; --iris-300:#33449C;
-  --iris-500:#3D4FB5; --iris-600:#3D4FB5; --iris-700:#22306E; --iris-900:#11183B;
-
-  --voltage:#2C3C8C; --voltage-hi:#22306E; --voltage-lo:#22306E; --voltage-ink:#FFFFFF;
-
-  --white:#11151A; --frost-100:#4F5A66; --frost-300:#8893A0; --frost-500:#9AA4B0; --frost-700:#D3D5DA;
-
-  --canvas:var(--onyx); --sidebar:var(--jet); --surface:var(--carbon); --surface-2:var(--carbon);
-  --elevated:#F6F7F9; --hover-lift:#F4F5F7; --row-hover:#F4F5F7;
-  --hover-tint:rgba(0,0,0,.04); --hover-tint-strong:rgba(0,0,0,.06); --press-tint:rgba(0,0,0,.09);
-  --surface-hover:#F4F5F7; --sidebar-hover:#E9EAED; --sidebar-active:#E4E5E9;
-  --bg-hover:#ECEDF0; --bg-active:#E4E5E9; --bg-active-soft:#EFF0F2; --bg-hover-soft:#F4F5F7;
-  --bg-segment:#ECEDF0; --control:#FFFFFF; --control-hover:#F4F5F7;
-
-  --text-1:var(--white); --text-2:var(--frost-100); --text-3:var(--frost-300); --text-4:var(--frost-500);
-
-  --border-hairline:#EDEEF1; --border-subtle:#E6E7EA; --border:var(--steel);
-  --border-strong:var(--frost-700); --border-focus:var(--iris-300);
-  --border-card:#E6E7EA; --border-control:#E6E7EA; --border-emphasis:#D3D5DA;
-  --border-inset:#EDEEF1; --border-sunken:#E6E7EA; --border-plot:#E6E7EA; --grid-line:#EDEEF1;
-
-  --accent:var(--iris-600); --accent-hover:#33449C; --accent-pressed:var(--iris-700);
-  --accent-active:#2C3C8C; --accent-deep:#22306E; --accent-bg:#E8EBFA;
-  --accent-soft:rgba(61,79,181,.10); --accent-border:rgba(61,79,181,.40);
-  --accent-glow:rgba(61,79,181,.18); --on-accent:#FFFFFF; --forecast-line:#3D4FB5;
-
-  --success:#0E9C6B; --warning:#B07614; --danger:#C23A38; --neutral:#5F6A75;
-  --success-soft:rgba(14,156,107,.12); --warning-soft:rgba(176,118,20,.12);
-  --danger-soft:rgba(194,58,56,.12); --info-soft:rgba(61,79,181,.10);
-
-  --success-text:#0E9C6B; --success-text-fill:rgba(14,156,107,.10); --success-text-border:rgba(14,156,107,.30);
-  --warning-text:#B07614; --warning-text-fill:rgba(176,118,20,.10); --warning-text-border:rgba(176,118,20,.30);
-  --danger-text:#C23A38; --danger-text-fill:rgba(194,58,56,.10); --danger-text-border:rgba(194,58,56,.30);
-  --info-text:var(--iris-300); --info-text-fill:rgba(61,79,181,.10); --info-text-border:rgba(61,79,181,.30);
-
-  --status-blocked:var(--warning); --status-critical:var(--danger);
 }
 
 html,body{height:100%;background:var(--canvas);color:var(--text-1);font-family:var(--f);font-size:13px;line-height:1.5;letter-spacing:-.011em;-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -402,8 +354,10 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
    Duration bumped from --dur-instant (80ms) → --dur-fast (140ms) to match Linear's
    measured 150ms hover timing; 80ms read as snappy/jittery on full rows. */
 .row-hov{transition:background var(--dur-fast) var(--ease-out),color var(--dur-fast) var(--ease-out),box-shadow var(--dur-fast) var(--ease-out);cursor:pointer}
-/* Hover snaps to --surface (carbon #1e1e23) — same surface as KPI hover and
-   sidebar hover, a system-coherent L2 lift off the canvas. */
+/* Hover snaps to --surface (carbon #14171F) — same surface as KPI hover and
+   sidebar hover, system-coherent L2 lift off canvas. The earlier --hover-tint
+   rgba composite (#131418) was visible but achromatic-leaning; carbon snap
+   preserves the iris-tinted chroma cascade. (Terry 2026-05-20.) */
 .row-hov:hover{background:var(--surface)}
 .row-hov:active{background:var(--hover-tint-strong)}
 .row-hov .row-actions{opacity:0;transform:translateX(2px);transition:opacity var(--dur-fast) var(--ease-out),transform var(--dur-fast) var(--ease-out);pointer-events:none}
@@ -472,9 +426,10 @@ button:hover .k.hov.inv,button:focus-visible .k.hov.inv,.hov-reveal:hover .k.hov
 /* KPI hover — Dashboard KPI cells are clickthroughs to their detail page
    (Portfolio/P&L/30D → /portfolio; Macro mult → /regime; High-tier →
    /universe?tier=High). Hover lifts the cell bg to --surface (carbon
-   #1e1e23) — same surface as the chart card directly below the KPI row,
-   so a hovered KPI reads as "lifted to the graph surface" rather than a
-   flat tint. Mirrors the Basis onyx→carbon ladder. */
+   #14171F) — same surface as the chart card directly below the KPI row,
+   so a hovered KPI reads as "lifted to the same level as the graph
+   surface" instead of a flat achromatic tint. Mirrors the system's
+   onyx→carbon chroma ladder. (Terry 2026-05-20.) */
 .kpi-hov{transition:background var(--dur-fast) var(--ease-out);border-radius:6px;cursor:pointer}
 .kpi-hov:hover{background:var(--surface)}
 
