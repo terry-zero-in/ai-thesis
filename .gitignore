@@ -41,3 +41,5 @@ coverage/
 # supabase
 supabase/.branches
 supabase/.temp
+.claude/settings.local.json
+.claude/state/

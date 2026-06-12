@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eff-session-start.sh" } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Edit|Write|MultiEdit", "hooks": [
+          { "type": "command", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eff-scope-gate.sh" } ] },
+      { "matcher": "Bash", "hooks": [
+          { "type": "command", "if": "Bash(supabase *)", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eff-preflight-deploy.sh" },
+          { "type": "command", "if": "Bash(vercel *)",   "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eff-preflight-deploy.sh" },
+          { "type": "command", "if": "Bash(psql *)",     "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eff-preflight-deploy.sh" } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write|MultiEdit", "hooks": [
+          { "type": "command", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eff-post-edit-check.sh" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/eff-stop-gate.sh" } ] }
+    ]
+  }
+}
