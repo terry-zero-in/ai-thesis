@@ -1,0 +1,9 @@
+{
+  "repo": "ai-thesis",
+  "app_dir": "web",
+  "pkg_manager": "npm",
+  "scripts": { "lint": "lint", "typecheck": null, "build": "build", "test": null },
+  "dev_port": 3000,
+  "fast_check": ["lint"],
+  "note": "No typecheck script; types are checked during `next build`. build not in fast_check (slow). stop-gate runs fast_check via `npm run <name>` in app_dir."
+}

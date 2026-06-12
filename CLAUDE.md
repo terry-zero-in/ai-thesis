@@ -209,3 +209,17 @@ The **canvas** content for every page (Dashboard, Universe, Detail, Portfolio, R
 ```
 
 If you find yourself stuck or unsure for more than ~10 minutes on a single decision, batch the question per "How to ask" above and surface it. Otherwise: keep moving.
+## OPERATING DOCTRINE (portable — rides with every clone; cloud sessions see only this file, not ~/.claude)
+- **Proof over claims:** never claim done/works/fixed/deployed without running the live proof this session and showing output. Done is binary: verified or NOT DONE.
+- **Scope:** change exactly what was asked, nothing adjacent. If a scope pin is armed (`.claude/state/SCOPE.json`), it is law.
+- **Verify, don't assume:** memory is a hypothesis; Terry-facts (accounts, refs, env) are asked, never inferred; domain logic (rent-roll methodology, canonical numbers) comes from Terry ONLY.
+- **Git law:** main is protected — branch + PR + evidence in the body; never merge, never self-certify. No destructive commands without explicit instruction this session.
+- **Deploys:** preflight must pass (hook-enforced). This repo's Supabase ref: see `.claude/rules/deploy.md`. Verified claims go to `docs/EVIDENCE.md` (append-only: `<timestamp> | <claim> | <command> | <output excerpt> | PASS/FAIL`).
+
+## SYSTEM MAP (repo layer)
+- `.claude/settings.json` — hooks: session brief (SessionStart), scope-gate + deploy preflight (PreToolUse), per-file lint (PostToolUse), verification Stop gate. Armed via committed `.claude/hooks/ARMED`; gates fail-safe (internal error → never block).
+- `.claude/checks.json` — fast check set the Stop gate runs.
+- `.claude/rules/` — path-scoped law (design-tokens, deploy, protected-main), loads lazily by glob.
+- `.claude/agents/` — read-only reviewer fleet: oracle-reviewer, claims-auditor, security-reviewer, containment-reviewer, design-fidelity-reviewer. On "review this PR": spawn relevant reviewers IN PARALLEL, each writes `REVIEW_<name>.md`, reconcile ONE verdict; humans merge.
+- `docs/EVIDENCE.md` — append-only verification log (the trust artifact).
+- Full manual (Terry's machine): `~/.claude/OPERATING_MANUAL.md` — consult before multi-phase builds, team spawns, deploys, or when a gate blocks you.
