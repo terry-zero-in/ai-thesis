@@ -35,7 +35,11 @@ def factors(px, t):
             return s.iloc[-1-skip] / s.iloc[-1-skip-lb] - 1
         r3, r6, r12 = ret(63), ret(126, 5), ret(231, 21)  # 12m skip 1m
         neg = r.iloc[-126:][r.iloc[-126:] < 0]
-        dd_dev = max(neg.std() * np.sqrt(252), 1e-4) if len(neg) > 5 else 1e-4
+        if len(neg) >= 20:
+            dd_dev = max(neg.std() * np.sqrt(252), 1e-4)
+        else:
+            # insufficient downside sample -> fall back to total volatility
+            dd_dev = max(r.iloc[-126:].std() * np.sqrt(252), 1e-4)
         ram = (r6 / dd_dev) if not np.isnan(r6) else np.nan
         ddraw = c / s.iloc[-126:].max() - 1  # <=0
         ma100 = s.iloc[-100:].mean()
