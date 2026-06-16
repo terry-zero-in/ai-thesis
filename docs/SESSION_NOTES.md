@@ -1281,3 +1281,24 @@ Executed **Phase 0 only** of the HP-1 build: fixed a same-day-execution lookahea
 1. Read `CLAUDE.md`, then `docs/hp1/2026-06-12-hp1-build-handoff.md` (HP-1 cold-start index).
 2. Read the S32 handoff above.
 3. **Do NOT fork cold.** Confirm Terry wants Phase 1 to start; cut the HP-1 Linear project first; then compute the v2-70 vs HP-1-50 ticker delta before extending ingestion.
+
+---
+
+## SESSION S33 (2026-06-16, HP-1 Phase 1 kickoff — decisions locked, fork plan ready)
+
+**Note:** Same-day continuation of S32; checkpoint before compact. Pointer entry.
+
+Phase 1 kickoff prep — no code shipped. Locked all four Phase 1 decisions (Terry "go with defaults"), computed the v2-vs-HP-1 ticker delta, and produced the full fork keep/strip/adapt inventory + execution order. Created the HP-1 Linear project. Build is blocked only on two Terry-side actions: create the private `hp1` repo + grant session access, and approve MCP writes (Linear/Supabase are approval-gated this session).
+
+- **Decisions locked** — (1) same Supabase project + new `hp1` schema; (2) 19 uncovered tickers added to `public.universe` as data-only `kind='hp1'`; (3) Terry creates private `terry-zero-in/hp1` + grants scope (PENDING); (4) Vercel/secrets later.
+- **Ticker delta** — v2 is 50 names (not 70). 31 shared. 19 to add for HP-1: AAPL, ALAB, APLD, APP, CLS, COHR, CRDO, CRWV, DELL, FN, IREN, MPWR, NBIS, PANW, RDDT, SMCI, TEM, TER, TSLA. Mechanism: insert into `public.universe`; `activeTickers()` feeds all ingest/score fns; backfill via `ingest-prices?days=2000`.
+- **Fork inventory** — frame (shell/auth/globals.css tokens/primitives/AIQ editor/settings) carries over; work = rewire 17 `lib/*-data.ts` loaders `public`→`hp1.*` + build 4 new surfaces (/anth, /trades, /runs, /system). CRITICAL: stub `layout.tsx` `getUnseenAlertCount()` first or the fork errors on load.
+- **Linear** — HP-1 project created (id 4ab1b51a-94e9-4ace-bb10-c1a50777be8c). Epics NOT created (MCP writes approval-gated) — next session creates the 5 phase epics.
+- **No DB / no code changes.** `hp1` schema not yet created.
+
+**Full record:** `docs/handoffs/2026-06-16-S33-hp1-phase1-kickoff-decisions-locked.md`
+
+**Next session — start here:**
+1. Read `CLAUDE.md`, `docs/hp1/2026-06-12-hp1-build-handoff.md`, then the S33 handoff.
+2. **Confirm `terry-zero-in/hp1` exists + is in MCP scope** (Terry's pending action) — the fork can't start without it. Get MCP-write approval.
+3. Create the 5 Linear epics, then execute the 8-step fork execution order in the S33 doc. Decisions are locked — don't re-ask.
