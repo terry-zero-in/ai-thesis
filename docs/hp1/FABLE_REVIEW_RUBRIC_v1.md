@@ -21,7 +21,7 @@ a. All current holdings, both sleeves. b. Tactical top-15 and Core top-15 non-he
 **B. Estimate revisions.** 90d revision breadth and NTM revenue/EPS direction (FMP). Breadth deteriorating ≥2 runs → flag; improving is noted but cannot upgrade by itself.
 **C. News scan — since last run + 72h.** Customer wins/losses, capacity/supply chain, pricing actions, competitive displacement, management changes, M&A. Search at minimum: `"<ticker> news"`, `"<company> guidance"`, plus one layer-specific query (L1: export controls/HBM/capex; L2: capex+depreciation; L3a: ARR/NRR; L3b: contracts/financing/dilution; L4: PPAs/interconnects; L5: AI attach).
 **D. Accounting & quality (v2 inheritance — the skeptic's core).** Useful-life extensions (→ depreciation penalty table per spec §5, maintain it), RPO collectibility/concentration, related-party deals, SBC spikes, receivables vs revenue divergence, auditor changes, restatements. Any new finding here is the highest-value output this layer produces.
-**E. Insider activity.** Form 4 clusters: 3+ insiders buying ≥$1M in 90d → note (cannot upgrade alone); 3+ insiders selling ≥$5M in 60d ex-10b5-1 → `INSIDER_SELL_CLUSTER`, eligible for downgrade.
+**E. Insider activity.** Form 4 clusters: 3+ insiders buying ≥$1M in 90d, opportunistic (ex-10b5-1) → may count as ONE of the two independent hard citations required for UPGRADE (the literature's informative side is buys, not sells). Still never sufficient alone. 3+ insiders selling ≥$5M in 60d ex-10b5-1 → `INSIDER_SELL_CLUSTER`, eligible for downgrade.
 **F. Positioning.** Options skew vs own 90d, short interest z (SUSI) where retrievable, crowding commentary. **Downgrade-only**, per v2's asymmetry rule.
 **G. Regulatory/geopolitical.** Export controls, tariffs, antitrust, data/AI regulation — L1/L2 priority.
 **H. Thesis integrity (mini-AIQ).** Between quarterly hand-scores: does the AI-revenue linkage still hold? Concentration creep (one customer >25%)? Narrative outrunning disclosed numbers → flag.
@@ -29,21 +29,25 @@ a. All current holdings, both sleeves. b. Tactical top-15 and Core top-15 non-he
 
 ## 5. Verdicts and bounded rescoring
 
-Engine percentile (0–100) is the base. Fable outputs `adjustment ∈ [−20, +5]`, integer, applied as `adjusted_pct = clamp(base + adj, 0, 100)`.
+Engine percentile (0–100) is the base. Fable outputs `adjustment ∈ [−10, +5]`, integer, applied as `adjusted_pct = clamp(base + adj, 0, 100)`. Bounds widen to [−20, +5] only after the 6-month calibration review (D7) shows DOWNGRADE forward-return separation.
 
 | Verdict | Meaning | Adjustment | Bar |
 |---|---|---|---|
 | **CONFIRM** | Nothing material; engine stands | 0 | Default. Expected most names, most runs. |
 | **FLAG** | Watch item, not yet actionable | 0 | One cited soft signal (F, E-sell, B deterioration, H drift). Carries to next run; two consecutive unresolved FLAGs on the same item → must resolve to DOWNGRADE or CONFIRM with reason. |
-| **DOWNGRADE** | Tape hasn't fully priced a cited negative | −5 to −20 | ≥1 hard citation (D, C-negative, G) or ≥2 soft signals. Magnitude rubric: soft cluster −5 · single hard −10 · multiple hard / accounting finding −15 to −20. |
+| **DOWNGRADE** | Tape hasn't fully priced a cited negative | −5 to −10 | ≥1 hard citation (D, C-negative, G) or ≥2 soft signals. Magnitude rubric: soft cluster −5 · single hard −10 · multiple hard / accounting finding −10, the floor. |
 | **UPGRADE** | Hard catalyst engine can't see yet | +1 to +5 | **≥2 independent hard citations** dated within 5 trading days (e.g., signed contract + guidance raise). Sentiment/price action NEVER qualifies. Rare by design. |
 | **VETO** | Disqualifying event | name ineligible | Substantiated fraud/going-concern/delisting risk/major customer loss >20% rev, cited. Overrides rank until Terry clears. |
 
-Hard rules: Fable may **accelerate** mechanical exits (recommend EXIT before the 5-session MA rule completes) but never delay or soften them. Soft signals (E/F + macro gauges) are downgrade-only — v2's rule, kept verbatim. Macro gauges apply at portfolio level only (§8), never to single-name scores.
+Role of `adjusted_pct` (binding definition): sleeve selection ranks on ENGINE percentile only. Fable adjustments (a) block new entries — a name with adjustment ≤ −10 in the latest run is ineligible to enter a sleeve this rebalance; (b) may accelerate mechanical exits per the existing rule; (c) never reorder ranks, never force exits, never delay anything. Enforced in the orchestrator, not by prompt.
+
+Hard rules: Fable may **accelerate** mechanical exits (recommend EXIT before the 5-session MA rule completes) but never delay or soften them. Soft signals (E/F + macro gauges) are downgrade-only — v2's rule, kept verbatim — with one exception: a qualifying opportunistic insider-buy cluster (§4.E) may serve as one of the two hard citations required for an UPGRADE. Macro gauges apply at portfolio level only (§8), never to single-name scores.
 
 ## 6. Evidence protocol — no citation, no effect
 
 Every claim post-dating training data carries `{source, date, url}` from a fetch performed this run. Uncited claims are inadmissible for any adjustment and must be labeled "unverified." Distinguish explicitly: "no material news found" (searched, empty — say which queries) vs "not searched." If this run's verdict differs from last run's on the same name, state what changed; no new evidence → revert to prior verdict. Confidence H/M/L per name; L-confidence findings cannot exceed −5. Self-check before output: every DOWNGRADE/UPGRADE/VETO row traces to a dated citation in its evidence array — any that don't, drop to FLAG.
+
+Orchestrator validation (mechanical, post-output): every evidence URL on a DOWNGRADE/UPGRADE/VETO row is fetched server-side; the page must resolve and contain the claimed entity and a consistent date. Any failure demotes that row's verdict to FLAG and sets `validation_failed: true` on the item. Fable's self-check does not substitute for this.
 
 ## 7. Per-name output schema (UI consumes this verbatim)
 
@@ -74,6 +78,8 @@ Every claim post-dating training data carries `{source, date, url}` from a fetch
 
 Scan: S-1 amendments / pricing range / date setting · verified revenue run-rate with source (until pinned, output `run_rate_verified:false` — diligence pass owns pinning it) · implied EV vs Terry's ceiling (null until set) · secondary quotes if public reporting surfaces any · lockup/structure changes · OpenAI-IPO competitive dynamics affecting pricing. Output: `{"status":"GO|WAIT|STOP","reason":"<=140","implied_ev":null,"vs_ceiling":null,"evidence":[...]}` — GO only when ceiling is set and implied EV ≤ ceiling; STOP on disqualifying filing finding. Standing note in every ANTH output: model is Anthropic-built; evidence-only reasoning applies.
 
+Every ANTH block must include `reasons_against`: the 3 strongest cited reasons NOT to invest this cycle. A GO status is rendered "GO (pending independent check)" and is inert until Terry records an independent confirmation (non-Anthropic model or manual checklist) in the app; the timestamp persists. Fable output may never be cited as grounds to raise the ceiling; the ceiling moves only on Terry's explicit edit with a third-party diligence reference.
+
 ## 10. System prompt (verbatim — paste as the agent's system prompt)
 
 ```
@@ -88,11 +94,12 @@ RULES
    {source, date, url} from THIS run. Uncited claims cannot move a score.
 2. CONFIRM with zero findings is the expected default and a good outcome. Never manufacture
    findings. State searches that came back empty.
-3. Adjustments are bounded and asymmetric: integer in [-20,+5] on the engine percentile.
+3. Adjustments are bounded and asymmetric: integer in [-10,+5] on the engine percentile (widens to [-20,+5] only after the D7 calibration review).
    DOWNGRADE needs >=1 hard cited negative (accounting, guidance, regulatory, customer loss)
    or >=2 cited soft signals. UPGRADE needs >=2 independent hard citations dated within 5
    trading days; sentiment or price action never qualifies. Insider/positioning/macro-gauge
-   signals are DOWNGRADE-ONLY. VETO is reserved for substantiated fraud/going-concern/
+   signals are DOWNGRADE-ONLY, except a qualifying opportunistic insider-buy cluster (3+ insiders,
+   >=$1M, ex-10b5-1) may count as one of the two hard UPGRADE citations. VETO is reserved for substantiated fraud/going-concern/
    delisting/customer-loss>20% — cite it.
 4. Mechanical exit rules are sacred: you may recommend accelerating an exit, never delaying
    or softening one.
@@ -118,6 +125,8 @@ adjustment, one-line action_reason.
 ## 11. Orchestration
 
 Model `claude-fable-5`, max thinking budget, web search + fetch tools, temperature low. Scheduled post-close every 2 trading days; off-cycle triggers per spec §8. Runtime budget: cap searches ~4–6 per name; the checklist is ordered by value so truncation degrades gracefully. Failure handling: JSON invalid → one retry with schema reminder; still invalid → orchestrator stores raw, UI shows "review failed, engine-only" (engine output is never blocked by a Fable failure). Persist every run's JSON — it is the point-in-time history that eventually lets us backtest this layer and the §5 overlay. Cost note: ~25 names × max thinking + search ≈ a few dollars/run; trivial vs. the book.
+
+Calibration: every run's JSON persists to `hp1.fable_runs`/`fable_reviews`. At 6 months (≥60 runs): compare forward 5/10/21-day returns of DOWNGRADE names vs CONFIRM baseline; no separation → bounds shrink to [−5, 0] and the layer becomes advisory-only pending redesign. Track: citation-validation pass rate, verdict flips without new evidence, UPGRADE frequency.
 
 ## Open items
 

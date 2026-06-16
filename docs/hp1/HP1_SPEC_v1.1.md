@@ -32,15 +32,17 @@ Dividend-adjusted closes, data ≤ scoring date only, z-scores within view, wins
 | **Trend gate** | Tactical: price > 100d MA · Core: > 200d MA (100d if <210 obs) | Faber 2007; MOP 2012 |
 
 **Tactical** = 0.45·zM + 0.35·zRAM + 0.20·zDD. **Core** = [0.40·z(12m) + 0.35·zRAM + 0.25·zDD] × 0.75 + Overlay (§5) × 0.25.
-Momentum weights stand per the measured +31–42 CAGR pts / +0.5–0.7 Sharpe sorting edge vs EW-50 (both windows, costs in); crash protection lives in RAM/DD/gates, not in downweighting (v1 §6 tables remain the record). Driver tags (`return-driven` / `stability-driven` / `balanced` / `broken trend`) print beside every rank.
+Momentum weights are a ratified judgment call, not a measured edge. Corrected-timing backtests (2026-06-12, t+1 execution) show the sort adds ~+10–12 CAGR pts vs EW-50 with ~+0.05 Sharpe (24M), and ~zero Sharpe edge once the 2023+ listing cohort is excluded — the return edge is concentration, not risk-adjusted alpha. The system's measured value is drawdown management (gate: −27.7% vs −36.9% MaxDD) and exit discipline. Crash protection lives in RAM/DD/gates. `results_24m_v2.csv` / `results_36m_v2.csv` are the only citable record. Driver tags (`return-driven` / `stability-driven` / `balanced` / `broken trend`) print beside every rank.
 
 ## 4. Portfolio construction & risk rails
 
 - Sleeves: Tactical re-scores every 10 trading days, Core every 21; each holds top 10 eligible. Fable layer runs every 2 trading days on top (rubric doc).
 - Sizing: weight ∝ 1/downside-deviation, 15% single-name cap, iterative redistribution. **Cluster cap: no layer (L3 counted as a/b separately) > 40% of a sleeve.**
 - Regime gate (Tactical): breadth = % of universe above 100d MA. ≥40% → 100% gross; 25–40% → 50%; <25% → 25%. Cash at T-bill. (v2's NAAIM/AAII/F&G multiplier dropped as a score mechanic — max −15% on High tier ≈ inert; the three gauges live on as Fable downgrade-only flags.)
-- Hard exits (mechanical — Fable may accelerate, never delay): close <100d MA 5 consecutive sessions → Tactical exit / Core review · −20% from position high → same-day forced Fable review.
+- Staged deployment (new capital): fresh capital enters in 3 tranches over 4–8 weeks. Tranche 1 at start; each subsequent tranche releases at its planned date only if breadth ≥ 40%; if gated, hold at T-bill and re-check each engine run. Off-ramp: Terry may override with an explicit logged decision.
+- Hard exits (mechanical — Fable may accelerate, never delay): close <100d MA 5 consecutive sessions → Tactical exit / Core review · −20% from position high → same-day forced Fable review. · SPY single-day ≤ −5% or VIX ≥ 25 for 3+ consecutive sessions → off-cycle Fable run (portfolio-level review, not an automatic exit).
 - Migration: |Tactical-percentile − Core-percentile| > 25 pts for 3 consecutive runs → flag; Fable confirms; Terry executes.
+- Role of `adjusted_pct` (binding definition): sleeve selection ranks on ENGINE percentile only. Fable adjustments (a) block new entries — a name with adjustment ≤ −10 in the latest run is ineligible to enter a sleeve this rebalance; (b) may accelerate mechanical exits per the existing rule; (c) never reorder ranks, never force exits, never delay anything. Enforced in the orchestrator, not by prompt.
 - Circuit breaker: portfolio −12% from high-water → Tactical gross halved until breadth >40%.
 - Earnings rule: new Tactical entries within 5 trading days of a confirmed print are event-sized (half weight) and flagged on the decision sheet.
 
@@ -57,7 +59,7 @@ Data: FMP `/stable/` + Massive (existing keys). Unbacktested → weight stays ca
 
 ## 6. Backtest record — see v1 §6
 
-Tables, variants, and the four caveats (universe survivorship · single regime · pre-tax/15bps · relative-edge-not-absolute-CAGR) carry forward unchanged as the permanent record. `results_24m.csv` is canonical.
+Canonical record: `engine/data/results_24m_v2.csv` + `results_36m_v2.csv` (corrected t+1 execution, 2026-06-12). The original v1 record contained a same-day execution lookahead worth ~17–24 CAGR pts and is void — never quote it. Caveats, now six, mandatory in any restatement: (1) universe survivorship — including security-level: the 2023+ listing cohort inflates both strategy and EW benchmark (ex-cohort variants are in the record); (2) single regime; (3) pre-tax — at ~12.8x annual turnover effectively all gains are short-term; quantify against the holder's marginal rate before sizing; (4) 15 bps/side, no impact modeling; (5) the backtest covers top-10 selection + inverse-downside-dev weights + breadth gate ONLY — cluster caps, circuit breaker, hard exits, migration, earnings sizing, and the Fable layer are unbacktested rails; (6) ~50 rebalances in 24 months: differences vs benchmark are not statistically significant. Project the relative edge, never the absolute CAGR.
 
 ## 7. Anthropic module — unchanged from v1 §7
 

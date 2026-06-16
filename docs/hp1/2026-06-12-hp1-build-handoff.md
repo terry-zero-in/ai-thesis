@@ -10,7 +10,7 @@
 5. `2026-06-12-hp1-dashboard-design.md` — the approved product design (architecture, schema, all 8 surfaces)
 6. `2026-06-12-hp1-engine-fixes-plan.md` — TDD plan for Phase 0 engine work (use `executing-plans`)
 7. `anthropic_diligence.md` — seeds the ANTH surface (verified $47B run-rate 2026-05-28; recommended ceiling 14–16x)
-8. Reference receipts: `hp1_backtest.py` (original, contains F1 bug — superseded by engine plan), `hp1_audit.py` + `hp1_audit_results.csv` (independent verification targets), `results_24m.csv` (VOID record, history only), `current_ranks.csv` (stale, 2026-06-10)
+8. Reference receipts: `hp1_backtest.py` (original, contains F1 bug — superseded by engine plan), `hp1_audit.py` + `hp1_audit_results.csv` (independent verification targets), `results_24m_VOID.csv` (VOID record, history only — renamed from results_24m.csv), `current_ranks.csv` (stale, 2026-06-10)
 
 ## Phase plan (cut Linear tickets from this; new project under THS: "HP-1")
 
