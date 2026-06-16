@@ -67,13 +67,38 @@ def factors(px, t):
 def weights(sel, f):
     w = (1 / f.loc[sel, "dd_dev"]).astype(float)
     w /= w.sum()
-    for _ in range(6):
-        over = w > 0.15
-        if not over.any(): break
-        excess = (w[over] - 0.15).sum(); w[over] = 0.15
-        under = ~over
-        if w[under].sum() > 0: w[under] += excess * w[under] / w[under].sum()
-    return w / w.sum()
+    cap = 0.15
+    n = len(w)
+    if n * cap < 1.0:
+        # The 15% single-name cap is infeasible with fewer than ceil(1/cap)=7
+        # names (n*cap < 1): the projection of any allocation onto
+        # {sum=1, w_i <= cap} collapses to equal weight. The redistribution loop
+        # does NOT converge in this regime (it can leave one name at ~0.70 for a
+        # 3-name book), so fall back to equal weight explicitly. (F24)
+        w = pd.Series(1.0 / n, index=w.index)
+    else:
+        # Iterate the cap-redistribution (water-filling) to convergence. The
+        # original 6-pass cap was insufficient for tight-feasible books (e.g.
+        # n=7, only 1.05x slack), leaving a name at ~0.1523 — a small but real
+        # breach of the spec's 15% cap. Selection feeds <=10 names, so this
+        # converges in a handful of passes; 50 is a safe ceiling. (F24)
+        for _ in range(50):
+            over = w > cap
+            if not over.any(): break
+            excess = (w[over] - cap).sum(); w[over] = cap
+            under = ~over
+            if w[under].sum() > 0:
+                w[under] += excess * w[under] / w[under].sum()
+            else:
+                break
+        w = w / w.sum()
+    # Feasibility-aware invariant: cap binds at 0.15 when achievable (>=7 names),
+    # else at 1/n. Replaces the red-team's flat `<= 0.15` assert, which both
+    # false-trips on low-breadth (<7-name) rebalances and missed the 6-pass
+    # non-convergence above. With the converged loop it now holds tightly.
+    assert w.max() <= max(cap, 1.0 / n) + 1e-6, \
+        f"single-name cap breached after renorm: {w.max():.4f} (n={n})"
+    return w
 
 # ---------- self-test on synthetic data ----------
 def selftest():

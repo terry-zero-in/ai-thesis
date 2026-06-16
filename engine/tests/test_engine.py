@@ -49,3 +49,32 @@ def test_dd_dev_short_history_no_synthetic_edge():
     px = pd.DataFrame({"SMOOTH": smooth, "NORM": normal, "OTH": other})
     f = factors(px, idx[-1])
     assert f.loc["SMOOTH", "dd_dev"] > 1e-3, "dd_dev floored at 1e-4 -> synthetic RAM edge"
+
+
+def test_weight_cap_invariant():
+    idx = pd.bdate_range("2024-01-01", periods=200)
+    rng = np.random.default_rng(5)
+    px = pd.DataFrame({f"T{i}": 100 * np.cumprod(1 + rng.normal(0.001, 0.005 + 0.004*i, 200))
+                       for i in range(10)}, index=idx)
+    f = factors(px, idx[-1])
+    w = weights(list(f.index), f)
+    assert abs(w.sum() - 1) < 1e-9
+    assert w.max() <= 0.15 + 1e-6, f"cap breached: {w.max():.4f}"
+
+
+def test_weight_cap_infeasible_small_book():
+    """With <7 names the 15% cap is infeasible (n*0.15 < 1); weights must fall
+    back to equal weight (the min-max projection), never the redistribution
+    loop's degenerate >>cap output (up to 0.70 for a 3-name book)."""
+    idx = pd.bdate_range("2024-01-01", periods=160)
+    sel = ["A", "B", "C", "D", "E", "F"]  # 6 names -> cap infeasible
+    rng = np.random.default_rng(2)
+    data = {}
+    for i, t in enumerate(sel):
+        vol = 0.004 if i == 0 else 0.03  # A very low vol -> would dominate inverse-vol
+        data[t] = 100 * np.cumprod(1 + rng.normal(0.001, vol, 160))
+    px = pd.DataFrame(data, index=idx)
+    f = factors(px, idx[-1])
+    w = weights(list(f.index), f)
+    assert abs(w.sum() - 1) < 1e-9
+    assert w.max() <= 1.0 / len(sel) + 1e-6, f"infeasible-cap book not equal-weighted: max={w.max():.4f}"
