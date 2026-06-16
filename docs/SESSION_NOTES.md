@@ -1260,3 +1260,24 @@ S31 shipped 9 commits across two unrelated chunks. First half: THS-103 sell flow
 1. Load skills per CLAUDE.md.
 2. Read the S31 handoff (especially the Pending Terry Actions table — merge to main + runbook execution + visual review are the unblock path).
 3. **Do NOT dispatch THS-108 cold.** First confirm Terry has eyeballed the §A/F/G Lambo Pass foundations on a working Vercel deploy. THS-108's items are mostly judgment calls that depend on his direction post-review.
+
+---
+
+## SESSION S32 (2026-06-16, HP-1 Phase 0 — engine truth / lookahead fix)
+
+**Note:** New workstream. HP-1 is a separate trading-engine build specced under `docs/hp1/`, distinct from AI-Thesis v2. This entry is a pointer.
+
+Executed **Phase 0 only** of the HP-1 build: fixed a same-day-execution lookahead in the backtest engine and regenerated the canonical record. The old published record (110.5% CAGR / 2.43 Sharpe) is void; the corrected 24M blend is **93.1% / 2.03**, matching the independent audit essentially exactly. Shipped via PR #17 (squash-merged to `main` @ `63f0830`). No UI touched.
+
+- **New `engine/` directory** — `hp1_engine.py` (t+1 execution, F8/F24 fixes), `restate_record.py`, `tests/test_engine.py` (4 passing), canonical `data/results_24m_v2.csv` + `results_36m_v2.csv`.
+- **Void record retired** — `docs/hp1/results_24m.csv` → `results_24m_VOID.csv`; docs restated to v1.2 numbers (D1–D10 applied). Grep guard clean.
+- **Decisions confirmed** — OPEN-1…4 + D8/D9/D10 locked 2026-06-16, Terry-confirmed. OPEN-2 (ANTH ceiling 15×) is his standing personal re-confirm.
+- **No HP-1 Linear project exists yet** — recommend cutting it at Phase 1 kickoff. Zero Linear tickets touched this session.
+- **Env facts** — engine runs on pandas 3.0.3 / numpy 2.4.6 / yfinance 1.4.1; yfinance + PyPI reachable in the remote sandbox; pin pandas in the Phase 1 GH Action.
+
+**Full record:** `docs/handoffs/2026-06-16-S32-hp1-phase0-engine-truth-lookahead-fix.md`
+
+**Next session — start here:**
+1. Read `CLAUDE.md`, then `docs/hp1/2026-06-12-hp1-build-handoff.md` (HP-1 cold-start index).
+2. Read the S32 handoff above.
+3. **Do NOT fork cold.** Confirm Terry wants Phase 1 to start; cut the HP-1 Linear project first; then compute the v2-70 vs HP-1-50 ticker delta before extending ingestion.
