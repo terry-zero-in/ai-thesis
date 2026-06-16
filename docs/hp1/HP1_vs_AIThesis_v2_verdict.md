@@ -25,7 +25,7 @@ These two systems answer different questions. v2 answers *"what is worth owning"
 
 ## The one direct disagreement — momentum weight
 
-v2 cut price momentum to ~3.5% of composite (25% of M=14%), citing an SSRN study showing 12-1 momentum lost −10.2%/yr 2005–2024. That study is **long-short** momentum in the broad S&P across crash regimes. The published answer to momentum crashes is *risk management* — vol-scaling, trend gates, drawdown control (Barroso & Santa-Clara 2015; Daniel & Moskowitz 2016) — not near-elimination. Measured in our actual universe: risk-managed momentum sorting added **+31–42 CAGR pts and +0.5–0.7 Sharpe over equal-weighting the identical 50 names**, in both the 24m and 36m windows, costs included. v2 diagnosed the right disease and prescribed the wrong medicine. HP-1 keeps its momentum weights; the crash protection lives in the RAM term, the DD term, the trend gate, and the breadth gate — which is where the literature puts it.
+v2 cut price momentum to ~3.5% of composite (25% of M=14%), citing an SSRN study showing 12-1 momentum lost −10.2%/yr 2005–2024. That study is **long-short** momentum in the broad S&P across crash regimes. The published answer to momentum crashes is *risk management* — vol-scaling, trend gates, drawdown control (Barroso & Santa-Clara 2015; Daniel & Moskowitz 2016) — not near-elimination. Measured in our actual universe under corrected t+1 execution (2026-06-12): risk-managed momentum sorting adds **~+10–12 CAGR pts and ~+0.05 Sharpe over equal-weighting the identical 50 names** (24m; ~zero once the 2023+ IPO cohort is excluded) — a concentration tilt, not risk-adjusted alpha. See HP1_redteam_findings.md F1/F2 and engine/data/results_24m_v2.csv. v2 diagnosed the right disease and prescribed the wrong medicine. HP-1 keeps its momentum weights; the crash protection lives in the RAM term, the DD term, the trend gate, and the breadth gate — which is where the literature puts it.
 
 Conceded in the other direction: v2's fundamental machinery is more developed than HP-1's §5 sketch; the depreciation penalty and the downgrade-only asymmetry survive the merge intact.
 
@@ -55,3 +55,7 @@ The more meaningful evidence is structural: of v2's 12 deployed names, HP-1 toda
 6. **v2 standalone: retired for this account.** The AI Thesis portal keeps it for its original long-horizon purpose if you want the product alive.
 
 Net effect: one system, HP-1 v1.1 — backtested price core driving the trading decisions, v2's fundamental discipline driving the Core sleeve tilt and the Fable rubric's skepticism.
+
+## 2026-06-12 restatement (D10)
+
+The original sorting-edge evidence for keeping momentum weights (a large CAGR/Sharpe advantage vs EW-50) was found inflated by an execution-timing artifact (see HP1_redteam_findings.md F1/F2). Corrected edge: ~+10–12 CAGR pts, ~+0.05 Sharpe vs EW-50; ~zero ex-IPO-cohort. Decision #5 is re-ratified as a judgment call: momentum weights stand because the structure (trend gates + exits + sizing) is the deliverable, not factor alpha. Signed: Terry, 2026-06-16.
