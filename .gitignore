@@ -41,3 +41,4 @@ coverage/
 # supabase
 supabase/.branches
 supabase/.temp
+.worktrees/
