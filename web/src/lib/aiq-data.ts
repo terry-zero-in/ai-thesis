@@ -92,6 +92,7 @@ export async function getAiqIndex(): Promise<AiqIndexSnapshot> {
     .from("universe")
     .select("ticker,name,layer,layer_label")
     .eq("is_active", true)
+    .eq("kind", "investable") // investable only (excludes benchmark/macro/hp1)
     .order("ticker");
   if (ue || !universe || universe.length === 0) return emptyIndex();
 
