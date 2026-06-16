@@ -43,6 +43,7 @@ export async function getLatestUniverseScoresServer(): Promise<UniverseSnapshot>
       .from("universe")
       .select("ticker,name,layer,layer_label")
       .eq("is_active", true)
+      .eq("kind", "investable") // investable only (excludes benchmark/macro/hp1)
       .not("ticker", "like", "^%")
       .order("ticker"),
     sb

@@ -97,6 +97,7 @@ export async function getUniverseTickers(): Promise<string[]> {
     .from("universe")
     .select("ticker")
     .eq("is_active", true)
+    .eq("kind", "investable") // investable only (excludes benchmark/macro/hp1)
     .not("ticker", "like", "^%")
     .order("ticker");
   if (error || !data || data.length === 0) return [];
@@ -115,6 +116,7 @@ export async function getLatestUniverseScores(): Promise<UniverseSnapshot> {
       .from("universe")
       .select("ticker,name,layer,layer_label")
       .eq("is_active", true)
+      .eq("kind", "investable") // investable only (excludes benchmark/macro/hp1)
       .not("ticker", "like", "^%")
       .order("ticker"),
     sb

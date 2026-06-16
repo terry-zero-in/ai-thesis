@@ -223,6 +223,7 @@ export async function getUniverseChoices(): Promise<UniverseChoice[]> {
     .from("universe")
     .select("ticker,name,layer,layer_label")
     .eq("is_active", true)
+    .eq("kind", "investable") // investable only (excludes benchmark/macro/hp1)
     .order("ticker");
   const univ = (univData ?? []) as { ticker: string; name: string; layer: number; layer_label: string }[];
   if (univ.length === 0) return [];
