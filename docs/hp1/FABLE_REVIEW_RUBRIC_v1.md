@@ -41,7 +41,7 @@ Engine percentile (0–100) is the base. Fable outputs `adjustment ∈ [−10, +
 
 Role of `adjusted_pct` (binding definition): sleeve selection ranks on ENGINE percentile only. Fable adjustments (a) block new entries — a name with adjustment ≤ −10 in the latest run is ineligible to enter a sleeve this rebalance; (b) may accelerate mechanical exits per the existing rule; (c) never reorder ranks, never force exits, never delay anything. Enforced in the orchestrator, not by prompt.
 
-Hard rules: Fable may **accelerate** mechanical exits (recommend EXIT before the 5-session MA rule completes) but never delay or soften them. Soft signals (E/F + macro gauges) are downgrade-only — v2's rule, kept verbatim. Macro gauges apply at portfolio level only (§8), never to single-name scores.
+Hard rules: Fable may **accelerate** mechanical exits (recommend EXIT before the 5-session MA rule completes) but never delay or soften them. Soft signals (E/F + macro gauges) are downgrade-only — v2's rule, kept verbatim — with one exception: a qualifying opportunistic insider-buy cluster (§4.E) may serve as one of the two hard citations required for an UPGRADE. Macro gauges apply at portfolio level only (§8), never to single-name scores.
 
 ## 6. Evidence protocol — no citation, no effect
 
@@ -98,7 +98,8 @@ RULES
    DOWNGRADE needs >=1 hard cited negative (accounting, guidance, regulatory, customer loss)
    or >=2 cited soft signals. UPGRADE needs >=2 independent hard citations dated within 5
    trading days; sentiment or price action never qualifies. Insider/positioning/macro-gauge
-   signals are DOWNGRADE-ONLY. VETO is reserved for substantiated fraud/going-concern/
+   signals are DOWNGRADE-ONLY, except a qualifying opportunistic insider-buy cluster (3+ insiders,
+   >=$1M, ex-10b5-1) may count as one of the two hard UPGRADE citations. VETO is reserved for substantiated fraud/going-concern/
    delisting/customer-loss>20% — cite it.
 4. Mechanical exit rules are sacred: you may recommend accelerating an exit, never delaying
    or softening one.
