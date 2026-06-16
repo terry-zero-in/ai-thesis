@@ -42,3 +42,8 @@ coverage/
 supabase/.branches
 supabase/.temp
 .worktrees/
+
+# python (HP-1 engine)
+__pycache__/
+*.pyc
+.pytest_cache/
