@@ -1,5 +1,5 @@
 # HP1 Spec v1.1 → v1.2 + Fable Rubric v1 → v1.1 — Exact Redlines
-2026-06-12 · Source: `HP1_redteam_findings.md` · Status: D1–D7 pre-ratified by Terry via review acceptance; D8 requires explicit Terry sign-off
+2026-06-12 (decisions locked 2026-06-16) · Source: `HP1_redteam_findings.md` · Status: D1–D10 ALL ADOPTED. D8, D9, D10 signed off by Terry 2026-06-16 (see build handoff Decisions table). Implement every delta as written.
 
 Apply these as literal text replacements. Nothing else in either doc changes. Where a delta says ADD, the insertion point is named.
 
@@ -42,17 +42,17 @@ Apply these as literal text replacements. Nothing else in either doc changes. Wh
 
 > Calibration: every run's JSON persists to `hp1.fable_runs`/`fable_reviews`. At 6 months (≥60 runs): compare forward 5/10/21-day returns of DOWNGRADE names vs CONFIRM baseline; no separation → bounds shrink to [−5, 0] and the layer becomes advisory-only pending redesign. Track: citation-validation pass rate, verdict flips without new evidence, UPGRADE frequency.
 
-## D8 — Rubric §9, ANTH conflict controls (F19) — **requires Terry sign-off** ☐
+## D8 — Rubric §9, ANTH conflict controls (F19) — **ADOPTED, signed Terry 2026-06-16** ☑
 
 **ADD to §9:**
 > Every ANTH block must include `reasons_against`: the 3 strongest cited reasons NOT to invest this cycle. A GO status is rendered "GO (pending independent check)" and is inert until Terry records an independent confirmation (non-Anthropic model or manual checklist) in the app; the timestamp persists. Fable output may never be cited as grounds to raise the ceiling; the ceiling moves only on Terry's explicit edit with a third-party diligence reference.
 
-## D9 — Rubric §4.E, insider asymmetry amendment (F20) — optional, recommend adopting
+## D9 — Rubric §4.E, insider asymmetry amendment (F20) — **ADOPTED 2026-06-16**
 
 **REPLACE the §4.E sentence** "3+ insiders buying ≥$1M in 90d → note (cannot upgrade alone)" **WITH:**
 > 3+ insiders buying ≥$1M in 90d, opportunistic (ex-10b5-1) → may count as ONE of the two independent hard citations required for UPGRADE (the literature's informative side is buys, not sells). Still never sufficient alone.
 
-## D10 — Merge decision #5 re-ratification (F15) — **requires Terry sign-off** ☐
+## D10 — Merge decision #5 re-ratification (F15) — **ADOPTED, signed Terry 2026-06-16** ☑
 
 Verdict doc gets an appended note:
-> 2026-06-12: the "+31–42 pts / +0.5–0.7 Sharpe" evidence for keeping momentum weights was found to be inflated by an execution-timing artifact (see HP1_redteam_findings.md F1/F2). Corrected edge: ~+10–12 CAGR pts, ~+0.05 Sharpe vs EW-50; ~zero ex-IPO-cohort. Decision #5 is re-ratified as a judgment call: momentum weights stand because the structure (trend gates + exits + sizing) is the deliverable, not factor alpha. Signed: Terry ____ (date).
+> 2026-06-12: the "+31–42 pts / +0.5–0.7 Sharpe" evidence for keeping momentum weights was found to be inflated by an execution-timing artifact (see HP1_redteam_findings.md F1/F2). Corrected edge: ~+10–12 CAGR pts, ~+0.05 Sharpe vs EW-50; ~zero ex-IPO-cohort. Decision #5 is re-ratified as a judgment call: momentum weights stand because the structure (trend gates + exits + sizing) is the deliverable, not factor alpha. Signed: Terry, 2026-06-16.
