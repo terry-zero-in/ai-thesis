@@ -90,12 +90,25 @@ def selftest():
 
 # ---------- simulation ----------
 def simulate(px, rets, start, end, mode="tac", freq=10, gate=False, equal_w=False):
+    """Signals computed from closes through rebalance day d; new weights take
+    effect (and turnover costs are charged) at the START of day d+1, i.e. the
+    trade executes at the close of d+1's prior session. No same-day execution."""
     simulate.breadth_log = []
     simulate.daylog = []
     days = rets.loc[start:end].index
     rebal = set(days[::freq])
-    w = pd.Series(dtype=float); curve = []; v = 1.0; turn_total = 0.0; n_rebal = 0; held = []
+    w = pd.Series(dtype=float); curve = []; v = 1.0
+    turn_total = 0.0; n_rebal = 0; held = []
+    pending = None
     for d in days:
+        # 1. Execute any pending rebalance BEFORE today's returns accrue
+        if pending is not None:
+            nw = pending; pending = None
+            allk = w.index.union(nw.index)
+            turn = (nw.reindex(allk, fill_value=0) - w.reindex(allk, fill_value=0)).abs().sum()
+            v *= (1 - COST * turn); turn_total += turn; n_rebal += 1
+            w = nw
+        # 2. Compute today's signal (close of d) -> queues for tomorrow
         if d in rebal:
             f = factors(px, d)
             if not f.empty:
@@ -110,19 +123,20 @@ def simulate(px, rets, start, end, mode="tac", freq=10, gate=False, equal_w=Fals
                         nw = nw * gross
                 else:
                     nw = pd.Series(dtype=float)
-                allk = w.index.union(nw.index)
-                turn = (nw.reindex(allk, fill_value=0) - w.reindex(allk, fill_value=0)).abs().sum()
-                v *= (1 - COST * turn); turn_total += turn; n_rebal += 1
-                w = nw; held.append(len(sel))
+                pending = nw
+                held.append(len(sel))
+        # 3. Accrue today's returns on CURRENT (pre-signal) weights
         r = (w * rets.loc[d].reindex(w.index).fillna(0)).sum() + (1 - w.sum()) * RF/252
         v *= (1 + r)
         simulate.daylog.append((d, r, list(w.sort_values(ascending=False).head(5).index)))
         if not w.empty:
-            gw = w * (1 + rets.loc[d].reindex(w.index).fillna(0)); w = gw / (1 + r) if (1+r) != 0 else gw
+            gw = w * (1 + rets.loc[d].reindex(w.index).fillna(0))
+            w = gw / (1 + r) if (1 + r) != 0 else gw
         curve.append((d, v))
     eq = pd.Series(dict(curve))
     yrs = len(eq) / 252
-    return eq, dict(ann_turnover=turn_total / yrs if yrs else 0, avg_names=np.mean(held) if held else 0)
+    return eq, dict(ann_turnover=turn_total / yrs if yrs else 0,
+                    avg_names=np.mean(held) if held else 0)
 
 def metrics(eq, name):
     r = eq.pct_change().dropna()
