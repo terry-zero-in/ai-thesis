@@ -30,8 +30,17 @@ that writes into it. Executed S35 "Next session — start here" items 1 (engine)
 | `engine/hp1_engine.py` (mod) | Imports math from `hp1_factors`; lazy yfinance (so tests/CI don't need it); backtest's `tag()` → shared `driver_tag`. |
 | `engine/requirements.txt`, `engine/conftest.py`, `engine/README.md` (new) | Pinned deps, test path setup, ops doc. |
 | `engine/tests/test_score.py`, `test_load_prices.py` (new) | 13 new tests (shapes, views/membership, sleeve grain + denormalization invariant, breadth gate, percentage scaling, short-history exclusion, FMP mapper). |
-| `.github/workflows/hp1-engine.yml` (new) | Scheduled load+run. `.github/workflows/ci.yml` (mod): added pytest job. |
+| `.github/workflows/hp1-engine.yml` (new) + `ci.yml` (mod) | Scheduled load+run; pytest CI job. **NOT on the remote** — see "Workflow files blocked" below. |
 | 5 ingest files | Reverted to pre-#23 (`git checkout 4b83aab --`). `INGEST_KINDS` gone. |
+
+## Workflow files BLOCKED (Terry action required)
+
+The two `.github/workflows/` files are authored + tested-by-inspection but **could
+not be pushed this session**: the git OAuth token lacks `workflow` scope, and the
+GitHub MCP App is read-only on this repo (both write paths 404'd). Their full YAML
+is in the PR body. To land them, either: (a) Terry adds them by hand from the PR
+body, or (b) grant the token `workflow` scope and re-push. Until then the engine
+runs only on manual invocation, not on a schedule.
 
 ## Verification (done this session)
 
