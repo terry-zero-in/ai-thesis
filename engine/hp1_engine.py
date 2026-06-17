@@ -45,7 +45,11 @@ def factors(px, t):
         ma100 = s.iloc[-100:].mean()
         ma200 = s.iloc[-200:].mean() if len(s) >= 200 else ma100
         out[tk] = dict(r3=r3, r6=r6, r12=r12, ram=ram, ddraw=ddraw,
-                       above100=c > ma100, above200=c > ma200, dd_dev=dd_dev)
+                       above100=c > ma100, above200=c > ma200, dd_dev=dd_dev,
+                       # signed % distance to each MA — consumed by hp1.engine_ranks
+                       # (dist_100_pct / dist_200_pct). ddraw is dd_from_high. Additive;
+                       # the backtest/sim ignore these columns.
+                       dist100=c / ma100 - 1, dist200=c / ma200 - 1)
     f = pd.DataFrame(out).T
     if f.empty: return f
     def z(col):

@@ -41,26 +41,13 @@ export function serviceClient(): SupabaseClient {
   );
 }
 
-// Universe `kind`s whose market data HP-1 needs ingested alongside v2's
-// investable set. HP-1's Core overlay (Q/G/V) and Fable's checklist read
-// fundamentals, consensus, revisions, Form 4, and short interest for these.
-// Prices already use kind:"all"; options stay investable-only (HP-1 options are
-// out of scope, HP1_SPEC §7). The 'hp1' rows are the 19 HP-1-only tickers — they
-// never enter v2's scored composite (v2 scoring loaders filter kind='investable').
-export const INGEST_KINDS: string[] = ["investable", "hp1"];
-
 export async function activeTickers(
   client: SupabaseClient,
-  options: { kind?: "investable" | "benchmark" | "all"; kinds?: string[] } = {},
+  options: { kind?: "investable" | "benchmark" | "all" } = {},
 ): Promise<string[]> {
+  const kind = options.kind ?? "investable";
   let query = client.from("universe").select("ticker").eq("is_active", true);
-  if (options.kinds && options.kinds.length > 0) {
-    // Explicit multi-kind set (e.g. INGEST_KINDS = investable + hp1).
-    query = query.in("kind", options.kinds);
-  } else {
-    const kind = options.kind ?? "investable";
-    if (kind !== "all") query = query.eq("kind", kind);
-  }
+  if (kind !== "all") query = query.eq("kind", kind);
   const { data, error } = await query.order("ticker");
   if (error) throw error;
   return (data ?? []).map((r) => r.ticker as string);
