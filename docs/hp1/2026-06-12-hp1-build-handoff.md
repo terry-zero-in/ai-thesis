@@ -16,7 +16,15 @@
 
 **Phase 0 — Engine truth (blocks everything).** Execute `2026-06-12-hp1-engine-fixes-plan.md` Tasks 1–5. Then apply `HP1_SPEC_v1.2_deltas.md`. Exit: grep guard clean, regenerated record within tolerance of `hp1_audit_results.csv`.
 
-**Phase 1 — Fork + data (STANDALONE DB, revised 2026-06-16).** Fork `ai-thesis` → `hp1` (private). Strip v2 scoring pages (keep components, AIQ editor, auth, shell, settings). New Vercel project. **Provision a NEW, dedicated Supabase project** (CC has no access to v2's) and run `docs/hp1/hp1_schema.sql` once — full DDL, RLS, and the ANTH seed. Because there is no shared v2 project to read, **HP-1 owns its own ingestion**: build a daily price loader → `hp1.prices` (engine can't score without it) and a weekly macro loader → `hp1.macro_gauges`, for HP-1's 50 names. Fable's consensus/Form-4/short-interest inputs are fetched live per-run, not stored. Engine GH Action (post-close daily 5:30 PM CT) → `engine_runs`/`engine_ranks`. HP-1 never writes outside `hp1`.
+**Phase 1 — Fork + data (STANDALONE DB — topology revised 2026-06-16, supersedes the S33 shared-DB premise baked into the existing migrations).** Fork `ai-thesis` → `hp1` (private). Strip v2 scoring pages (keep components, AIQ editor, auth, shell, settings). New Vercel project. **Provision a NEW, dedicated Supabase project.**
+
+Schema steps (in order):
+1. Run the existing **`supabase/migrations/20260617000000_hp1_schema.sql`** as-is — it's canonical (engine/Fable/book/ANTH/record + RLS + ANTH 15x seed).
+2. **Do NOT run `20260616000000_hp1_universe_kind_and_seed.sql`** — it ALTERs/INSERTs `public.universe`, which doesn't exist in the new project and will fail. It is shared-DB-only.
+3. Author ONE new migration adding the three tables the canonical migration assumed from v2's `public.*`: **`hp1.universe`** (50 names + layer + combined/pure_play/megacap membership, seeded from HP1_SPEC_v1.1 §2), **`hp1.prices`** (adjusted daily closes), **`hp1.macro_gauges`** (NAAIM/AAII/F&G). Same RLS/grant pattern as the canonical migration.
+4. Repoint every engine/Fable read from `public.*` to `hp1.*`.
+
+Then **HP-1 owns its own ingestion**: a daily price loader (FMP or Polygon) → `hp1.prices` and a weekly macro loader → `hp1.macro_gauges`, keyed off `hp1.universe` (v2's `ingest-prices` is NOT reachable). Fable's consensus/Form-4/short-interest inputs are fetched live per-run, not stored. Engine GH Action (post-close daily 5:30 PM CT) → `engine_runs`/`engine_ranks`. HP-1 reads and writes only `hp1.*`.
 
 **Phase 2 — Fable orchestrator.** Scheduled run every 2 trading days + event triggers (incl. D4's SPY/VIX). Rubric §10 verbatim system prompt; rubric §7/§8 JSON contract; D5 entry-block enforcement; D6 server-side citation validation; D8 reasons_against + pending-check mechanics; failure handling per rubric §11 (engine output never blocked). Persist everything (D7 calibration starts day 1).
 

@@ -43,11 +43,17 @@ These come from `HP1_redteam_findings.md`. The dashboard displays engine output;
 - **Vercel**: new project `hp1`, same team. Env vars copied except new schema name.
 - **Linear**: new project under THS team ("HP-1 Dashboard"), tickets cut from this doc's §8 build plan by Claude Code on day 1.
 
-### 2.2 Data platform — standalone Supabase project (REVISED 2026-06-16)
+### 2.2 Data platform — standalone Supabase project (TOPOLOGY REVISED 2026-06-16, supersedes S33 shared-DB)
 
-**A new, dedicated Supabase project** (Claude Code cannot access the v2 project). All objects live under schema **`hp1`**. Full DDL is in `hp1_schema.sql` — run it once in the new project's SQL editor. Consequence of going standalone: **HP-1 owns its own ingestion** — there is no v2 public schema to read. The schema therefore includes `hp1.prices` (adjusted daily closes — the engine cannot score without these) and `hp1.macro_gauges` (NAAIM/AAII/F&G for the Regime surface). Fable's other checklist inputs (consensus revisions, Form 4, short interest) are fetched live by Fable's web tools per-run rather than stored, so no extra ingestion tables are required at v1.
+**A new, dedicated Supabase project** (Claude Code cannot access the v2 project, and a standalone DB removes the v2 coupling — CC's `public.universe` seed mutated v2, exactly the blast-radius risk flagged at design time). All HP-1 objects live under schema **`hp1`**.
 
-Ingestion to build in Phase 1 (HP-1's own, not reused): a daily price loader (FMP or Polygon) for all 50 names → `hp1.prices`, and a weekly macro loader → `hp1.macro_gauges`. Universe = HP-1's 50 (CRWV, NBIS, IREN, APLD, ALAB, CRDO, FN, COHR, CLS, TER, MPWR, RDDT, TEM, DELL and the rest — full list in HP1_SPEC_v1.1 §2). Discipline rule unchanged: **everything HP-1 writes lives under `hp1`.**
+Canonical schema = the existing migration **`supabase/migrations/20260617000000_hp1_schema.sql`** (CC-authored, reviewed — better than a hand DDL: per-sleeve `engine_ranks` grain, rubric-§7-exact `fable_reviews`, generated AIQ total, GIN evidence index, FORCE RLS, ANTH singleton pre-seeded with the locked 15x/$705B values). Run it as-is against the new project.
+
+Two things that migration assumes from v2 and the new project lacks — CC must add them (one new migration) to go standalone:
+- **`hp1.universe`** (the 50 names + layer + view-membership) — replaces the read of `public.universe`. Seed from HP1_SPEC_v1.1 §2. **Do NOT run `20260616000000_hp1_universe_kind_and_seed.sql` against the new project — it targets `public.universe`, which won't exist; mark it shared-DB-only.**
+- **`hp1.prices`** (adjusted daily closes — engine can't score without them) and **`hp1.macro_gauges`** (NAAIM/AAII/F&G for Regime). Replaces the read of v2's `public` price/macro tables.
+
+Consequence: **HP-1 owns its own ingestion.** Build two loaders in Phase 1 — a daily price loader (FMP or Polygon) → `hp1.prices`, and a weekly macro loader → `hp1.macro_gauges`, both keyed off `hp1.universe`. Fable's other inputs (consensus revisions, Form 4, short interest) are fetched live per-run, not stored. Engine + Fable read `hp1.*`, never `public.*`. Discipline rule unchanged: **everything HP-1 writes lives under `hp1`.**
 
 ### 2.3 Engine
 
