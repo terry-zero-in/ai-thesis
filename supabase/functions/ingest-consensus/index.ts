@@ -19,7 +19,7 @@ import {
   type FmpRatingRow,
 } from "../_shared/fmp.ts";
 import { computeRevisionDeltas, type SnapshotPoint } from "../_shared/revisions.ts";
-import { activeTickers, serviceClient } from "../_shared/supabase.ts";
+import { activeTickers, INGEST_KINDS, serviceClient } from "../_shared/supabase.ts";
 
 declare const Deno: { serve: (h: (req: Request) => Promise<Response>) => void };
 
@@ -32,7 +32,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     requireCronAuth(req);
     const client = serviceClient();
-    const tickers = await activeTickers(client);
+    // investable + hp1 (HP-1 Core overlay + Fable read consensus/revisions for its 19 names).
+    const tickers = await activeTickers(client, { kinds: INGEST_KINDS });
     const today = todayISO();
 
     let consensusUpserted = 0;

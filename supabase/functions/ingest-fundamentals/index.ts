@@ -3,7 +3,7 @@
 
 import { HttpError, requireCronAuth } from "../_shared/auth.ts";
 import { fetchFundamentals } from "../_shared/fmp.ts";
-import { activeTickers, serviceClient } from "../_shared/supabase.ts";
+import { activeTickers, INGEST_KINDS, serviceClient } from "../_shared/supabase.ts";
 
 // Deno.serve is the Supabase Edge Function entrypoint.
 declare const Deno: { serve: (h: (req: Request) => Promise<Response>) => void };
@@ -13,7 +13,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     requireCronAuth(req);
     const client = serviceClient();
-    const tickers = await activeTickers(client);
+    // investable + hp1 (HP-1 Core overlay needs fundamentals for its 19 names).
+    const tickers = await activeTickers(client, { kinds: INGEST_KINDS });
 
     let rowsUpserted = 0;
     const failures: Array<{ ticker: string; error: string }> = [];

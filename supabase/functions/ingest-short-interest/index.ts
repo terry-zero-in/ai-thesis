@@ -14,7 +14,7 @@
 import { HttpError, requireCronAuth } from "../_shared/auth.ts";
 import { fetchShortInterest, type ShortInterestRow } from "../_shared/fmp.ts";
 import { computeSusi, type SiObservation } from "../_shared/susi.ts";
-import { serviceClient } from "../_shared/supabase.ts";
+import { INGEST_KINDS, serviceClient } from "../_shared/supabase.ts";
 
 declare const Deno: { serve: (h: (req: Request) => Promise<Response>) => void };
 
@@ -41,12 +41,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const client = serviceClient();
 
-    // Universe scope: investable only (SPY benchmark has no short interest).
+    // Universe scope: investable + hp1 (HP-1 names need SUSI for Fable §4.F; excludes SPY benchmark / macro).
     const univRes = await client
       .from("universe")
       .select("ticker")
       .eq("is_active", true)
-      .eq("kind", "investable")
+      .in("kind", INGEST_KINDS)
       .order("ticker");
     if (univRes.error) throw univRes.error;
     let tickers = (univRes.data ?? []).map((r) => (r as { ticker: string }).ticker);
