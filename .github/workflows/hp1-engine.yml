@@ -1,0 +1,52 @@
+name: HP-1 engine (daily)
+
+# Post-close daily: load prices (yfinance -> hp1.prices) then run the engine
+# (hp1.prices -> hp1.engine_runs + hp1.engine_ranks) on the standalone HP-1
+# project. Writes via direct Postgres using the HP1_DB_URL secret (service/owner
+# role, bypasses RLS — the documented loader/engine write path).
+#
+# FIRST RUN: trigger manually ("Run workflow") with period=3y to BACKFILL history
+# — the engine needs ≥253 trading days. After that the daily schedule appends the
+# latest close with period=5d (idempotent upsert on (ticker,date)).
+#
+# Requires repo secret: HP1_DB_URL = the standalone project (uetclnhbubmkwbherwkw)
+# Supabase pooler connection string, e.g.
+#   postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+
+on:
+  schedule:
+    - cron: "30 22 * * 1-5"   # 22:30 UTC, Mon–Fri (~5:30pm ET, post-close)
+  workflow_dispatch:
+    inputs:
+      period:
+        description: "yfinance history period (3y to backfill, 5d for a daily append)"
+        default: "3y"
+        required: false
+
+concurrency:
+  group: hp1-engine
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Load prices + run engine
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: engine/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Load prices (yfinance -> hp1.prices)
+        env:
+          HP1_DB_URL: ${{ secrets.HP1_DB_URL }}
+        run: python hp1_price_loader.py --period "${{ github.event.inputs.period || '5d' }}"
+      - name: Engine run (hp1.prices -> engine_runs/engine_ranks)
+        env:
+          HP1_DB_URL: ${{ secrets.HP1_DB_URL }}
+        run: python hp1_daily_run.py

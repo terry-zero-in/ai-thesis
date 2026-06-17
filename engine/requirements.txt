@@ -1,0 +1,8 @@
+# HP-1 engine + loaders (Python 3.11). Used by the daily GitHub Action and tests.
+# Math/DB deps pinned for deterministic runs; yfinance kept on a floor so CI
+# resolves a current release (it's only the bootstrap price source).
+pandas==2.2.3
+numpy==2.0.2
+psycopg[binary]==3.2.13
+yfinance>=0.2.40
+pytest==9.1.0
