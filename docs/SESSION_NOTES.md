@@ -1302,3 +1302,26 @@ Phase 1 kickoff prep — no code shipped. Locked all four Phase 1 decisions (Ter
 1. Read `CLAUDE.md`, `docs/hp1/2026-06-12-hp1-build-handoff.md`, then the S33 handoff.
 2. **Confirm `terry-zero-in/hp1` exists + is in MCP scope** (Terry's pending action) — the fork can't start without it. Get MCP-write approval.
 3. Create the 5 Linear epics, then execute the 8-step fork execution order in the S33 doc. Decisions are locked — don't re-ask.
+
+---
+
+## SESSION S35 (2026-06-17, HP-1 went STANDALONE — standalone DB stood up + verified live)
+
+**Note:** S34 (universe-seed-merged; doc on the unmerged PR #21) sits between S33 and this. Pointer entry.
+
+Mid-session the HP-1 topology flipped **shared → standalone** (main commits `9d52687`, `da08b0d`): HP-1 now owns its own Supabase project and never reads v2's `public.*`. Built + verified the entire standalone HP-1 database **LIVE** on the dedicated project, adopted the CC-authored migration as the canonical schema, and fixed a Codex P1 (RLS write-lock on the real-money trade ledger). Created the 5 HP-1 Linear epics (THS-109…113). Now blocked on Terry's price-source pick to start the engine/loaders.
+
+- **Standalone DB is LIVE** on `uetclnhbubmkwbherwkw` ("AI Thesis", in MCP scope) — 13 `hp1` tables + `positions` view, `universe` 53 rows, `anth_state` seeded (15×/WAIT), RLS hardened (authenticated read-only; writes via service_role), 0 security-advisor lints. Migrations: `hp1_schema` → `hp1_rls_harden` → `hp1_universe_prices_macro`.
+- **Project map** — standalone HP-1 = `uetclnhbubmkwbherwkw`; v2 prod = `mvxgnliwvoauwwarrlrr` (out of this session's scope); Basis = `dmhuvacfwrfrrfwyrqlx`. Do NOT apply `20260616000000` (shared-DB-only); nothing has been run against v2.
+- **PRs merged** — #22 (schema), #23 (RLS harden + now-moot ingestion extension), #24 (universe/prices/macro), #25 (S35 handoff).
+- **Linear** — created HP-1 epics: THS-109 (Phase 0, Done), **THS-110 (Phase 1, In Progress — this session)**, THS-111/112/113 (Backlog).
+- **Pending Terry** — price source + key (FMP rec / Polygon / yfinance), standalone service-role key as a GH secret, `terry-zero-in/hp1` fork repo, 2 auth users (Terry write / mom read).
+
+**Full record:** `docs/handoffs/2026-06-17-S35-hp1-standalone-db-live.md`
+
+**Recommendation:** keep cranking — the DB foundation is verified-solid, so the engine/loader phase is well-scoped and low-risk the moment the price source lands. yfinance unblocks it with zero credential wait if Terry wants the engine producing live ranks fastest.
+
+**Next session — start here:**
+1. Read `CLAUDE.md`, then the S35 handoff above.
+2. Get Terry's price source + key (gates everything). Then build in `engine/`: price loader → `hp1.prices`, adapt `hp1_engine.py` to write `hp1.engine_runs`/`engine_ranks` (per-view × per-sleeve grain), the GitHub Action, and the macro loader.
+3. Revert the moot ingestion extension (#23) per the handoff; then the frontend fork (`terry-zero-in/hp1`).
