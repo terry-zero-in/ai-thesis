@@ -171,3 +171,16 @@ def test_driver_tag_logic():
     assert driver_tag(2.0, 0.0, 0.0, above100=True) == "return-driven"
     assert driver_tag(0.0, 2.0, 1.0, above100=True) == "stability-driven"
     assert driver_tag(0.10, 0.10, 0.10, above100=True) == "balanced"
+
+
+def test_smoke_universe_matches_spec():
+    """The offline preview universe mirrors the hp1.universe seed: 50 investable
+    (42 pure_play / 8 megacap) + SPY/QQQ + ^VIX (HP1_SPEC §2)."""
+    from hp1_smoke import build_universe
+    u = build_universe()
+    inv = u[u["kind"] == "investable"]
+    assert len(inv) == 50
+    assert (inv["category"] == "pure_play").sum() == 42
+    assert (inv["category"] == "megacap").sum() == 8
+    assert set(u[u["kind"] == "benchmark"]["ticker"]) == {"SPY", "QQQ"}
+    assert set(u[u["kind"] == "macro"]["ticker"]) == {"^VIX"}
