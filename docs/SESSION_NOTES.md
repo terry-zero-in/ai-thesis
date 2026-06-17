@@ -1302,3 +1302,24 @@ Phase 1 kickoff prep — no code shipped. Locked all four Phase 1 decisions (Ter
 1. Read `CLAUDE.md`, `docs/hp1/2026-06-12-hp1-build-handoff.md`, then the S33 handoff.
 2. **Confirm `terry-zero-in/hp1` exists + is in MCP scope** (Terry's pending action) — the fork can't start without it. Get MCP-write approval.
 3. Create the 5 Linear epics, then execute the 8-step fork execution order in the S33 doc. Decisions are locked — don't re-ask.
+
+---
+
+## SESSION S34 (2026-06-16, HP-1 universe seed merged — Supabase MCP gate blocks the apply)
+
+**Note:** Same-day continuation of S33; start of Phase 1 execution. Pointer entry.
+
+Shipped the first Phase 1 slice via **PR #20 (merged, `1f37009`)**: the `hp1` universe migration + five v2 universe-loader guards. Addressed two Codex P1s (one fixed across 5 loaders, one deferred + tracked). The rest of Phase 1 is blocked because the running web session never honored the Supabase/Linear MCP permissions even after Terry set them to "Always allow" — a **fresh session is required**.
+
+- **PR #20 merged** — `supabase/migrations/20260616000000_hp1_universe_kind_and_seed.sql` (extends `universe_kind_check` for `'hp1'` + seeds the 19 hp1 tickers, idempotent) and `.eq("kind","investable")` guards on 5 UI loaders (universe-data ×2, server, aiq-data, portfolio-data). CI green.
+- ⚠️ **Migration NOT applied to live DB** — it's only a file on `main`; prod `public.universe` has no `kind='hp1'` rows yet. **Apply it first next session.**
+- ⚠️ **Supabase MCP gate** — Connectors UI shows read+write tools on "Always allow," but every call still returned `requires approval` (even allow-listed `list_projects`). Running session loaded its permission state at startup; mid-session changes don't apply → **start a fresh session**. Linear writes also still gated (5 epics still uncreated).
+- **Codex P1 #2 deferred** — `ingest-fundamentals`/`ingest-consensus` don't cover `kind='hp1'`; that's the Phase 1 ingestion-extension task (+ Form 4/short-interest per §2.2; FMP cost). Thread left open.
+- **No DB changes; no Linear changes.** git identity set to `Claude <noreply@anthropic.com>`.
+
+**Full record:** `docs/handoffs/2026-06-16-S34-hp1-universe-seed-merged-supabase-gate.md`
+
+**Next session — start here:**
+1. Read `CLAUDE.md`, the S33 handoff, then the S34 handoff.
+2. In a FRESH session (Supabase now allowed): `list_projects` → `list_migrations` (did #20 auto-apply?) → `apply_migration` if not → verify 19 `hp1` rows + constraint → `get_advisors`.
+3. Then author + apply the `hp1.*` schema (§2.5), then the ingestion extension, then the fork (once `terry-zero-in/hp1` is in scope).
