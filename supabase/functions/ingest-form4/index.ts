@@ -13,7 +13,7 @@
 
 import { HttpError, requireCronAuth } from "../_shared/auth.ts";
 import { fetchInsiderTrades, type InsiderFilingRow } from "../_shared/fmp.ts";
-import { serviceClient } from "../_shared/supabase.ts";
+import { INGEST_KINDS, serviceClient } from "../_shared/supabase.ts";
 
 declare const Deno: { serve: (h: (req: Request) => Promise<Response>) => void };
 
@@ -45,7 +45,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .from("universe")
       .select("ticker")
       .eq("is_active", true)
-      .eq("kind", "investable")
+      .in("kind", INGEST_KINDS) // investable + hp1 (Fable §4.E insider clusters cover HP-1 names)
       .order("ticker");
     if (univRes.error) throw univRes.error;
     let tickers = (univRes.data ?? []).map((r) => (r as { ticker: string }).ticker);
