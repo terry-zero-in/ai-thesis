@@ -90,12 +90,12 @@ Judgment calls (with reasoning):
 2. Supabase tools should now work (fresh session). Run **read-first**:
    - `list_projects` → project_id + `get_project_url`
    - `list_migrations` → **did `20260616000000_hp1_universe_kind_and_seed` auto-apply on the #20 merge?** (a deploy pipeline may have run it)
-   - If **not** applied: `apply_migration` with that file's exact SQL (idempotent). Verify `count(*) where kind='hp1' = 19` and the constraint includes `'hp1'`.
-   - `get_advisors` (security + performance).
-3. Confirm the `kind='investable'` loader guards are **deployed to v2 Vercel prod** before/with the hp1 rows landing, so `/universe` stays clean (it's on `main` → Vercel auto-deploys; verify).
-4. Author + apply the **`hp1.*` schema** (design §2.5) via apply→`generate_typescript_types`→wire-loaders.
-5. **Ingestion extension** (the deferred Codex P1 #2): extend `activeTickers` (investable+hp1 union) + `ingest-fundamentals`/`ingest-consensus` (and Form 4 + short-interest per §2.2) to cover `kind='hp1'`; **mind FMP cost**. Backfill prices via `ingest-prices?days=2000` (prices already covered by `kind:'all'` once rows exist).
-6. Fork into `terry-zero-in/hp1` once it's in scope (S33 fork execution order).
+   - `get_advisors` (security + performance) for a baseline.
+3. **GUARD-FIRST — before applying/seeding, confirm the `kind='investable'` loader guards are live on v2 Vercel prod** (PR #20 is on `main` → Vercel auto-deploys; verify prod is the post-#20 build). The pre-#20 loaders had no `kind` filter, so seeding the 19 `hp1` rows while prod still runs the old build would expose HP-1 names on `/universe`, the AIQ index, and the portfolio picker until the guarded build ships. (Codex P2 on PR #21.)
+4. **Then apply** (only if `list_migrations` shows it didn't auto-apply): `apply_migration` with the file's exact SQL (idempotent). Verify `count(*) where kind='hp1' = 19` and the constraint includes `'hp1'`. Re-run `get_advisors`.
+5. Author + apply the **`hp1.*` schema** (design §2.5) via apply→`generate_typescript_types`→wire-loaders.
+6. **Ingestion extension** (the deferred Codex P1 #2): extend `activeTickers` (investable+hp1 union) + `ingest-fundamentals`/`ingest-consensus` (and Form 4 + short-interest per §2.2) to cover `kind='hp1'`; **mind FMP cost**. Backfill prices via `ingest-prices?days=2000` (prices already covered by `kind:'all'` once rows exist).
+7. Fork into `terry-zero-in/hp1` once it's in scope (S33 fork execution order).
 
 ---
 

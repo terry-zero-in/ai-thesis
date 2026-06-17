@@ -1321,5 +1321,5 @@ Shipped the first Phase 1 slice via **PR #20 (merged, `1f37009`)**: the `hp1` un
 
 **Next session — start here:**
 1. Read `CLAUDE.md`, the S33 handoff, then the S34 handoff.
-2. In a FRESH session (Supabase now allowed): `list_projects` → `list_migrations` (did #20 auto-apply?) → `apply_migration` if not → verify 19 `hp1` rows + constraint → `get_advisors`.
+2. In a FRESH session (Supabase now allowed): `list_projects` → `list_migrations` (did #20 auto-apply?) → **confirm v2 prod is on the post-#20 build (loader guards live) BEFORE seeding** → `apply_migration` if not → verify 19 `hp1` rows + constraint → `get_advisors`.
 3. Then author + apply the `hp1.*` schema (§2.5), then the ingestion extension, then the fork (once `terry-zero-in/hp1` is in scope).
