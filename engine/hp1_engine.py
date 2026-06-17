@@ -2,11 +2,15 @@
 simulate top-10 portfolio with costs, compare vs benchmarks. INPUT: yfinance adjusted
 closes 2022-06->now. METHOD: vectorized factor calc at each rebalance using only data
 <= t (no lookahead); drifting-weight daily simulation. REUSE: returns matrix computed
-once, all factors/variants derive from it."""
-import yfinance as yf, pandas as pd, numpy as np, json, sys
+once, all factors/variants derive from it.
 
-RF = 0.04
-COST = 0.0015  # per side
+The factor math (factors/weights/driver_tag, RF, COST) lives in `hp1_factors.py` and
+is shared verbatim with the production daily run (`hp1_score.py`) so the two can never
+drift. This module re-exports them so existing imports keep working."""
+import pandas as pd, numpy as np, json, sys
+from hp1_factors import factors, weights, driver_tag, RF, COST
+# yfinance is imported lazily in __main__ (the only place that downloads) so the
+# unit tests and CI don't depend on a network library that isn't always present.
 
 CAT_A = {  # pure-play / high-AI-beta
  "semis":["NVDA","AMD","AVGO","MRVL","MU","TSM","ASML","AMAT","LRCX","KLAC","TER","ARM","MPWR","ALAB","CRDO","SMCI"],
@@ -20,85 +24,7 @@ UNIV = [t for v in CAT_A.values() for t in v] + CAT_B
 assert len(UNIV) == 50 and len(set(UNIV)) == 50, f"universe count {len(UNIV)}"
 BENCH = ["QQQ","SOXX"]
 
-# ---------- factor math ----------
-def factors(px, t):
-    """Cross-sectional factor z-scores using data up to and including date t."""
-    p = px.loc[:t]
-    out = {}
-    for tk in p.columns:
-        s = p[tk].dropna()
-        if len(s) < 130: continue
-        c = s.iloc[-1]
-        r = s.pct_change().dropna()
-        def ret(lb, skip=0):
-            if len(s) < lb + skip + 1: return np.nan
-            return s.iloc[-1-skip] / s.iloc[-1-skip-lb] - 1
-        r3, r6, r12 = ret(63), ret(126, 5), ret(231, 21)  # 12m skip 1m
-        neg = r.iloc[-126:][r.iloc[-126:] < 0]
-        if len(neg) >= 20:
-            dd_dev = max(neg.std() * np.sqrt(252), 1e-4)
-        else:
-            # insufficient downside sample -> fall back to total volatility
-            dd_dev = max(r.iloc[-126:].std() * np.sqrt(252), 1e-4)
-        ram = (r6 / dd_dev) if not np.isnan(r6) else np.nan
-        ddraw = c / s.iloc[-126:].max() - 1  # <=0
-        ma100 = s.iloc[-100:].mean()
-        ma200 = s.iloc[-200:].mean() if len(s) >= 200 else ma100
-        out[tk] = dict(r3=r3, r6=r6, r12=r12, ram=ram, ddraw=ddraw,
-                       above100=c > ma100, above200=c > ma200, dd_dev=dd_dev)
-    f = pd.DataFrame(out).T
-    if f.empty: return f
-    def z(col):
-        v = f[col].astype(float)
-        zz = (v - v.mean()) / (v.std() + 1e-9)
-        return zz.clip(-3, 3)
-    import numpy as _np
-    P = pd.concat({"a": z("r3"), "b": z("r6"), "c": z("r12")}, axis=1)
-    WV = _np.array([.3, .4, .3])
-    Wm = P.notna().values * WV
-    num = _np.nansum(P.values * WV, axis=1); den = Wm.sum(axis=1)
-    f["zM"] = pd.Series(_np.where(den > 0, num / _np.where(den > 0, den, 1), _np.nan), index=f.index)
-    assert _np.isfinite(f["zM"].dropna()).all(), "zM not finite"
-    f["zRAM"], f["zDD"] = z("ram"), z("ddraw")  # ddraw less negative = higher = better
-    f["tac"] = .45*f.zM + .35*f.zRAM + .20*f.zDD
-    f["core"] = .40*z("r12") + .35*f.zRAM + .25*f.zDD
-    return f
-
-def weights(sel, f):
-    w = (1 / f.loc[sel, "dd_dev"]).astype(float)
-    w /= w.sum()
-    cap = 0.15
-    n = len(w)
-    if n * cap < 1.0:
-        # The 15% single-name cap is infeasible with fewer than ceil(1/cap)=7
-        # names (n*cap < 1): the projection of any allocation onto
-        # {sum=1, w_i <= cap} collapses to equal weight. The redistribution loop
-        # does NOT converge in this regime (it can leave one name at ~0.70 for a
-        # 3-name book), so fall back to equal weight explicitly. (F24)
-        w = pd.Series(1.0 / n, index=w.index)
-    else:
-        # Iterate the cap-redistribution (water-filling) to convergence. The
-        # original 6-pass cap was insufficient for tight-feasible books (e.g.
-        # n=7, only 1.05x slack), leaving a name at ~0.1523 — a small but real
-        # breach of the spec's 15% cap. Selection feeds <=10 names, so this
-        # converges in a handful of passes; 50 is a safe ceiling. (F24)
-        for _ in range(50):
-            over = w > cap
-            if not over.any(): break
-            excess = (w[over] - cap).sum(); w[over] = cap
-            under = ~over
-            if w[under].sum() > 0:
-                w[under] += excess * w[under] / w[under].sum()
-            else:
-                break
-        w = w / w.sum()
-    # Feasibility-aware invariant: cap binds at 0.15 when achievable (>=7 names),
-    # else at 1/n. Replaces the red-team's flat `<= 0.15` assert, which both
-    # false-trips on low-breadth (<7-name) rebalances and missed the 6-pass
-    # non-convergence above. With the converged loop it now holds tightly.
-    assert w.max() <= max(cap, 1.0 / n) + 1e-6, \
-        f"single-name cap breached after renorm: {w.max():.4f} (n={n})"
-    return w
+# factors() / weights() are imported from hp1_factors (shared with hp1_score.py).
 
 # ---------- self-test on synthetic data ----------
 def selftest():
@@ -181,6 +107,7 @@ def metrics(eq, name):
 
 # ---------- main ----------
 if __name__ == "__main__":
+    import yfinance as yf
     selftest()
     raw = yf.download(UNIV + BENCH, start="2022-06-01", end="2026-06-11",
                       auto_adjust=True, progress=False)
@@ -230,13 +157,7 @@ if __name__ == "__main__":
     # ---------- current rankings + driver tags ----------
     t = px.index[-1]
     f = factors(upx, t)
-    def tag(row):
-        cm, cs = .45*row.zM, .35*row.zRAM + .20*row.zDD
-        if not row.above100: return "broken trend"
-        if cm > cs * 1.4 and cm > .25: return "return-driven"
-        if cs > cm * 1.4 and cs > .25: return "stability-driven"
-        return "balanced"
-    f["tag"] = f.apply(tag, axis=1)
+    f["tag"] = f.apply(lambda row: driver_tag(row.zM, row.zRAM, row.zDD, bool(row.above100)), axis=1)
     f["cat"] = ["B" if i in CAT_B else "A" for i in f.index]
     rank_all = f.sort_values("tac", ascending=False)
     cols = ["tac","core","zM","zRAM","zDD","tag","cat","above100"]

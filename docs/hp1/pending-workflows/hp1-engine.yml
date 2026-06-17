@@ -1,0 +1,52 @@
+name: HP-1 engine
+
+# Daily post-close: load prices into hp1.prices, then re-score the universe into
+# hp1.engine_runs + hp1.engine_ranks. 23:00 UTC Mon–Fri = 6:00pm CT (CDT) /
+# 5:00pm CT (CST) — both comfortably after the 3:00pm CT close + settle.
+# GitHub cron is UTC and may lag under load; EOD timing tolerates it.
+on:
+  schedule:
+    - cron: "0 23 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Price source"
+        type: choice
+        options: [fmp, yfinance]
+        default: fmp
+      backfill:
+        description: "Full history backfill (from 2022-06-01)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: hp1-engine
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Load prices + run engine
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: engine
+    env:
+      HP1_DATABASE_URL: ${{ secrets.HP1_DATABASE_URL }}
+      FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: engine/requirements.txt
+      - run: pip install -r requirements.txt
+
+      - name: Load prices
+        run: |
+          python load_prices.py \
+            --source "${{ inputs.source || 'fmp' }}" \
+            ${{ (inputs.backfill && '--full') || '' }}
+
+      - name: Run engine
+        run: python run_engine.py

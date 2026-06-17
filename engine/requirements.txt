@@ -1,0 +1,11 @@
+# HP-1 engine + loaders. Pinned for reproducible GitHub Action runs.
+# Core (deterministic scoring + DB I/O) — exact pins, matches the tested env.
+pandas==3.0.3
+numpy==2.4.6
+pg8000==1.31.5
+requests==2.33.1
+# Test runner.
+pytest==9.1.0
+# Bootstrap/backtest only (free historical backfill via `load_prices.py --source yfinance`
+# and `hp1_engine.py`). Not used by the scheduled FMP loader or the engine run.
+yfinance>=0.2.40
