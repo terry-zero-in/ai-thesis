@@ -130,6 +130,27 @@ def test_within_view_zscores_differ_from_combined(run_output):
     assert m0_comb != pytest.approx(m0_mega)
 
 
+def test_stale_ticker_excluded_from_ranking(capsys):
+    """A ticker with no close on the run date is excluded (tracked, ineligible),
+    not scored on its last stale close, and is warned about on stderr."""
+    px, uni = make_prices(), make_universe()
+    px.loc[px.index[-3:], "P4"] = np.nan  # loader failed to refresh P4 for 3 sessions
+    run, ranks = compute_run(px, uni)
+    df = pd.DataFrame(ranks)
+    assert "P4" not in set(df["ticker"])             # excluded entirely
+    assert run["universe_n"] == 7                     # 8 investable - 1 stale
+    assert {"P0", "M0", "M2"}.issubset(set(df["ticker"]))  # fresh names still ranked
+    assert "P4" in capsys.readouterr().err            # warned
+
+
+def test_all_stale_raises():
+    """If nothing has a current close, the run fails loudly rather than publish."""
+    px, uni = make_prices(), make_universe()
+    px.loc[px.index[-1]] = np.nan  # whole latest session missing
+    with pytest.raises(ValueError, match="current close"):
+        compute_run(px, uni)
+
+
 # ---- helper unit tests ----
 @pytest.mark.parametrize("breadth,expected", [
     (1.00, 1.00), (0.41, 1.00), (0.40, 1.00),

@@ -102,14 +102,37 @@ def compute_run(
         raise ValueError("no investable universe tickers present in price frame")
 
     as_of_ts = px.index[-1] if as_of is None else pd.Timestamp(as_of)
-    data_through = px.index[-1]
+    px_through = px.loc[:as_of_ts]
+    if px_through.empty:
+        raise ValueError(f"no price rows at or before as_of {as_of_ts.date()}")
+    data_through = px_through.index[-1]
+
+    # Staleness guard (data quality): only rank a ticker that has a non-null close
+    # on the run date. Otherwise a name the loader failed to refresh would be scored
+    # on its last *stale* close (factors() uses dropna().iloc[-1]) while the run is
+    # stamped with the current data_through — i.e. eligibility/percentiles published
+    # from old prices. A stale name is simply not ranked this run (tracked,
+    # ineligible — spec §2), exactly like an under-history name.
+    latest = px_through.loc[data_through]
+    fresh = [t for t in inv_tickers if pd.notna(latest.get(t))]
+    stale = [t for t in inv_tickers if t not in fresh]
+    if stale:
+        print(
+            f"WARNING: {len(stale)} investable ticker(s) with no current close on "
+            f"{data_through.date()} — excluded from ranking: {stale}",
+            file=sys.stderr,
+        )
+    if not fresh:
+        raise ValueError(
+            f"no investable tickers have a current close on {data_through.date()}"
+        )
 
     ranks: list[dict] = []
     view_frames: dict[str, pd.DataFrame] = {}
     for view, cat in VIEW_DEFS.items():
         cols = (
-            inv_tickers if cat is None
-            else [t for t in inv_tickers if cat_of.get(t) == cat]
+            fresh if cat is None
+            else [t for t in fresh if cat_of.get(t) == cat]
         )
         if len(cols) < 2:  # need ≥2 names to z-score within the view
             continue
