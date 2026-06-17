@@ -16,7 +16,7 @@
 
 **Phase 0 — Engine truth (blocks everything).** Execute `2026-06-12-hp1-engine-fixes-plan.md` Tasks 1–5. Then apply `HP1_SPEC_v1.2_deltas.md`. Exit: grep guard clean, regenerated record within tolerance of `hp1_audit_results.csv`.
 
-**Phase 1 — Fork + data.** Fork `ai-thesis` → `hp1` (private). Strip v2 scoring pages (keep components, AIQ editor, auth, shell, settings). New Vercel project. `hp1.*` schema per design doc §2.5. Extend v2 ingest universe lists to cover HP-1's 50 (compute the exact ticker delta first; do NOT duplicate ingest functions; HP-1 never writes outside `hp1`). Engine GH Action (post-close daily 5:30 PM CT) → `engine_runs`/`engine_ranks`.
+**Phase 1 — Fork + data (STANDALONE DB, revised 2026-06-16).** Fork `ai-thesis` → `hp1` (private). Strip v2 scoring pages (keep components, AIQ editor, auth, shell, settings). New Vercel project. **Provision a NEW, dedicated Supabase project** (CC has no access to v2's) and run `docs/hp1/hp1_schema.sql` once — full DDL, RLS, and the ANTH seed. Because there is no shared v2 project to read, **HP-1 owns its own ingestion**: build a daily price loader → `hp1.prices` (engine can't score without it) and a weekly macro loader → `hp1.macro_gauges`, for HP-1's 50 names. Fable's consensus/Form-4/short-interest inputs are fetched live per-run, not stored. Engine GH Action (post-close daily 5:30 PM CT) → `engine_runs`/`engine_ranks`. HP-1 never writes outside `hp1`.
 
 **Phase 2 — Fable orchestrator.** Scheduled run every 2 trading days + event triggers (incl. D4's SPY/VIX). Rubric §10 verbatim system prompt; rubric §7/§8 JSON contract; D5 entry-block enforcement; D6 server-side citation validation; D8 reasons_against + pending-check mechanics; failure handling per rubric §11 (engine output never blocked). Persist everything (D7 calibration starts day 1).
 
@@ -38,4 +38,4 @@
 
 ## Do NOT
 
-Quote the void v1 record anywhere · let Fable recompute engine math · let adjusted_pct reorder selection (D5) · widen Fable bounds past [−10,+5] before calibration (D6) · backtest the fundamental overlay on current fundamentals · write outside the `hp1` schema · expand surfaces beyond the eight in the design doc without Terry · treat the May14→Jun10 19-day window as proof (asymmetry note, verdict doc).
+Quote the void v1 record anywhere · let Fable recompute engine math · let adjusted_pct reorder selection (D5) · widen Fable bounds past [−10,+5] before calibration (D6) · backtest the fundamental overlay on current fundamentals · write outside the `hp1` schema · expose the service_role key to the browser (server jobs only) · run the engine before `hp1.prices` is populated · expand surfaces beyond the eight in the design doc without Terry · treat the May14→Jun10 19-day window as proof (asymmetry note, verdict doc).

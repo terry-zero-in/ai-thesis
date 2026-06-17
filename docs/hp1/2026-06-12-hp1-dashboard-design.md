@@ -43,11 +43,11 @@ These come from `HP1_redteam_findings.md`. The dashboard displays engine output;
 - **Vercel**: new project `hp1`, same team. Env vars copied except new schema name.
 - **Linear**: new project under THS team ("HP-1 Dashboard"), tickets cut from this doc's §8 build plan by Claude Code on day 1.
 
-### 2.2 Data platform — shared Supabase, new schema
+### 2.2 Data platform — standalone Supabase project (REVISED 2026-06-16)
 
-Same Supabase project as v2, all new objects under schema **`hp1`**. Rationale: v2's ingestion already covers prices (FMP/Polygon), consensus + revisions, Form 4, short interest, options, macro gauges (NAAIM/AAII/F&G) for the overlapping universe — Fable's checklist inputs B, E, F and the gauge strip come free. Discipline rule: **HP-1 reads v2's public-schema tables read-only; it never writes outside `hp1`.**
+**A new, dedicated Supabase project** (Claude Code cannot access the v2 project). All objects live under schema **`hp1`**. Full DDL is in `hp1_schema.sql` — run it once in the new project's SQL editor. Consequence of going standalone: **HP-1 owns its own ingestion** — there is no v2 public schema to read. The schema therefore includes `hp1.prices` (adjusted daily closes — the engine cannot score without these) and `hp1.macro_gauges` (NAAIM/AAII/F&G for the Regime surface). Fable's other checklist inputs (consensus revisions, Form 4, short interest) are fetched live by Fable's web tools per-run rather than stored, so no extra ingestion tables are required at v1.
 
-Gap to close: v2 ingests ~70 v2-universe names; HP-1's 50 includes names v2 lacks (CRWV, NBIS, IREN, APLD, ALAB, CRDO, FN, COHR, CLS, TER, MPWR, RDDT, TEM, DELL — verify exact delta on day 1). Extend the existing ingest functions' universe lists; do not duplicate the functions.
+Ingestion to build in Phase 1 (HP-1's own, not reused): a daily price loader (FMP or Polygon) for all 50 names → `hp1.prices`, and a weekly macro loader → `hp1.macro_gauges`. Universe = HP-1's 50 (CRWV, NBIS, IREN, APLD, ALAB, CRDO, FN, COHR, CLS, TER, MPWR, RDDT, TEM, DELL and the rest — full list in HP1_SPEC_v1.1 §2). Discipline rule unchanged: **everything HP-1 writes lives under `hp1`.**
 
 ### 2.3 Engine
 
@@ -90,7 +90,7 @@ aiq_scores       (reuse v2's aiq_rubric table shape, hp1 copy; port 20 seeds, qu
 fable_calibration (VIEW: per verdict-class forward 5/10/21-day returns vs CONFIRM baseline)
 ```
 
-Auth: existing Supabase auth, two allowed emails (Terry write, mom read-only via RLS role).
+Auth: the new project's Supabase Auth, two users — Terry (owner/write), mom (viewer/read-only). RLS enforced via `hp1.profiles.role` and `hp1.is_owner()` (see `hp1_schema.sql`). Server jobs (engine Action, Fable function) write via the service_role key, which bypasses RLS.
 
 ---
 
