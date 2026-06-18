@@ -1325,3 +1325,25 @@ Mid-session the HP-1 topology flipped **shared → standalone** (main commits `9
 1. Read `CLAUDE.md`, then the S35 handoff above.
 2. Get Terry's price source + key (gates everything). Then build in `engine/`: price loader → `hp1.prices`, adapt `hp1_engine.py` to write `hp1.engine_runs`/`engine_ranks` (per-view × per-sleeve grain), the GitHub Action, and the macro loader.
 3. Revert the moot ingestion extension (#23) per the handoff; then the frontend fork (`terry-zero-in/hp1`).
+
+---
+
+## SESSION S36 (2026-06-18, HP-1 engine + price/macro loaders — Phase 1 data layer complete)
+
+**Note:** Sessions S10–S36 are logged in `docs/handoffs/` per-session. This entry is a pointer.
+
+Built the entire HP-1 Phase 1 data layer on top of S35's standalone DB and merged it (#28/#29/#30): the engine (`compute_run`: prices → per-view × per-sleeve ranks → `engine_runs`/`engine_ranks`), the yfinance price loader, the daily GitHub Action, the macro-gauge loader (NAAIM/AAII/CNN F&G → `macro_gauges`), an offline engine preview, and a pooler-safety fix. All verified on **real data** (engine: 50 names → 200 rows, breadth 80%/gate 1.0; macro reproduces Terry's oracles F&G 32.7 / AAII −8.1 / NAAIM 79.27). Nothing is live yet — the `hp1.*` data tables are empty pending Terry setting `HP1_DB_URL` + running the backfill.
+
+- **Data layer DONE + merged** — engine, price loader, macro loader, daily Action, offline preview (`engine/hp1_*.py`). 29 engine tests pass; write paths dry-run-verified vs live DB (0 residue).
+- **DB state** — schema live on `uetclnhbubmkwbherwkw` (universe 53, anth_state 1, 3 migrations); **prices/engine_runs/engine_ranks/macro_gauges all 0** until first run.
+- **Deviation** — Core is price-only (`v1.2-priceonly-core`); §5 fundamental overlay blends in when Tier-A data lands in `hp1.*`.
+- **Pending Terry** — (1) `HP1_DB_URL` secret (transaction-pooler string) + run `HP-1 engine (daily)` Action with `period=3y` → first live data; (2) create `terry-zero-in/hp1` repo → frontend phase.
+
+**Full record:** `docs/handoffs/2026-06-18-S36-hp1-engine-macro-loaders.md`
+
+**Recommendation:** the backend is done and proven — highest-value next move is the **frontend fork** once `terry-zero-in/hp1` exists. Don't start the Core §5 overlay or the Fable orchestrator yet (both need upstream inputs / a key + scope decision). Use `python engine/hp1_smoke.py` for fast real-data sanity checks.
+
+**Next session — start here:**
+1. Read `CLAUDE.md`, then the S36 handoff above.
+2. If Terry has run the backfill: verify the live run (counts + spot-check ranks vs `hp1_smoke.py`), then THS-110 data foundation is Done.
+3. If `terry-zero-in/hp1` exists: add it to scope and start the frontend fork — Today surface first, per `docs/hp1/2026-06-12-hp1-dashboard-design.md` §5, wired to `hp1.*`.
