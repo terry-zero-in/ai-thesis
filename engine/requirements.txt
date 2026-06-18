@@ -5,4 +5,5 @@ pandas==2.2.3
 numpy==2.0.2
 psycopg[binary]==3.2.13
 yfinance>=0.2.40
+xlrd>=2.0          # AAII legacy .xls (macro loader)
 pytest==9.1.0

@@ -126,3 +126,38 @@ def write_run(conn: psycopg.Connection, run: dict, ranks: list[dict]) -> str:
         )
     conn.commit()
     return str(run_id)
+
+
+def fetch_latest_macro(conn: psycopg.Connection) -> dict | None:
+    """Most recent hp1.macro_gauges row (for the loader's carry-forward), or None."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT as_of, naaim, aaii_bullish, aaii_bearish, aaii_spread, fear_greed, source "
+            "FROM hp1.macro_gauges ORDER BY as_of DESC LIMIT 1"
+        )
+        row = cur.fetchone()
+        if row is None:
+            return None
+        cols = [d.name for d in cur.description]
+    return dict(zip(cols, row))
+
+
+def upsert_macro_gauges(conn: psycopg.Connection, row: dict) -> int:
+    """Idempotent upsert of one macro_gauges row keyed by as_of."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO hp1.macro_gauges
+              (as_of, naaim, aaii_bullish, aaii_bearish, aaii_spread, fear_greed, source)
+            VALUES
+              (%(as_of)s, %(naaim)s, %(aaii_bullish)s, %(aaii_bearish)s,
+               %(aaii_spread)s, %(fear_greed)s, %(source)s)
+            ON CONFLICT (as_of) DO UPDATE SET
+              naaim = EXCLUDED.naaim, aaii_bullish = EXCLUDED.aaii_bullish,
+              aaii_bearish = EXCLUDED.aaii_bearish, aaii_spread = EXCLUDED.aaii_spread,
+              fear_greed = EXCLUDED.fear_greed, source = EXCLUDED.source
+            """,
+            row,
+        )
+    conn.commit()
+    return 1
