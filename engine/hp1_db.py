@@ -35,7 +35,12 @@ def connect() -> psycopg.Connection:
             "HP1_DB_URL is not set. Provide the standalone HP-1 project's Postgres "
             "connection string (Supabase pooler URI) — see hp1_db.py docstring."
         )
-    return psycopg.connect(dsn)
+    # prepare_threshold=None disables psycopg's client-side prepared statements so
+    # the connection works through Supabase's connection pooler in BOTH transaction
+    # (6543) and session (5432) modes — transaction pooling otherwise breaks
+    # auto-prepared statements across the shared backends. GitHub Actions reaches
+    # the DB only via the pooler (the direct host is IPv6-only).
+    return psycopg.connect(dsn, prepare_threshold=None)
 
 
 def fetch_universe(conn: psycopg.Connection) -> pd.DataFrame:
