@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   AI Thesis — BASIS INDIGO theme. Re-skinned 2026-06-01 from the Basis app
-   design system (Basis App.html / basis-design-system.css). Replaces the prior
-   Iris × Voltage v2.0 violet+lime system with the unified Basis language:
-   indigo #4F6BD6 signal, near-black surfaces, Geist + JetBrains Mono,
-   ~95% monochrome / 3% semantic / 2% signal. "Dark default · Light parity."
+   AI Thesis — COVENANT theme. Re-skinned 2026-06-18: token VALUES repointed
+   onto the Covenant design system (covenantdesignsystem.html) — accent #5468FF,
+   surface ladder #0D0E10/#141619/#1B1D21 (sb/canvas/surface), Covenant tx text
+   scale + pos/warn/neg semantics, Geist + JetBrains Mono. Token NAMES preserved
+   (the re-skin mechanism documented below), so the ~682 component refs inherit
+   the new palette unchanged. Prior: Basis Indigo #4F6BD6. "Dark default · Light
+   parity."
 
    LAMBO COLOR PASS 2026-06-02: the entire near-black surface ladder is unified
    on ONE cool-blue axis (hue ~224°, the same hue as the #4F6BD6 signal) so
@@ -71,53 +73,53 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
 
   /* App-shell structural surfaces — Linear-style frame (Basis App). */
   --app-black:     #000000;
-  --frame:         #08090C;  /* deepest gutter behind the shell */
-  --rail:          #0B0C0F;  /* sidebar fill */
-  --doctrine-card: #191B21;  /* raised canvas cards (callouts) */
-  --surface-panel: #14151A;  /* right inspector panel */
-  --surface-sunken:#0E0F13;  /* recessed wells: charts, tables */
-  --tile:          #454954;  /* workspace cube / avatar chip */
+  --frame:         #0D0E10;  /* deepest gutter — Covenant sb */
+  --rail:          #0D0E10;  /* sidebar fill — Covenant sb */
+  --doctrine-card: #212429;  /* raised cards — Covenant surface-2 */
+  --surface-panel: #1B1D21;  /* right inspector panel — Covenant surface */
+  --surface-sunken:#101316;  /* recessed wells — Covenant code-bg */
+  --tile:          #3A3D43;  /* workspace cube / avatar chip — Covenant muted-solid */
 
   /* Atmosphere — marketing/onboarding gradients ONLY (never data UI). */
   --void:        #000000;
-  --pitch:       #0B0C0F;
-  --atm-carbon:  #101115;
-  --atm-graphite:#23252C;
-  --atm-steel:   #3B3F4A;
-  --mist:        #A6AEB8;
-  --frost-bg:    #D6DAE4;
+  --pitch:       #0D0E10;
+  --atm-carbon:  #141619;
+  --atm-graphite:#212429;
+  --atm-steel:   #282B31;
+  --mist:        #9CA3AE;
+  --frost-bg:    #E8EAED;
 
-  /* Surfaces — Basis dark elevation ladder (no shadows; the ladder is depth). */
-  --jet:    #0B0C0F;  /* L0 · sidebar fill (rail) — cool near-black, hue 224° */
-  --onyx:   #101115;  /* L1 · canvas — one step above sidebar */
-  --carbon: #15171C;  /* L2 · cards, rows, panels — Terry's anchor tone */
-  --steel:  #25282F;  /* L3 · borders / elevated neutral */
+  /* Surfaces — Covenant dark elevation ladder (sb < canvas < surface). */
+  --jet:    #0D0E10;  /* L0 · sidebar — Covenant sb */
+  --onyx:   #141619;  /* L1 · canvas — Covenant canvas */
+  --carbon: #1B1D21;  /* L2 · cards, rows, panels — Covenant surface */
+  --steel:  #2E3137;  /* L3 · borders / elevated — Covenant hairline-strong */
 
   /* Indigo — the brand signal (was Iris violet). Conviction ≥75, active state,
      focus rings, links, selection, score bars, forecast. Never decorative. */
   --iris-50:  #EEF1FB;
   --iris-100: #D6DEF7;
   --iris-200: #B3C0EE;  /* light signal text */
-  --iris-300: #8AA0EE;  /* bridge · hover lift · forecast */
-  --iris-500: #6B83E2;  /* vivid hover */
-  --iris-600: #4F6BD6;  /* BRAND BASE — the signal */
-  --iris-700: #2C3C95;  /* pressed · deep */
-  --iris-900: #1A2156;  /* deepest */
+  --iris-300: #7C8CFF;  /* Covenant ac-text · hover lift · forecast */
+  --iris-500: #6B7CFF;  /* Covenant ac-hover */
+  --iris-600: #5468FF;  /* BRAND BASE — Covenant ac (the signal) */
+  --iris-700: #465AE6;  /* Covenant ac-active · pressed */
+  --iris-900: #1A1E3A;  /* Covenant ac-subtle · deepest */
 
   /* Voltage — retired as neon-lime. Repointed to the Basis primary-CTA indigo
      ramp so existing one-CTA-per-page buttons render on-theme (indigo fill,
      white label, hover steps DEEPER so contrast holds — the Basis rule). */
-  --voltage:     #3B51C0;  /* primary CTA fill (= --accent-active) */
-  --voltage-hi:  #2C3C95;  /* hover — steps deeper, label stays legible */
-  --voltage-lo:  #22306E;  /* active · pressed */
+  --voltage:     #465AE6;  /* primary CTA fill — Covenant ac-active (white label passes AA 5.43:1) */
+  --voltage-hi:  #3D4DCC;  /* hover — steps deeper, white label holds */
+  --voltage-lo:  #2C3C95;  /* active · pressed */
   --voltage-ink: #FFFFFF;  /* label on indigo CTA — white passes */
 
-  /* Frost — text + neutrals against the dark (Basis text scale). */
+  /* Frost — text + neutrals against the dark (Covenant tx scale). */
   --white:    #FFFFFF;
-  --frost-100:#A6AEB8;  /* secondary text */
-  --frost-300:#69737F;  /* tertiary text */
-  --frost-500:#565E68;  /* muted text */
-  --frost-700:#2E323A;  /* emphasis border — on the 224° axis */
+  --frost-100:#9CA3AE;  /* secondary text — Covenant tx-2 */
+  --frost-300:#8C929D;  /* tertiary text — Covenant tx-3 */
+  --frost-500:#5A5F68;  /* muted text — Covenant tx-4 */
+  --frost-700:#2E3137;  /* emphasis border — Covenant hairline-strong */
 
   /* ─── SEMANTIC ALIASES (consumer interface, do not move) ──────────────── */
 
@@ -183,22 +185,22 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --accent:         var(--iris-600);     /* #4F6BD6 · indigo — THE signal */
   --accent-hover:   var(--iris-300);     /* #8AA0EE · bridge for hover lift */
   --accent-pressed: var(--iris-700);     /* #2C3C95 · deepest on active/pressed */
-  --accent-active:  #3B51C0;             /* primary CTA fill — white label passes */
-  --accent-deep:    #2C3C95;             /* primary CTA hover — stays deep */
-  --accent-bg:      #181D38;             /* selected-row / conviction-chip bg */
-  --accent-soft:    rgba(79,107,214,.12);
-  --accent-border:  rgba(79,107,214,.40);
-  --accent-glow:    rgba(79,107,214,.22);
+  --accent-active:  #465AE6;             /* primary CTA fill — Covenant ac-active (white label passes AA) */
+  --accent-deep:    #3D4DCC;             /* primary CTA hover — steps deeper */
+  --accent-bg:      #1A1E3A;             /* selected-row / conviction-chip bg — Covenant ac-subtle */
+  --accent-soft:    rgba(84,104,255,.10);
+  --accent-border:  rgba(84,104,255,.45);
+  --accent-glow:    rgba(84,104,255,.18);
   --on-accent:      var(--white);        /* white on indigo CTA — readable */
-  --forecast-line:  #8AA0EE;             /* forecast stroke — lightened indigo */
+  --forecast-line:  #7C8CFF;             /* forecast stroke — Covenant ac-text */
 
   /* Semantic — truth states only, never decorative (Basis values). Severity
      ladder is INDEPENDENT of accent. --info tracks --accent so info chips
      inherit the brand current. success emerald / warning amber / danger red /
      neutral slate. */
-  --success:#34D399; --warning:#E2A33C; --danger:#EE585C; --neutral:#8893A0; --info:var(--accent);
-  --success-soft:rgba(52,211,153,.10); --warning-soft:rgba(226,163,60,.10);
-  --danger-soft:rgba(238,88,92,.10); --info-soft:rgba(79,107,214,.08);
+  --success:#3FB68B; --warning:#E0A34E; --danger:#EE585C; --neutral:#808691; --info:var(--accent);  /* danger nudged from Covenant neg #E5484D → text-safe on surface (AA 4.96:1); --danger-soft/-bg keep the neg channel */
+  --success-soft:rgba(63,182,139,.10); --warning-soft:rgba(224,163,78,.10);
+  --danger-soft:rgba(229,72,77,.10); --info-soft:rgba(84,104,255,.08);
 
   /* ── Pastel-tier semantic colors (Iris × Voltage v2.0 chip system) ────
      The chip system uses a SOFTER, more pastel value for chip text on
@@ -209,21 +211,21 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
      Convention by chip shape:
        • Fully rounded pill (9999px)  = identity/label (Tier, Layer, Info/Link)
        • Rounded rect (6px)           = transient state (delta, warning) */
-  --success-text:        #6EE7B7;             /* mint pastel — High-tier, +delta */
-  --success-text-fill:   rgba(110,231,183,.08);
-  --success-text-border: rgba(110,231,183,.25);
+  --success-text:        #5FCFA4;             /* Covenant pos-text — High-tier, +delta */
+  --success-text-fill:   rgba(95,207,164,.08);
+  --success-text-border: rgba(95,207,164,.25);
 
-  --warning-text:        #F5C268;             /* amber pastel — Low-tier, gate-hit */
-  --warning-text-fill:   rgba(245,194,107,.08);
-  --warning-text-border: rgba(245,194,107,.25);
+  --warning-text:        #F0BE72;             /* Covenant warn-text — Low-tier, gate-hit */
+  --warning-text-fill:   rgba(240,190,114,.08);
+  --warning-text-border: rgba(240,190,114,.25);
 
-  --danger-text:         #FCA5A5;             /* coral pastel — Avoid-tier, −delta */
-  --danger-text-fill:    rgba(252,165,165,.08);
-  --danger-text-border:  rgba(252,165,165,.25);
+  --danger-text:         #FF6166;             /* Covenant neg-text — Avoid-tier, −delta */
+  --danger-text-fill:    rgba(255,97,102,.08);
+  --danger-text-border:  rgba(255,97,102,.25);
 
-  --info-text:           var(--iris-300);     /* indigo pastel #8AA0EE — Info/Link */
-  --info-text-fill:      rgba(138,160,238,.08);
-  --info-text-border:    rgba(138,160,238,.25);
+  --info-text:           var(--iris-300);     /* Covenant ac-text #7C8CFF — Info/Link */
+  --info-text-fill:      rgba(124,140,255,.08);
+  --info-text-border:    rgba(124,140,255,.25);
   /* Status-glyph token map (resolved §2.2) — all share circle / rounded-square primitive language */
   --status-pending: var(--text-3);
   --status-active: var(--text-2);
@@ -295,14 +297,14 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --surface-panel:#FFFFFF; --surface-sunken:#F6F7F9; --tile:#D3D5DA;
   --atm-carbon:#FBFBFC; --atm-graphite:#FFFFFF; --atm-steel:#D3D5DA; --mist:#4F5A66; --frost-bg:#11151A;
 
-  --jet:#F1F2F4; --onyx:#FBFBFC; --carbon:#FFFFFF; --steel:#E6E7EA;
+  --jet:#ECEFF4; --onyx:#F5F7FA; --carbon:#FFFFFF; --steel:#CBD1D9;
 
-  --iris-50:#22306E; --iris-100:#2C3C8C; --iris-200:#3D4FB5; --iris-300:#33449C;
-  --iris-500:#3D4FB5; --iris-600:#3D4FB5; --iris-700:#22306E; --iris-900:#11183B;
+  --iris-50:#22306E; --iris-100:#2C3C8C; --iris-200:#5468FF; --iris-300:#4858E6;
+  --iris-500:#4858E6; --iris-600:#4F46E5; --iris-700:#3D4DCC; --iris-900:#11183B;
 
-  --voltage:#2C3C8C; --voltage-hi:#22306E; --voltage-lo:#22306E; --voltage-ink:#FFFFFF;
+  --voltage:#3D4DCC; --voltage-hi:#2C3C8C; --voltage-lo:#2C3C8C; --voltage-ink:#FFFFFF;
 
-  --white:#11151A; --frost-100:#4F5A66; --frost-300:#8893A0; --frost-500:#9AA4B0; --frost-700:#D3D5DA;
+  --white:#1A1D23; --frost-100:#565C66; --frost-300:#666D77; --frost-500:#9AA0AA; --frost-700:#CBD1D9;
 
   --canvas:var(--onyx); --sidebar:var(--jet); --surface:var(--carbon); --surface-2:var(--carbon);
   --elevated:#F6F7F9; --hover-lift:#F4F5F7; --row-hover:#F4F5F7;
@@ -318,19 +320,19 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --border-card:#E6E7EA; --border-control:#E6E7EA; --border-emphasis:#D3D5DA;
   --border-inset:#EDEEF1; --border-sunken:#E6E7EA; --border-plot:#E6E7EA; --grid-line:#EDEEF1;
 
-  --accent:var(--iris-600); --accent-hover:#33449C; --accent-pressed:var(--iris-700);
-  --accent-active:#2C3C8C; --accent-deep:#22306E; --accent-bg:#E8EBFA;
-  --accent-soft:rgba(61,79,181,.10); --accent-border:rgba(61,79,181,.40);
-  --accent-glow:rgba(61,79,181,.18); --on-accent:#FFFFFF; --forecast-line:#3D4FB5;
+  --accent:var(--iris-600); --accent-hover:#4858E6; --accent-pressed:var(--iris-700);
+  --accent-active:#3D4DCC; --accent-deep:#2C3C8C; --accent-bg:#ECEEFF;
+  --accent-soft:rgba(84,104,255,.08); --accent-border:rgba(84,104,255,.40);
+  --accent-glow:rgba(84,104,255,.16); --on-accent:#FFFFFF; --forecast-line:#4F46E5;
 
-  --success:#0E9C6B; --warning:#B07614; --danger:#C23A38; --neutral:#5F6A75;
-  --success-soft:rgba(14,156,107,.12); --warning-soft:rgba(176,118,20,.12);
-  --danger-soft:rgba(194,58,56,.12); --info-soft:rgba(61,79,181,.10);
+  --success:#177053; --warning:#A64D07; --danger:#C5221D; --neutral:#666D77;  /* semantic-as-text on white → Covenant pos-text/warn-text/neg-text (AA-safe); soft fills below keep the bright Covenant channel */
+  --success-soft:rgba(47,163,122,.12); --warning-soft:rgba(224,163,78,.12);
+  --danger-soft:rgba(229,72,77,.12); --info-soft:rgba(84,104,255,.10);
 
-  --success-text:#0E9C6B; --success-text-fill:rgba(14,156,107,.10); --success-text-border:rgba(14,156,107,.30);
-  --warning-text:#B07614; --warning-text-fill:rgba(176,118,20,.10); --warning-text-border:rgba(176,118,20,.30);
-  --danger-text:#C23A38; --danger-text-fill:rgba(194,58,56,.10); --danger-text-border:rgba(194,58,56,.30);
-  --info-text:var(--iris-300); --info-text-fill:rgba(61,79,181,.10); --info-text-border:rgba(61,79,181,.30);
+  --success-text:#177053; --success-text-fill:rgba(23,112,83,.10); --success-text-border:rgba(23,112,83,.30);
+  --warning-text:#A64D07; --warning-text-fill:rgba(166,77,7,.10); --warning-text-border:rgba(166,77,7,.30);
+  --danger-text:#C5221D; --danger-text-fill:rgba(197,34,29,.10); --danger-text-border:rgba(197,34,29,.30);
+  --info-text:var(--iris-300); --info-text-fill:rgba(84,104,255,.10); --info-text-border:rgba(84,104,255,.30);
 
   --status-blocked:var(--warning); --status-critical:var(--danger);
 }
