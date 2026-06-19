@@ -109,8 +109,8 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   /* Voltage — retired as neon-lime. Repointed to the Basis primary-CTA indigo
      ramp so existing one-CTA-per-page buttons render on-theme (indigo fill,
      white label, hover steps DEEPER so contrast holds — the Basis rule). */
-  --voltage:     #5468FF;  /* primary CTA fill — Covenant ac */
-  --voltage-hi:  #465AE6;  /* hover — Covenant ac-active */
+  --voltage:     #465AE6;  /* primary CTA fill — Covenant ac-active (white label passes AA 5.43:1) */
+  --voltage-hi:  #3D4DCC;  /* hover — steps deeper, white label holds */
   --voltage-lo:  #2C3C95;  /* active · pressed */
   --voltage-ink: #FFFFFF;  /* label on indigo CTA — white passes */
 
@@ -185,8 +185,8 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --accent:         var(--iris-600);     /* #4F6BD6 · indigo — THE signal */
   --accent-hover:   var(--iris-300);     /* #8AA0EE · bridge for hover lift */
   --accent-pressed: var(--iris-700);     /* #2C3C95 · deepest on active/pressed */
-  --accent-active:  #5468FF;             /* primary CTA fill — Covenant ac */
-  --accent-deep:    #465AE6;             /* primary CTA hover — Covenant ac-active */
+  --accent-active:  #465AE6;             /* primary CTA fill — Covenant ac-active (white label passes AA) */
+  --accent-deep:    #3D4DCC;             /* primary CTA hover — steps deeper */
   --accent-bg:      #1A1E3A;             /* selected-row / conviction-chip bg — Covenant ac-subtle */
   --accent-soft:    rgba(84,104,255,.10);
   --accent-border:  rgba(84,104,255,.45);
@@ -198,7 +198,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
      ladder is INDEPENDENT of accent. --info tracks --accent so info chips
      inherit the brand current. success emerald / warning amber / danger red /
      neutral slate. */
-  --success:#3FB68B; --warning:#E0A34E; --danger:#E5484D; --neutral:#808691; --info:var(--accent);
+  --success:#3FB68B; --warning:#E0A34E; --danger:#EE585C; --neutral:#808691; --info:var(--accent);  /* danger nudged from Covenant neg #E5484D → text-safe on surface (AA 4.96:1); --danger-soft/-bg keep the neg channel */
   --success-soft:rgba(63,182,139,.10); --warning-soft:rgba(224,163,78,.10);
   --danger-soft:rgba(229,72,77,.10); --info-soft:rgba(84,104,255,.08);
 
@@ -302,7 +302,7 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --iris-50:#22306E; --iris-100:#2C3C8C; --iris-200:#5468FF; --iris-300:#4858E6;
   --iris-500:#4858E6; --iris-600:#4F46E5; --iris-700:#3D4DCC; --iris-900:#11183B;
 
-  --voltage:#5468FF; --voltage-hi:#3D4DCC; --voltage-lo:#3D4DCC; --voltage-ink:#FFFFFF;
+  --voltage:#3D4DCC; --voltage-hi:#2C3C8C; --voltage-lo:#2C3C8C; --voltage-ink:#FFFFFF;
 
   --white:#1A1D23; --frost-100:#565C66; --frost-300:#666D77; --frost-500:#9AA0AA; --frost-700:#CBD1D9;
 
@@ -321,11 +321,11 @@ input[type="week"]:hover::-webkit-calendar-picker-indicator{
   --border-inset:#EDEEF1; --border-sunken:#E6E7EA; --border-plot:#E6E7EA; --grid-line:#EDEEF1;
 
   --accent:var(--iris-600); --accent-hover:#4858E6; --accent-pressed:var(--iris-700);
-  --accent-active:#5468FF; --accent-deep:#3D4DCC; --accent-bg:#ECEEFF;
+  --accent-active:#3D4DCC; --accent-deep:#2C3C8C; --accent-bg:#ECEEFF;
   --accent-soft:rgba(84,104,255,.08); --accent-border:rgba(84,104,255,.40);
   --accent-glow:rgba(84,104,255,.16); --on-accent:#FFFFFF; --forecast-line:#4F46E5;
 
-  --success:#2FA37A; --warning:#E0A34E; --danger:#E5484D; --neutral:#666D77;
+  --success:#177053; --warning:#A64D07; --danger:#C5221D; --neutral:#666D77;  /* semantic-as-text on white → Covenant pos-text/warn-text/neg-text (AA-safe); soft fills below keep the bright Covenant channel */
   --success-soft:rgba(47,163,122,.12); --warning-soft:rgba(224,163,78,.12);
   --danger-soft:rgba(229,72,77,.12); --info-soft:rgba(84,104,255,.10);
 
