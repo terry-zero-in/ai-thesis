@@ -2,26 +2,40 @@
   "schema": "autoresearch/score.v1",
   "lane": "C",
   "title": "Memo citation-validation leak rate → 0 (held-out tickers)",
-  "label": "baseline",
-  "editable_surface": "supabase/functions/_shared/aiq-drafts.ts (parse/range validation), memo-context.ts",
-  "commit": "43951c4875f9e5e4262fc4e01ace768ab1965245",
-  "generated_at": "2026-06-24T07:04:12.415Z",
+  "label": "validator-built",
+  "editable_surface": "supabase/functions/_shared/memo-citations.ts (the validator), aiq-drafts.ts (parse/range validation), memo-context.ts",
+  "commit": "c91ba51bbdec593f8f32b1b70c18d5ec904fe333",
+  "generated_at": "2026-06-24T08:05:15.838Z",
   "node_version": "v24.14.1",
   "metric": {
     "name": "memo_citation_leak_rate",
+    "contract": "strict — tickers + numbers (deltas/scores/$values/macro) must trace to context; tol ±0.1 / $2%",
+    "validator": "supabase/functions/_shared/memo-citations.ts (validateMemoCitations)",
+    "validator_present": true,
+    "validator_unit_green": true,
+    "held_out_tickers": [
+      "AMD",
+      "MDB",
+      "NET",
+      "CRM",
+      "ADBE",
+      "ZS",
+      "INTC",
+      "IBM"
+    ],
     "runnable_offline": false,
-    "status": "NEEDS_VALIDATOR",
-    "reason": "compute-daily-memo (THS-65) synthesizes memos via Claude but ships NO deterministic citation validator in-tree as of this baseline. The nearest existing deterministic citation surface is aiq-drafts.ts (parseAiqDraft + range validation), exercised by the regression below. A memo citation-validation harness over a held-out ticker set (leak rate → 0) is the BUILD TARGET of this lane, not an artifact to reuse. THS-10/THS-113 are Linear refs, not code found in this tree this session.",
-    "terry_slot": true,
-    "held_out_set": "[TERRY] held-out ticker set not yet defined — see program.md Lane C"
+    "status": "VALIDATOR_BUILT_LIVE_PENDING",
+    "reason": "Deterministic validator built + unit-green offline (memo-citations.test.ts). The leak-rate headline requires generating memos for the held-out tickers via the model (online) + wiring the validator as a post-generation gate in compute-daily-memo — that wiring is the lane's first experiment, not done here, so live memo behavior is unchanged. Target: leak_rate = 0, unhandled = 0.",
+    "terry_slot": false
   },
   "regression": {
     "files": [
+      "memo-citations.test.ts",
       "aiq-drafts.test.ts",
       "memo-context.test.ts"
     ],
-    "tests": 19,
-    "passed": 19,
+    "tests": 28,
+    "passed": 28,
     "failed": 0,
     "all_green": true
   },

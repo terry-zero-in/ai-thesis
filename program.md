@@ -72,7 +72,7 @@ The composite must tie out to the spec's worked examples, and the **THS-64 walk-
 - **Composite tie-out + THS-64 invariants: 47 tests green, offline.**
 - **v2 Sharpe replication: `BLOCKED_NEEDS_HISTORY`.** The replication needs multi-year point-in-time price/score history (`prices_raw` + `scores_history`) not present offline — documented in `docs/SESSION_NOTES.md` (THS-64 row: *"can't be tested locally — needs multi-year history"*). The offline signal is the engine's unit-greenness; the headline replication number cannot be honestly produced offline and is NOT stubbed.
 
-> **[TERRY] methodology slot — Lane B:** Pin the v2 anchor: (1) which v2 strategy/row is the reference Sharpe (e.g. a row in `results_36m_v2.csv`, or a fresh THS-64 run over a named historical window), (2) the exact window + universe + rebalance cadence to compare on, (3) whether the ±10% is on net or gross Sharpe. Then either point the loop at backfilled history or mark the headline as a history-backfill dependency (THS — backtest blocked on snapshots).
+> **DECIDED 2026-06-24 (Terry deferred to Claude's judgement) — Lane B v2 anchor:** "v2" = the realized backtest of the hand-scored 20-name slate (§Part 3) held equal-weight, monthly rebalance, 10bps/side, Tier-A factors only. The automated THS-64 engine (top-N from the full universe) must land within ±10% of THAT book's Sharpe. This is the only "v2" in the algorithm spec; the HP-1 `results_36m_v2.csv` momentum rows are a filename collision, NOT the anchor. **Status: deferred — needs multi-year point-in-time history (`prices_raw` + `scores_history`) to run; until then a documented data dependency, not a failing gate.** Terry may revisit window/cost or override the anchor.
 
 ### The loop
 ```
@@ -93,16 +93,16 @@ Every factual claim a synthesized memo makes must trace to its provided context 
 
 ### Metric (mechanically scored, on HELD-OUT tickers only)
 - **Leak rate** = unvalidated claims / total claims, over memos generated for a frozen held-out ticker set. Target: 0, with every failure HANDLED (surfaced, not swallowed).
-- Offline regression signal: `aiq-drafts.test.ts` + `memo-context.test.ts` all green.
+- Offline regression signal: `memo-citations.test.ts` (the validator, 9 tests) + `aiq-drafts.test.ts` + `memo-context.test.ts` all green.
 
 ### Truth anchor
 The memo's own provided context (movers, ≥$1M insider filings, macro state from `memo-context.ts`). A claim validates iff its referenced datum exists in the context. Held-out ticker set: **[TERRY] slot.**
 
 ### BASELINE (committed) — 2026-06-24
 - **AIQ-draft + memo-context deterministic regression: 19 tests green, offline.**
-- **Leak rate: `NEEDS_VALIDATOR`.** The memo synthesizer (THS-65) generates via Claude but ships **no deterministic memo citation validator in this tree** as of this baseline. Building a memo citation-validation harness (parse claims → check each against context → leak rate) over a held-out ticker set IS this lane's build target — not an artifact to reuse. THS-10/THS-113 are Linear refs; no matching validator code was found in this tree this session. Not stubbed; flagged honestly.
+- **Validator BUILT — `VALIDATOR_BUILT_LIVE_PENDING`.** The deterministic memo citation validator now exists (`supabase/functions/_shared/memo-citations.ts`, `validateMemoCitations`) on the STRICT contract Terry chose, and is unit-green offline (28 lane-C regression tests incl. 9 validator tests). The live leak-rate headline is measured over LLM-generated memos for the held-out tickers (online step — memo generation needs the model) + wiring the validator as a post-generation gate in `compute-daily-memo`; that wiring is the lane's first experiment, NOT done here, so live memo behavior is unchanged.
 
-> **[TERRY] methodology slot — Lane C:** Define (1) the held-out ticker set (which tickers, frozen), (2) what counts as a "citation/claim" in a memo (every number? every ticker mention? named filing?), and (3) the validation contract (exact-match to context datum vs tolerance). With those, the loop builds the deterministic validator and drives leak rate → 0. Until then, Lane C's offline signal is the 19-test regression; the headline leak rate is a build dependency.
+> **RESOLVED 2026-06-24 — Lane C contract + held-out set.** Contract = STRICT (Terry): every ticker mention AND every number (signed delta, 1-decimal score, $ insider value, macro reading) must trace to a `MemoContext` datum; tolerance scores/deltas/macro ±0.1, dollar values within 2% (or $0.50); any unmatched claim = a leak; target `leak_rate = 0`, `unhandled = 0`. Held-out set (frozen, disjoint from the slate): AMD, MDB, NET, CRM, ADBE, ZS, INTC, IBM (`autoresearch/lane-c/held-out.json`). Validator built + unit-green. Remaining: generate held-out memos (online) + wire the validator into `compute-daily-memo` — the loop's first experiment. Terry may swap held-out tickers.
 
 ### The loop
 ```

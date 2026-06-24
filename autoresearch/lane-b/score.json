@@ -2,18 +2,18 @@
   "schema": "autoresearch/score.v1",
   "lane": "B",
   "title": "Composite tie-out + THS-64 walk-forward backtest (v2 ±10% Sharpe)",
-  "label": "baseline",
+  "label": "v2-anchor-defined",
   "editable_surface": "supabase/functions/_shared/composite.ts (tie-out), backtest.ts (THS-64, reused not rebuilt)",
-  "commit": "43951c4875f9e5e4262fc4e01ace768ab1965245",
-  "generated_at": "2026-06-24T07:04:12.304Z",
+  "commit": "c91ba51bbdec593f8f32b1b70c18d5ec904fe333",
+  "generated_at": "2026-06-24T08:05:15.726Z",
   "node_version": "v24.14.1",
   "metric": {
     "name": "v2_sharpe_replication_within_10pct",
+    "anchor": "DECIDED 2026-06-24: v2 = realized backtest of the hand-scored 20-name slate (spec Part 3), equal-weight, monthly rebalance, 10bps/side, Tier-A only. Automated THS-64 (top-N from full universe) must land within ±10% of that book's Sharpe. HP-1 results_36m_v2.csv is a filename collision, NOT the anchor.",
     "runnable_offline": false,
     "status": "BLOCKED_NEEDS_HISTORY",
-    "reason": "THS-64 backtest engine is unit-green offline, but replicating the v2 hand-scored Sharpe within ±10% requires multi-year point-in-time price/score history (prices_raw + scores_history) that is not present offline. Documented in docs/SESSION_NOTES.md (THS-64 row). The v2 reference Sharpe + which v2 strategy row to anchor against is a [TERRY] methodology slot — see program.md Lane B.",
-    "terry_slot": true,
-    "reference_csv": "engine/data/results_36m_v2.csv (candidate v2 anchor — NOT yet confirmed by Terry)"
+    "reason": "THS-64 engine is unit-green offline, but the ±10% v2-Sharpe replication needs multi-year point-in-time history (prices_raw + scores_history) absent offline (docs/SESSION_NOTES.md, THS-64 row). Anchor is now defined (above); the headline remains a documented history-backfill dependency, not a failing gate.",
+    "terry_slot": false
   },
   "regression": {
     "files": [

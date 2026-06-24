@@ -51,8 +51,8 @@ const LANES = {
     id: "C",
     title: "Memo citation-validation leak rate → 0 (held-out tickers)",
     surface:
-      "supabase/functions/_shared/aiq-drafts.ts (parse/range validation), memo-context.ts",
-    regression: ["aiq-drafts.test.ts", "memo-context.test.ts"],
+      "supabase/functions/_shared/memo-citations.ts (the validator), aiq-drafts.ts (parse/range validation), memo-context.ts",
+    regression: ["memo-citations.test.ts", "aiq-drafts.test.ts", "memo-context.test.ts"],
   },
 };
 
@@ -173,12 +173,13 @@ function buildLaneB() {
   return {
     metric: {
       name: "v2_sharpe_replication_within_10pct",
+      anchor:
+        "DECIDED 2026-06-24: v2 = realized backtest of the hand-scored 20-name slate (spec Part 3), equal-weight, monthly rebalance, 10bps/side, Tier-A only. Automated THS-64 (top-N from full universe) must land within ±10% of that book's Sharpe. HP-1 results_36m_v2.csv is a filename collision, NOT the anchor.",
       runnable_offline: false,
       status: "BLOCKED_NEEDS_HISTORY",
       reason:
-        "THS-64 backtest engine is unit-green offline, but replicating the v2 hand-scored Sharpe within ±10% requires multi-year point-in-time price/score history (prices_raw + scores_history) that is not present offline. Documented in docs/SESSION_NOTES.md (THS-64 row). The v2 reference Sharpe + which v2 strategy row to anchor against is a [TERRY] methodology slot — see program.md Lane B.",
-      terry_slot: true,
-      reference_csv: "engine/data/results_36m_v2.csv (candidate v2 anchor — NOT yet confirmed by Terry)",
+        "THS-64 engine is unit-green offline, but the ±10% v2-Sharpe replication needs multi-year point-in-time history (prices_raw + scores_history) absent offline (docs/SESSION_NOTES.md, THS-64 row). Anchor is now defined (above); the headline remains a documented history-backfill dependency, not a failing gate.",
+      terry_slot: false,
     },
     regression: reg,
     runnable_offline: false,
@@ -187,19 +188,31 @@ function buildLaneB() {
 }
 
 function buildLaneC() {
-  // Deterministic citation/parse-validation surface runs offline; the memo
-  // citation-VALIDATOR (THS-10/THS-113) that the leak-rate metric scores does
-  // not exist in-tree yet — flagged honestly, not stubbed.
+  // The deterministic memo citation validator now EXISTS (memo-citations.ts,
+  // built 2026-06-24 on Terry's STRICT contract) and is unit-green offline.
+  // The live leak-rate HEADLINE is measured over LLM-generated memos for the
+  // held-out ticker set — an online step (memo generation needs the model),
+  // so it is not produced by this offline harness. Honest, not stubbed.
   const reg = runTests(LANES.C.regression);
+  let heldOut = null;
+  try {
+    heldOut = JSON.parse(
+      readFileSync(join(REPO, "autoresearch", "lane-c", "held-out.json"), "utf-8"),
+    ).held_out_tickers ?? null;
+  } catch { /* held-out set optional */ }
   return {
     metric: {
       name: "memo_citation_leak_rate",
+      contract: "strict — tickers + numbers (deltas/scores/$values/macro) must trace to context; tol ±0.1 / $2%",
+      validator: "supabase/functions/_shared/memo-citations.ts (validateMemoCitations)",
+      validator_present: true,
+      validator_unit_green: reg.all_green,
+      held_out_tickers: heldOut,
       runnable_offline: false,
-      status: "NEEDS_VALIDATOR",
+      status: "VALIDATOR_BUILT_LIVE_PENDING",
       reason:
-        "compute-daily-memo (THS-65) synthesizes memos via Claude but ships NO deterministic citation validator in-tree as of this baseline. The nearest existing deterministic citation surface is aiq-drafts.ts (parseAiqDraft + range validation), exercised by the regression below. A memo citation-validation harness over a held-out ticker set (leak rate → 0) is the BUILD TARGET of this lane, not an artifact to reuse. THS-10/THS-113 are Linear refs, not code found in this tree this session.",
-      terry_slot: true,
-      held_out_set: "[TERRY] held-out ticker set not yet defined — see program.md Lane C",
+        "Deterministic validator built + unit-green offline (memo-citations.test.ts). The leak-rate headline requires generating memos for the held-out tickers via the model (online) + wiring the validator as a post-generation gate in compute-daily-memo — that wiring is the lane's first experiment, not done here, so live memo behavior is unchanged. Target: leak_rate = 0, unhandled = 0.",
+      terry_slot: false,
     },
     regression: reg,
     runnable_offline: false,
