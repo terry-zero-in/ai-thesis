@@ -1347,3 +1347,12 @@ Built the entire HP-1 Phase 1 data layer on top of S35's standalone DB and merge
 1. Read `CLAUDE.md`, then the S36 handoff above.
 2. If Terry has run the backfill: verify the live run (counts + spot-check ranks vs `hp1_smoke.py`), then THS-110 data foundation is Done.
 3. If `terry-zero-in/hp1` exists: add it to scope and start the frontend fork — Today surface first, per `docs/hp1/2026-06-12-hp1-dashboard-design.md` §5, wired to `hp1.*`.
+
+---
+
+## 2026-06-24 — S37: Autoresearch harness → HP-1 repoint + "no real edge" pivot
+- Built the autoresearch harness, then repointed it from retired thesis-v2 to **HP-1** (`engine/hp1_engine.py`). Three lanes baselined live (37 tests green).
+- **Key finding:** HP-1's selection adds ≈ zero risk-adjusted edge over equal-weighting its 50 names (Lane B bootstrap CI straddles zero both windows; reproduces HP-1's own red-team). Raw 2.0–2.4 Sharpe = beta + survivorship + a now-fixed lookahead.
+- **Terry's call:** algorithm needs a redesign to find real edge — next session's primary mission.
+- **⚠️ git:** PR #33 merged only the thesis-v2 install (squash `77bb88a`); the PLTR fix + HP-1 repoint are stranded on branch `claude/infallible-bhabha-e8aaea` @ `bebbee8`. New PR needed to land HP-1 on main.
+- Full detail: `docs/handoffs/2026-06-24-S37-autoresearch-hp1-repoint-edge-pivot.md`
