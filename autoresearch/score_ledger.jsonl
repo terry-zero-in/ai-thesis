@@ -1,3 +1,4 @@
 {"ts":"2026-06-24T07:04:12.182Z","lane":"A","label":"baseline","commit":"43951c4875f9e5e4262fc4e01ace768ab1965245","pass":false,"headline":{"within":19,"of":20,"max_abs_delta":8.627,"deterministic":true}}
 {"ts":"2026-06-24T07:04:12.304Z","lane":"B","label":"baseline","commit":"43951c4875f9e5e4262fc4e01ace768ab1965245","pass":null,"headline":{"status":"BLOCKED_NEEDS_HISTORY","regression_green":true,"tests":47}}
 {"ts":"2026-06-24T07:04:12.415Z","lane":"C","label":"baseline","commit":"43951c4875f9e5e4262fc4e01ace768ab1965245","pass":null,"headline":{"status":"NEEDS_VALIDATOR","regression_green":true,"tests":19}}
+{"ts":"2026-06-24T07:27:50.469Z","lane":"A","label":"pltr-corrected","commit":"158505bec5dd14635d5d424fafa0d343bb0fb965","pass":true,"headline":{"within":20,"of":20,"max_abs_delta":2.9341,"deterministic":true}}

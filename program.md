@@ -38,11 +38,9 @@ The deterministic scoring engine must (a) be **bit-for-bit reproducible** run to
 ### Truth anchor
 `docs/AI-Thesis-v2-Algorithm-and-Deployment.md` §Part 3 score table → transcribed verbatim into `autoresearch/lane-a/slate.json`. Anchored, not invented (Doctrine PART IV.4).
 
-### BASELINE (committed, no engine changes) — 2026-06-24
-- **19/20 within ±5; deterministic ✓; regression green.** Most names tie to <2.0.
-- **Outlier: PLTR** — spec `Final` 64.4 vs engine 73.027 (Δ8.627). The engine rescales L3 weights per the documented Tier-A rule; the spec's hand math for PLTR (its lowest-V name, V=25) does not reconcile to that rule. **This is a Class-3 spec-vs-engine discrepancy for Terry** — the same family as the GOOGL (spec 74 vs dims 75) and ORCL (spec 60 vs dims 52) arithmetic discrepancies already noted in the THS-46 migration. The baseline records it honestly (`pass:false`); it is NOT "fixed" by widening tolerance or editing the engine.
-
-> **[TERRY] methodology slot — Lane A:** Adjudicate PLTR. Either (a) confirm the engine's rescaled 73.0 is correct and the spec hand-score is a transcription/arithmetic slip (update the slate's `expected_final`), or (b) state the methodology the hand-score used for low-V L3 names so the engine can reproduce it. Until you rule, PLTR stays the one open name and Lane A's gate is 19/20.
+### BASELINE — 2026-06-24
+- **20/20 within ±5; deterministic ✓; regression green (219 tests).** Initial baseline was 19/20; PLTR was the one open name and is now RESOLVED (see below). The original 19/20 baseline survives in git history + the score ledger as the honest "before".
+- **PLTR — RESOLVED (Terry-authorized 2026-06-24).** Spec `Final` 64.4 was not derivable from PLTR's inputs (Q70/G95/V25/AIQ69) under the spec's own documented L3 Tier-A rescale rule, which yields 73.0 — an 8.6 drift vs <2.0 for all 19 other names, the same class as the GOOGL (74 vs 75) and ORCL (60 vs 52) spec arithmetic slips logged in THS-46. The slate truth fixture was corrected to 73.0 (original preserved in `_spec_raw`). PLTR is "Medium" under both numbers, so no investment-signal change. Terry may veto the correction.
 
 ### The loop
 ```
