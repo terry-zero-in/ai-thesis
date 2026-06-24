@@ -1,0 +1,30 @@
+{
+  "schema": "autoresearch/score.v1",
+  "lane": "B",
+  "title": "Composite tie-out + THS-64 walk-forward backtest (v2 ±10% Sharpe)",
+  "label": "baseline",
+  "editable_surface": "supabase/functions/_shared/composite.ts (tie-out), backtest.ts (THS-64, reused not rebuilt)",
+  "commit": "43951c4875f9e5e4262fc4e01ace768ab1965245",
+  "generated_at": "2026-06-24T07:04:12.304Z",
+  "node_version": "v24.14.1",
+  "metric": {
+    "name": "v2_sharpe_replication_within_10pct",
+    "runnable_offline": false,
+    "status": "BLOCKED_NEEDS_HISTORY",
+    "reason": "THS-64 backtest engine is unit-green offline, but replicating the v2 hand-scored Sharpe within ±10% requires multi-year point-in-time price/score history (prices_raw + scores_history) that is not present offline. Documented in docs/SESSION_NOTES.md (THS-64 row). The v2 reference Sharpe + which v2 strategy row to anchor against is a [TERRY] methodology slot — see program.md Lane B.",
+    "terry_slot": true,
+    "reference_csv": "engine/data/results_36m_v2.csv (candidate v2 anchor — NOT yet confirmed by Terry)"
+  },
+  "regression": {
+    "files": [
+      "composite.test.ts",
+      "backtest.test.ts"
+    ],
+    "tests": 47,
+    "passed": 47,
+    "failed": 0,
+    "all_green": true
+  },
+  "runnable_offline": false,
+  "pass": null
+}

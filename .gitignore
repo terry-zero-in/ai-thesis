@@ -47,3 +47,6 @@ supabase/.temp
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# autoresearch context-integrity per-session logs (runtime state)
+.context-integrity/

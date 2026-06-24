@@ -1,0 +1,184 @@
+{
+  "schema": "autoresearch/score.v1",
+  "lane": "A",
+  "title": "Engine determinism + 20-name hand-scored slate (±5)",
+  "label": "baseline",
+  "editable_surface": "supabase/functions/_shared/factor-*.ts, composite.ts, concentration.ts, weekly-ranking.ts, stats.ts, metrics.ts",
+  "commit": "43951c4875f9e5e4262fc4e01ace768ab1965245",
+  "generated_at": "2026-06-24T07:04:12.182Z",
+  "node_version": "v24.14.1",
+  "metric": {
+    "name": "slate_tie_out_within_5",
+    "tolerance": 5,
+    "names_total": 20,
+    "names_within_tol": 19,
+    "max_abs_delta": 8.627,
+    "mean_abs_delta": 1.3258,
+    "deterministic": true,
+    "per_name": [
+      {
+        "ticker": "TSM",
+        "expected_final": 86.5,
+        "computed": 86.725,
+        "delta": 0.225,
+        "within_tol": true
+      },
+      {
+        "ticker": "NVDA",
+        "expected_final": 79.7,
+        "computed": 80.15,
+        "delta": 0.45,
+        "within_tol": true
+      },
+      {
+        "ticker": "AVGO",
+        "expected_final": 78,
+        "computed": 78.8,
+        "delta": 0.8,
+        "within_tol": true
+      },
+      {
+        "ticker": "VST",
+        "expected_final": 77.7,
+        "computed": 77.9048,
+        "delta": 0.2048,
+        "within_tol": true
+      },
+      {
+        "ticker": "GEV",
+        "expected_final": 77.6,
+        "computed": 77.7143,
+        "delta": 0.1143,
+        "within_tol": true
+      },
+      {
+        "ticker": "CEG",
+        "expected_final": 74.6,
+        "computed": 74.9286,
+        "delta": 0.3286,
+        "within_tol": true
+      },
+      {
+        "ticker": "VRT",
+        "expected_final": 73.5,
+        "computed": 72.9524,
+        "delta": -0.5476,
+        "within_tol": true
+      },
+      {
+        "ticker": "GOOGL",
+        "expected_final": 77.7,
+        "computed": 78.6585,
+        "delta": 0.9585,
+        "within_tol": true
+      },
+      {
+        "ticker": "MSFT",
+        "expected_final": 74.3,
+        "computed": 74.9024,
+        "delta": 0.6024,
+        "within_tol": true
+      },
+      {
+        "ticker": "AMZN",
+        "expected_final": 71,
+        "computed": 72.439,
+        "delta": 1.439,
+        "within_tol": true
+      },
+      {
+        "ticker": "ANET",
+        "expected_final": 76.6,
+        "computed": 78.325,
+        "delta": 1.725,
+        "within_tol": true
+      },
+      {
+        "ticker": "PLTR",
+        "expected_final": 64.4,
+        "computed": 73.027,
+        "delta": 8.627,
+        "within_tol": false
+      },
+      {
+        "ticker": "CRWD",
+        "expected_final": 67,
+        "computed": 68.0541,
+        "delta": 1.0541,
+        "within_tol": true
+      },
+      {
+        "ticker": "SNOW",
+        "expected_final": 64.4,
+        "computed": 65.5135,
+        "delta": 1.1135,
+        "within_tol": true
+      },
+      {
+        "ticker": "ORCL",
+        "expected_final": 58.7,
+        "computed": 61.6341,
+        "delta": 2.9341,
+        "within_tol": true
+      },
+      {
+        "ticker": "META",
+        "expected_final": 61.4,
+        "computed": 63.9024,
+        "delta": 2.5024,
+        "within_tol": true
+      },
+      {
+        "ticker": "ASML",
+        "expected_final": 79,
+        "computed": 78.625,
+        "delta": -0.375,
+        "within_tol": true
+      },
+      {
+        "ticker": "LRCX",
+        "expected_final": 75.7,
+        "computed": 75.725,
+        "delta": 0.025,
+        "within_tol": true
+      },
+      {
+        "ticker": "NOW",
+        "expected_final": 67.3,
+        "computed": 68.2105,
+        "delta": 0.9105,
+        "within_tol": true
+      },
+      {
+        "ticker": "INTU",
+        "expected_final": 65.5,
+        "computed": 67.0789,
+        "delta": 1.5789,
+        "within_tol": true
+      }
+    ],
+    "pass": false,
+    "source": "docs/AI-Thesis-v2-Algorithm-and-Deployment.md §Part 3 (Hand-scored 20-name deployment slate), score table lines 196-217. Transcribed verbatim — NOT computed, NOT invented. This is the truth the engine must reproduce, never a target the engine is tuned toward."
+  },
+  "regression": {
+    "files": [
+      "factor-q.test.ts",
+      "factor-g.test.ts",
+      "factor-v.test.ts",
+      "factor-m.test.ts",
+      "factor-s.test.ts",
+      "factor-insider.test.ts",
+      "composite.test.ts",
+      "concentration.test.ts",
+      "weekly-ranking.test.ts",
+      "stats.test.ts",
+      "metrics.test.ts"
+    ],
+    "tests": 219,
+    "passed": 219,
+    "failed": 0,
+    "all_green": true
+  },
+  "runnable_offline": true,
+  "pass": false
+}

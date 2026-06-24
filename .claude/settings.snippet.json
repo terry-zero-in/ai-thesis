@@ -1,0 +1,29 @@
+{
+  "_comment": "Autoresearch context-integrity hooks — the MERGE SNIPPET. The repo had no .claude/settings.json, so these three hook blocks were merged into a fresh .claude/settings.json. If a settings.json already exists in a future checkout, hand-merge these entries under hooks.PreToolUse / hooks.PostToolUse / hooks.SessionStart (additive — do not replace existing arrays). Only the context-integrity gate is wired here; no Basis-OS scripts (scope-guard, stop-verify, etc.) are referenced because they do not exist in this repo.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          { "type": "command", "command": "python3 ${CLAUDE_PROJECT_DIR}/.claude/hooks/ci_gate.py", "timeout": 5 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read|Grep|Glob|Bash",
+        "hooks": [
+          { "type": "command", "command": "python3 ${CLAUDE_PROJECT_DIR}/.claude/hooks/ci_record.py", "timeout": 5 }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/ci_session_init.sh", "timeout": 5 }
+        ]
+      }
+    ]
+  }
+}
