@@ -1,44 +1,27 @@
 {
-  "schema": "autoresearch/score.v1",
+  "schema": "autoresearch/score.v2-hp1",
+  "engine": "HP-1 (engine/hp1_engine.py \u2014 corrected t+1 simulator)",
   "lane": "C",
-  "title": "Memo citation-validation leak rate → 0 (held-out tickers)",
-  "label": "validator-built",
-  "editable_surface": "supabase/functions/_shared/memo-citations.ts (the validator), aiq-drafts.ts (parse/range validation), memo-context.ts",
-  "commit": "c91ba51bbdec593f8f32b1b70c18d5ec904fe333",
-  "generated_at": "2026-06-24T08:05:15.838Z",
-  "node_version": "v24.14.1",
+  "title": "Fable review citation-validation leak rate -> 0 (rubric \u00a76/\u00a750)",
+  "label": "baseline",
+  "commit": "b8037ae93089c99ee5e2df20ca906da49221cdb1",
+  "generated_at": "2026-06-24T08:38:11.391040+00:00",
+  "python": "3.12.13",
   "metric": {
-    "name": "memo_citation_leak_rate",
-    "contract": "strict — tickers + numbers (deltas/scores/$values/macro) must trace to context; tol ±0.1 / $2%",
-    "validator": "supabase/functions/_shared/memo-citations.ts (validateMemoCitations)",
-    "validator_present": true,
-    "validator_unit_green": true,
-    "held_out_tickers": [
-      "AMD",
-      "MDB",
-      "NET",
-      "CRM",
-      "ADBE",
-      "ZS",
-      "INTC",
-      "IBM"
-    ],
-    "runnable_offline": false,
+    "name": "fable_review_citation_leak_rate",
+    "validator": "autoresearch/lib/fable_citations.py (validate_fable_review)",
+    "contract": "FABLE_REVIEW_RUBRIC_v1.md \u00a75/\u00a76/\u00a750: every DOWNGRADE/UPGRADE/VETO must carry the required dated {source,date,url} citations; uncited adjustments demote to FLAG. L-confidence findings cannot exceed -5.",
+    "clean_fixture_leak_rate": 0.0,
+    "clean_fixture_unhandled": 0,
     "status": "VALIDATOR_BUILT_LIVE_PENDING",
-    "reason": "Deterministic validator built + unit-green offline (memo-citations.test.ts). The leak-rate headline requires generating memos for the held-out tickers via the model (online) + wiring the validator as a post-generation gate in compute-daily-memo — that wiring is the lane's first experiment, not done here, so live memo behavior is unchanged. Target: leak_rate = 0, unhandled = 0.",
-    "terry_slot": false
+    "live_pending": "URL-liveness (\u00a750 server-side fetch: page resolves + contains the claimed entity/date) + wiring as the Fable orchestrator's post-output gate. Offline half (count/shape/date/magnitude) is enforced + unit-green here."
   },
   "regression": {
-    "files": [
-      "memo-citations.test.ts",
-      "aiq-drafts.test.ts",
-      "memo-context.test.ts"
-    ],
-    "tests": 28,
-    "passed": 28,
+    "passed": 8,
     "failed": 0,
-    "all_green": true
+    "total": 8,
+    "green": true
   },
-  "runnable_offline": false,
-  "pass": null
+  "runnable_offline": true,
+  "pass": true
 }

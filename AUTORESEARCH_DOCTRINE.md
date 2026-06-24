@@ -40,7 +40,7 @@ LOOP FOREVER:
 **This is the meta-guardrail. It exists because confident-stale-recall has repeatedly corrupted projects across sessions.** Before ANY assertion ships — in a commit message, a `program.md`, a `score.json`, a decision-ledger entry, a reply to Terry, or a claim about what the system currently does — classify it. (The enforcing hook is `.claude/hooks/ci_gate.py`; the always-on rule is `.claude/rules/context-integrity.md`.)
 
 ### Class 1 — REPO-STATE claim
-*Examples: "the composite scorer is in `composite.ts`", "`runBacktest` exists", "main is protected", "the memo citation validator is already wired", "this function currently rescales the weights".*
+*Examples: "the ranker is in `hp1_engine.py`", "`simulate` executes at t+1", "main is protected", "the Fable citation validator is already wired", "this function currently z-scores within each view".*
 - **MUST be verified by reading the file / running the command THIS SESSION.**
 - If not verified this session, it ships tagged **`[UNVERIFIED — recalled, not checked this session]`**.
 - **NEVER assert repo state confidently from memory.** Recalled knowledge is stale by default.
@@ -91,7 +91,7 @@ branch-per-experiment  →  harness is the gate  →  "keep" stages a candidate 
 ```
 - Keep/revert is **branch-local.** Promotion to `main` is a separate gated PR.
 - `main` is protected. Respect it.
-- **No auto-applied weight or AIQ changes.** Any proposed change to `LAYER_WEIGHTS`, the AIQ rubric, or live scores is emitted as a **draft proposal** (`status: "draft"`) for Terry to ratify — never written to a live table by the loop. See PART X.
+- **No auto-applied parameter changes.** Any proposed change to the HP-1 factor weights, gate thresholds, top-N/cadence/MA windows, or the Fable rubric is emitted as a **draft proposal** (`status: "draft"`) for Terry to ratify — never written to `hp1_engine.py`'s contract or a live `hp1.*` table by the loop. See PART X.
 - Every landed change needs independent reviewer sign-off + regression coverage.
 
 ---
@@ -143,5 +143,5 @@ The context-integrity gate is its own always-on intervention (metric = confident
 These are not tunables. A lane that cannot honor them does not run.
 
 1. **SEC 206(4)-1 (Investment Advisers Marketing Rule) — no tuned number ships as live performance.** Every metric in this harness is a HARNESS/TEST score on fixtures or a hand-scored slate. It is research instrumentation, not a track record, and must never be presented (to investors, in marketing, in a memo) as realized or expected investment performance. Hypothetical/backtested figures that ever leave the lab carry the rule's required disclosures — and that decision is Terry's, not the loop's.
-2. **No auto-applied weight or AIQ changes.** The loop may PROPOSE changes to `LAYER_WEIGHTS`, the AIQ rubric, or any scoring parameter only as a `status: "draft"` artifact for Terry to ratify. It may never write them to a live table or to `main`. Live AIQ scores are untouched by the harness.
+2. **No auto-applied parameter changes.** The loop may PROPOSE changes to the HP-1 factor weights, gate thresholds, top-N/cadence/MA windows, or the Fable rubric only as a `status: "draft"` artifact for Terry to ratify. It may never edit `hp1_engine.py`'s contract, write a live `hp1.*` table, or push to `main`. Live HP-1 ranks/scores are untouched by the harness.
 3. **Walk-forward only; no look-ahead.** Any backtest reuses the THS-64 walk-forward engine, which rejects scores observed after the rebalance date. No lane may construct a metric that peeks at future data.

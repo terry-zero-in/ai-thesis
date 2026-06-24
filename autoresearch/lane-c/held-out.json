@@ -1,7 +1,0 @@
-{
-  "_doc": "Lane C held-out ticker set — the frozen evaluation tickers the citation validator is NEVER tuned on. The live leak-rate headline is measured ONLY over memos generated for these names (online step: requires LLM memo generation, so it does not run in the offline harness).",
-  "_source": "AI-Thesis universe names that are NOT in the 20-name deployment slate (so they are held out from Lane A too). Drawn from docs/AI-Thesis-v2-Algorithm-and-Deployment.md §Part 3 line ~348 ('not in slate' list: AMD, AI, S, MDB, NET, ESTC, IBM, CRM, ADBE, SAP, WDAY, ZS, INTC). Anchored to the spec, not invented.",
-  "_contract": "STRICT (Terry, 2026-06-24): every ticker mention AND every number (signed delta, 1-decimal score, $ insider value, macro reading) in a memo must trace to a datum in the provided MemoContext. Tolerance: scores/deltas/macro ±0.1; dollar values within 2% (or $0.50). Any unmatched claim = a leak; target leak_rate = 0 with unhandled = 0. Validator: supabase/functions/_shared/memo-citations.ts.",
-  "held_out_tickers": ["AMD", "MDB", "NET", "CRM", "ADBE", "ZS", "INTC", "IBM"],
-  "_note": "Terry may swap any of these. They must stay disjoint from autoresearch/lane-a/slate.json so a name is never both training truth (A) and held-out eval (C)."
-}

@@ -57,10 +57,10 @@ LEDGER_PATH_RE = re.compile(
 # AI-Thesis artifacts: named so a paranoid-mode mention of one as "present"
 # still needs a this-session read backing it.
 KNOWN_ARTIFACTS = [
-    "computeComposite", "runBacktest", "parseAiqDraft", "LAYER_WEIGHTS",
-    "compositeTaxed", "scores_history", "backtest_runs", "aiq_rubric",
-    "aiq_drafts", "memo-context", "compute-daily-memo", "compute-composite-scores",
-    "slate.json", "score.json",
+    "hp1_engine", "hp1_daily_run", "compute_run", "simulate", "factors",
+    "weights", "engine_ranks", "engine_runs", "validate_fable_review",
+    "fable_citations", "results_24m_v2.csv", "results_36m_v2.csv",
+    "current_ranks", "restate_record", "score.json",
 ]
 
 STRONG = [
