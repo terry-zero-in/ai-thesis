@@ -71,8 +71,7 @@ const layout = await page.evaluate(() => {
     maker: (document.body.innerText.match(/maker \([^)]*\)/) || [''])[0] };
 });
 await page.screenshot({ path: new URL('../trade-tab-1440x900.png', import.meta.url).pathname });
-await browser.close();
-server.close();
+await page.close();
 
 if (!rows) {
   console.error('SELF-TEST DID NOT RUN — no console.table captured.');
@@ -99,5 +98,40 @@ console.log('\nLAYOUT / TRADE TAB @ 1440x900');
 for (const [n, ok, got] of lay) console.log('  ' + (ok ? 'PASS  ' : 'FAIL  ') + n.padEnd(30) + got);
 const layBad = lay.filter(([, ok]) => !ok).length;
 
+/* Shadow rows must be VISIBLE in the log table. The strip counting reads that
+   the table refuses to show reads as a broken tool, and that is exactly how it
+   shipped the first time — so assert the render path, not just the state. */
+const shadowPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const ab = { noMom: 0.52, noDrift: 0.55, noSettle: 0.56, macroFlip: 0.54 };
+const seed = [2, 3, 4].map((k, i) => ({
+  ts: Date.now() - (20 - k) * 60000, sessionTs: 1786045000000, k, strike: 64374,
+  price: 64374 + k, delta: [12, -9, 31][i], sigmaUnit: 22.3, z: [0.25, -0.19, 0.65][i],
+  pFull: [0.58, 0.44, 0.71][i], ab, macroOn: false, driftNet: null, mktCents: null,
+  yesT: 57, noT: 38, resolved: ['U', 'U', null][i], finalDelta: [12, -9, null][i],
+  vol: 4.2, auto: true, v: 2 }));
+await shadowPage.addInitScript((rows) => {
+  localStorage.setItem('edge.shadow.v3', JSON.stringify({
+    shadow: { ts: 1786045000000, strike: 64374, pts: [{ k: 1, p: 64374 }], lastK: 5 }, srows: rows }));
+}, seed);
+await shadowPage.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'load' });
+await shadowPage.waitForTimeout(2200);
+await shadowPage.getByText('LOG', { exact: true }).first().click();
+await shadowPage.waitForTimeout(600);
+const sv = await shadowPage.evaluate(() => ({
+  txt: document.body.innerText, sw: document.documentElement.scrollWidth }));
+const shad = [
+  ['shadow rows render in table', (sv.txt.match(/◇/g) || []).length === 3, (sv.txt.match(/◇/g) || []).length],
+  ['table not reported empty', !/Nothing logged yet/.test(sv.txt), String(/Nothing logged yet/.test(sv.txt))],
+  ['strip counts the same reads', /3 reads/.test(sv.txt), (sv.txt.match(/\d+ reads/) || ['—'])[0]],
+  ['resolved shadow row scored', /CORRECT|MISSED/.test(sv.txt), String(/CORRECT|MISSED/.test(sv.txt))],
+  ['no horizontal scroll with shadow rows', sv.sw <= 1440, sv.sw]
+];
+console.log('\nSHADOW ROWS / LOG TAB @ 1440x900');
+for (const [n, ok, got] of shad) console.log('  ' + (ok ? 'PASS  ' : 'FAIL  ') + n.padEnd(38) + got);
+const shadBad = shad.filter(([, ok]) => !ok).length;
+await shadowPage.close();
+await browser.close();
+server.close();
+
 if (errs.length) console.log('page errors:\n  ' + errs.join('\n  '));
-process.exit(bad + layBad);
+process.exit(bad + layBad + shadBad);
