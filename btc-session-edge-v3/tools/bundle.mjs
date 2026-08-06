@@ -52,17 +52,31 @@ export function inject() {
   return { bytes: tpl.length };
 }
 
-/* Proof that inject(extract(x)) === x. Run before trusting the round trip. */
+/* Two proofs, both of which must hold for the shipped file to be trustworthy:
+   1. encode(decode(x)) === x — the round trip loses nothing.
+   2. the bundle's template === src/app.html — nobody edited the source and
+      forgot to inject, which would ship the old app with a new-looking diff. */
 export function verify() {
   const html = readFileSync(BUNDLE, 'utf8');
   const m = html.match(BLOCK);
   if (!m) throw new Error('template block not found');
-  const round = encode(JSON.parse(m[2]));
-  return { identical: round === m[2], original: m[2].length, round: round.length };
+  const decoded = JSON.parse(m[2]);
+  const round = encode(decoded);
+  return {
+    roundTripIdentical: round === m[2],
+    bundleMatchesSrc: decoded === readFileSync(SRC, 'utf8'),
+    bytes: decoded.length
+  };
 }
 
 const cmd = process.argv[2];
 if (cmd === 'extract') console.log('extracted', extract().bytes, 'bytes ->', SRC);
 else if (cmd === 'inject') console.log('injected', inject().bytes, 'bytes ->', BUNDLE);
-else if (cmd === 'verify') console.log(verify());
+else if (cmd === 'verify') {
+  const v = verify();
+  console.log(v);
+  if (!v.roundTripIdentical) console.error('FAIL: bundle round trip is lossy');
+  if (!v.bundleMatchesSrc) console.error('FAIL: index.html is stale — run `node tools/bundle.mjs inject`');
+  process.exit(v.roundTripIdentical && v.bundleMatchesSrc ? 0 : 1);
+}
 else if (cmd) throw new Error('unknown command: ' + cmd);

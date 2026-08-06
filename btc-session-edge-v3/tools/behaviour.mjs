@@ -10,7 +10,7 @@
  *
  * Exit code is the number of failures.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import zlib from 'node:zlib';
@@ -321,4 +321,5 @@ for (const r of rows) {
 }
 console.log('-'.repeat(w + 30));
 console.log(`${rows.length} rows · ${rows.length - fails} PASS · ${fails} FAIL`);
+rmSync(tmp, { force: true });
 process.exit(fails);
