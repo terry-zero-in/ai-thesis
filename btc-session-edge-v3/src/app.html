@@ -573,6 +573,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div style="display:flex; align-items:center; gap:16px; padding:11px 18px; background:#08090A; border-top:1px solid rgba(255,255,255,.10)">
       <button sc-camel-on-click="{{ copyCsv }}" style="flex:0 0 auto; white-space:nowrap; height:26px; padding:0 12px; border-radius:6px; font-size:12px; font-weight:500; color:#06121C; background:#0B84E0" style-hover="background:#1399FD">{{ csvLabel }}</button>
       <button sc-camel-on-click="{{ clearLog }}" style="flex:0 0 auto; white-space:nowrap; height:26px; padding:0 12px; border-radius:6px; font-size:12px; color:#A6AEBB; background:#1A1D23" style-hover="color:#F2F4F7">{{ clearLabel }}</button>
+      <button sc-camel-on-click="{{ copyShadowCsv }}" style="flex:0 0 auto; white-space:nowrap; height:26px; padding:0 12px; border-radius:6px; font-size:12px; color:#A6AEBB; background:#1A1D23" style-hover="color:#F2F4F7">export shadow</button>
       <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#8B94A1">{{ calibFooter }}</span>
       <div style="flex:1; min-width:0"></div>
       <span style="font-size:11px; color:#8B94A1; text-align:right; max-width:640px; line-height:1.45; text-wrap:pretty">{{ provenance }}</span>
@@ -948,7 +949,7 @@ class Component extends DCLogic {
       }
     }
     this.setState({ shadow: s, srows, sAt: Date.now(), sErr: null, sSrc: srcTime == null ? this.state.sSrc : srcTime });
-    lsSet(LSK.shadow, { shadow: s, srows });
+    this.persistShadow();
   }
 
   /* The live model, run against an explicit strike/price/point-chain. */
@@ -970,6 +971,63 @@ class Component extends DCLogic {
             noSettle: this.model(Object.assign({}, arg, { settleAvg: false })).p,
             macroFlip: this.model(Object.assign({}, arg, { macro: !macro })).p } };
   }
+
+  /* Once a session is resolved and scored, the per-read row keeps far more than
+     the scorecard reads. Collapse it to the scoring fields at 3 decimals: the
+     hit rate, Brier and calibration are bit-identical afterwards, at roughly a
+     third of the bytes. Live sessions are untouched — they still render rows. */
+  compactShadow(rows) {
+    const r3 = (v) => v == null ? null : Math.round(v * 1000) / 1000;
+    return rows.map((r) => {
+      if (r.resolved !== 'U' && r.resolved !== 'D') return r;
+      if (r.packed) return r;
+      return { ts: r.ts, sessionTs: r.sessionTs, k: r.k, strike: r.strike,
+        delta: r3(r.delta), z: r3(r.z), pFull: r3(r.pFull), sigmaUnit: r3(r.sigmaUnit),
+        resolved: r.resolved, finalDelta: r.finalDelta, vol: r3(r.vol),
+        mktCents: r.mktCents, auto: true, v: r.v, packed: 1 };
+    });
+  }
+
+  /* Compaction slows growth; only a cap bounds it. Drop the OLDEST sessions
+     whole — never a partial session, which would leave a summary row whose read
+     count lies. The scorecard then reports a rolling window rather than all
+     history, which is the honest trade for never silently dying. */
+  pruneShadow(rows, cap) {
+    const lim = cap || 25000;
+    if (rows.length <= lim) return rows;
+    const byTs = [...new Set(rows.map((r) => r.sessionTs))].sort((a, b) => b - a);
+    const keep = new Set(); let n = 0;
+    for (const ts of byTs) {
+      const c = rows.filter((r) => r.sessionTs === ts).length;
+      if (n + c > lim) break;
+      keep.add(ts); n += c;
+    }
+    return rows.filter((r) => keep.has(r.sessionTs));
+  }
+
+  /* Storage failure is the one error that must never be swallowed: it is silent,
+     it is total, and at ~1,344 rows a day against a 5MB origin quota it arrives
+     in about ten days. Compact first, then say so if the write still fails. */
+  persistShadow(setter) {
+    const put = setter || ((k, v) => STORE.set(k, v));
+    const packed = this.pruneShadow(this.compactShadow(this.state.srows));
+    const ok = put(LSK.shadow, { shadow: this.state.shadow, srows: packed });
+    if (packed !== this.state.srows) this.setState({ srows: packed });
+    this.setState({ sErr: ok ? null : 'storage full — shadow rows are no longer being saved. Export the CSV and clear the log.' });
+    return ok;
+  }
+
+  shadowCsv() {
+    const h = ['ts','sessionTs','k','strike','delta','sigmaUnit','z','pFull','vol','mktCents','resolved','finalDelta'];
+    const esc = (v) => v == null ? '' : String(v);
+    return h.join(',') + '\n' + this.state.srows.map((r) => h.map((f) => esc(r[f])).join(',')).join('\n') + '\n';
+  }
+  copyShadowCsv = () => {
+    const t = this.shadowCsv();
+    if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
+    this.setState({ csvLabel: 'shadow copied ✓' });
+    setTimeout(() => this.setState({ csvLabel: 'copy CSV' }), 1600);
+  };
 
   shadowScore() {
     const sc = this.state.srows.filter((r) => r.resolved === 'U' || r.resolved === 'D');
@@ -1036,7 +1094,7 @@ class Component extends DCLogic {
   activeB() {
     const n = this.scored().filter((r) => r.v === 2).length;
     if (!this._bCache || this._bCache.n !== n) this._bCache = { n, B: this.refitB() };
-    return { B: clamp(this._bCache.B ?? (this.props.bConstant ?? 1.77), 1.2, 2.4),
+    return { B: clamp(this._bCache.B ?? (this.props.bConstant ?? 1.49), 1.2, 2.4),
              fitted: this._bCache.B != null, n };
   }
 
@@ -1411,7 +1469,12 @@ class Component extends DCLogic {
        1.74. Fitting instead on each session's own realised sigma gives 1.53,
        but that is hindsight and only the evidence rail uses it — quoting it
        here made a correct constant look inflated. */
-    const bakedB = '1.74';
+    /* Refit on the pipeline the dial actually runs — HOUR_SIGMA x M, the 0.6/0.4
+       blend, REMVAR — rather than on a basis with M pinned at 1. That earlier
+       omission is why 1.74 looked right while the dial ran ~19% too steep:
+       M's median on the real basis is 0.677, not 1. Measured end-to-end, the
+       shipped slope put the 80-90% band at 81.7% and the 90-95% band at 89.1%. */
+    const bakedB = '1.49';
 
     return {
       clock: ct.clock, dayName: DOWS[ct.dow], sessionWindow: ct.window, ticks,
@@ -1530,7 +1593,8 @@ class Component extends DCLogic {
       })(),
       csvLabel: S.csvLabel, clearLabel: S.clearArm ? 'press again to clear' : 'clear log',
       copyCsv: this.copyCsv, clearLog: this.clearLog, toggleShadow: this.toggleShadow,
-      calibFooter: (() => { const ab = this.activeB(); return 'B=' + ab.B.toFixed(2) + (ab.fitted ? ' fitted from your log (n=' + ab.n + ')' : ' ruled · refits at n≥150 (' + ab.n + ')') + ' · baked-data refit ' + bakedB + ' on the same σ basis · M=' + (D ? this.mult(D).M.toFixed(2) : '1.00'); })(),
+      copyShadowCsv: this.copyShadowCsv,
+      calibFooter: (() => { const ab = this.activeB(); return 'B=' + ab.B.toFixed(2) + (ab.fitted ? ' fitted from your log (n=' + ab.n + ')' : ' ruled · refits at n≥150 (' + ab.n + ')') + ' · baked-data refit ' + bakedB + ' on the live M pipeline · M=' + (D ? this.mult(D).M.toFixed(2) : '1.00'); })(),
       provenance: 'Bitstamp BTCUSD 1-min · Jul 8 – Aug 4 2026 · 2,688 sessions · all times CT. Fees per Kalshi schedule eff. 7 Jul 2026: taker = roundup(M × 0.07 × C × P × (1−P)), M defaults to 1; maker = roundup(M × 0.0175 × C × P × (1−P)), M defaults to 0. The intraday BTC series is not in the non-standard multiplier table, so taker M = 1 and maker is likely free — confirm your series ticker before trusting the maker line. Taker ceiling is rounded up per contract, the 1-lot worst case; on larger orders Kalshi rounds the order total, so the true ceiling is 0–1¢ more generous. Historical frequencies, not predictions.',
 
       pending: !!pending,

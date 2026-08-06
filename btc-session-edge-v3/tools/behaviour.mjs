@@ -157,7 +157,7 @@ const mk = (props = {}) => {
   t('T5 pre-fix v1 rows excluded from refit', c1.refitB() === null, c1.refitB(), null);
   /* activeB reports fitted vs ruled honestly */
   const ab0 = mk().activeB();
-  t('T5 activeB falls back to ruled B', ab0.fitted === false && Math.abs(ab0.B - 1.77) < 1e-9, ab0.B + '/' + ab0.fitted, '1.77/false');
+  t('T5 activeB falls back to ruled B', ab0.fitted === false && Math.abs(ab0.B - 1.49) < 1e-9, ab0.B + '/' + ab0.fitted, '1.49/false');
   const ab1 = c.activeB();
   t('T5 activeB reports fitted', ab1.fitted === true && ab1.n === 400, ab1.fitted + '/' + ab1.n, 'true/400');
   /* cache keyed on scored-v2 count */
@@ -212,12 +212,12 @@ const mk = (props = {}) => {
 {
   const c = mk();
   const rv = c.renderVals();
-  t('T6 bakedB reads 1.74 on the dial basis', /baked-data refit 1\.74 on the same σ basis/.test(rv.calibFooter), rv.calibFooter.slice(0, 80), '…1.74 on the same σ basis…');
+  t('T6 bakedB reads 1.49 on the live M pipeline', /baked-data refit 1\.49 on the live M pipeline/.test(rv.calibFooter), rv.calibFooter.slice(0, 80), '…1.49 on the live M pipeline…');
   t('T6 footer says ruled while unfitted', /ruled · refits at n≥150 \(0\)/.test(rv.calibFooter), rv.calibFooter.slice(0, 40), 'B=1.77 ruled · refits…');
   t('T6 provenance states taker/maker M defaults', /M defaults to 1;/.test(rv.provenance) && /M defaults to 0\./.test(rv.provenance), true, true);
   t('T6 provenance drops the "top of its range" claim', !/top of its 0\.07 range/.test(rv.provenance), true, true);
   const bTile = rv.agg.find((x) => x.label === 'B');
-  t('T6 B tile val comes from activeB', bTile.val === '1.77', bTile.val, '1.77');
+  t('T6 B tile val comes from activeB', bTile.val === '1.49', bTile.val, '1.49');
   t('T6 B tile note says ruled when unfitted', bTile.note === 'ruled · refits at n≥150', bTile.note, 'ruled · refits at n≥150');
 
   /* and flips to fitted once a real log exists */
@@ -541,6 +541,95 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   const b = c2.shadowScore().brier;
   t('S13 Brier uses full precision, not the clamp',
     Math.abs(b - 0.9951 ** 2) < 1e-9, b, (0.9951 ** 2).toFixed(6));
+}
+
+/* ---- B is calibrated for the pipeline that actually runs ----
+   1.77 was fitted on a sigma basis with M left at 1. The live dial multiplies the
+   trailing sigma by M, which on the real HOUR_SIGMA basis has a median of 0.677 —
+   so the shipped slope was ~19% too steep and the dial ran overconfident
+   (80-90% band hit 81.7%, 90-95% hit 89.1% measured end-to-end). */
+{
+  const c = mk();
+  t('S14 ruled B is the jointly-fit value', Math.abs(c.activeB().B - 1.49) < 1e-9,
+    c.activeB().B, 1.49);
+  t('S14 still inert below the refit threshold', c.activeB().fitted === false,
+    c.activeB().fitted, false);
+  /* the same z must now produce a less extreme probability than it used to */
+  const arg = { k: 12, delta: 40, sigmaUnit: 27, net: null, macro: false, drift: false, settleAvg: true };
+  const now = c.model(Object.assign({}, arg, { B: c.activeB().B })).p;
+  const before = c.model(Object.assign({}, arg, { B: 1.77 })).p;
+  t('S14 the dial is less confident at the same z', now < before, now.toFixed(4), '< ' + before.toFixed(4));
+  t('S14 and still on the correct side of even', now > 0.5, now.toFixed(4), '> 0.5');
+}
+
+/* ---- Storage must not die silently ----
+   Shadow logs ~1,344 rows/day at ~380 bytes; against a 5MB origin quota that is
+   about ten days to a silent write failure. Compaction keeps everything the
+   scorecard reads while dropping what only a row view needs. */
+{
+  const c = mk();
+  const ab = { noMom: 0.5, noDrift: 0.5, noSettle: 0.5, macroFlip: 0.5 };
+  const row = (ts, k, res) => ({ ts: ts * 1000 + k * 60000, sessionTs: ts, k, strike: 64000,
+    price: 64010, delta: 10, sigmaUnit: 22, z: 0.2, pFull: 0.58, ab, macroOn: false,
+    driftNet: null, mktCents: null, yesT: 57, noT: 38, resolved: res,
+    finalDelta: res ? 10 : null, vol: 4.2, auto: true, v: 2 });
+  const resolved = [], live = [];
+  for (let k = 1; k <= 14; k++) resolved.push(row(1786045500, k, 'U'));
+  for (let k = 1; k <= 4; k++) live.push(row(1786046400, k, null));
+  c.state.srows = [...resolved, ...live];
+
+  const before = JSON.stringify(c.state.srows).length;
+  const packed = c.compactShadow(c.state.srows);
+  const after = JSON.stringify(packed).length;
+  /* Measured, not aspirational: dropping the ablation block and rounding to 3dp
+     gives ~29%. Display fields stay so old sessions still expand — that is why it
+     is not smaller. Compaction alone buys ~40% more runway, NOT indefinite
+     retention; pruning is what actually bounds growth. */
+  t('S15 compaction shrinks a resolved session', after < before * 0.8,
+    Math.round(after / before * 100) + '%', '< 80%');
+  t('S15 unresolved rows are left intact', packed.filter((r) => r.resolved == null).length === 4,
+    packed.filter((r) => r.resolved == null).length, 4);
+  t('S15 the scorecard is unchanged by compaction', (() => {
+    const a = mk(); a.state.srows = c.state.srows; const x = a.shadowScore();
+    const b = mk(); b.state.srows = packed; const y = b.shadowScore();
+    return x.n === y.n && x.hit === y.hit && Math.abs(x.brier - y.brier) < 1e-9;
+  })(), true, true);
+
+  /* a failed write has to be visible, not swallowed */
+  const c2 = mk();
+  c2.state.srows = [row(1786045500, 1, null)];
+  c2.persistShadow(() => false);
+  t('S16 a failed write surfaces an error', /storage|full|quota/i.test(String(c2.state.sErr || '')),
+    c2.state.sErr, 'a storage notice');
+  const c3 = mk();
+  c3.state.srows = [row(1786045500, 1, null)];
+  c3.persistShadow(() => true);
+  t('S16 a good write leaves no error', !c3.state.sErr, c3.state.sErr, null);
+
+  /* pruning is what actually bounds growth — compaction only slows it */
+  const c5 = mk();
+  const many = [];
+  for (let sess = 0; sess < 300; sess++)
+    for (let k = 1; k <= 14; k++) many.push(row(1786000000 + sess * 900, k, 'U'));
+  const pruned = c5.pruneShadow(many, 1000);
+  t('S18 pruning caps the row count', pruned.length <= 1000, pruned.length, '<= 1000');
+  t('S18 pruning drops whole sessions, never partial ones',
+    [...new Set(pruned.map((r) => r.sessionTs))].every((ts) => pruned.filter((r) => r.sessionTs === ts).length === 14),
+    'whole sessions', 'whole sessions');
+  t('S18 pruning keeps the NEWEST sessions',
+    Math.max(...pruned.map((r) => r.sessionTs)) === Math.max(...many.map((r) => r.sessionTs)),
+    'newest kept', 'newest kept');
+  t('S18 under the cap nothing is dropped', c5.pruneShadow(resolved, 1000).length === 14,
+    c5.pruneShadow(resolved, 1000).length, 14);
+
+  /* the data has to be able to leave */
+  const c4 = mk();
+  c4.state.srows = resolved;
+  const csv = c4.shadowCsv();
+  t('S17 CSV has a header plus every row', csv.trim().split('\n').length === 15,
+    csv.trim().split('\n').length, 15);
+  t('S17 CSV carries the scoring fields', /pFull/.test(csv) && /resolved/.test(csv),
+    csv.split('\n')[0].slice(0, 60), 'has pFull + resolved');
 }
 
 /* ---- report ---- */
