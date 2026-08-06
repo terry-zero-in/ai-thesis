@@ -67,7 +67,9 @@ const mk = (props = {}) => {
   const c = new Component(props);
   c.state = { now: Date.now(), view: 'trade', data: D, strike: '', priceIn: '', px75: '', mkt: '',
     macroOn: false, finalIn: '', rows: [], sess: {}, auto: false, autoPx: null, autoAt: null,
-    autoErr: null, csvLabel: 'copy CSV', clearArm: false };
+    autoErr: null, csvLabel: 'copy CSV', clearArm: false,
+    shadowOn: false, srows: [], shadow: { ts: null, strike: null, pts: [], lastK: -1 },
+    sAt: null, sErr: null };
   return c;
 };
 
@@ -310,6 +312,100 @@ const mk = (props = {}) => {
   t('V8 rows survive reload', c2.state.rows.length === 2, c2.state.rows.length, 2);
 }
 function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.log.v3') || '[]'); }
+
+/* ---- Shadow mode: unattended live validation ----
+   Feeds observations through shadowIngest() with a controlled clock, so a whole
+   session can be replayed in milliseconds. The synthetic strike is the session's
+   first observed price — the same convention the baked SESS deltas use, which is
+   what makes the live scorecard comparable to the backtest. */
+{
+  const c = mk();
+  const T0 = Date.parse('2026-08-06T15:00:10Z');   // 10:00:10 CT -> minute 0
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+
+  c.state.now = T0;
+  c.shadowIngest(64000, 3.1);
+  t('S1 first tick sets the synthetic strike', c.state.shadow.strike === 64000, c.state.shadow.strike, 64000);
+  t('S1 minute 0 logs no row', c.state.srows.length === 0, c.state.srows.length, 0);
+
+  c.state.now = at(3, 5);
+  c.shadowIngest(64030, 4.2);
+  t('S2 logs a row at minute 3', c.state.srows.length === 1, c.state.srows.length, 1);
+  t('S2 row carries the auto tag', c.state.srows[0].auto === true, c.state.srows[0].auto, true);
+  t('S2 row records volume', c.state.srows[0].vol === 4.2, c.state.srows[0].vol, 4.2);
+  t('S2 delta is vs the synthetic strike', c.state.srows[0].delta === 30, c.state.srows[0].delta, 30);
+  t('S2 probability is a real number', c.state.srows[0].pFull > 0.5 && c.state.srows[0].pFull < 1,
+    c.state.srows[0].pFull, '0.5..1');
+
+  /* same minute again must not double-log */
+  c.shadowIngest(64031, 1.0);
+  t('S3 same minute does not double-log', c.state.srows.length === 1, c.state.srows.length, 1);
+
+  c.state.now = at(9, 2);
+  c.shadowIngest(64055, 2.0);
+  t('S4 second read logged', c.state.srows.length === 2, c.state.srows.length, 2);
+  t('S4 sigma live engages after two points', c.state.srows[1].sigmaUnit !== c.state.srows[0].sigmaUnit,
+    c.state.srows[1].sigmaUnit, '!= ' + c.state.srows[0].sigmaUnit);
+
+  /* roll into the next session: previous one must self-resolve on the last price */
+  c.state.now = at(15, 4);
+  c.shadowIngest(64070, 5.0);
+  const settled = c.state.srows.filter((r) => r.resolved != null);
+  t('S5 roll back-fills every row of the closed session', settled.length === 2, settled.length, 2);
+  t('S5 resolved UP (last price above strike)', settled.every((r) => r.resolved === 'U'),
+    settled.map((r) => r.resolved).join(','), 'U,U');
+  t('S5 finalDelta recorded', settled.every((r) => r.finalDelta === 70), settled[0].finalDelta, 70);
+  t('S5 new session took a fresh strike', c.state.shadow.strike === 64070, c.state.shadow.strike, 64070);
+
+  /* the whole point: shadow rows must never touch the traded log or the refit */
+  t('S6 shadow rows stay out of the traded log', c.state.rows.length === 0, c.state.rows.length, 0);
+  t('S6 shadow rows excluded from scored()', c.scored().length === 0, c.scored().length, 0);
+  const cR = mk();
+  cR.state.srows = Array.from({ length: 400 }, (_, i) => ({ z: ((i % 40) - 20) / 10, resolved: 'U', v: 2, auto: true }));
+  t('S6 shadow rows cannot drive the B refit', cR.refitB() === null, cR.refitB(), null);
+
+  /* live scorecard */
+  const sc = c.shadowScore();
+  t('S7 scorecard counts resolved shadow rows', sc.n === 2, sc.n, 2);
+  t('S7 scorecard reports a hit rate', sc.hit != null && sc.hit >= 0 && sc.hit <= 1, sc.hit, '0..1');
+  t('S7 scorecard reports a Brier score', sc.brier != null && sc.brier >= 0, sc.brier, '>=0');
+
+  /* a DOWN session scores as a miss when the model called UP */
+  const c2 = mk();
+  c2.state.now = at(0, 10); c2.shadowIngest(64000, 1);
+  c2.state.now = at(5, 10); c2.shadowIngest(64100, 1);      // model calls UP hard
+  c2.state.now = at(16, 10); c2.shadowIngest(63900, 1);     // settles DOWN
+  const s2 = c2.state.srows.filter((r) => r.resolved != null);
+  t('S8 a wrong call is recorded as DOWN', s2.every((r) => r.resolved === 'D'), s2[0].resolved, 'D');
+  t('S8 scorecard hit rate falls to 0', c2.shadowScore().hit === 0, c2.shadowScore().hit, 0);
+}
+
+/* ---- Shadow mode must not start mid-session ----
+   The model's remaining-variance term assumes delta accumulated from the
+   session OPEN. Adopting a mid-session price as the strike would silently
+   score every row against the wrong reference, so a late start has to wait
+   for the next boundary rather than produce plausible-looking garbage. */
+{
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+  const c = mk();
+  c.state.now = at(7, 12);              // switched on 7 minutes into a session
+  c.shadowIngest(64500, 2.0);
+  t('S9 late start adopts no strike', c.state.shadow.strike == null, c.state.shadow.strike, null);
+  t('S9 late start logs no rows', c.state.srows.length === 0, c.state.srows.length, 0);
+  c.state.now = at(11, 5);
+  c.shadowIngest(64520, 2.0);
+  t('S9 still waiting later in that session', c.state.srows.length === 0, c.state.srows.length, 0);
+
+  c.state.now = at(15, 3);              // next session opens — now it may begin
+  c.shadowIngest(64530, 2.0);
+  t('S10 adopts strike at the new session open', c.state.shadow.strike === 64530, c.state.shadow.strike, 64530);
+  c.state.now = at(19, 5);
+  c.shadowIngest(64560, 2.0);
+  t('S10 logs once running', c.state.srows.length === 1, c.state.srows.length, 1);
+  t('S10 delta is vs the session-open strike', c.state.srows[0].delta === 30, c.state.srows[0].delta, 30);
+  t('S10 an unstarted session leaves nothing to resolve',
+    c.state.srows.every((r) => r.sessionTs === c.state.shadow.ts), true, true);
+}
 
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));

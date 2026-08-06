@@ -493,7 +493,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   </sc-if>
 
   <sc-if value="{{ isLog }}" hint-placeholder-val="{{ false }}">
-  <div style="background:#0F1013; overflow:hidden; display:grid; grid-template-rows:auto auto 1fr auto">
+  <div style="background:#0F1013; overflow:hidden; display:grid; grid-template-rows:auto auto auto 1fr auto">
 
     <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1px; background:rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.10)">
       <sc-for list="{{ agg }}" as="a" hint-placeholder-count="5">
@@ -503,6 +503,13 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <div style="font-size:11px; color:#A6AEBB; margin-top:3px">{{ a.note }}</div>
         </div>
       </sc-for>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:14px; padding:9px 18px; background:#131519; border-bottom:1px solid rgba(255,255,255,.10)">
+      <button sc-camel-on-click="{{ toggleShadow }}" style="{{ shadowBtnSt }}">{{ shadowBtn }}</button>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1">LIVE SHADOW — MODEL vs MARKET, NO INPUT NEEDED</span>
+      <span style="flex:1"></span>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#A6AEBB">{{ shadowLine }}</span>
     </div>
 
     <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:1px; background:rgba(255,255,255,.06)">
@@ -562,8 +569,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     </div>
 
     <div style="display:flex; align-items:center; gap:16px; padding:11px 18px; background:#08090A; border-top:1px solid rgba(255,255,255,.10)">
-      <button sc-camel-on-click="{{ copyCsv }}" style="height:26px; padding:0 12px; border-radius:6px; font-size:12px; font-weight:500; color:#06121C; background:#0B84E0" style-hover="background:#1399FD">{{ csvLabel }}</button>
-      <button sc-camel-on-click="{{ clearLog }}" style="height:26px; padding:0 12px; border-radius:6px; font-size:12px; color:#A6AEBB; background:#1A1D23" style-hover="color:#F2F4F7">{{ clearLabel }}</button>
+      <button sc-camel-on-click="{{ copyCsv }}" style="flex:0 0 auto; white-space:nowrap; height:26px; padding:0 12px; border-radius:6px; font-size:12px; font-weight:500; color:#06121C; background:#0B84E0" style-hover="background:#1399FD">{{ csvLabel }}</button>
+      <button sc-camel-on-click="{{ clearLog }}" style="flex:0 0 auto; white-space:nowrap; height:26px; padding:0 12px; border-radius:6px; font-size:12px; color:#A6AEBB; background:#1A1D23" style-hover="color:#F2F4F7">{{ clearLabel }}</button>
       <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#8B94A1">{{ calibFooter }}</span>
       <div style="flex:1; min-width:0"></div>
       <span style="font-size:11px; color:#8B94A1; text-align:right; max-width:640px; line-height:1.45; text-wrap:pretty">{{ provenance }}</span>
@@ -601,7 +608,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 const MONO = "font-family:'JetBrains Mono',ui-monospace,monospace";
 const TAB = 'font-variant-numeric:tabular-nums';
 const DOWS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const LSK = { log:'edge.log.v3', sess:'edge.sessions.v3', calib:'edge.calib.v3' };
+const LSK = { log:'edge.log.v3', sess:'edge.sessions.v3', calib:'edge.calib.v3', shadow:'edge.shadow.v3' };
 /* §5.6 — storage adapter. Four functions, localStorage default. Swap the object
    for a Supabase-backed one with the same signatures and no component changes. */
 const STORE = {
@@ -641,11 +648,15 @@ class Component extends DCLogic {
     now: Date.now(), view: 'trade', data: null,
     strike: '', priceIn: '', px75: '', mkt: '', macroOn: false, finalIn: '',
     rows: [], sess: {}, auto: false, autoPx: null, autoAt: null, autoErr: null,
-    csvLabel: 'copy CSV', clearArm: false
+    csvLabel: 'copy CSV', clearArm: false,
+    /* shadow mode — its own list and cursor, deliberately not merged with rows/sess */
+    shadowOn: false, srows: [], shadow: { ts: null, strike: null, pts: [], lastK: -1 }, sAt: null, sErr: null
   };
 
   componentDidMount() {
     this.setState({ rows: lsGet(LSK.log, []), sess: lsGet(LSK.sess, {}) });
+    const sh = lsGet(LSK.shadow, null);
+    if (sh && sh.srows) this.setState({ srows: sh.srows, shadow: sh.shadow || this.state.shadow });
     this._sessTs = Math.floor(Date.now() / 1000 / 900) * 900;
     /* One clock, one source of truth. When the quarter-hour rolls, the strike
        from the closed session is demoted to a one-tap ghost and the field is
@@ -679,7 +690,7 @@ class Component extends DCLogic {
       if (last && last.strike) this.setState({ ghost: last.strike });
     }
   }
-  componentWillUnmount() { clearInterval(this._t); clearInterval(this._p); }
+  componentWillUnmount() { clearInterval(this._t); clearInterval(this._p); clearInterval(this._s); }
 
   /* ---- dev harness. Runs on ?selftest=1 once the dataset resolves. Every
      assertion here corresponds to a spec clause or a fixed defect; a red row
@@ -797,7 +808,10 @@ class Component extends DCLogic {
      entries; undefined otherwise. */
   sigmaCur(sessionTs) {
     const e = this.state.sess[sessionTs];
-    const pts = e && e.pts ? e.pts : [];
+    return this.sigmaFromPts(e && e.pts ? e.pts : []);
+  }
+  /* Same estimator over any point chain, so shadow mode can run its own. */
+  sigmaFromPts(pts) {
     if (pts.length < 2) return null;
     let acc = 0, n = 0;
     for (let i = 1; i < pts.length; i++) {
@@ -808,6 +822,117 @@ class Component extends DCLogic {
     }
     return n ? Math.sqrt(acc / n) : null;
   }
+
+  /* ---- shadow mode. Unattended live validation: pull the 1-minute candle,
+     log a read every minute, resolve at the roll, score it. The strike is the
+     session's first observed price — the same convention the baked SESS deltas
+     use, so the live scorecard is directly comparable to the backtest and no
+     Kalshi strike has to be typed.
+
+     Its rows live in their own list, tagged auto, and are excluded from scored()
+     and refitB(). Two reasons that separation is not optional: the strike is
+     synthetic, and the resolve is a Coinbase proxy for a settlement Kalshi takes
+     from CF Benchmarks' RTI averaged over the final minute. A paper run must
+     never be able to move the constant the traded dial runs on.
+
+     Volume is recorded per row but unused — every price-derived movement signal
+     tested negative on the baked data, and volume is not in it. Logging it now
+     is what makes that question answerable later. */
+  shadowIngest(px, vol) {
+    if (!isFinite(px)) return;
+    const ct = this.ct(), ts = ct.sessionTs, k = ct.mis;
+    const s = Object.assign({ ts: null, strike: null, pts: [], lastK: -1 }, this.state.shadow);
+    let srows = this.state.srows;
+
+    if (s.ts !== ts) {
+      if (s.ts != null && s.strike != null) {
+        /* Settlement proxy. A tick arriving just after the boundary is far
+           closer to the close than the last in-session tick, and Kalshi settles
+           on the final minute, so prefer it — but only while it is genuinely
+           near the boundary. If shadow mode was off across the roll this tick
+           could be minutes late, in which case fall back to the last price we
+           actually saw inside the session and mark the row as a stale settle. */
+        const intoSession = ct.mis * 60 + ct.se;
+        const nearClose = intoSession <= 90;
+        const last = s.pts.length ? s.pts[s.pts.length - 1].p : null;
+        const fin = nearClose ? px : last;
+        if (fin != null) {
+          const fd = fin - s.strike;
+          const v = fd > 0 ? 'U' : fd < 0 ? 'D' : 'F';
+          srows = srows.map((r) => r.sessionTs === s.ts
+            ? Object.assign({}, r, { resolved: v, finalDelta: fd, settle: nearClose ? 'boundary' : 'stale' })
+            : r);
+        }
+      }
+      /* Only adopt a strike when we catch the session at its open. The model's
+         remaining-variance term assumes the delta accumulated from minute 0, so
+         a mid-session price as the reference would score every row against the
+         wrong baseline — plausible-looking numbers built on a broken premise.
+         Switched on late, we sit out and start clean at the next boundary. */
+      const atOpen = ct.mis * 60 + ct.se <= 75;
+      s.ts = ts; s.strike = atOpen ? px : null; s.pts = []; s.lastK = -1;
+    }
+
+    if (k >= 1 && k !== s.lastK && s.strike != null && this.state.data) {
+      const r = this.shadowRead(s.strike, px, k, s.pts, ct);
+      if (r) {
+        srows = [...srows, { ts: Date.now(), sessionTs: ts, k, strike: s.strike, price: px,
+          delta: r.delta, sigmaUnit: r.sigmaUnit, z: r.z, pFull: r.p, ab: r.ab, macroOn: r.macro,
+          driftNet: null, mktCents: null, yesT: r.yesT, noT: r.noT, resolved: null, finalDelta: null,
+          vol: vol == null ? null : vol, auto: true, v: 2 }];
+        s.lastK = k;
+      }
+    }
+    s.pts = [...s.pts, { k, p: px }];
+    this.setState({ shadow: s, srows, sAt: Date.now(), sErr: null });
+    lsSet(LSK.shadow, { shadow: s, srows });
+  }
+
+  /* The live model, run against an explicit strike/price/point-chain. */
+  shadowRead(strike, price, k, pts, ct) {
+    const D = this.state.data;
+    if (!D) return null;
+    const base = D.HOUR_SIGMA[ct.hr], mm = this.mult(D);
+    const trail = base * mm.M, cur = this.sigmaFromPts(pts);
+    const sigmaUnit = cur != null ? 0.6 * trail + 0.4 * cur : trail;
+    const macro = this.state.macroOn;
+    const arg = { k, delta: price - strike, sigmaUnit, net: null, B: this.activeB().B,
+      macro, drift: true, settleAvg: true };
+    const full = this.model(arg);
+    const ce = this.ceilings(full.p);
+    return { delta: price - strike, sigmaUnit, z: full.z, p: full.p, macro,
+      yesT: ce.yesT, noT: ce.noT,
+      ab: { noMom: this.model(Object.assign({}, arg, { B: 1.0 })).p,
+            noDrift: this.model(Object.assign({}, arg, { drift: false })).p,
+            noSettle: this.model(Object.assign({}, arg, { settleAvg: false })).p,
+            macroFlip: this.model(Object.assign({}, arg, { macro: !macro })).p } };
+  }
+
+  shadowScore() {
+    const sc = this.state.srows.filter((r) => r.resolved === 'U' || r.resolved === 'D');
+    if (!sc.length) return { n: 0, hit: null, brier: null, sessions: 0 };
+    const hits = sc.filter((r) => (r.pFull >= 0.5) === (r.resolved === 'U')).length;
+    const brier = sc.reduce((a, r) => { const y = r.resolved === 'U' ? 1 : 0; return a + (r.pFull - y) ** 2; }, 0) / sc.length;
+    return { n: sc.length, hit: hits / sc.length, brier,
+      sessions: new Set(sc.map((r) => r.sessionTs)).size };
+  }
+
+  fetchShadow = () => {
+    fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60')
+      .then((r) => r.json())
+      .then((a) => {
+        const c = Array.isArray(a) && a.length ? a[0] : null;
+        if (!c) throw new Error('bad payload');
+        this.shadowIngest(+c[4], +c[5]);
+      })
+      .catch(() => this.setState({ sErr: 'feed unreachable' }));
+  };
+  toggleShadow = () => {
+    const on = !this.state.shadowOn;
+    this.setState({ shadowOn: on });
+    clearInterval(this._s);
+    if (on) { this.fetchShadow(); this._s = setInterval(this.fetchShadow, 20000); }
+  };
 
   /* ---- §3.3 B refit. Newton on the log-likelihood of P = sigmoid(B*z), capped
      at 200 steps, intercept pinned at 0 because the measured base rate is 49.2%.
@@ -1258,8 +1383,26 @@ class Component extends DCLogic {
         { label: 'M', val: this.mult(D || { HOUR_SIGMA: [1], SUM_SHAPE2: 1 }).M.toFixed(2), note: 'live vol multiplier' }
       ].map((a) => Object.assign(a, { valSt: 'font-size:26px; font-weight:600; letter-spacing:-.016em; ' + TAB + '; color:#F2F4F7' })),
       calib, ablAgg, full, fullEmpty: !rows.length,
+      shadowBtn: S.shadowOn ? 'shadow on' : 'start shadow',
+      shadowBtnSt: 'font-family:\'JetBrains Mono\',ui-monospace,monospace; font-size:11px; padding:4px 12px; border-radius:5px; cursor:pointer; border:1px solid ' +
+        (S.shadowOn ? 'rgba(19,153,253,.55)' : 'rgba(255,255,255,.14)') + '; background:' +
+        (S.shadowOn ? 'rgba(19,153,253,.16)' : 'transparent') + '; color:' + (S.shadowOn ? '#73BAFF' : '#A6AEBB'),
+      shadowLine: (() => {
+        const sv = this.shadowScore(), sh = S.shadow || {};
+        if (S.sErr) return S.sErr;
+        if (!S.shadowOn && !sv.n && !S.srows.length) return 'off — turn on to watch the model score itself against the live feed';
+        const bits = [];
+        if (S.shadowOn && sh.ts != null && sh.strike == null) bits.push('waiting for the next session to open');
+        if (sh.strike != null) bits.push('strike ' + Math.round(sh.strike).toLocaleString());
+        bits.push(S.srows.length + ' read' + (S.srows.length === 1 ? '' : 's'));
+        bits.push(sv.sessions + ' session' + (sv.sessions === 1 ? '' : 's') + ' scored');
+        bits.push(sv.hit == null ? 'hit —' : 'hit ' + Math.round(sv.hit * 100) + '%');
+        bits.push(sv.brier == null ? 'brier —' : 'brier ' + sv.brier.toFixed(3));
+        if (S.sAt) bits.push(hhmm(S.sAt));
+        return bits.join(' · ');
+      })(),
       csvLabel: S.csvLabel, clearLabel: S.clearArm ? 'press again to clear' : 'clear log',
-      copyCsv: this.copyCsv, clearLog: this.clearLog,
+      copyCsv: this.copyCsv, clearLog: this.clearLog, toggleShadow: this.toggleShadow,
       calibFooter: (() => { const ab = this.activeB(); return 'B=' + ab.B.toFixed(2) + (ab.fitted ? ' fitted from your log (n=' + ab.n + ')' : ' ruled · refits at n≥150 (' + ab.n + ')') + ' · baked-data refit ' + bakedB + ' on the same σ basis · M=' + (D ? this.mult(D).M.toFixed(2) : '1.00'); })(),
       provenance: 'Bitstamp BTCUSD 1-min · Jul 8 – Aug 4 2026 · 2,688 sessions · all times CT. Fees per Kalshi schedule eff. 7 Jul 2026: taker = roundup(M × 0.07 × C × P × (1−P)), M defaults to 1; maker = roundup(M × 0.0175 × C × P × (1−P)), M defaults to 0. The intraday BTC series is not in the non-standard multiplier table, so taker M = 1 and maker is likely free — confirm your series ticker before trusting the maker line. Taker ceiling is rounded up per contract, the 1-lot worst case; on larger orders Kalshi rounds the order total, so the true ceiling is 0–1¢ more generous. Historical frequencies, not predictions.',
 
