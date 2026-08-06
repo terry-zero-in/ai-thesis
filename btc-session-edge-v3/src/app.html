@@ -507,7 +507,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
     <div style="display:flex; align-items:center; gap:14px; padding:9px 18px; background:#131519; border-bottom:1px solid rgba(255,255,255,.10)">
       <button sc-camel-on-click="{{ toggleShadow }}" style="{{ shadowBtnSt }}">{{ shadowBtn }}</button>
-      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1">LIVE SHADOW — MODEL vs MARKET, NO INPUT NEEDED</span>
+      <button sc-camel-on-click="{{ showReal }}" style="{{ modeRealSt }}">MY LOG</button>
+      <button sc-camel-on-click="{{ showShadow }}" style="{{ modeShadowSt }}">SHADOW</button>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1">{{ modeNote }}</span>
       <span style="flex:1"></span>
       <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#A6AEBB">{{ shadowLine }}</span>
     </div>
@@ -546,13 +548,13 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     </div>
 
     <div style="overflow:auto; border-top:1px solid rgba(255,255,255,.10)">
-      <div style="display:grid; grid-template-columns:74px 44px 92px 78px 62px 56px 96px 150px 74px 88px; gap:0 12px; align-items:center; height:30px; padding:0 18px; position:sticky; top:0; background:#0B0C0E; border-bottom:1px solid rgba(255,255,255,.10); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.04em; color:#8B94A1">
-        <span>TIME</span><span>MIN</span><span style="text-align:right">STRIKE</span><span style="text-align:right">DELTA</span><span style="text-align:right">Z</span><span style="text-align:right">σ</span><span>CALL</span><span>ABLATIONS</span><span style="text-align:right">MKT¢</span><span>RESULT</span>
+      <div style="display:grid; grid-template-columns:132px 44px 92px 78px 62px 56px 96px 150px 74px 88px; gap:0 12px; align-items:center; height:30px; padding:0 18px; position:sticky; top:0; background:#0B0C0E; border-bottom:1px solid rgba(255,255,255,.10); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.04em; color:#8B94A1">
+        <span>SESSION</span><span>MIN</span><span style="text-align:right">STRIKE</span><span style="text-align:right">DELTA</span><span style="text-align:right">Z</span><span style="text-align:right">σ</span><span>CALL</span><span>ABLATIONS / SUMMARY</span><span style="text-align:right">MKT¢</span><span>RESULT</span>
       </div>
       <sc-for list="{{ full }}" as="r" hint-placeholder-count="12">
-        <div style="{{ r.rowSt }}" style-hover="background:#1E2229">
+        <div style="{{ r.rowSt }}" sc-camel-on-click="{{ r.onToggle }}" style-hover="background:#1E2229">
           <span style="color:#8B94A1">{{ r.t }}</span>
-          <span style="color:#8B94A1">:{{ r.k }}</span>
+          <span style="color:#8B94A1">{{ r.k }}</span>
           <span style="text-align:right; color:#A6AEBB">{{ r.strike }}</span>
           <span style="text-align:right; color:#F2F4F7">{{ r.delta }}</span>
           <span style="text-align:right; color:#A6AEBB">{{ r.z }}</span>
@@ -630,6 +632,12 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const sgn = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
 const money = (v, sign) => v == null ? '—' : (sign && v > 0 ? '+' : v < 0 ? '−' : '') + '$' + Math.abs(Math.round(v)).toLocaleString();
 const num = (t) => (t !== '' && t != null && isFinite(+t) ? +t : null);
+/* "2:45\u20133:00p" from a session-start unix second. Drops the redundant meridiem
+   on the opening time when both ends share it, matching the header's style. */
+const sessLabel = (tsSec) => {
+  const a = hhmm(tsSec * 1000), b = hhmm((tsSec + 900) * 1000);
+  return (a.slice(-1) === b.slice(-1) ? a.slice(0, -1) : a) + '\u2013' + b;
+};
 const hhmm = (ms) => { const d = new Date(ms); const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true }).format(d); return p.replace(' AM', 'a').replace(' PM', 'p').replace(/\s/g, ''); };
 
 /* §3.3 — driftNudge. net = strike − px75; nudge AGAINST the drift sign, decayed
@@ -650,7 +658,9 @@ class Component extends DCLogic {
     rows: [], sess: {}, auto: false, autoPx: null, autoAt: null, autoErr: null,
     csvLabel: 'copy CSV', clearArm: false,
     /* shadow mode — its own list and cursor, deliberately not merged with rows/sess */
-    shadowOn: false, srows: [], shadow: { ts: null, strike: null, pts: [], lastK: -1 }, sAt: null, sErr: null
+    shadowOn: false, srows: [], shadow: { ts: null, strike: null, pts: [], lastK: -1 }, sAt: null, sErr: null,
+    /* which log is on screen, and which session rows are expanded (keyed per list) */
+    logMode: 'real', openSess: {}, sSrc: null
   };
 
   componentDidMount() {
@@ -823,6 +833,36 @@ class Component extends DCLogic {
     return n ? Math.sqrt(acc / n) : null;
   }
 
+  /* ---- Session grouping. The log is read one session at a time, not one read
+     at a time: a 15-minute window is the unit that resolves, so it is the unit
+     that gets a row. Reads collapse underneath it and open on demand. */
+  groupSessions(rows) {
+    const by = new Map();
+    for (const r of rows) {
+      if (!by.has(r.sessionTs)) by.set(r.sessionTs, []);
+      by.get(r.sessionTs).push(r);
+    }
+    return [...by.entries()].sort((a, b) => b[0] - a[0]).map(([ts, list]) => {
+      const reads = [...list].sort((a, b) => a.k - b.k);
+      const res = reads.find((x) => x.resolved === 'U' || x.resolved === 'D');
+      const resolved = res ? res.resolved : null;
+      const scored = resolved ? reads.length : 0;
+      const hits = resolved ? reads.filter((x) => (x.pFull >= 0.5) === (resolved === 'U')).length : 0;
+      const last = reads[reads.length - 1];
+      return { ts, label: sessLabel(ts), reads, n: reads.length,
+        strike: reads[0].strike, finalDelta: res ? res.finalDelta : null,
+        resolved, scored, hits,
+        lastCall: last ? (last.pFull >= 0.5 ? 'UP ' : 'DOWN ') +
+          Math.round((last.pFull >= 0.5 ? last.pFull : 1 - last.pFull) * 100) + '%' : '—' };
+    });
+  }
+  isOpen(list, ts) { return !!(this.state.openSess || {})[list + ':' + ts]; }
+  toggleSession(list, ts) {
+    const key = list + ':' + ts, open = Object.assign({}, this.state.openSess || {});
+    if (open[key]) delete open[key]; else open[key] = true;
+    this.setState({ openSess: open });
+  }
+
   /* ---- shadow mode. Unattended live validation: pull the 1-minute candle,
      log a read every minute, resolve at the roll, score it. The strike is the
      session's first observed price — the same convention the baked SESS deltas
@@ -838,8 +878,17 @@ class Component extends DCLogic {
      Volume is recorded per row but unused — every price-derived movement signal
      tested negative on the baked data, and volume is not in it. Logging it now
      is what makes that question answerable later. */
-  shadowIngest(px, vol) {
+  shadowIngest(px, vol, srcTime) {
     if (!isFinite(px)) return;
+    /* The feed serves cached responses for well over a minute at a time. Taking
+       a repeat as a fresh read makes the session look motionless, drags
+       sigma_cur to its floor and inflates z until the dial claims certainty it
+       has not earned — a $31 move reading "UP 100%". A read counts only when the
+       source's own clock advanced; otherwise say so and take nothing. */
+    if (srcTime != null && srcTime === this.state.sSrc) {
+      this.setState({ sErr: 'feed stale — cached response, no read taken' });
+      return;
+    }
     const ct = this.ct(), ts = ct.sessionTs, k = ct.mis;
     const s = Object.assign({ ts: null, strike: null, pts: [], lastK: -1 }, this.state.shadow);
     let srows = this.state.srows;
@@ -884,7 +933,7 @@ class Component extends DCLogic {
       }
     }
     s.pts = [...s.pts, { k, p: px }];
-    this.setState({ shadow: s, srows, sAt: Date.now(), sErr: null });
+    this.setState({ shadow: s, srows, sAt: Date.now(), sErr: null, sSrc: srcTime == null ? this.state.sSrc : srcTime });
     lsSet(LSK.shadow, { shadow: s, srows });
   }
 
@@ -917,13 +966,16 @@ class Component extends DCLogic {
       sessions: new Set(sc.map((r) => r.sessionTs)).size };
   }
 
+  /* The 1-minute candle endpoint is cached for 90s+, so it cannot drive a
+     per-minute read. The ticker is fresh and stamps its own server time, which
+     is what the staleness guard keys off. */
   fetchShadow = () => {
-    fetch('https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60')
+    fetch('https://api.exchange.coinbase.com/products/BTC-USD/ticker')
       .then((r) => r.json())
-      .then((a) => {
-        const c = Array.isArray(a) && a.length ? a[0] : null;
-        if (!c) throw new Error('bad payload');
-        this.shadowIngest(+c[4], +c[5]);
+      .then((d) => {
+        const px = +d.price;
+        if (!isFinite(px)) throw new Error('bad payload');
+        this.shadowIngest(px, d.size == null ? null : +d.size, d.time || null);
       })
       .catch(() => this.setState({ sErr: 'feed unreachable' }));
   };
@@ -1245,22 +1297,49 @@ class Component extends DCLogic {
         ab: rowAb(x), badge: b.badge, badgeSt: b.st };
     });
 
-    /* Traded and shadow rows share one table, newest first. Shadow rows carry a
-       ◇ and are dimmed: they must be legible as "the model talking to itself"
-       and never mistaken for a read you took. Without this the strip counts
-       reads the table refuses to show, which reads as a broken tool. */
-    const ROW_BASE = "display:grid; grid-template-columns:74px 44px 92px 78px 62px 56px 96px 150px 74px 88px; gap:0 12px; align-items:center; height:32px; padding:0 18px; border-bottom:1px solid rgba(255,255,255,.06); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-variant-numeric:tabular-nums";
-    const mkRow = (x, sh) => {
+    /* The log is grouped by session and rendered as ONE flat list: a session
+       summary row, followed by its reads when it is open. Flat rather than
+       nested because the template engine's sc-for does not nest — the `kind`
+       field carries the difference and drives the row's own style string.
+
+       Traded and shadow live in separate lists, never interleaved. A paper run
+       and a real position must never sit in the same column of the same table. */
+    const pill = (on) => MONO + '; font-size:10px; letter-spacing:.06em; padding:3px 10px; border-radius:5px; cursor:pointer; border:1px solid ' +
+      (on ? 'rgba(19,153,253,.55)' : 'rgba(255,255,255,.12)') + '; background:' +
+      (on ? 'rgba(19,153,253,.16)' : 'transparent') + '; color:' + (on ? '#73BAFF' : '#8B94A1');
+    const GRID = 'display:grid; grid-template-columns:132px 44px 92px 78px 62px 56px 96px 150px 74px 88px; gap:0 12px; align-items:center; padding:0 18px; border-bottom:1px solid rgba(255,255,255,.06); ' + MONO + '; ' + TAB;
+    const SESS_ROW = GRID + '; height:34px; font-size:11.5px; background:#131519; cursor:pointer';
+    const READ_ROW = GRID + '; height:30px; font-size:11px; background:#0B0C0E; color:#8B94A1';
+
+    const readCells = (x) => {
       const b = badgeFor(x);
-      return { ts: x.ts, t: (sh ? '◇ ' : '') + hhmm(x.ts), k: String(x.k).padStart(2, '0'),
-        strike: x.strike.toLocaleString(),
+      return { t: '', k: ':' + String(x.k).padStart(2, '0'), strike: x.strike.toLocaleString(),
         delta: money(x.delta, true), z: x.z.toFixed(2), sig: '$' + x.sigmaUnit.toFixed(0),
         call: (x.pFull >= 0.5 ? 'UP ' : 'DOWN ') + Math.round((x.pFull >= 0.5 ? x.pFull : 1 - x.pFull) * 100) + '%',
         ab: rowAb(x) || '—', mkt: x.mktCents == null ? '—' : x.mktCents + '¢',
-        badge: b.badge, badgeSt: b.st, rowSt: ROW_BASE + (sh ? '; opacity:.58' : '') };
+        badge: b.badge, badgeSt: b.st, rowSt: READ_ROW, kind: 'read', ts: 0, onToggle: null };
     };
-    const full = [...rows.map((x) => mkRow(x, false)), ...S.srows.map((x) => mkRow(x, true))]
-      .sort((a, z) => z.ts - a.ts);
+    const mode = S.logMode === 'shadow' ? 'shadow' : 'real';
+    const srcRows = mode === 'shadow' ? S.srows : rows;
+    const groups = this.groupSessions(srcRows);
+    const full = [];
+    for (const g of groups) {
+      const open = this.isOpen(mode, g.ts);
+      const gb = g.resolved
+        ? { badge: g.resolved === 'U' ? 'SETTLED UP' : 'SETTLED DOWN',
+            st: MONO + '; font-size:10px; padding:2px 7px; border-radius:4px; border:1px solid ' +
+              (g.resolved === 'U' ? 'rgba(90,215,155,.42); color:#5AD79B' : 'rgba(255,138,143,.42); color:#FF8A8F') }
+        : { badge: 'LIVE', st: MONO + '; font-size:10px; padding:2px 7px; border-radius:4px; border:1px solid rgba(237,190,114,.38); color:#EDBE72' };
+      full.push({
+        t: (open ? '▾ ' : '▸ ') + g.label, k: '', strike: g.strike.toLocaleString(),
+        delta: g.finalDelta == null ? '—' : money(g.finalDelta, true), z: '', sig: '',
+        call: g.lastCall,
+        ab: g.n + ' read' + (g.n === 1 ? '' : 's') + (g.scored ? ' · ' + g.hits + '/' + g.scored + ' correct' : ''),
+        mkt: '', badge: gb.badge, badgeSt: gb.st,
+        rowSt: SESS_ROW, kind: 'session', ts: g.ts,
+        onToggle: () => this.toggleSession(mode, g.ts) });
+      if (open) for (const x of g.reads) full.push(readCells(x));
+    }
 
     const calib = [[50, 60], [60, 70], [70, 80], [80, 90], [90, 101]].map(([lo, hi]) => {
       const g = sc.filter((x) => { const c = Math.max(x.pFull, 1 - x.pFull) * 100; return c >= lo && c < hi; });
@@ -1392,6 +1471,12 @@ class Component extends DCLogic {
         { label: 'M', val: this.mult(D || { HOUR_SIGMA: [1], SUM_SHAPE2: 1 }).M.toFixed(2), note: 'live vol multiplier' }
       ].map((a) => Object.assign(a, { valSt: 'font-size:26px; font-weight:600; letter-spacing:-.016em; ' + TAB + '; color:#F2F4F7' })),
       calib, ablAgg, full, fullEmpty: !full.length,
+      showReal: () => this.setState({ logMode: 'real' }),
+      showShadow: () => this.setState({ logMode: 'shadow' }),
+      modeRealSt: pill(mode === 'real'), modeShadowSt: pill(mode === 'shadow'),
+      modeNote: mode === 'shadow'
+        ? 'MODEL SCORING ITSELF LIVE \u2014 NOT YOUR POSITIONS'
+        : 'YOUR READS \u2014 CLICK A SESSION TO EXPAND',
       shadowBtn: S.shadowOn ? 'shadow on' : 'start shadow',
       shadowBtnSt: 'font-family:\'JetBrains Mono\',ui-monospace,monospace; font-size:11px; padding:4px 12px; border-radius:5px; cursor:pointer; border:1px solid ' +
         (S.shadowOn ? 'rgba(19,153,253,.55)' : 'rgba(255,255,255,.14)') + '; background:' +

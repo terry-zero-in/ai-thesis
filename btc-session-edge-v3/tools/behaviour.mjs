@@ -407,6 +407,87 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
     c.state.srows.every((r) => r.sessionTs === c.state.shadow.ts), true, true);
 }
 
+/* ---- Session grouping: one row per 15-minute session, expandable to its reads ---- */
+{
+  const c = mk();
+  const TS1 = 1786045500, TS2 = 1786046400;          // two 15-min session starts
+  const ab = { noMom: 0.5, noDrift: 0.5, noSettle: 0.5, macroFlip: 0.5 };
+  const r = (ts, k, d, pf, res) => ({ ts: ts * 1000 + k * 60000, sessionTs: ts, k, strike: 64000,
+    price: 64000 + d, delta: d, sigmaUnit: 22, z: d / 48, pFull: pf, ab, mktCents: null,
+    resolved: res, finalDelta: res ? d : null, v: 2 });
+
+  const rows = [
+    r(TS1, 2, 12, 0.58, 'U'), r(TS1, 5, -9, 0.44, 'U'), r(TS1, 9, 31, 0.71, 'U'),
+    r(TS2, 3, -20, 0.36, null), r(TS2, 7, -14, 0.41, null)
+  ];
+  const g = c.groupSessions(rows);
+  t('G1 one group per session', g.length === 2, g.length, 2);
+  t('G1 newest session first', g[0].ts === TS2, g[0].ts, TS2);
+  t('G1 reads counted per session', g[1].n === 3, g[1].n, 3);
+  t('G1 reads sorted by minute', g[1].reads.map((x) => x.k).join(',') === '2,5,9',
+    g[1].reads.map((x) => x.k).join(','), '2,5,9');
+  t('G1 session label spans the window', /–/.test(g[0].label), g[0].label, 'has a dash');
+  t('G2 resolved session carries its verdict', g[1].resolved === 'U', g[1].resolved, 'U');
+  t('G2 unresolved session has none', g[0].resolved == null, g[0].resolved, null);
+  t('G2 final delta lifted to the session', g[1].finalDelta === 12, g[1].finalDelta, 12);
+  /* two of the three called UP and settled UP; the 0.44 read called DOWN and missed */
+  t('G3 hits counted across the session', g[1].hits === 2, g[1].hits, 2);
+  t('G3 scored count is the session size', g[1].scored === 3, g[1].scored, 3);
+  t('G3 unresolved session scores nothing', g[0].scored === 0, g[0].scored, 0);
+  t('G4 last call reflects the final read', /UP 71/.test(g[1].lastCall), g[1].lastCall, 'UP 71%');
+
+  /* expansion state is per-list, so opening a shadow session cannot open a traded one */
+  const c2 = mk();
+  t('G5 sessions start collapsed', c2.isOpen('real', TS1) === false, c2.isOpen('real', TS1), false);
+  c2.toggleSession('real', TS1);
+  t('G5 toggle opens it', c2.isOpen('real', TS1) === true, c2.isOpen('real', TS1), true);
+  t('G5 same key in the other list stays shut', c2.isOpen('shadow', TS1) === false,
+    c2.isOpen('shadow', TS1), false);
+  c2.toggleSession('real', TS1);
+  t('G5 toggle closes it again', c2.isOpen('real', TS1) === false, c2.isOpen('real', TS1), false);
+
+  /* the two logs never mix */
+  const c3 = mk();
+  c3.state.rows = [r(TS1, 2, 12, 0.58, 'U')];
+  c3.state.srows = [r(TS2, 3, -20, 0.36, null), r(TS2, 7, -14, 0.41, null)];
+  t('G6 real list holds only traded sessions', c3.groupSessions(c3.state.rows).length === 1,
+    c3.groupSessions(c3.state.rows).length, 1);
+  t('G6 shadow list holds only shadow sessions',
+    c3.groupSessions(c3.state.srows)[0].n === 2, c3.groupSessions(c3.state.srows)[0].n, 2);
+}
+
+/* ---- Stale feed must not become a fake observation ----
+   The candles endpoint serves cached data for 90s+ at a time. Logging the same
+   price as if it were fresh reads makes the session look motionless, collapses
+   sigma_cur to its floor, and inflates z until the dial reports certainty it has
+   not earned. A read is only real if the feed's own clock advanced. */
+{
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+  const c = mk();
+  c.state.now = at(0, 8);
+  c.shadowIngest(64000, 2.0, 1000);
+  c.state.now = at(3, 4);
+  c.shadowIngest(64030, 2.0, 1180);
+  t('S11 a fresh observation logs', c.state.srows.length === 1, c.state.srows.length, 1);
+
+  c.state.now = at(4, 4);
+  c.shadowIngest(64030, 2.0, 1180);              // same feed timestamp — cached
+  t('S11 stale feed logs nothing', c.state.srows.length === 1, c.state.srows.length, 1);
+  t('S11 stale feed is surfaced, not hidden', /stale|cached/i.test(String(c.state.sErr || '')),
+    c.state.sErr, 'a stale notice');
+
+  c.state.now = at(5, 4);
+  c.shadowIngest(64055, 2.0, 1240);              // clock advanced — real again
+  t('S11 recovers when the feed moves', c.state.srows.length === 2, c.state.srows.length, 2);
+  t('S11 stale notice clears', !c.state.sErr, c.state.sErr, null);
+
+  /* the duplicate must not reach sigma_cur either — a fake zero-move read is
+     what drove sigma to its floor and z to 4.98 on a $31 delta */
+  const pts = c.state.shadow.pts.map((p) => p.p);
+  t('S11 no duplicate point in the sigma chain',
+    new Set(pts).size === pts.length, pts.join(','), 'all distinct');
+}
+
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log('TEST'.padEnd(w) + '  RESULT  GOT / WANT');

@@ -117,16 +117,38 @@ await shadowPage.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'load'
 await shadowPage.waitForTimeout(2200);
 await shadowPage.getByText('LOG', { exact: true }).first().click();
 await shadowPage.waitForTimeout(600);
-const sv = await shadowPage.evaluate(() => ({
+const readTxt = () => shadowPage.evaluate(() => ({
   txt: document.body.innerText, sw: document.documentElement.scrollWidth }));
+
+/* default tab is the traded log: it must NOT contain the shadow session */
+const onReal = await readTxt();
+await shadowPage.getByText('SHADOW', { exact: true }).click();
+await shadowPage.waitForTimeout(400);
+const onShadowCollapsed = await readTxt();
+await shadowPage.getByText(/[\u25b8] \d/).first().click();
+await shadowPage.waitForTimeout(400);
+const onShadowOpen = await readTxt();
+
+const sessRe = /[\u25b8\u25be] \d+:\d\d/g;
 const shad = [
-  ['shadow rows render in table', (sv.txt.match(/◇/g) || []).length === 3, (sv.txt.match(/◇/g) || []).length],
-  ['table not reported empty', !/Nothing logged yet/.test(sv.txt), String(/Nothing logged yet/.test(sv.txt))],
-  ['strip counts the same reads', /3 reads/.test(sv.txt), (sv.txt.match(/\d+ reads/) || ['—'])[0]],
-  ['resolved shadow row scored', /CORRECT|MISSED/.test(sv.txt), String(/CORRECT|MISSED/.test(sv.txt))],
-  ['no horizontal scroll with shadow rows', sv.sw <= 1440, sv.sw]
+  ['traded log excludes shadow sessions', !sessRe.test(onReal.txt), (onReal.txt.match(sessRe) || []).length],
+  ['shadow tab shows a session row', (onShadowCollapsed.txt.match(/[\u25b8] \d+:\d\d/g) || []).length === 1,
+    (onShadowCollapsed.txt.match(/[\u25b8] \d+:\d\d/g) || []).length],
+  ['sessions start collapsed', !/:0\d\s+64,374/.test(onShadowCollapsed.txt), 'no reads shown'],
+  ['session summarises its reads', /3 reads/.test(onShadowCollapsed.txt),
+    (onShadowCollapsed.txt.match(/\d+ reads[^\n]*/) || ['—'])[0]],
+  ['resolved session carries a verdict', /SETTLED (UP|DOWN)/.test(onShadowCollapsed.txt),
+    (onShadowCollapsed.txt.match(/SETTLED \w+/) || ['—'])[0]],
+  ['clicking expands to the reads', (onShadowOpen.txt.match(/[\u25be] \d+:\d\d/g) || []).length === 1,
+    (onShadowOpen.txt.match(/[\u25be] \d+:\d\d/g) || []).length],
+  ['expanded reads are scored', /CORRECT|MISSED/.test(onShadowOpen.txt),
+    String(/CORRECT|MISSED/.test(onShadowOpen.txt))],
+  ['no double colon in the minute column', !/::/.test(onShadowOpen.txt), String(/::/.test(onShadowOpen.txt))],
+  ['strip counts the same reads', /3 reads/.test(onShadowOpen.txt),
+    (onShadowOpen.txt.match(/\d+ reads/) || ['—'])[0]],
+  ['no horizontal scroll when expanded', onShadowOpen.sw <= 1440, onShadowOpen.sw]
 ];
-console.log('\nSHADOW ROWS / LOG TAB @ 1440x900');
+console.log('\nSHADOW / GROUPED LOG @ 1440x900');
 for (const [n, ok, got] of shad) console.log('  ' + (ok ? 'PASS  ' : 'FAIL  ') + n.padEnd(38) + got);
 const shadBad = shad.filter(([, ok]) => !ok).length;
 await shadowPage.close();
