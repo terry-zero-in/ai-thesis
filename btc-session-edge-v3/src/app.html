@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="a680947b-3bd6-4418-8511-7efb452b2a3e"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("4b84afa9-05d4-4f94-89fb-ea6d9525e9b1") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6fd1d9dc-ad95-4c51-a83d-2ef78d89a012") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("511cb9a9-3d9a-45da-a893-4e43bbc1e900") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6211be10-93d4-426d-90a5-d53c6431c29b") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b5cb0d1f-86e7-4101-b9ff-224fa8be44fb") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("4b84afa9-05d4-4f94-89fb-ea6d9525e9b1") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("6fd1d9dc-ad95-4c51-a83d-2ef78d89a012") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("511cb9a9-3d9a-45da-a893-4e43bbc1e900") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("6211be10-93d4-426d-90a5-d53c6431c29b") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("b5cb0d1f-86e7-4101-b9ff-224fa8be44fb") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("4b84afa9-05d4-4f94-89fb-ea6d9525e9b1") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6fd1d9dc-ad95-4c51-a83d-2ef78d89a012") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("511cb9a9-3d9a-45da-a893-4e43bbc1e900") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6211be10-93d4-426d-90a5-d53c6431c29b") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b5cb0d1f-86e7-4101-b9ff-224fa8be44fb") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("7f9f2ac2-2eff-42b2-901d-fb3ca1e58779") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("82942cf5-6749-4a63-ad80-a6d40fcce8e5") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("87261bb0-7829-455e-bdc9-337f1e0a7975") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d400050b-4ac2-4082-8408-ac65ccfdc327") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("972c8600-7bdc-445c-9954-938743fd02e2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("43ee444c-580f-46cd-81fc-2fa37ac52932") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("7f9f2ac2-2eff-42b2-901d-fb3ca1e58779") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("82942cf5-6749-4a63-ad80-a6d40fcce8e5") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("87261bb0-7829-455e-bdc9-337f1e0a7975") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("d400050b-4ac2-4082-8408-ac65ccfdc327") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("972c8600-7bdc-445c-9954-938743fd02e2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("43ee444c-580f-46cd-81fc-2fa37ac52932") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow-x:auto;overflow-y:hidden;background:#0F1013;color:#F2F4F7;
+  font-family:'Geist',-apple-system,'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:#73BAFF;text-decoration:none}
+a:hover{color:#A5D8FF}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit;color:inherit;background:none;border:0;outline:none}
+input::placeholder{color:#7E8896}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+::selection{background:rgba(19,153,253,.28)}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:rgba(255,255,255,.11);border-radius:6px}
+*::-webkit-scrollbar-track{background:transparent}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:.3}}
+</style>
+</helmet>
+
+<div style="height:100dvh; min-width:1240px; overflow:hidden; display:grid; grid-template-rows:auto 1fr auto; background:#0F1013">
+
+  <div style="display:flex; align-items:center; gap:20px; height:56px; padding:0 20px; background:#08090A; border-bottom:1px solid rgba(255,255,255,.10)">
+    <span style="display:flex; align-items:center; gap:9px; flex:none">
+      <span style="width:14px; height:14px; border-radius:4px; background:#1399FD"></span>
+      <span style="font-size:13px; font-weight:600; letter-spacing:-.01em">Session Edge</span>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; padding:2px 6px; border:1px solid rgba(255,255,255,.10); border-radius:4px">BTC 15m · v3</span>
+    </span>
+
+    <span style="display:flex; align-items:baseline; gap:8px; flex:none">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:15px; font-variant-numeric:tabular-nums; color:#F2F4F7">{{ clock }}</span>
+      <span style="font-size:11px; color:#8B94A1">CT · {{ dayName }}</span>
+    </span>
+
+    <span style="width:1px; height:24px; background:rgba(255,255,255,.10); flex:none"></span>
+
+    <span style="display:flex; align-items:baseline; gap:9px; flex:none">
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1">SESSION</span>
+      <span style="font-size:13px; font-variant-numeric:tabular-nums; color:#F2F4F7">{{ sessionWindow }}</span>
+    </span>
+
+    <span style="display:flex; align-items:baseline; gap:8px; flex:none">
+      <span style="{{ countdownSt }}">{{ countdown }}</span>
+      <span style="font-size:11px; color:#8B94A1">to close</span>
+    </span>
+
+    <div style="flex:1; min-width:60px; display:flex; gap:2px; align-items:center">
+      <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="15">
+        <span style="{{ t.st }}"></span>
+      </sc-for>
+    </div>
+
+    <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; flex:none">MIN {{ minLabel }}/15</span>
+
+    <div style="display:flex; gap:2px; flex:none; padding:2px; background:#131519; border:1px solid rgba(255,255,255,.06); border-radius:6px">
+      <button sc-camel-on-click="{{ goTrade }}" style="{{ tabTradeSt }}">TRADE</button>
+      <button sc-camel-on-click="{{ goLog }}" style="{{ tabLogSt }}">LOG</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ isTrade }}" hint-placeholder-val="{{ true }}">
+  <div style="display:grid; grid-template-columns:344px minmax(470px,1fr) 392px; gap:1px; background:rgba(255,255,255,.06); overflow:hidden">
+
+    <div style="background:#131519; padding:16px; overflow:hidden; display:flex; flex-direction:column; gap:12px">
+      <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.07em; color:#8B94A1">INPUT</div>
+
+      <div>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px">
+          <span style="font-size:11px; color:#8B94A1">Strike — price to beat</span>
+          <sc-if value="{{ showGhost }}" hint-placeholder-val="{{ false }}">
+            <button sc-camel-on-click="{{ useGhost }}" style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; color:#73BAFF; padding:1px 6px; border:1px solid rgba(19,153,253,.42); border-radius:4px">↺ {{ ghostStrike }}</button>
+          </sc-if>
+        </div>
+        <input value="{{ strike }}" sc-camel-on-change="{{ onStrike }}" placeholder="64850" sc-camel-input-mode="decimal" style="{{ strikeFieldSt }}">
+      </div>
+
+      <div>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px">
+          <span style="font-size:11px; color:#8B94A1">Price now</span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.05em; color:#8B94A1">↵ LOGS THE READ</span>
+        </div>
+        <input value="{{ priceIn }}" sc-camel-on-change="{{ onPrice }}" sc-camel-on-key-down="{{ onPriceKey }}" placeholder="872" sc-camel-input-mode="decimal" style="{{ priceFieldSt }}">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-top:6px; height:18px">
+          <span style="{{ echoSt }}">{{ echo }}</span>
+          <span style="{{ deltaEchoSt }}">{{ deltaEcho }}</span>
+        </div>
+      </div>
+
+      <div style="height:1px; background:rgba(255,255,255,.06)"></div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+        <div>
+          <div style="font-size:11px; color:#8B94A1; margin-bottom:5px">px 75m ago</div>
+          <input value="{{ px75 }}" sc-camel-on-change="{{ onPx75 }}" placeholder="—" sc-camel-input-mode="decimal" style="width:100%; height:30px; padding:0 9px; background:#0B0C0E; border:1px solid rgba(255,255,255,.10); border-radius:6px; font-size:13px; font-variant-numeric:tabular-nums" style-focus="border-color:#1399FD">
+        </div>
+        <div>
+          <div style="font-size:11px; color:#8B94A1; margin-bottom:5px">mkt ¢ (YES)</div>
+          <input value="{{ mkt }}" sc-camel-on-change="{{ onMkt }}" placeholder="—" sc-camel-input-mode="numeric" style="width:100%; height:30px; padding:0 9px; background:#0B0C0E; border:1px solid rgba(255,255,255,.10); border-radius:6px; font-size:13px; font-variant-numeric:tabular-nums" style-focus="border-color:#1399FD">
+        </div>
+      </div>
+
+      <button sc-camel-on-click="{{ toggleMacro }}" style="{{ macroSt }}">
+        <span style="{{ macroDotSt }}"></span>
+        <span style="flex:1; text-align:left">{{ macroLabel }}</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.05em">{{ macroHint }}</span>
+      </button>
+
+      <div style="height:1px; background:rgba(255,255,255,.06)"></div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+        <span style="font-size:11px; color:#8B94A1">Reference feed</span>
+        <button sc-camel-on-click="{{ toggleAuto }}" style="{{ autoSt }}">{{ autoLabel }}</button>
+      </div>
+      <div style="{{ feedLineSt }}">{{ feedLine }}</div>
+
+      <div style="flex:1"></div>
+
+      <div style="padding:11px 12px; background:#0B0C0E; border:1px solid rgba(255,255,255,.06); border-radius:6px">
+        <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:8px">σ — PER-MINUTE UNIT VOL</div>
+        <sc-for list="{{ sigmaRows }}" as="sr" hint-placeholder-count="4">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; padding:3px 0">
+            <span style="font-size:11px; color:#A6AEBB">{{ sr.label }}</span>
+            <span style="{{ sr.valSt }}">{{ sr.val }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:#0F1013; padding:20px 24px; overflow:hidden; display:flex; flex-direction:column">
+      <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:2px">
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.07em; color:#8B94A1">P(SETTLES UP)</span>
+        <sc-for list="{{ badges }}" as="b" hint-placeholder-count="2">
+          <span style="{{ b.st }}">{{ b.label }}</span>
+        </sc-for>
+      </div>
+
+      <div style="display:flex; align-items:baseline; gap:16px; margin-top:4px; white-space:nowrap">
+        <span style="{{ sideGlyphSt }}">{{ sideGlyph }}</span>
+        <span style="{{ sideWordSt }}">{{ sideWord }}</span>
+        <span style="{{ pctSt }}">{{ pct }}</span>
+      </div>
+
+      <div style="position:relative; height:10px; margin-top:14px; background:#0B0C0E; border:1px solid rgba(255,255,255,.06); border-radius:4px">
+        <span style="{{ bandSt }}"></span>
+        <span style="position:absolute; top:-3px; bottom:-3px; left:50%; width:1px; background:rgba(255,255,255,.16)"></span>
+        <span style="{{ markerSt }}"></span>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:5px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:9px; letter-spacing:.05em; color:#8B94A1">
+        <span>100% DOWN</span><span>EVEN</span><span>100% UP</span>
+      </div>
+
+      <div style="margin-top:16px; padding:12px 14px; background:#131519; border:1px solid rgba(255,255,255,.06); border-radius:6px">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:9px; white-space:nowrap">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1">FEE-ADJUSTED CEILING</span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; color:#8B94A1">FEE_K {{ feeKLabel }} · taker · maker {{ makerLabel }}</span>
+        </div>
+        <div style="display:flex; align-items:baseline; gap:22px; flex-wrap:wrap">
+          <span style="display:flex; align-items:baseline; gap:8px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; letter-spacing:.05em; color:#8B94A1">YES ≤</span>
+            <span style="{{ yesSt }}">{{ yesLine }}</span>
+          </span>
+          <span style="width:1px; height:16px; background:rgba(255,255,255,.10)"></span>
+          <span style="display:flex; align-items:baseline; gap:8px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; letter-spacing:.05em; color:#8B94A1">NO ≤</span>
+            <span style="{{ noSt }}">{{ noLine }}</span>
+          </span>
+          <div style="flex:1; min-width:0"></div>
+          <span style="{{ mktVerdictSt }}">{{ mktVerdict }}</span>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:baseline; gap:18px; margin-top:14px; flex-wrap:wrap">
+        <sc-for list="{{ mechRows }}" as="mr" hint-placeholder-count="5">
+          <span style="display:flex; align-items:baseline; gap:7px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.05em; color:#8B94A1">{{ mr.k }}</span>
+            <span style="font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; color:#F2F4F7">{{ mr.v }}</span>
+          </span>
+        </sc-for>
+      </div>
+
+      <div style="flex:1; min-height:0; margin-top:16px; display:flex; flex-direction:column">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1">EVIDENCE RAIL — Z-MATCHED ANALOGS ±0.25</span>
+          <span style="{{ railStatSt }}">{{ railStat }}</span>
+        </div>
+        <div style="{{ railWrapSt }}">
+          <div style="flex:1; min-height:0; display:flex; align-items:flex-end; gap:2px; position:relative">
+            <sc-for list="{{ hist }}" as="h" hint-placeholder-count="20">
+              <span style="{{ h.st }}"></span>
+            </sc-for>
+            <span style="{{ histMarkerSt }}"></span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,.06); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:9px; letter-spacing:.04em; color:#8B94A1">
+            <span>−$250</span><span>{{ histNote }}</span><span>+$250</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#131519; padding:16px; overflow:hidden; display:flex; flex-direction:column; gap:12px">
+      <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.07em; color:#8B94A1">ABLATION — WOULD THIS VARIABLE HAVE CHANGED MY ACTION</div>
+      <div>
+        <sc-for list="{{ ablations }}" as="ab" hint-placeholder-count="4">
+          <div style="display:grid; grid-template-columns:16px 1fr 58px 62px; gap:9px; align-items:center; height:34px; border-bottom:1px solid rgba(255,255,255,.06)">
+            <span style="{{ ab.letterSt }}">{{ ab.letter }}</span>
+            <span style="font-size:12px; color:#A6AEBB">{{ ab.name }}</span>
+            <span style="{{ ab.ppSt }}">{{ ab.pp }}</span>
+            <span style="{{ ab.flagSt }}">{{ ab.flag }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="height:1px; background:rgba(255,255,255,.06)"></div>
+
+      <div style="display:flex; align-items:baseline; justify-content:space-between">
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.07em; color:#8B94A1">RECENT READS</span>
+        <button sc-camel-on-click="{{ goLog }}" style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.05em; color:#73BAFF">FULL LOG →</button>
+      </div>
+      <div style="flex:1; min-height:0; display:flex; flex-direction:column; gap:1px">
+        <sc-for list="{{ peek }}" as="p" hint-placeholder-count="4">
+          <div style="display:flex; align-items:center; gap:8px; height:28px; padding:0 9px; background:#0B0C0E; border-radius:4px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; white-space:nowrap; overflow:hidden">
+            <span style="color:#8B94A1">{{ p.t }}</span>
+            <span style="color:#8B94A1">·:{{ p.k }}</span>
+            <span style="color:#F2F4F7; font-variant-numeric:tabular-nums">{{ p.delta }}</span>
+            <span style="color:#F2F4F7">{{ p.call }}</span>
+            <span style="color:#8B94A1; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis">{{ p.ab }}</span>
+            <span style="{{ p.badgeSt }}">{{ p.badge }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ peekEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:12px 0; font-size:12px; color:#8B94A1; line-height:1.5; text-wrap:pretty">No reads yet. Set the strike, type a price and press ↵ — every read writes a row with its four counterfactuals, and resolving the session scores all of them.</div>
+        </sc-if>
+      </div>
+
+      <div style="padding:9px 11px; background:#0B0C0E; border:1px solid rgba(255,255,255,.06); border-radius:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#A6AEBB">{{ peekSummary }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isLog }}" hint-placeholder-val="{{ false }}">
+  <div style="background:#0F1013; overflow:hidden; display:grid; grid-template-rows:auto auto 1fr auto">
+
+    <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:1px; background:rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.10)">
+      <sc-for list="{{ agg }}" as="a" hint-placeholder-count="5">
+        <div style="padding:14px 18px 15px; background:#131519">
+          <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:6px">{{ a.label }}</div>
+          <div style="{{ a.valSt }}">{{ a.val }}</div>
+          <div style="font-size:11px; color:#A6AEBB; margin-top:3px">{{ a.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:1px; background:rgba(255,255,255,.06)">
+      <div style="padding:14px 18px 16px; background:#0F1013">
+        <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:10px">CALIBRATION — PREDICTED VS ACTUAL</div>
+        <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px">
+          <sc-for list="{{ calib }}" as="c" hint-placeholder-count="5">
+            <div>
+              <div style="height:56px; display:flex; align-items:flex-end; gap:3px">
+                <span style="{{ c.predSt }}"></span>
+                <span style="{{ c.actSt }}"></span>
+              </div>
+              <div style="margin-top:6px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; color:#A6AEBB">{{ c.bucket }}</div>
+              <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; color:#8B94A1">{{ c.detail }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding:14px 18px 16px; background:#0F1013">
+        <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:10px">IS EACH FACTOR STILL PAYING · ΔBrier = Brier(without) − Brier(with) · positive = earning its place</div>
+        <div style="display:grid; grid-template-columns:16px 1fr 74px 132px 1fr; gap:10px; align-items:center; height:24px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.05em; color:#8B94A1; border-bottom:1px solid rgba(255,255,255,.10)">
+          <span></span><span>VARIABLE</span><span style="text-align:right">ΔBRIER</span><span style="text-align:right">FLIPS</span><span>VERDICT</span>
+        </div>
+        <sc-for list="{{ ablAgg }}" as="v" hint-placeholder-count="4">
+          <div style="display:grid; grid-template-columns:16px 1fr 74px 132px 1fr; gap:10px; align-items:center; height:30px; border-bottom:1px solid rgba(255,255,255,.06)">
+            <span style="{{ v.letterSt }}">{{ v.letter }}</span>
+            <span style="font-size:12px; color:#A6AEBB">{{ v.name }}</span>
+            <span style="{{ v.dbSt }}">{{ v.db }}</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; text-align:right; color:#A6AEBB">{{ v.flips }}</span>
+            <span style="{{ v.verdictSt }}">{{ v.verdict }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="overflow:auto; border-top:1px solid rgba(255,255,255,.10)">
+      <div style="display:grid; grid-template-columns:74px 44px 92px 78px 62px 56px 96px 150px 74px 88px; gap:0 12px; align-items:center; height:30px; padding:0 18px; position:sticky; top:0; background:#0B0C0E; border-bottom:1px solid rgba(255,255,255,.10); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.04em; color:#8B94A1">
+        <span>TIME</span><span>MIN</span><span style="text-align:right">STRIKE</span><span style="text-align:right">DELTA</span><span style="text-align:right">Z</span><span style="text-align:right">σ</span><span>CALL</span><span>ABLATIONS</span><span style="text-align:right">MKT¢</span><span>RESULT</span>
+      </div>
+      <sc-for list="{{ full }}" as="r" hint-placeholder-count="12">
+        <div style="display:grid; grid-template-columns:74px 44px 92px 78px 62px 56px 96px 150px 74px 88px; gap:0 12px; align-items:center; height:32px; padding:0 18px; border-bottom:1px solid rgba(255,255,255,.06); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; font-variant-numeric:tabular-nums" style-hover="background:#1E2229">
+          <span style="color:#8B94A1">{{ r.t }}</span>
+          <span style="color:#8B94A1">:{{ r.k }}</span>
+          <span style="text-align:right; color:#A6AEBB">{{ r.strike }}</span>
+          <span style="text-align:right; color:#F2F4F7">{{ r.delta }}</span>
+          <span style="text-align:right; color:#A6AEBB">{{ r.z }}</span>
+          <span style="text-align:right; color:#8B94A1">{{ r.sig }}</span>
+          <span style="color:#F2F4F7">{{ r.call }}</span>
+          <span style="color:#8B94A1">{{ r.ab }}</span>
+          <span style="text-align:right; color:#A6AEBB">{{ r.mkt }}</span>
+          <span style="{{ r.badgeSt }}">{{ r.badge }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ fullEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:26px 18px; font-size:12px; color:#8B94A1">Nothing logged yet.</div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:16px; padding:11px 18px; background:#08090A; border-top:1px solid rgba(255,255,255,.10)">
+      <button sc-camel-on-click="{{ copyCsv }}" style="height:26px; padding:0 12px; border-radius:6px; font-size:12px; font-weight:500; color:#06121C; background:#0B84E0" style-hover="background:#1399FD">{{ csvLabel }}</button>
+      <button sc-camel-on-click="{{ clearLog }}" style="height:26px; padding:0 12px; border-radius:6px; font-size:12px; color:#A6AEBB; background:#1A1D23" style-hover="color:#F2F4F7">{{ clearLabel }}</button>
+      <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#8B94A1">{{ calibFooter }}</span>
+      <div style="flex:1; min-width:0"></div>
+      <span style="font-size:11px; color:#8B94A1; text-align:right; max-width:640px; line-height:1.45; text-wrap:pretty">{{ provenance }}</span>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ pending }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex; align-items:center; gap:16px; height:56px; padding:0 20px; background:#131519; border-top:1px solid rgba(224,165,74,.34)">
+    <span style="width:7px; height:7px; border-radius:2px; background:#E0A54A; animation:bp 1.6s ease-in-out infinite"></span>
+    <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; letter-spacing:.05em; color:#EDBE72">UNRESOLVED</span>
+    <span style="font-size:13px; color:#A6AEBB">{{ pendingLine }}</span>
+    <div style="flex:1; min-width:0"></div>
+    <span style="display:flex; align-items:center; gap:8px">
+      <span style="font-size:11px; color:#8B94A1">final Δ $</span>
+      <input value="{{ finalIn }}" sc-camel-on-change="{{ onFinal }}" placeholder="optional" sc-camel-input-mode="decimal" style="width:96px; height:28px; padding:0 9px; background:#0B0C0E; border:1px solid rgba(255,255,255,.10); border-radius:6px; font-size:12px; font-variant-numeric:tabular-nums" style-focus="border-color:#1399FD">
+    </span>
+    <span style="display:flex; gap:6px">
+      <button sc-camel-on-click="{{ resolveUp }}" style="height:30px; padding:0 16px; border-radius:6px; font-size:13px; font-weight:500; color:#A6AEBB; background:#1A1D23; border:1px solid rgba(255,255,255,.10)" style-hover="color:#F2F4F7; border-color:rgba(255,255,255,.16)">▲ settled up</button>
+      <button sc-camel-on-click="{{ resolveDown }}" style="height:30px; padding:0 16px; border-radius:6px; font-size:13px; font-weight:500; color:#A6AEBB; background:#1A1D23; border:1px solid rgba(255,255,255,.10)" style-hover="color:#F2F4F7; border-color:rgba(255,255,255,.16)">▼ settled down</button>
+      <button sc-camel-on-click="{{ resolveFlat }}" style="height:30px; padding:0 13px; border-radius:6px; font-size:13px; color:#8B94A1; background:#1A1D23; border:1px solid rgba(255,255,255,.10)" style-hover="color:#A6AEBB">— flat</button>
+    </span>
+  </div>
+  </sc-if>
+
+  
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},
+&quot;feeK&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.07,&quot;min&quot;:0.02,&quot;max&quot;:0.12,&quot;step&quot;:0.005,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;},
+&quot;makerMult&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;},
+&quot;bConstant&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.77,&quot;min&quot;:1.2,&quot;max&quot;:2.4,&quot;step&quot;:0.01,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;},
+&quot;macroSigmaMult&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.6,&quot;min&quot;:1,&quot;max&quot;:2.5,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;}}">
+const MONO = "font-family:'JetBrains Mono',ui-monospace,monospace";
+const TAB = 'font-variant-numeric:tabular-nums';
+const DOWS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const LSK = { log:'edge.log.v3', sess:'edge.sessions.v3', calib:'edge.calib.v3' };
+/* §5.6 — storage adapter. Four functions, localStorage default. Swap the object
+   for a Supabase-backed one with the same signatures and no component changes. */
+const STORE = {
+  get: (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  del: (k) => { try { localStorage.removeItem(k); return true; } catch (e) { return false; } },
+  keys: () => { try { return Object.keys(localStorage).filter((k) => k.indexOf('edge.') === 0); } catch (e) { return []; } }
+};
+const lsGet = STORE.get, lsSet = STORE.set;
+
+const wilson = (k, n, z = 1.645) => {
+  if (!n) return [0, 1];
+  const p = k / n, z2 = z * z, den = 1 + z2 / n;
+  const c = p + z2 / (2 * n), m = z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n);
+  return [Math.max(0, (c - m) / den), Math.min(1, (c + m) / den)];
+};
+const median = (a) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const sgn = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
+const money = (v, sign) => v == null ? '—' : (sign && v > 0 ? '+' : v < 0 ? '−' : '') + '$' + Math.abs(Math.round(v)).toLocaleString();
+const num = (t) => (t !== '' && t != null && isFinite(+t) ? +t : null);
+const hhmm = (ms) => { const d = new Date(ms); const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true }).format(d); return p.replace(' AM', 'a').replace(' PM', 'p').replace(/\s/g, ''); };
+
+/* §3.3 — driftNudge. net = strike − px75; nudge AGAINST the drift sign, decayed
+   so live evidence takes over by minute 8. Measured continuation 44.6–48.2%,
+   which makes N-session drift a fade and never a trend-following prior. */
+const driftNudge = (net, k) => {
+  if (net == null) return 0;
+  const a = Math.abs(net);
+  let mag = 0;
+  if (a >= 200) mag = 0.16; else if (a >= 80) mag = 0.22; else if (a >= 20) mag = 0.07;
+  return mag * -sgn(net) * Math.max(0, (8 - k) / 8);
+};
+
+class Component extends DCLogic {
+  state = {
+    now: Date.now(), view: 'trade', data: null,
+    strike: '', priceIn: '', px75: '', mkt: '', macroOn: false, finalIn: '',
+    rows: [], sess: {}, auto: false, autoPx: null, autoAt: null, autoErr: null,
+    csvLabel: 'copy CSV', clearArm: false
+  };
+
+  componentDidMount() {
+    this.setState({ rows: lsGet(LSK.log, []), sess: lsGet(LSK.sess, {}) });
+    this._sessTs = Math.floor(Date.now() / 1000 / 900) * 900;
+    /* One clock, one source of truth. When the quarter-hour rolls, the strike
+       from the closed session is demoted to a one-tap ghost and the field is
+       cleared — a stale strike produces a confident number against the wrong
+       reference, which is worse than no number at all. px75 re-derives from the
+       stored price chain (Task 4); if there is no session five slots back it
+       clears rather than carrying a stale value forward. */
+    this._t = setInterval(() => {
+      const now = Date.now();
+      const ts = Math.floor(now / 1000 / 900) * 900;
+      if (ts !== this._sessTs) {
+        this._sessTs = ts;
+        this.setState({ now, priceIn: '', mkt: '', strike: '',
+          ghost: this.state.strike || this.state.ghost, px75: this.autoPx75(ts) });
+      } else {
+        this.setState({ now });
+      }
+    }, 1000);
+    /* Bundled offline builds hand us a blob URL for the dataset via the
+       ext-resource-dependency meta; unbundled we resolve it beside the page. */
+    const dataUrl = (window.__resources && window.__resources.sessData) || new URL('./btc-sessions.js', document.baseURI).href;
+    import(dataUrl)
+      .then((m) => this.setState({ data: m }, () => {
+        if (typeof location !== 'undefined' && /(\?|&)selftest=1/.test(location.search)) this.selfTest();
+      }))
+      .catch((e) => this.setState({ dataErr: String(e && e.message || e) }));
+    const s = lsGet(LSK.sess, {}), keys = Object.keys(s).sort();
+    this.setState({ px75: this.autoPx75(Math.floor(Date.now() / 1000 / 900) * 900) });
+    if (keys.length) {
+      const last = s[keys[keys.length - 1]];
+      if (last && last.strike) this.setState({ ghost: last.strike });
+    }
+  }
+  componentWillUnmount() { clearInterval(this._t); clearInterval(this._p); }
+
+  /* ---- dev harness. Runs on ?selftest=1 once the dataset resolves. Every
+     assertion here corresponds to a spec clause or a fixed defect; a red row
+     means the model is no longer computing what the build plan says it does. */
+  selfTest() {
+    const D = this.state.data;
+    if (!D) return;
+    const out = [];
+    const near = (a, b, tol) => a != null && Math.abs(a - b) <= tol;
+    const t = (name, pass, got, want) => out.push({ test: name, result: pass ? 'PASS' : 'FAIL', got, want });
+
+    t('driftNudge net=-120 k=2', near(driftNudge(-120, 2), 0.165, 1e-9), driftNudge(-120, 2), 0.165);
+    t('driftNudge decays to 0 at k=8', driftNudge(-120, 8) === 0, driftNudge(-120, 8), 0);
+    t('driftNudge dead band <$20', driftNudge(10, 3) === 0, driftNudge(10, 3), 0);
+    t('driftNudge net=+250 k=1 fades down', near(driftNudge(250, 1), -0.14, 1e-9), driftNudge(250, 1), -0.14);
+
+    t('suffix 872 vs strike 64850', this.resolvePrice('872', 64850) === 64872, this.resolvePrice('872', 64850), 64872);
+    t('suffix 4910 vs strike 64850', this.resolvePrice('4910', 64850) === 64910, this.resolvePrice('4910', 64850), 64910);
+    t('full price passes through', this.resolvePrice('64872', 64850) === 64872, this.resolvePrice('64872', 64850), 64872);
+
+    t('REMVAR[13] is SHAPE[14]^2/3', near(D.REMVAR[13], D.REMVAR_CLOSE[13] / 3, 1e-6), D.REMVAR[13], D.REMVAR_CLOSE[13] / 3);
+    t('mean(SHAPE) normalised to 1', near(D.SHAPE.reduce((a, b) => a + b, 0) / 15, 1, 1e-4), D.SHAPE.reduce((a, b) => a + b, 0) / 15, 1);
+
+    const m1 = this.model({ k: 12, delta: 40, sigmaUnit: 27, net: null, B: 1.77, macro: false, drift: false, settleAvg: true });
+    t('model k=12 d=+40 s=27 -> .8754', near(m1.p, 0.8754, 5e-4), m1.p, 0.8754);
+    const m2 = this.model({ k: 14, delta: 20, sigmaUnit: 26.8926, net: null, B: 1.77, macro: false, drift: false, settleAvg: true });
+    t('model k=14 d=+20 settle -> .9451', near(m2.p, 0.9451, 5e-4), m2.p, 0.9451);
+    const m3 = this.model({ k: 14, delta: 20, sigmaUnit: 26.8926, net: null, B: 1.77, macro: false, drift: false, settleAvg: false });
+    t('model k=14 d=+20 close -> .8380', near(m3.p, 0.8380, 5e-4), m3.p, 0.8380);
+
+    const saveSess = this.state.sess;
+    this.state.sess = { 1: { pts: [{ k: 1, p: 100 }, { k: 2, p: 127 }, { k: 3, p: 100 }] } };
+    const sc = this.sigmaCur(1);
+    this.state.sess = saveSess;
+    t('sigmaCur RMS unbiased (no 0.798)', near(sc, 27, 1e-6), sc, 27);
+
+    t('refitB inert below n=150', this.refitB() === null, this.refitB(), null);
+
+    console.table(out);
+    const bad = out.filter((x) => x.result === 'FAIL').length;
+    console.log(bad ? '%c' + bad + ' FAILING' : '%cALL PASS', 'font-weight:700;color:' + (bad ? '#f55' : '#5c5'));
+    return out;
+  }
+
+  /* ---- clock. Session = 15 minutes on :00/:15/:30/:45 CT. Minute index and the
+     countdown are read from the clock and are never user-set — v2's slider and
+     follow-clock button are gone because they were state that could be wrong. */
+  ct() {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago', hour12: false, weekday: 'short',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }).formatToParts(new Date(this.state.now));
+    const g = (t) => { const p = parts.find((x) => x.type === t); return p ? p.value : '0'; };
+    const hr = +g('hour') % 24, mi = +g('minute'), se = +g('second');
+    const dow = ({ Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 })[g('weekday')] || 0;
+    const mis = mi % 15, secLeft = (14 - mis) * 60 + (60 - se), startMin = mi - mis;
+    const wl = (h, m) => ((h + 11) % 12 + 1) + ':' + String(m).padStart(2, '0');
+    const endH = startMin === 45 ? (hr + 1) % 24 : hr;
+    const sessionTs = Math.floor(this.state.now / 1000 / 900) * 900;
+    return { hr, mi, se, dow, mis, secLeft, sessionTs,
+      window: wl(hr, startMin) + '–' + wl(endH, (startMin + 15) % 60) + (endH < 12 ? 'a' : 'p'),
+      clock: g('hour') + ':' + g('minute') + ':' + g('second') };
+  }
+
+  /* ---- §1 suffix entry. 2–4 digits resolve to the candidate nearest the strike
+     that shares that suffix; a full price is always taken as typed. */
+  resolvePrice(raw, strike) {
+    const t = String(raw || '').replace(/[^0-9.]/g, '');
+    if (t === '') return null;
+    const v = +t;
+    if (!isFinite(v)) return null;
+    const digits = t.replace('.', '').length;
+    if (strike == null || digits > 4 || t.indexOf('.') >= 0 || digits < 2) return v;
+    const mod = Math.pow(10, digits);
+    const head = Math.floor(strike / mod) * mod;
+    let best = null, bd = Infinity;
+    for (const c of [head + v - mod, head + v, head + v + mod]) {
+      const d = Math.abs(c - strike);
+      if (c > 0 && d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+
+  /* ---- §1 px75 carry-forward. 75 minutes back is five sessions; the first
+     logged price of that session is the drift anchor. Reuses the stored pts
+     chain rather than asking for the number again. Empty when that session was
+     never engaged — an absent anchor is correct, a stale one is not. */
+  autoPx75(ts) {
+    const e = this.state.sess[ts - 4500];
+    const p = e && e.pts && e.pts.length ? e.pts[0].p : null;
+    return p == null ? '' : String(p);
+  }
+
+
+  /* ---- §3.2 M: median over the last 12 resolved sessions of the realised final
+     move divided by what the hour's baseline vol predicted. Inert below 4. */
+  mult(D) {
+    const s = this.state.sess, keys = Object.keys(s).sort();
+    const r = [];
+    for (let i = keys.length - 1; i >= 0 && r.length < 12; i--) {
+      const e = s[keys[i]];
+      if (!e || e.resolved == null || e.finalDelta == null || !e.hr && e.hr !== 0) continue;
+      const base = D.HOUR_SIGMA[e.hr];
+      const denom = base * Math.sqrt(D.SUM_SHAPE2) * 0.798;
+      if (denom > 0) r.push(Math.abs(e.finalDelta) / denom);
+    }
+    if (r.length < 4) return { M: 1, n: r.length };
+    return { M: clamp(median(r), 0.5, 2.5), n: r.length };
+  }
+
+  /* ---- §3.2 σ_cur: RMS of |Δprice| / sqrt(Δminutes) across consecutive price
+     entries inside the live session. RMS is already unbiased for sigma, so no
+     mean-absolute (0.798) correction here — that factor belongs only in mult(),
+     where a single |finalDelta| stands in for the distribution. Needs two
+     entries; undefined otherwise. */
+  sigmaCur(sessionTs) {
+    const e = this.state.sess[sessionTs];
+    const pts = e && e.pts ? e.pts : [];
+    if (pts.length < 2) return null;
+    let acc = 0, n = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const dm = pts[i].k - pts[i - 1].k;
+      if (dm <= 0) continue;
+      const u = Math.abs(pts[i].p - pts[i - 1].p) / Math.sqrt(dm);
+      acc += u * u; n++;
+    }
+    return n ? Math.sqrt(acc / n) : null;
+  }
+
+  /* ---- §3.3 B refit. Newton on the log-likelihood of P = sigmoid(B*z), capped
+     at 200 steps, intercept pinned at 0 because the measured base rate is 49.2%.
+     Newton rather than plain gradient ascent: same objective, converges in ~5
+     steps, no learning rate to tune. Clamped to the same [1.2, 2.4] band as the
+     ruled constant so a thin or freak sample can never swing the dial. Only v2
+     rows count — rows logged before the sigma_cur fix carry biased z. */
+  refitB() {
+    const sc = this.scored().filter((r) => r.v === 2 && isFinite(r.z));
+    if (sc.length < 150) return null;
+    let B = this.props.bConstant ?? 1.77;
+    for (let i = 0; i < 200; i++) {
+      let g = 0, h = 0;
+      for (const r of sc) {
+        const y = r.resolved === 'U' ? 1 : 0;
+        const p = 1 / (1 + Math.exp(-clamp(B * r.z, -30, 30)));
+        g += (y - p) * r.z;
+        h += p * (1 - p) * r.z * r.z;
+      }
+      if (!(h > 0)) break;
+      const step = g / h;
+      B += step;
+      if (Math.abs(step) < 1e-9) break;
+    }
+    return isFinite(B) ? clamp(B, 1.2, 2.4) : null;
+  }
+  /* Cache keyed on the scored-v2 count — the fit only moves when a row resolves. */
+  activeB() {
+    const n = this.scored().filter((r) => r.v === 2).length;
+    if (!this._bCache || this._bCache.n !== n) this._bCache = { n, B: this.refitB() };
+    return { B: clamp(this._bCache.B ?? (this.props.bConstant ?? 1.77), 1.2, 2.4),
+             fitted: this._bCache.B != null, n };
+  }
+
+
+  /* ---- the model. One call site, four ablation call sites, same code. */
+  model(o) {
+    const D = this.state.data;
+    const remVar = (o.settleAvg ? D.REMVAR : D.REMVAR_CLOSE)[o.k - 1];
+    const sigmaUnit = o.sigmaUnit * (o.macro ? (this.props.macroSigmaMult ?? 1.6) : 1);
+    const sigmaRem = sigmaUnit * Math.sqrt(remVar);
+    const z = sigmaRem > 0 ? o.delta / sigmaRem : 0;
+    const logit = o.B * z + driftNudge(o.drift ? o.net : null, o.k);
+    return { z, sigmaRem, p: 1 / (1 + Math.exp(-logit)) };
+  }
+
+  read() {
+    const D = this.state.data;
+    if (!D) return null;
+    const ct = this.ct(), k = ct.mis;
+    if (k < 1) return { ct, k, wait: 'session just opened — a read needs one full minute' };
+    const strike = num(this.state.strike);
+    if (strike == null) return { ct, k, wait: 'set the strike' };
+    const price = this.resolvePrice(this.state.priceIn, strike);
+    if (price == null) return { ct, k, strike, wait: 'enter the price' };
+
+    const delta = price - strike;
+    const base = D.HOUR_SIGMA[ct.hr];
+    const mm = this.mult(D);
+    const trail = base * mm.M;
+    const cur = this.sigmaCur(ct.sessionTs);
+    const sigmaUnit = cur != null ? 0.6 * trail + 0.4 * cur : trail;
+    const px75 = num(this.state.px75);
+    const net = px75 != null ? strike - px75 : null;
+    const B = this.activeB().B;
+    const macro = this.state.macroOn;
+
+    const arg = { k, delta, sigmaUnit, net, B, macro, drift: true, settleAvg: true };
+    const full = this.model(arg);
+    const ab = {
+      noMom: this.model(Object.assign({}, arg, { B: 1.0 })).p,
+      noDrift: this.model(Object.assign({}, arg, { drift: false })).p,
+      noSettle: this.model(Object.assign({}, arg, { settleAvg: false })).p,
+      macroFlip: this.model(Object.assign({}, arg, { macro: !macro })).p
+    };
+    return { ct, k, strike, price, delta, base, M: mm.M, mN: mm.n, trail, cur, sigmaUnit,
+      px75, net, B, macro, z: full.z, sigmaRem: full.sigmaRem, p: full.p, ab };
+  }
+
+  /* ---- §3.6 evidence rail. Baked sessions whose own z at the same minute sits
+     within ±0.25 of the live z, each scaled by its OWN realised per-minute vol. */
+  rail(r) {
+    const D = this.state.data;
+    if (!D || !r || r.z == null) return { n: 0, up: 0, finals: [] };
+    const rv = Math.sqrt(D.REMVAR[r.k - 1]);
+    const finals = [];
+    let up = 0, dn = 0;
+    for (let i = 0; i < D.SESS.length; i++) {
+      const row = D.SESS[i], sig = row[0] / 100;
+      if (sig <= 0) continue;
+      const zs = row[r.k] / (sig * rv);
+      if (Math.abs(zs - r.z) > 0.25) continue;
+      const f = row[15];
+      finals.push(f);
+      if (f > 0) up++; else if (f < 0) dn++;
+    }
+    return { n: finals.length, up, dn, finals };
+  }
+
+  /* ---- §4. Solve for the highest whole cent that still clears the fee. */
+  feeK() { return this.props.feeK ?? 0.07; }
+  ceilings(p) {
+    const K = this.feeK();
+    const taker = (x) => Math.ceil(K * x * (1 - x) * 100) / 100;
+    /* Maker M defaults to 0 on Kalshi's schedule — a resting order on a series
+       with no maker multiplier is free, which makes the maker ceiling the raw
+       probability. Prop-driven so it tracks the series rather than an assumption. */
+    const maker = (x) => (this.props.makerMult ?? 0) * 0.25 * K * x * (1 - x);
+    const solve = (target, fee) => { let best = 0; for (let c = 1; c <= 99; c++) { const x = c / 100; if (x + fee(x) <= target) best = c; } return best; };
+    return { yesT: solve(p, taker), yesM: solve(p, maker), noT: solve(1 - p, taker), noM: solve(1 - p, maker) };
+  }
+
+  persist(rows, sess) {
+    const next = {};
+    if (rows) next.rows = rows;
+    if (sess) next.sess = sess;
+    this.setState(next);
+    if (rows) lsSet(LSK.log, rows);
+    if (sess) lsSet(LSK.sess, sess);
+  }
+
+  /* ---- §5.1 a read is logged on ↵, never on a save button. */
+  logRead = () => {
+    const r = this.read();
+    if (!r || r.wait) return;
+    const ce = this.ceilings(r.p);
+    const mkt = num(this.state.mkt);
+    const row = { ts: Date.now(), sessionTs: r.ct.sessionTs, k: r.k, strike: r.strike, price: r.price,
+      delta: r.delta, sigmaUnit: r.sigmaUnit, z: r.z, pFull: r.p, ab: r.ab, macroOn: r.macro,
+      driftNet: r.net, mktCents: mkt, yesT: ce.yesT, noT: ce.noT, resolved: null, finalDelta: null, v: 2 };
+    const rows = [...this.state.rows, row];
+    const sess = Object.assign({}, this.state.sess);
+    const e = Object.assign({ pts: [], resolved: null, finalDelta: null }, sess[r.ct.sessionTs]);
+    e.strike = r.strike; e.hr = r.ct.hr; e.window = r.ct.window;
+    e.pts = [...(e.pts || []), { k: r.k, p: r.price }];
+    sess[r.ct.sessionTs] = e;
+    this.persist(rows, sess);
+  };
+
+  /* ---- §5.4 resolving back-fills every row of that session at once. */
+  resolve(v) {
+    const p = this.pendingSession();
+    if (!p) return;
+    const fd = num(this.state.finalIn);
+    const sess = Object.assign({}, this.state.sess);
+    sess[p.ts] = Object.assign({}, sess[p.ts], { resolved: v, finalDelta: fd });
+    const rows = this.state.rows.map((r) => r.sessionTs === +p.ts ? Object.assign({}, r, { resolved: v, finalDelta: fd }) : r);
+    this.persist(rows, sess);
+    this.setState({ finalIn: '' });
+  }
+  pendingSession() {
+    const s = this.state.sess, nowTs = Math.floor(this.state.now / 1000 / 900) * 900;
+    const keys = Object.keys(s).map(Number).sort((a, b) => a - b);
+    /* Oldest first. LIFO stranded any session the user skipped; FIFO drains the
+       queue in order so nothing becomes permanently unresolvable. */
+    for (let i = 0; i < keys.length; i++) {
+      const e = s[keys[i]];
+      if (e && e.resolved == null && keys[i] < nowTs) return { ts: keys[i], e };
+    }
+    return null;
+  }
+
+  fetchPx = () => {
+    fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot')
+      .then((r) => r.json())
+      .then((j) => { const v = +(j && j.data && j.data.amount); if (isFinite(v) && v > 0) this.setState({ autoPx: v, autoAt: Date.now(), autoErr: null }); else throw new Error('bad payload'); })
+      .catch(() => this.setState({ autoErr: 'feed unreachable' }));
+  };
+  toggleAuto = () => {
+    const on = !this.state.auto;
+    this.setState({ auto: on, autoErr: null });
+    clearInterval(this._p);
+    if (on) { this.fetchPx(); this._p = setInterval(this.fetchPx, 10000); }
+  };
+
+  csv() {
+    const h = ['ts','sessionTs','k','strike','price','delta','sigmaUnit','z','pFull','ab_noMom','ab_noDrift','ab_noSettle','ab_macroFlip','macroOn','driftNet','mktCents','yesCeilTaker','noCeilTaker','resolved','finalDelta'];
+    const lines = [h.join(',')];
+    for (const r of this.state.rows) {
+      lines.push([new Date(r.ts).toISOString(), r.sessionTs, r.k, r.strike, r.price, r.delta,
+        r.sigmaUnit.toFixed(3), r.z.toFixed(4), r.pFull.toFixed(5), r.ab.noMom.toFixed(5), r.ab.noDrift.toFixed(5),
+        r.ab.noSettle.toFixed(5), r.ab.macroFlip.toFixed(5), r.macroOn ? 1 : 0,
+        r.driftNet == null ? '' : r.driftNet, r.mktCents == null ? '' : r.mktCents,
+        r.yesT, r.noT, r.resolved || '', r.finalDelta == null ? '' : r.finalDelta].join(','));
+    }
+    return lines.join('\n');
+  }
+  copyCsv = () => {
+    const t = this.csv();
+    const done = () => { this.setState({ csvLabel: 'copied ✓' }); setTimeout(() => this.setState({ csvLabel: 'copy CSV' }), 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, done); else done();
+  };
+  clearLog = () => {
+    if (!this.state.clearArm) { this.setState({ clearArm: true }); setTimeout(() => this.setState({ clearArm: false }), 3000); return; }
+    this.persist([], {});
+    this.setState({ clearArm: false });
+  };
+
+  scored() { return this.state.rows.filter((r) => r.resolved === 'U' || r.resolved === 'D'); }
+
+  renderVals() {
+    const S = this.state, D = S.data, ct = this.ct(), r = this.read();
+    const live = r && !r.wait;
+    const rail = live ? this.rail(r) : { n: 0, up: 0, finals: [] };
+    const ce = live ? this.ceilings(r.p) : null;
+    const mktC = num(S.mkt);
+    const pending = this.pendingSession();
+    const pct100 = live ? r.p * 100 : null;
+    const upSide = live ? r.p >= 0.5 : true;
+
+    /* Direction is a word, a glyph and a position on the bar — three channels,
+       none of them a status hue. Accent marks the live call because the call is
+       the subject; green/red stay reserved for settled right and settled wrong. */
+    const sideWord = live ? (upSide ? 'UP' : 'DOWN') : '—';
+    const shown = live ? (upSide ? pct100 : 100 - pct100) : null;
+
+    const tab = (on) => MONO + '; font-size:10px; letter-spacing:.06em; height:22px; padding:0 11px; border-radius:4px; color:' +
+      (on ? '#06121C' : '#8B94A1') + '; background:' + (on ? '#1399FD' : 'transparent');
+
+    const ticks = Array.from({ length: 15 }, (_, i) => ({
+      st: 'flex:1; height:3px; border-radius:2px; background:' +
+        (i < ct.mis ? '#A6AEBB' : i === ct.mis ? '#E0A54A' : '#242932') +
+        (i === ct.mis ? '; animation:bp 1.6s ease-in-out infinite' : '')
+    }));
+
+    const field = 'width:100%; height:46px; padding:0 12px; background:#0B0C0E; border:1px solid rgba(255,255,255,.10); border-radius:6px; font-size:24px; font-weight:500; ' + TAB;
+
+    const macroWin = (() => {
+      const h = ct.hr, m = ct.mi, wd = ct.dow <= 4;
+      const t = h * 60 + m;
+      if (wd && t >= 445 && t <= 485) return true;
+      if (ct.dow === 2 && t >= 775 && t <= 820) return true;
+      return false;
+    })();
+
+    const sigmaRows = live ? [
+      { label: 'σ base — hour ' + ct.hr + ' CT', val: '$' + r.base.toFixed(1) },
+      { label: 'σ trail — M ' + r.M.toFixed(2) + ' (n' + r.mN + ')', val: '$' + r.trail.toFixed(1) },
+      { label: 'σ live — this session', val: r.cur == null ? 'needs 2 reads' : '$' + r.cur.toFixed(1) },
+      { label: 'σ unit — blended', val: '$' + r.sigmaUnit.toFixed(1) }
+    ].map((x, i) => ({ label: x.label, val: x.val,
+      valSt: MONO + '; font-size:12px; ' + TAB + '; color:' + (i === 3 ? '#F2F4F7' : '#A6AEBB') }))
+      : [{ label: 'σ base — hour ' + ct.hr + ' CT', val: D ? '$' + D.HOUR_SIGMA[ct.hr].toFixed(1) : '—', valSt: MONO + '; font-size:12px; ' + TAB + '; color:#A6AEBB' }];
+
+    const badges = [];
+    if (live && r.k >= 13) badges.push({ label: 'SETTLE-AVG', st: MONO + '; font-size:9px; letter-spacing:.06em; padding:2px 6px; border-radius:4px; color:#73BAFF; background:rgba(19,153,253,.10); border:1px solid rgba(19,153,253,.42)' });
+    if (S.macroOn) badges.push({ label: 'MACRO ×' + (this.props.macroSigmaMult ?? 1.6), st: MONO + '; font-size:9px; letter-spacing:.06em; padding:2px 6px; border-radius:4px; color:#EDBE72; background:rgba(224,165,74,.10); border:1px solid rgba(224,165,74,.34)' });
+
+    const [wlo, whi] = rail.n ? wilson(rail.up, rail.n) : [null, null];
+    const bandL = rail.n >= 30 ? wlo * 100 : null;
+    const bandW = rail.n >= 30 ? (whi - wlo) * 100 : null;
+
+    const ablDefs = [
+      ['M', 'noMom', 'momentum premium — B forced to 1.0'],
+      ['D', 'noDrift', 'drift fade — px75 nudge removed'],
+      ['S', 'noSettle', 'settle basis — final-minute average off'],
+      ['X', 'macroFlip', 'macro window — chip inverted']
+    ];
+    const flipsSide = (a) => live && (a >= 0.5) !== (r.p >= 0.5);
+    const flipsTrade = (a) => live && mktC != null && (mktC <= this.ceilings(a).yesT) !== (mktC <= ce.yesT);
+    const ablations = ablDefs.map(([letter, key, name]) => {
+      const a = live ? r.ab[key] : null;
+      const pp = live ? (a - r.p) * 100 : null;
+      const fs = live && flipsSide(a), ft = live && flipsTrade(a);
+      return { letter, name,
+        letterSt: MONO + '; font-size:12px; font-weight:500; color:' + (fs || ft ? '#F2F4F7' : '#8B94A1'),
+        pp: pp == null ? '—' : (pp > 0 ? '+' : pp < 0 ? '−' : '') + Math.abs(pp).toFixed(1) + 'pp',
+        ppSt: MONO + '; font-size:12px; ' + TAB + '; text-align:right; color:' + (pp != null && Math.abs(pp) >= 3 ? '#F2F4F7' : '#8B94A1'),
+        flag: fs ? '● side' : ft ? '● trade' : '',
+        flagSt: MONO + '; font-size:10px; letter-spacing:.04em; color:' + (fs ? '#EDBE72' : '#73BAFF') };
+    });
+
+    const BW = 25, LIM = 250, NB = 20;
+    const bins = Array(NB).fill(0);
+    rail.finals.forEach((f) => { const v = clamp(f, -LIM, LIM - 0.01); bins[Math.floor((v + LIM) / BW)]++; });
+    const bmax = Math.max(1, ...bins);
+    const hist = bins.map((b, i) => {
+      const mid = -LIM + BW * i + BW / 2;
+      const onCall = live && ((mid > 0) === upSide);
+      return { st: 'flex:1; min-height:' + (b ? '2px' : '0') + '; height:' + ((b / bmax) * 100).toFixed(1) + '%; border-radius:2px 2px 0 0; background:' + (rail.n < 30 ? '#242932' : onCall ? 'rgba(19,153,253,.62)' : '#2B313A') };
+    });
+
+    const rows = S.rows, sc = this.scored();
+    const hits = sc.filter((x) => (x.pFull >= 0.5) === (x.resolved === 'U')).length;
+    const brier = sc.length ? sc.reduce((a, x) => { const y = x.resolved === 'U' ? 1 : 0; return a + (x.pFull - y) * (x.pFull - y); }, 0) / sc.length : null;
+
+    /* §5.3 — a dot means this variable's absence would have changed the side or
+       the trade decision. That is the "would it have mattered" answer at a glance. */
+    const rowAb = (x) => ablDefs.map(([L, key]) => {
+      const d = Math.round((x.ab[key] - x.pFull) * 100);
+      if (d === 0) return null;
+      const fSide = (x.ab[key] >= 0.5) !== (x.pFull >= 0.5);
+      const fTrade = x.mktCents != null && x.yesT != null &&
+        (x.mktCents <= this.ceilings(x.ab[key]).yesT) !== (x.mktCents <= x.yesT);
+      return (fSide || fTrade ? '●' : '') + L + (d > 0 ? '+' : '−') + Math.abs(d);
+    }).filter(Boolean).join(' ');
+    const badgeFor = (x) => {
+      if (x.resolved == null) return { badge: '—', st: MONO + '; font-size:10px; color:#626B78' };
+      if (x.resolved === 'F') return { badge: 'FLAT', st: MONO + '; font-size:10px; letter-spacing:.05em; color:#8B94A1' };
+      const ok = (x.pFull >= 0.5) === (x.resolved === 'U');
+      return { badge: ok ? 'CORRECT' : 'MISSED',
+        st: MONO + '; font-size:10px; letter-spacing:.05em; padding:2px 6px; border-radius:4px; color:' + (ok ? '#5AD79B' : '#FF8A8F') +
+          '; background:' + (ok ? 'rgba(47,191,126,.12)' : 'rgba(242,86,92,.12)') + '; border:1px solid ' + (ok ? 'rgba(47,191,126,.3)' : 'rgba(242,86,92,.3)') };
+    };
+
+    const peek = rows.slice(-4).reverse().map((x) => {
+      const b = badgeFor(x);
+      return { t: hhmm(x.ts), k: String(x.k).padStart(2, '0'), delta: money(x.delta, true),
+        call: (x.pFull >= 0.5 ? 'UP ' : 'DN ') + Math.round((x.pFull >= 0.5 ? x.pFull : 1 - x.pFull) * 100) + '%',
+        ab: rowAb(x), badge: b.badge, badgeSt: b.st };
+    });
+
+    const full = [...rows].reverse().map((x) => {
+      const b = badgeFor(x);
+      return { t: hhmm(x.ts), k: String(x.k).padStart(2, '0'), strike: x.strike.toLocaleString(),
+        delta: money(x.delta, true), z: x.z.toFixed(2), sig: '$' + x.sigmaUnit.toFixed(0),
+        call: (x.pFull >= 0.5 ? 'UP ' : 'DOWN ') + Math.round((x.pFull >= 0.5 ? x.pFull : 1 - x.pFull) * 100) + '%',
+        ab: rowAb(x) || '—', mkt: x.mktCents == null ? '—' : x.mktCents + '¢', badge: b.badge, badgeSt: b.st };
+    });
+
+    const calib = [[50, 60], [60, 70], [70, 80], [80, 90], [90, 101]].map(([lo, hi]) => {
+      const g = sc.filter((x) => { const c = Math.max(x.pFull, 1 - x.pFull) * 100; return c >= lo && c < hi; });
+      const act = g.length ? g.filter((x) => (x.pFull >= 0.5) === (x.resolved === 'U')).length / g.length : null;
+      const pred = g.length ? g.reduce((a, x) => a + Math.max(x.pFull, 1 - x.pFull), 0) / g.length : null;
+      const bar = (v, col) => 'flex:1; border-radius:2px 2px 0 0; height:' + (v == null ? 0 : Math.max(2, v * 100).toFixed(0)) + '%; background:' + col;
+      return { bucket: lo + (hi > 100 ? '+' : '–' + hi), detail: g.length ? 'n' + g.length : 'n0',
+        predSt: bar(pred, '#2B313A'), actSt: bar(act, act == null ? '#2B313A' : 'rgba(19,153,253,.62)') };
+    });
+
+    const ablAgg = ablDefs.map(([letter, key, name]) => {
+      const g = sc.filter((x) => Math.abs(x.ab[key] - x.pFull) > 0.0005);
+      let db = null;
+      if (g.length) {
+        const bw = g.reduce((a, x) => { const y = x.resolved === 'U' ? 1 : 0; return a + (x.pFull - y) ** 2; }, 0) / g.length;
+        const bo = g.reduce((a, x) => { const y = x.resolved === 'U' ? 1 : 0; return a + (x.ab[key] - y) ** 2; }, 0) / g.length;
+        db = bo - bw;
+      }
+      let save = 0, cost = 0;
+      for (const x of g) {
+        if ((x.ab[key] >= 0.5) === (x.pFull >= 0.5)) continue;
+        if ((x.pFull >= 0.5) === (x.resolved === 'U')) save++; else cost++;
+      }
+      const flips = save + cost;
+      const ready = g.length >= 30;
+      return { letter, name: name.split(' — ')[0],
+        flips: flips ? flips + ' (' + save + ' saved · ' + cost + ' cost)' : '0/' + g.length,
+        letterSt: MONO + '; font-size:12px; font-weight:500; color:#A6AEBB',
+        db: db == null ? '—' : (db > 0 ? '+' : '−') + Math.abs(db).toFixed(4),
+        dbSt: MONO + '; font-size:11px; ' + TAB + '; text-align:right; color:' + (!ready ? '#8B94A1' : db > 0 ? '#5AD79B' : '#FF8A8F'),
+        verdict: !ready ? 'needs ' + (30 - g.length) + ' more rows' : db > 0 ? 'earning its place' : 'costing you — consider off',
+        verdictSt: 'font-size:11px; color:' + (!ready ? '#8B94A1' : db > 0 ? '#A6AEBB' : '#F2A06B') };
+    });
+
+    /* Baked-data MLE on the SAME sigma basis the dial runs on (HOUR_SIGMA):
+       1.74. Fitting instead on each session's own realised sigma gives 1.53,
+       but that is hindsight and only the evidence rail uses it — quoting it
+       here made a correct constant look inflated. */
+    const bakedB = '1.74';
+
+    return {
+      clock: ct.clock, dayName: DOWS[ct.dow], sessionWindow: ct.window, ticks,
+      minLabel: String(ct.mis).padStart(2, '0'),
+      countdown: Math.floor(ct.secLeft / 60) + ':' + String(ct.secLeft % 60).padStart(2, '0'),
+      countdownSt: 'font-size:17px; font-weight:500; ' + TAB + '; color:' + (ct.secLeft <= 60 ? '#EDBE72' : '#F2F4F7'),
+      isTrade: S.view === 'trade', isLog: S.view === 'log',
+      goTrade: () => this.setState({ view: 'trade' }), goLog: () => this.setState({ view: 'log' }),
+      tabTradeSt: tab(S.view === 'trade'), tabLogSt: tab(S.view === 'log'),
+
+      strike: S.strike, priceIn: S.priceIn, px75: S.px75, mkt: S.mkt, finalIn: S.finalIn,
+      onStrike: (e) => this.setState({ strike: e.target.value.replace(/[^0-9.]/g, '') }),
+      onPrice: (e) => this.setState({ priceIn: e.target.value.replace(/[^0-9.]/g, '') }),
+      onPriceKey: (e) => { if (e.key === 'Enter') this.logRead(); },
+      onPx75: (e) => this.setState({ px75: e.target.value.replace(/[^0-9.]/g, '') }),
+      onMkt: (e) => this.setState({ mkt: e.target.value.replace(/[^0-9]/g, '').slice(0, 2) }),
+      onFinal: (e) => this.setState({ finalIn: e.target.value.replace(/[^0-9.\-−]/g, '').replace('−', '-') }),
+      strikeFieldSt: field, priceFieldSt: field,
+      showGhost: !S.strike && !!S.ghost, ghostStrike: S.ghost,
+      useGhost: () => this.setState({ strike: String(S.ghost) }),
+
+      echo: live ? 'resolves to $' + r.price.toLocaleString() : (r && r.wait ? r.wait : 'loading dataset…'),
+      echoSt: MONO + '; font-size:11px; color:' + (live ? '#73BAFF' : '#8B94A1'),
+      deltaEcho: live ? 'Δ ' + money(r.delta, true) : '',
+      deltaEchoSt: 'font-size:13px; font-weight:500; ' + TAB + '; color:#F2F4F7',
+
+      toggleMacro: () => this.setState({ macroOn: !S.macroOn }),
+      macroLabel: S.macroOn ? 'Macro window on' : 'Macro window',
+      macroHint: macroWin && !S.macroOn ? 'SUGGESTED' : S.macroOn ? 'σ ×' + (this.props.macroSigmaMult ?? 1.6) : 'CPI · NFP · PCE · FOMC',
+      macroSt: 'display:flex; align-items:center; gap:9px; width:100%; height:34px; padding:0 11px; border-radius:6px; font-size:12px; transition:background 120ms cubic-bezier(.32,.72,0,1); color:' +
+        (S.macroOn ? '#EDBE72' : '#A6AEBB') + '; background:' + (S.macroOn ? 'rgba(224,165,74,.10)' : '#1A1D23') +
+        '; border:1px solid ' + (S.macroOn ? 'rgba(224,165,74,.34)' : macroWin ? 'rgba(224,165,74,.34)' : 'rgba(255,255,255,.06)') +
+        (macroWin && !S.macroOn ? '; animation:bp 2s ease-in-out infinite' : ''),
+      macroDotSt: 'width:7px; height:7px; border-radius:2px; background:' + (S.macroOn ? '#E0A54A' : '#2B313A'),
+
+      toggleAuto: this.toggleAuto,
+      autoLabel: S.auto ? 'live ●' : 'off',
+      autoSt: MONO + '; font-size:10px; letter-spacing:.05em; height:22px; padding:0 9px; border-radius:4px; color:' +
+        (S.auto ? '#73BAFF' : '#8B94A1') + '; background:' + (S.auto ? 'rgba(19,153,253,.10)' : '#1A1D23') +
+        '; border:1px solid ' + (S.auto ? 'rgba(19,153,253,.42)' : 'rgba(255,255,255,.06)'),
+      feedLine: S.autoErr ? S.autoErr + ' — type the price'
+        : S.auto && S.autoPx ? 'Coinbase spot $' + S.autoPx.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' · reference only, Kalshi settles on the CF Benchmarks index'
+        : 'Manual entry is the contract. The feed is a sanity check, not the settlement price.',
+      feedLineSt: 'font-size:11px; line-height:1.45; text-wrap:pretty; color:' + (S.autoErr ? '#F2A06B' : '#8B94A1'),
+      sigmaRows,
+
+      badges,
+      sideGlyph: live ? (upSide ? '▲' : '▼') : '·',
+      sideGlyphSt: 'font-size:30px; line-height:1; color:' + (live ? '#1399FD' : '#2B313A'),
+      sideWord,
+      sideWordSt: 'font-size:46px; font-weight:600; letter-spacing:-.02em; line-height:1; color:' + (live ? '#1399FD' : '#626B78'),
+      pct: shown == null ? '' : Math.round(shown) + '%',
+      pctSt: 'font-size:76px; font-weight:600; letter-spacing:-.03em; line-height:.9; ' + TAB + '; color:#F2F4F7',
+
+      bandSt: bandL == null ? 'display:none' : 'position:absolute; top:2px; bottom:2px; left:' + bandL.toFixed(1) + '%; width:' + bandW.toFixed(1) + '%; border-radius:3px; background:rgba(255,255,255,.09)',
+      markerSt: live ? 'position:absolute; top:-4px; bottom:-4px; left:' + pct100.toFixed(1) + '%; width:3px; margin-left:-1.5px; border-radius:2px; background:#1399FD' : 'display:none',
+
+      feeKLabel: this.feeK().toFixed(3),
+      makerLabel: (this.props.makerMult ?? 0) === 0 ? '(free, M=0)' : '(M=' + (this.props.makerMult ?? 0) + ')',
+      yesLine: ce ? ce.yesT + '¢ · ' + ce.yesM + '¢' : '—',
+      noLine: ce ? ce.noT + '¢ · ' + ce.noM + '¢' : '—',
+      yesSt: 'font-size:19px; font-weight:500; ' + TAB + '; color:#F2F4F7',
+      noSt: 'font-size:19px; font-weight:500; ' + TAB + '; color:#F2F4F7',
+      mktVerdict: !ce || mktC == null ? '' : mktC <= ce.yesT ? 'MARKET ' + mktC + '¢ — YES IS +EV' : (100 - mktC) <= ce.noT ? 'MARKET ' + mktC + '¢ — NO IS +EV' : 'MARKET ' + mktC + '¢ — NO EDGE AFTER FEES',
+      mktVerdictSt: MONO + '; font-size:11px; letter-spacing:.05em; padding:3px 8px; border-radius:4px; color:' +
+        (!ce || mktC == null ? 'transparent' : (mktC <= ce.yesT || (100 - mktC) <= ce.noT) ? '#5AD79B' : '#FF8A8F') +
+        '; background:' + (!ce || mktC == null ? 'transparent' : (mktC <= ce.yesT || (100 - mktC) <= ce.noT) ? 'rgba(47,191,126,.12)' : 'rgba(242,86,92,.12)'),
+
+      mechRows: live ? [
+        { k: 'Δ', v: money(r.delta, true) }, { k: 'z', v: r.z.toFixed(2) },
+        { k: 'σ REM', v: '$' + r.sigmaRem.toFixed(1) }, { k: 'B', v: r.B.toFixed(2) },
+        { k: 'DRIFT', v: r.net == null ? 'off' : money(r.net, true) }
+      ] : [{ k: 'Δ', v: '—' }, { k: 'z', v: '—' }, { k: 'σ REM', v: '—' }],
+
+      railStat: rail.n ? 'n=' + rail.n + ' · up ' + Math.round(rail.up / rail.n * 100) + '% · ' + Math.round(wlo * 100) + '–' + Math.round(whi * 100) + '% Wilson 90' : 'no analog match yet',
+      railStatSt: MONO + '; font-size:11px; ' + TAB + '; color:' + (rail.n >= 30 ? '#A6AEBB' : '#F2A06B'),
+      railWrapSt: 'flex:1; min-height:0; display:flex; flex-direction:column; padding:12px 14px 10px; background:#131519; border:1px solid rgba(255,255,255,.06); border-radius:6px; opacity:' + (rail.n >= 30 ? '1' : '.45'),
+      hist,
+      histMarkerSt: live ? 'position:absolute; top:-4px; bottom:-4px; left:' + ((clamp(r.delta, -LIM, LIM) + LIM) / (2 * LIM) * 100).toFixed(1) + '%; width:1px; background:#EDBE72' : 'display:none',
+      histNote: rail.n >= 30 ? 'final move distribution · amber = you are here' : rail.n ? 'n<30 — thin, the dial does not use this' : 'awaiting a read',
+
+      ablations, peek, peekEmpty: !rows.length,
+      peekSummary: sc.length ? hits + '/' + sc.length + ' called · Brier ' + brier.toFixed(3) + ' · ' + rows.length + ' rows' : rows.length + ' row(s) · nothing resolved yet',
+
+      agg: [
+        { label: 'ROWS', val: String(rows.length), note: sc.length + ' scored' },
+        { label: 'HIT RATE', val: sc.length ? Math.round(hits / sc.length * 100) + '%' : '—', note: sc.length ? hits + ' of ' + sc.length : 'resolve a session' },
+        { label: 'BRIER', val: brier == null ? '—' : brier.toFixed(3), note: 'lower is better · .25 = coin flip' },
+        { label: 'B', val: this.activeB().B.toFixed(2), note: this.activeB().fitted ? 'fitted from your log' : 'ruled · refits at n≥150' },
+        { label: 'M', val: this.mult(D || { HOUR_SIGMA: [1], SUM_SHAPE2: 1 }).M.toFixed(2), note: 'live vol multiplier' }
+      ].map((a) => Object.assign(a, { valSt: 'font-size:26px; font-weight:600; letter-spacing:-.016em; ' + TAB + '; color:#F2F4F7' })),
+      calib, ablAgg, full, fullEmpty: !rows.length,
+      csvLabel: S.csvLabel, clearLabel: S.clearArm ? 'press again to clear' : 'clear log',
+      copyCsv: this.copyCsv, clearLog: this.clearLog,
+      calibFooter: (() => { const ab = this.activeB(); return 'B=' + ab.B.toFixed(2) + (ab.fitted ? ' fitted from your log (n=' + ab.n + ')' : ' ruled · refits at n≥150 (' + ab.n + ')') + ' · baked-data refit ' + bakedB + ' on the same σ basis · M=' + (D ? this.mult(D).M.toFixed(2) : '1.00'); })(),
+      provenance: 'Bitstamp BTCUSD 1-min · Jul 8 – Aug 4 2026 · 2,688 sessions · all times CT. Fees per Kalshi schedule eff. 7 Jul 2026: taker = roundup(M × 0.07 × C × P × (1−P)), M defaults to 1; maker = roundup(M × 0.0175 × C × P × (1−P)), M defaults to 0. The intraday BTC series is not in the non-standard multiplier table, so taker M = 1 and maker is likely free — confirm your series ticker before trusting the maker line. Taker ceiling is rounded up per contract, the 1-lot worst case; on larger orders Kalshi rounds the order total, so the true ceiling is 0–1¢ more generous. Historical frequencies, not predictions.',
+
+      pending: !!pending,
+      pendingLine: pending ? (pending.e.window || '') + ' — ' + this.state.rows.filter((x) => x.sessionTs === pending.ts).length + ' read(s), last called ' + (() => { const rr = this.state.rows.filter((x) => x.sessionTs === pending.ts); if (!rr.length) return '—'; const l = rr[rr.length - 1]; return (l.pFull >= 0.5 ? 'UP ' : 'DOWN ') + Math.round((l.pFull >= 0.5 ? l.pFull : 1 - l.pFull) * 100) + '%'; })() : '',
+      resolveUp: () => this.resolve('U'), resolveDown: () => this.resolve('D'), resolveFlat: () => this.resolve('F')
+    };
+  }
+}
+</script>
+
+
+</body></html>
