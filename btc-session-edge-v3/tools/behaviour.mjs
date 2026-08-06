@@ -434,7 +434,15 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   t('G3 hits counted across the session', g[1].hits === 2, g[1].hits, 2);
   t('G3 scored count is the session size', g[1].scored === 3, g[1].scored, 3);
   t('G3 unresolved session scores nothing', g[0].scored === 0, g[0].scored, 0);
-  t('G4 last call reflects the final read', /UP 71/.test(g[1].lastCall), g[1].lastCall, 'UP 71%');
+  /* The collapsed row must show the OPENING call, not the closing one. By the
+     final minute the outcome is largely determined, so the last call is nearly
+     free information; the first read is the one you could have acted on. */
+  t('G4 opening call comes from the first read', /UP 58/.test(g[1].openCall), g[1].openCall, 'UP 58%');
+  t('G4 opening call is not the closing one', !/UP 71/.test(g[1].openCall), g[1].openCall, 'not UP 71%');
+  t('G4 opening call scored against the outcome', g[1].openHit === true, g[1].openHit, true);
+  /* the 0.44 read at k=5 called DOWN into an UP settle — a miss at the open */
+  const g2 = c.groupSessions([r(TS1, 5, -9, 0.44, 'U'), r(TS1, 9, 31, 0.71, 'U')]);
+  t('G4 a wrong opening call is marked as such', g2[0].openHit === false, g2[0].openHit, false);
 
   /* expansion state is per-list, so opening a shadow session cannot open a traded one */
   const c2 = mk();

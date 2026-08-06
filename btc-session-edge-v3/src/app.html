@@ -849,10 +849,18 @@ class Component extends DCLogic {
       const resolved = res ? res.resolved : null;
       const scored = resolved ? reads.length : 0;
       const hits = resolved ? reads.filter((x) => (x.pFull >= 0.5) === (resolved === 'U')).length : 0;
-      const last = reads[reads.length - 1];
+      /* The collapsed row reports the OPENING call, not the closing one. By the
+         final minute the outcome is largely determined, so the last read is
+         nearly free information; the first read is the one a position could
+         have been taken on. Scanning the column then answers the question that
+         matters — was it right when it still cost something to be wrong. */
+      const first = reads[0], last = reads[reads.length - 1];
       return { ts, label: sessLabel(ts), reads, n: reads.length,
         strike: reads[0].strike, finalDelta: res ? res.finalDelta : null,
         resolved, scored, hits,
+        openCall: first ? this.callLabel(first.pFull) : '—',
+        openK: first ? first.k : null,
+        openHit: resolved && first ? ((first.pFull >= 0.5) === (resolved === 'U')) : null,
         lastCall: last ? this.callLabel(last.pFull) : '—' };
     });
   }
@@ -1422,10 +1430,12 @@ class Component extends DCLogic {
         t: (g.n ? (open ? '▾ ' : '▸ ') : '  ') + g.label, k: '',
         strike: g.strike == null ? '—' : g.strike.toLocaleString(),
         delta: g.finalDelta == null ? '—' : money(g.finalDelta, true), z: '', sig: '',
-        call: g.lastCall,
+        call: g.openCall,
         ab: g.armed && !g.n
           ? (g.strike == null ? 'waiting for the next session' : 'armed · first read at :01')
-          : g.n + ' read' + (g.n === 1 ? '' : 's') + (g.scored ? ' · ' + g.hits + '/' + g.scored + ' correct' : ''),
+          : (g.openK != null ? 'call at :' + String(g.openK).padStart(2, '0') + (g.openHit == null ? '' : g.openHit ? ' \u2713' : ' \u2717') + ' · ' : '')
+            + g.n + ' read' + (g.n === 1 ? '' : 's')
+            + (g.scored ? ' · ' + g.hits + '/' + g.scored + ' correct' : ''),
         mkt: '', badge: gb.badge, badgeSt: gb.st,
         rowSt: SESS_ROW, kind: 'session', ts: g.ts,
         onToggle: g.n ? () => this.toggleSession(mode, g.ts) : null });
