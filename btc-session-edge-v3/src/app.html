@@ -919,7 +919,10 @@ class Component extends DCLogic {
          wrong baseline — plausible-looking numbers built on a broken premise.
          Switched on late, we sit out and start clean at the next boundary. */
       const atOpen = ct.mis * 60 + ct.se <= 75;
-      s.ts = ts; s.strike = atOpen ? px : null; s.pts = []; s.lastK = -1;
+      s.ts = ts; s.strike = atOpen ? px : null;
+      /* Seed the chain with the open and mark this minute done, so the open tick
+         cannot also append a second same-minute point. */
+      s.pts = atOpen ? [{ k, p: px }] : []; s.lastK = k;
     }
 
     if (k >= 1 && k !== s.lastK && s.strike != null && this.state.data) {
@@ -929,10 +932,14 @@ class Component extends DCLogic {
           delta: r.delta, sigmaUnit: r.sigmaUnit, z: r.z, pFull: r.p, ab: r.ab, macroOn: r.macro,
           driftNet: null, mktCents: null, yesT: r.yesT, noT: r.noT, resolved: null, finalDelta: null,
           vol: vol == null ? null : vol, auto: true, v: 2 }];
+        /* One point per minute. The feed is polled ~3x a minute; appending each
+           poll leaves the estimator measuring only the seconds that straddle a
+           minute boundary while dividing by sqrt(1), understating sigma ~2x and
+           inflating z. Append exactly when a read is taken. */
+        s.pts = [...s.pts, { k, p: px }];
         s.lastK = k;
       }
     }
-    s.pts = [...s.pts, { k, p: px }];
     this.setState({ shadow: s, srows, sAt: Date.now(), sErr: null, sSrc: srcTime == null ? this.state.sSrc : srcTime });
     lsSet(LSK.shadow, { shadow: s, srows });
   }

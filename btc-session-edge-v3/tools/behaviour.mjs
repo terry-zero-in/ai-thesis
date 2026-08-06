@@ -488,6 +488,39 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
     new Set(pts).size === pts.length, pts.join(','), 'all distinct');
 }
 
+/* ---- The sigma chain must be sampled once per minute ----
+   The feed is polled ~3x a minute. Appending every poll to the chain means the
+   only pairs the estimator counts are the ones that straddle a minute boundary —
+   a gap of seconds — while it divides by sqrt(1) as though a full minute had
+   passed. That understates sigma by roughly sqrt(3) or worse, which inflates z
+   and pushes the dial toward false confidence. One point per minute. */
+{
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+  const c = mk();
+  let src = 0;
+  const poll = (min, sec, px) => { c.state.now = at(min, sec); c.shadowIngest(px, 1, ++src); };
+
+  poll(0, 5, 64000);                                  // session opens
+  poll(0, 25, 64004); poll(0, 45, 64009);             // more polls, same minute
+  poll(1, 5, 64020); poll(1, 25, 64026); poll(1, 45, 64031);
+  poll(2, 5, 64040); poll(2, 25, 64046); poll(2, 45, 64052);
+  poll(3, 5, 64060);
+
+  const ks = c.state.shadow.pts.map((p) => p.k);
+  t('S12 one sigma point per minute', ks.length === new Set(ks).size, ks.join(','), 'no repeats');
+  t('S12 points are one minute apart',
+    ks.every((k, i) => i === 0 || k - ks[i - 1] === 1), ks.join(','), '0,1,2,3');
+
+  /* a ~$20/min path must not read as a ~$12/min path */
+  const cur = c.sigmaFromPts(c.state.shadow.pts);
+  t('S12 sigma reflects the per-minute move, not the poll gap',
+    cur > 15, cur == null ? null : cur.toFixed(1), '> 15 for a ~$20/min path');
+
+  /* and the read logged at each minute still lands exactly once */
+  t('S12 one read per minute despite 3 polls', c.state.srows.length === 3,
+    c.state.srows.length, 3);
+}
+
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log('TEST'.padEnd(w) + '  RESULT  GOT / WANT');
