@@ -24,6 +24,10 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BUNDLE = join(ROOT, 'index.html');
 const SRC = join(ROOT, 'src', 'app.html');
+/* The Vercel project builds from web/, so anything outside it is never
+   deployed. This copy is what the hosted URL actually serves; `deploy` refreshes
+   it and `verify` fails if it has drifted from the canonical bundle. */
+const DEPLOYED = join(ROOT, '..', 'web', 'public', 'btc-session-edge-v3.html');
 
 /* The template block, captured so we can swap only its payload. */
 const BLOCK = /(<script type="__bundler\/template">\n)([\s\S]*?)(\n  <\/script>)/;
@@ -62,11 +66,20 @@ export function verify() {
   if (!m) throw new Error('template block not found');
   const decoded = JSON.parse(m[2]);
   const round = encode(decoded);
+  let deployedMatches = null;
+  try { deployedMatches = readFileSync(DEPLOYED, 'utf8') === html; } catch { /* not deployed */ }
   return {
     roundTripIdentical: round === m[2],
     bundleMatchesSrc: decoded === readFileSync(SRC, 'utf8'),
+    deployedMatches,
     bytes: decoded.length
   };
+}
+
+/* Refresh the served copy from the canonical bundle. Run after inject(). */
+export function deploy() {
+  writeFileSync(DEPLOYED, readFileSync(BUNDLE));
+  return { to: DEPLOYED };
 }
 
 const cmd = process.argv[2];
@@ -77,6 +90,8 @@ else if (cmd === 'verify') {
   console.log(v);
   if (!v.roundTripIdentical) console.error('FAIL: bundle round trip is lossy');
   if (!v.bundleMatchesSrc) console.error('FAIL: index.html is stale — run `node tools/bundle.mjs inject`');
-  process.exit(v.roundTripIdentical && v.bundleMatchesSrc ? 0 : 1);
+  if (v.deployedMatches === false) console.error('FAIL: web/public copy is stale — run `node tools/bundle.mjs deploy`');
+  process.exit(v.roundTripIdentical && v.bundleMatchesSrc && v.deployedMatches !== false ? 0 : 1);
 }
+else if (cmd === 'deploy') console.log('deployed ->', deploy().to);
 else if (cmd) throw new Error('unknown command: ' + cmd);
