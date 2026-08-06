@@ -2,10 +2,15 @@
  *
  *   node tools/selftest.mjs
  *
- * Serves the bundle over http (the loader mints blob URLs and dynamic-imports
- * the dataset module, which file:// blocks), loads it with ?selftest=1, and
- * prints the console.table the harness emits. Exit code is the number of
- * failing rows, so this doubles as a check in a pipeline.
+ * Serves the bundle over http and loads it with ?selftest=1, then prints the
+ * console.table the harness emits. Exit code is the number of failing rows, so
+ * this doubles as a check in a pipeline.
+ *
+ * http is used only for a clean, cache-free origin per run — the artifact does
+ * NOT need a server. Opening index.html straight off disk works: the loader
+ * inlines every resource as a blob URL first, so the dataset's dynamic import
+ * resolves under file:// too. Verified — file:///…/index.html?selftest=1 gives
+ * the same 14/14.
  *
  * console.table is intercepted in an init script rather than parsed out of the
  * console event, because Playwright serialises table args lossily.

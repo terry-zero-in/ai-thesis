@@ -1,7 +1,11 @@
 # BTC Session Edge v3
 
-Single-file `x-dc` artifact. `index.html` is the shipping build — open it directly,
-no server, no build step.
+Single-file artifact. **Open `index.html` in a browser. That's it.** No server, no
+install, no build step — double-clicking it off disk works, because the loader
+inlines every resource (dataset, React, fonts) as a blob URL before the app boots.
+
+Add `?selftest=1` to the URL to run the built-in assertions; results print to the
+browser console. Verified 14/14 under `file://`.
 
 ## Layout
 
