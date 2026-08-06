@@ -7,6 +7,23 @@ inlines every resource (dataset, React, fonts) as a blob URL before the app boot
 Add `?selftest=1` to the URL to run the built-in assertions; results print to the
 browser console. Verified 14/14 under `file://`.
 
+## Hosted copy
+
+The Vercel project builds from `web/`, so nothing at the repo root is deployed.
+`web/public/btc-session-edge-v3.html` is a copy of the bundle placed inside that
+build root, which Next.js serves as a static file:
+
+```
+https://ai-thesis-v2.vercel.app/btc-session-edge-v3.html
+```
+
+That URL is behind Vercel SSO (`all_except_custom_domains`), so it is reachable
+by the account owner and nobody else.
+
+`index.html` stays the canonical artifact. After any change run
+`node tools/bundle.mjs deploy` to refresh the served copy — `verify` fails with
+"web/public copy is stale" if you forget, so the two cannot silently drift.
+
 ## Layout
 
 | Path | What it is |
@@ -33,6 +50,7 @@ the round trip is byte-identical, and it is.
 node tools/bundle.mjs extract     # index.html -> src/app.html
 $EDITOR src/app.html
 node tools/bundle.mjs inject      # src/app.html -> index.html
+node tools/bundle.mjs deploy      # index.html -> web/public/ (the hosted copy)
 node tools/selftest.mjs           # 14 model assertions + layout, in a real browser
 node tools/behaviour.mjs          # 59 behavioural assertions, in Node
 ```

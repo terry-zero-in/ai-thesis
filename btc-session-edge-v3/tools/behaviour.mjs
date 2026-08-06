@@ -67,7 +67,9 @@ const mk = (props = {}) => {
   const c = new Component(props);
   c.state = { now: Date.now(), view: 'trade', data: D, strike: '', priceIn: '', px75: '', mkt: '',
     macroOn: false, finalIn: '', rows: [], sess: {}, auto: false, autoPx: null, autoAt: null,
-    autoErr: null, csvLabel: 'copy CSV', clearArm: false };
+    autoErr: null, csvLabel: 'copy CSV', clearArm: false,
+    shadowOn: false, srows: [], shadow: { ts: null, strike: null, pts: [], lastK: -1 },
+    sAt: null, sErr: null };
   return c;
 };
 
@@ -155,7 +157,7 @@ const mk = (props = {}) => {
   t('T5 pre-fix v1 rows excluded from refit', c1.refitB() === null, c1.refitB(), null);
   /* activeB reports fitted vs ruled honestly */
   const ab0 = mk().activeB();
-  t('T5 activeB falls back to ruled B', ab0.fitted === false && Math.abs(ab0.B - 1.77) < 1e-9, ab0.B + '/' + ab0.fitted, '1.77/false');
+  t('T5 activeB falls back to ruled B', ab0.fitted === false && Math.abs(ab0.B - 1.49) < 1e-9, ab0.B + '/' + ab0.fitted, '1.49/false');
   const ab1 = c.activeB();
   t('T5 activeB reports fitted', ab1.fitted === true && ab1.n === 400, ab1.fitted + '/' + ab1.n, 'true/400');
   /* cache keyed on scored-v2 count */
@@ -210,12 +212,12 @@ const mk = (props = {}) => {
 {
   const c = mk();
   const rv = c.renderVals();
-  t('T6 bakedB reads 1.74 on the dial basis', /baked-data refit 1\.74 on the same σ basis/.test(rv.calibFooter), rv.calibFooter.slice(0, 80), '…1.74 on the same σ basis…');
+  t('T6 bakedB reads 1.49 on the live M pipeline', /baked-data refit 1\.49 on the live M pipeline/.test(rv.calibFooter), rv.calibFooter.slice(0, 80), '…1.49 on the live M pipeline…');
   t('T6 footer says ruled while unfitted', /ruled · refits at n≥150 \(0\)/.test(rv.calibFooter), rv.calibFooter.slice(0, 40), 'B=1.77 ruled · refits…');
   t('T6 provenance states taker/maker M defaults', /M defaults to 1;/.test(rv.provenance) && /M defaults to 0\./.test(rv.provenance), true, true);
   t('T6 provenance drops the "top of its range" claim', !/top of its 0\.07 range/.test(rv.provenance), true, true);
   const bTile = rv.agg.find((x) => x.label === 'B');
-  t('T6 B tile val comes from activeB', bTile.val === '1.77', bTile.val, '1.77');
+  t('T6 B tile val comes from activeB', bTile.val === '1.49', bTile.val, '1.49');
   t('T6 B tile note says ruled when unfitted', bTile.note === 'ruled · refits at n≥150', bTile.note, 'ruled · refits at n≥150');
 
   /* and flips to fitted once a real log exists */
@@ -310,6 +312,325 @@ const mk = (props = {}) => {
   t('V8 rows survive reload', c2.state.rows.length === 2, c2.state.rows.length, 2);
 }
 function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.log.v3') || '[]'); }
+
+/* ---- Shadow mode: unattended live validation ----
+   Feeds observations through shadowIngest() with a controlled clock, so a whole
+   session can be replayed in milliseconds. The synthetic strike is the session's
+   first observed price — the same convention the baked SESS deltas use, which is
+   what makes the live scorecard comparable to the backtest. */
+{
+  const c = mk();
+  const T0 = Date.parse('2026-08-06T15:00:10Z');   // 10:00:10 CT -> minute 0
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+
+  c.state.now = T0;
+  c.shadowIngest(64000, 3.1);
+  t('S1 first tick sets the synthetic strike', c.state.shadow.strike === 64000, c.state.shadow.strike, 64000);
+  t('S1 minute 0 logs no row', c.state.srows.length === 0, c.state.srows.length, 0);
+
+  c.state.now = at(3, 5);
+  c.shadowIngest(64030, 4.2);
+  t('S2 logs a row at minute 3', c.state.srows.length === 1, c.state.srows.length, 1);
+  t('S2 row carries the auto tag', c.state.srows[0].auto === true, c.state.srows[0].auto, true);
+  t('S2 row records volume', c.state.srows[0].vol === 4.2, c.state.srows[0].vol, 4.2);
+  t('S2 delta is vs the synthetic strike', c.state.srows[0].delta === 30, c.state.srows[0].delta, 30);
+  t('S2 probability is a real number', c.state.srows[0].pFull > 0.5 && c.state.srows[0].pFull < 1,
+    c.state.srows[0].pFull, '0.5..1');
+
+  /* same minute again must not double-log */
+  c.shadowIngest(64031, 1.0);
+  t('S3 same minute does not double-log', c.state.srows.length === 1, c.state.srows.length, 1);
+
+  c.state.now = at(9, 2);
+  c.shadowIngest(64055, 2.0);
+  t('S4 second read logged', c.state.srows.length === 2, c.state.srows.length, 2);
+  t('S4 sigma live engages after two points', c.state.srows[1].sigmaUnit !== c.state.srows[0].sigmaUnit,
+    c.state.srows[1].sigmaUnit, '!= ' + c.state.srows[0].sigmaUnit);
+
+  /* roll into the next session: previous one must self-resolve on the last price */
+  c.state.now = at(15, 4);
+  c.shadowIngest(64070, 5.0);
+  const settled = c.state.srows.filter((r) => r.resolved != null);
+  t('S5 roll back-fills every row of the closed session', settled.length === 2, settled.length, 2);
+  t('S5 resolved UP (last price above strike)', settled.every((r) => r.resolved === 'U'),
+    settled.map((r) => r.resolved).join(','), 'U,U');
+  t('S5 finalDelta recorded', settled.every((r) => r.finalDelta === 70), settled[0].finalDelta, 70);
+  t('S5 new session took a fresh strike', c.state.shadow.strike === 64070, c.state.shadow.strike, 64070);
+
+  /* the whole point: shadow rows must never touch the traded log or the refit */
+  t('S6 shadow rows stay out of the traded log', c.state.rows.length === 0, c.state.rows.length, 0);
+  t('S6 shadow rows excluded from scored()', c.scored().length === 0, c.scored().length, 0);
+  const cR = mk();
+  cR.state.srows = Array.from({ length: 400 }, (_, i) => ({ z: ((i % 40) - 20) / 10, resolved: 'U', v: 2, auto: true }));
+  t('S6 shadow rows cannot drive the B refit', cR.refitB() === null, cR.refitB(), null);
+
+  /* live scorecard */
+  const sc = c.shadowScore();
+  t('S7 scorecard counts resolved shadow rows', sc.n === 2, sc.n, 2);
+  t('S7 scorecard reports a hit rate', sc.hit != null && sc.hit >= 0 && sc.hit <= 1, sc.hit, '0..1');
+  t('S7 scorecard reports a Brier score', sc.brier != null && sc.brier >= 0, sc.brier, '>=0');
+
+  /* a DOWN session scores as a miss when the model called UP */
+  const c2 = mk();
+  c2.state.now = at(0, 10); c2.shadowIngest(64000, 1);
+  c2.state.now = at(5, 10); c2.shadowIngest(64100, 1);      // model calls UP hard
+  c2.state.now = at(16, 10); c2.shadowIngest(63900, 1);     // settles DOWN
+  const s2 = c2.state.srows.filter((r) => r.resolved != null);
+  t('S8 a wrong call is recorded as DOWN', s2.every((r) => r.resolved === 'D'), s2[0].resolved, 'D');
+  t('S8 scorecard hit rate falls to 0', c2.shadowScore().hit === 0, c2.shadowScore().hit, 0);
+}
+
+/* ---- Shadow mode must not start mid-session ----
+   The model's remaining-variance term assumes delta accumulated from the
+   session OPEN. Adopting a mid-session price as the strike would silently
+   score every row against the wrong reference, so a late start has to wait
+   for the next boundary rather than produce plausible-looking garbage. */
+{
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+  const c = mk();
+  c.state.now = at(7, 12);              // switched on 7 minutes into a session
+  c.shadowIngest(64500, 2.0);
+  t('S9 late start adopts no strike', c.state.shadow.strike == null, c.state.shadow.strike, null);
+  t('S9 late start logs no rows', c.state.srows.length === 0, c.state.srows.length, 0);
+  c.state.now = at(11, 5);
+  c.shadowIngest(64520, 2.0);
+  t('S9 still waiting later in that session', c.state.srows.length === 0, c.state.srows.length, 0);
+
+  c.state.now = at(15, 3);              // next session opens — now it may begin
+  c.shadowIngest(64530, 2.0);
+  t('S10 adopts strike at the new session open', c.state.shadow.strike === 64530, c.state.shadow.strike, 64530);
+  c.state.now = at(19, 5);
+  c.shadowIngest(64560, 2.0);
+  t('S10 logs once running', c.state.srows.length === 1, c.state.srows.length, 1);
+  t('S10 delta is vs the session-open strike', c.state.srows[0].delta === 30, c.state.srows[0].delta, 30);
+  t('S10 an unstarted session leaves nothing to resolve',
+    c.state.srows.every((r) => r.sessionTs === c.state.shadow.ts), true, true);
+}
+
+/* ---- Session grouping: one row per 15-minute session, expandable to its reads ---- */
+{
+  const c = mk();
+  const TS1 = 1786045500, TS2 = 1786046400;          // two 15-min session starts
+  const ab = { noMom: 0.5, noDrift: 0.5, noSettle: 0.5, macroFlip: 0.5 };
+  const r = (ts, k, d, pf, res) => ({ ts: ts * 1000 + k * 60000, sessionTs: ts, k, strike: 64000,
+    price: 64000 + d, delta: d, sigmaUnit: 22, z: d / 48, pFull: pf, ab, mktCents: null,
+    resolved: res, finalDelta: res ? d : null, v: 2 });
+
+  const rows = [
+    r(TS1, 2, 12, 0.58, 'U'), r(TS1, 5, -9, 0.44, 'U'), r(TS1, 9, 31, 0.71, 'U'),
+    r(TS2, 3, -20, 0.36, null), r(TS2, 7, -14, 0.41, null)
+  ];
+  const g = c.groupSessions(rows);
+  t('G1 one group per session', g.length === 2, g.length, 2);
+  t('G1 newest session first', g[0].ts === TS2, g[0].ts, TS2);
+  t('G1 reads counted per session', g[1].n === 3, g[1].n, 3);
+  t('G1 reads sorted by minute', g[1].reads.map((x) => x.k).join(',') === '2,5,9',
+    g[1].reads.map((x) => x.k).join(','), '2,5,9');
+  t('G1 session label spans the window', /–/.test(g[0].label), g[0].label, 'has a dash');
+  t('G2 resolved session carries its verdict', g[1].resolved === 'U', g[1].resolved, 'U');
+  t('G2 unresolved session has none', g[0].resolved == null, g[0].resolved, null);
+  t('G2 final delta lifted to the session', g[1].finalDelta === 12, g[1].finalDelta, 12);
+  /* two of the three called UP and settled UP; the 0.44 read called DOWN and missed */
+  t('G3 hits counted across the session', g[1].hits === 2, g[1].hits, 2);
+  t('G3 scored count is the session size', g[1].scored === 3, g[1].scored, 3);
+  t('G3 unresolved session scores nothing', g[0].scored === 0, g[0].scored, 0);
+  t('G4 last call reflects the final read', /UP 71/.test(g[1].lastCall), g[1].lastCall, 'UP 71%');
+
+  /* expansion state is per-list, so opening a shadow session cannot open a traded one */
+  const c2 = mk();
+  t('G5 sessions start collapsed', c2.isOpen('real', TS1) === false, c2.isOpen('real', TS1), false);
+  c2.toggleSession('real', TS1);
+  t('G5 toggle opens it', c2.isOpen('real', TS1) === true, c2.isOpen('real', TS1), true);
+  t('G5 same key in the other list stays shut', c2.isOpen('shadow', TS1) === false,
+    c2.isOpen('shadow', TS1), false);
+  c2.toggleSession('real', TS1);
+  t('G5 toggle closes it again', c2.isOpen('real', TS1) === false, c2.isOpen('real', TS1), false);
+
+  /* the two logs never mix */
+  const c3 = mk();
+  c3.state.rows = [r(TS1, 2, 12, 0.58, 'U')];
+  c3.state.srows = [r(TS2, 3, -20, 0.36, null), r(TS2, 7, -14, 0.41, null)];
+  t('G6 real list holds only traded sessions', c3.groupSessions(c3.state.rows).length === 1,
+    c3.groupSessions(c3.state.rows).length, 1);
+  t('G6 shadow list holds only shadow sessions',
+    c3.groupSessions(c3.state.srows)[0].n === 2, c3.groupSessions(c3.state.srows)[0].n, 2);
+}
+
+/* ---- Stale feed must not become a fake observation ----
+   The candles endpoint serves cached data for 90s+ at a time. Logging the same
+   price as if it were fresh reads makes the session look motionless, collapses
+   sigma_cur to its floor, and inflates z until the dial reports certainty it has
+   not earned. A read is only real if the feed's own clock advanced. */
+{
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+  const c = mk();
+  c.state.now = at(0, 8);
+  c.shadowIngest(64000, 2.0, 1000);
+  c.state.now = at(3, 4);
+  c.shadowIngest(64030, 2.0, 1180);
+  t('S11 a fresh observation logs', c.state.srows.length === 1, c.state.srows.length, 1);
+
+  c.state.now = at(4, 4);
+  c.shadowIngest(64030, 2.0, 1180);              // same feed timestamp — cached
+  t('S11 stale feed logs nothing', c.state.srows.length === 1, c.state.srows.length, 1);
+  t('S11 stale feed is surfaced, not hidden', /stale|cached/i.test(String(c.state.sErr || '')),
+    c.state.sErr, 'a stale notice');
+
+  c.state.now = at(5, 4);
+  c.shadowIngest(64055, 2.0, 1240);              // clock advanced — real again
+  t('S11 recovers when the feed moves', c.state.srows.length === 2, c.state.srows.length, 2);
+  t('S11 stale notice clears', !c.state.sErr, c.state.sErr, null);
+
+  /* the duplicate must not reach sigma_cur either — a fake zero-move read is
+     what drove sigma to its floor and z to 4.98 on a $31 delta */
+  const pts = c.state.shadow.pts.map((p) => p.p);
+  t('S11 no duplicate point in the sigma chain',
+    new Set(pts).size === pts.length, pts.join(','), 'all distinct');
+}
+
+/* ---- The sigma chain must be sampled once per minute ----
+   The feed is polled ~3x a minute. Appending every poll to the chain means the
+   only pairs the estimator counts are the ones that straddle a minute boundary —
+   a gap of seconds — while it divides by sqrt(1) as though a full minute had
+   passed. That understates sigma by roughly sqrt(3) or worse, which inflates z
+   and pushes the dial toward false confidence. One point per minute. */
+{
+  const at = (min, sec) => Date.parse('2026-08-06T15:00:00Z') + min * 60000 + sec * 1000;
+  const c = mk();
+  let src = 0;
+  const poll = (min, sec, px) => { c.state.now = at(min, sec); c.shadowIngest(px, 1, ++src); };
+
+  poll(0, 5, 64000);                                  // session opens
+  poll(0, 25, 64004); poll(0, 45, 64009);             // more polls, same minute
+  poll(1, 5, 64020); poll(1, 25, 64026); poll(1, 45, 64031);
+  poll(2, 5, 64040); poll(2, 25, 64046); poll(2, 45, 64052);
+  poll(3, 5, 64060);
+
+  const ks = c.state.shadow.pts.map((p) => p.k);
+  t('S12 one sigma point per minute', ks.length === new Set(ks).size, ks.join(','), 'no repeats');
+  t('S12 points are one minute apart',
+    ks.every((k, i) => i === 0 || k - ks[i - 1] === 1), ks.join(','), '0,1,2,3');
+
+  /* a ~$20/min path must not read as a ~$12/min path */
+  const cur = c.sigmaFromPts(c.state.shadow.pts);
+  t('S12 sigma reflects the per-minute move, not the poll gap',
+    cur > 15, cur == null ? null : cur.toFixed(1), '> 15 for a ~$20/min path');
+
+  /* and the read logged at each minute still lands exactly once */
+  t('S12 one read per minute despite 3 polls', c.state.srows.length === 3,
+    c.state.srows.length, 3);
+}
+
+/* ---- The dial must never display certainty ----
+   The sigmoid is asymptotic: it returns 0.9951, never 1. Rounding that to "100%"
+   claims something the model cannot support, in a tool whose whole premise is
+   calibrated probability. Clamp the DISPLAY only — pFull keeps full precision so
+   Brier and calibration are unaffected. */
+{
+  const c = mk();
+  t('S13 near-certain reads display as 99, not 100', c.callLabel(0.9951) === 'UP 99%',
+    c.callLabel(0.9951), 'UP 99%');
+  t('S13 the mirror case floors at 1', c.callLabel(0.0002) === 'DOWN 99%',
+    c.callLabel(0.0002), 'DOWN 99%');
+  t('S13 ordinary values are untouched', c.callLabel(0.71) === 'UP 71%', c.callLabel(0.71), 'UP 71%');
+  t('S13 a coin flip still reads 50', c.callLabel(0.5) === 'UP 50%', c.callLabel(0.5), 'UP 50%');
+  t('S13 rounding to 99 is left alone', c.callLabel(0.988) === 'UP 99%', c.callLabel(0.988), 'UP 99%');
+  /* the clamp is cosmetic — scoring must still see the real number */
+  const c2 = mk();
+  c2.state.srows = [{ sessionTs: 1, k: 1, pFull: 0.9951, resolved: 'D', v: 2, auto: true }];
+  const b = c2.shadowScore().brier;
+  t('S13 Brier uses full precision, not the clamp',
+    Math.abs(b - 0.9951 ** 2) < 1e-9, b, (0.9951 ** 2).toFixed(6));
+}
+
+/* ---- B is calibrated for the pipeline that actually runs ----
+   1.77 was fitted on a sigma basis with M left at 1. The live dial multiplies the
+   trailing sigma by M, which on the real HOUR_SIGMA basis has a median of 0.677 —
+   so the shipped slope was ~19% too steep and the dial ran overconfident
+   (80-90% band hit 81.7%, 90-95% hit 89.1% measured end-to-end). */
+{
+  const c = mk();
+  t('S14 ruled B is the jointly-fit value', Math.abs(c.activeB().B - 1.49) < 1e-9,
+    c.activeB().B, 1.49);
+  t('S14 still inert below the refit threshold', c.activeB().fitted === false,
+    c.activeB().fitted, false);
+  /* the same z must now produce a less extreme probability than it used to */
+  const arg = { k: 12, delta: 40, sigmaUnit: 27, net: null, macro: false, drift: false, settleAvg: true };
+  const now = c.model(Object.assign({}, arg, { B: c.activeB().B })).p;
+  const before = c.model(Object.assign({}, arg, { B: 1.77 })).p;
+  t('S14 the dial is less confident at the same z', now < before, now.toFixed(4), '< ' + before.toFixed(4));
+  t('S14 and still on the correct side of even', now > 0.5, now.toFixed(4), '> 0.5');
+}
+
+/* ---- Storage must not die silently ----
+   Shadow logs ~1,344 rows/day at ~380 bytes; against a 5MB origin quota that is
+   about ten days to a silent write failure. Compaction keeps everything the
+   scorecard reads while dropping what only a row view needs. */
+{
+  const c = mk();
+  const ab = { noMom: 0.5, noDrift: 0.5, noSettle: 0.5, macroFlip: 0.5 };
+  const row = (ts, k, res) => ({ ts: ts * 1000 + k * 60000, sessionTs: ts, k, strike: 64000,
+    price: 64010, delta: 10, sigmaUnit: 22, z: 0.2, pFull: 0.58, ab, macroOn: false,
+    driftNet: null, mktCents: null, yesT: 57, noT: 38, resolved: res,
+    finalDelta: res ? 10 : null, vol: 4.2, auto: true, v: 2 });
+  const resolved = [], live = [];
+  for (let k = 1; k <= 14; k++) resolved.push(row(1786045500, k, 'U'));
+  for (let k = 1; k <= 4; k++) live.push(row(1786046400, k, null));
+  c.state.srows = [...resolved, ...live];
+
+  const before = JSON.stringify(c.state.srows).length;
+  const packed = c.compactShadow(c.state.srows);
+  const after = JSON.stringify(packed).length;
+  /* Measured, not aspirational: dropping the ablation block and rounding to 3dp
+     gives ~29%. Display fields stay so old sessions still expand — that is why it
+     is not smaller. Compaction alone buys ~40% more runway, NOT indefinite
+     retention; pruning is what actually bounds growth. */
+  t('S15 compaction shrinks a resolved session', after < before * 0.8,
+    Math.round(after / before * 100) + '%', '< 80%');
+  t('S15 unresolved rows are left intact', packed.filter((r) => r.resolved == null).length === 4,
+    packed.filter((r) => r.resolved == null).length, 4);
+  t('S15 the scorecard is unchanged by compaction', (() => {
+    const a = mk(); a.state.srows = c.state.srows; const x = a.shadowScore();
+    const b = mk(); b.state.srows = packed; const y = b.shadowScore();
+    return x.n === y.n && x.hit === y.hit && Math.abs(x.brier - y.brier) < 1e-9;
+  })(), true, true);
+
+  /* a failed write has to be visible, not swallowed */
+  const c2 = mk();
+  c2.state.srows = [row(1786045500, 1, null)];
+  c2.persistShadow(() => false);
+  t('S16 a failed write surfaces an error', /storage|full|quota/i.test(String(c2.state.sErr || '')),
+    c2.state.sErr, 'a storage notice');
+  const c3 = mk();
+  c3.state.srows = [row(1786045500, 1, null)];
+  c3.persistShadow(() => true);
+  t('S16 a good write leaves no error', !c3.state.sErr, c3.state.sErr, null);
+
+  /* pruning is what actually bounds growth — compaction only slows it */
+  const c5 = mk();
+  const many = [];
+  for (let sess = 0; sess < 300; sess++)
+    for (let k = 1; k <= 14; k++) many.push(row(1786000000 + sess * 900, k, 'U'));
+  const pruned = c5.pruneShadow(many, 1000);
+  t('S18 pruning caps the row count', pruned.length <= 1000, pruned.length, '<= 1000');
+  t('S18 pruning drops whole sessions, never partial ones',
+    [...new Set(pruned.map((r) => r.sessionTs))].every((ts) => pruned.filter((r) => r.sessionTs === ts).length === 14),
+    'whole sessions', 'whole sessions');
+  t('S18 pruning keeps the NEWEST sessions',
+    Math.max(...pruned.map((r) => r.sessionTs)) === Math.max(...many.map((r) => r.sessionTs)),
+    'newest kept', 'newest kept');
+  t('S18 under the cap nothing is dropped', c5.pruneShadow(resolved, 1000).length === 14,
+    c5.pruneShadow(resolved, 1000).length, 14);
+
+  /* the data has to be able to leave */
+  const c4 = mk();
+  c4.state.srows = resolved;
+  const csv = c4.shadowCsv();
+  t('S17 CSV has a header plus every row', csv.trim().split('\n').length === 15,
+    csv.trim().split('\n').length, 15);
+  t('S17 CSV carries the scoring fields', /pFull/.test(csv) && /resolved/.test(csv),
+    csv.split('\n')[0].slice(0, 60), 'has pFull + resolved');
+}
 
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
