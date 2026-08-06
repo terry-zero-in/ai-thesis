@@ -1329,6 +1329,15 @@ class Component extends DCLogic {
     const mode = S.logMode === 'shadow' ? 'shadow' : 'real';
     const srcRows = mode === 'shadow' ? S.srows : rows;
     const groups = this.groupSessions(srcRows);
+    /* Between adopting a strike and the first read there is a minute where the
+       strip says armed and the table shows nothing — which reads as broken. Show
+       the session as soon as it is armed, so "running" is never invisible. */
+    const sh = S.shadow || {};
+    if (mode === 'shadow' && S.shadowOn && sh.ts != null && !groups.some((g) => g.ts === sh.ts)) {
+      groups.unshift({ ts: sh.ts, label: sessLabel(sh.ts), reads: [], n: 0,
+        strike: sh.strike, finalDelta: null, resolved: null, scored: 0, hits: 0,
+        lastCall: '—', armed: true });
+    }
     const full = [];
     for (const g of groups) {
       const open = this.isOpen(mode, g.ts);
@@ -1338,13 +1347,16 @@ class Component extends DCLogic {
               (g.resolved === 'U' ? 'rgba(90,215,155,.42); color:#5AD79B' : 'rgba(255,138,143,.42); color:#FF8A8F') }
         : { badge: 'LIVE', st: MONO + '; font-size:10px; padding:2px 7px; border-radius:4px; border:1px solid rgba(237,190,114,.38); color:#EDBE72' };
       full.push({
-        t: (open ? '▾ ' : '▸ ') + g.label, k: '', strike: g.strike.toLocaleString(),
+        t: (g.n ? (open ? '▾ ' : '▸ ') : '  ') + g.label, k: '',
+        strike: g.strike == null ? '—' : g.strike.toLocaleString(),
         delta: g.finalDelta == null ? '—' : money(g.finalDelta, true), z: '', sig: '',
         call: g.lastCall,
-        ab: g.n + ' read' + (g.n === 1 ? '' : 's') + (g.scored ? ' · ' + g.hits + '/' + g.scored + ' correct' : ''),
+        ab: g.armed && !g.n
+          ? (g.strike == null ? 'waiting for the next session' : 'armed · first read at :01')
+          : g.n + ' read' + (g.n === 1 ? '' : 's') + (g.scored ? ' · ' + g.hits + '/' + g.scored + ' correct' : ''),
         mkt: '', badge: gb.badge, badgeSt: gb.st,
         rowSt: SESS_ROW, kind: 'session', ts: g.ts,
-        onToggle: () => this.toggleSession(mode, g.ts) });
+        onToggle: g.n ? () => this.toggleSession(mode, g.ts) : null });
       if (open) for (const x of g.reads) full.push(readCells(x));
     }
 
