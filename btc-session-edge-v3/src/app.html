@@ -966,9 +966,16 @@ class Component extends DCLogic {
       sessions: new Set(sc.map((r) => r.sessionTs)).size };
   }
 
-  /* The 1-minute candle endpoint is cached for 90s+, so it cannot drive a
-     per-minute read. The ticker is fresh and stamps its own server time, which
-     is what the staleness guard keys off. */
+  /* Feed choice is forced by the servers' own cache headers, measured 2026-08-06:
+       candles?granularity=60  cache-control: public, max-age=300   <- 5 minutes
+       ticker                  cache-control: public, max-age=1
+       v2/prices/spot          cache-control: no-store
+     The candle endpoint DECLARES a five-minute cache, so it can never drive a
+     per-minute read — observed jumping 1786046340 -> 1786046640, exactly 300s,
+     then serving that same candle for 90s. The ticker is fresh and, unlike spot,
+     stamps its own server time, which is what the staleness guard keys off.
+     All three send access-control-allow-origin: *, so any of them is reachable
+     from the browser; freshness is the only differentiator. */
   fetchShadow = () => {
     fetch('https://api.exchange.coinbase.com/products/BTC-USD/ticker')
       .then((r) => r.json())
