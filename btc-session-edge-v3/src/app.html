@@ -852,9 +852,16 @@ class Component extends DCLogic {
       return { ts, label: sessLabel(ts), reads, n: reads.length,
         strike: reads[0].strike, finalDelta: res ? res.finalDelta : null,
         resolved, scored, hits,
-        lastCall: last ? (last.pFull >= 0.5 ? 'UP ' : 'DOWN ') +
-          Math.round((last.pFull >= 0.5 ? last.pFull : 1 - last.pFull) * 100) + '%' : '—' };
+        lastCall: last ? this.callLabel(last.pFull) : '—' };
     });
+  }
+  /* Display label for a probability. The sigmoid is asymptotic — it returns
+     0.9951, never 1 — so rounding to "100%" asserts a certainty the model cannot
+     hold. Clamp the shown integer to 1..99. Cosmetic only: pFull is stored and
+     scored at full precision, so Brier and calibration are untouched. */
+  callLabel(p) {
+    const up = p >= 0.5, conf = up ? p : 1 - p;
+    return (up ? 'UP ' : 'DOWN ') + Math.min(99, Math.max(1, Math.round(conf * 100))) + '%';
   }
   isOpen(list, ts) { return !!(this.state.openSess || {})[list + ':' + ts]; }
   toggleSession(list, ts) {
@@ -1329,7 +1336,7 @@ class Component extends DCLogic {
       const b = badgeFor(x);
       return { t: '', k: ':' + String(x.k).padStart(2, '0'), strike: x.strike.toLocaleString(),
         delta: money(x.delta, true), z: x.z.toFixed(2), sig: '$' + x.sigmaUnit.toFixed(0),
-        call: (x.pFull >= 0.5 ? 'UP ' : 'DOWN ') + Math.round((x.pFull >= 0.5 ? x.pFull : 1 - x.pFull) * 100) + '%',
+        call: this.callLabel(x.pFull),
         ab: rowAb(x) || '—', mkt: x.mktCents == null ? '—' : x.mktCents + '¢',
         badge: b.badge, badgeSt: b.st, rowSt: READ_ROW, kind: 'read', ts: 0, onToggle: null };
     };
@@ -1527,7 +1534,7 @@ class Component extends DCLogic {
       provenance: 'Bitstamp BTCUSD 1-min · Jul 8 – Aug 4 2026 · 2,688 sessions · all times CT. Fees per Kalshi schedule eff. 7 Jul 2026: taker = roundup(M × 0.07 × C × P × (1−P)), M defaults to 1; maker = roundup(M × 0.0175 × C × P × (1−P)), M defaults to 0. The intraday BTC series is not in the non-standard multiplier table, so taker M = 1 and maker is likely free — confirm your series ticker before trusting the maker line. Taker ceiling is rounded up per contract, the 1-lot worst case; on larger orders Kalshi rounds the order total, so the true ceiling is 0–1¢ more generous. Historical frequencies, not predictions.',
 
       pending: !!pending,
-      pendingLine: pending ? (pending.e.window || '') + ' — ' + this.state.rows.filter((x) => x.sessionTs === pending.ts).length + ' read(s), last called ' + (() => { const rr = this.state.rows.filter((x) => x.sessionTs === pending.ts); if (!rr.length) return '—'; const l = rr[rr.length - 1]; return (l.pFull >= 0.5 ? 'UP ' : 'DOWN ') + Math.round((l.pFull >= 0.5 ? l.pFull : 1 - l.pFull) * 100) + '%'; })() : '',
+      pendingLine: pending ? (pending.e.window || '') + ' — ' + this.state.rows.filter((x) => x.sessionTs === pending.ts).length + ' read(s), last called ' + (() => { const rr = this.state.rows.filter((x) => x.sessionTs === pending.ts); if (!rr.length) return '—'; const l = rr[rr.length - 1]; return this.callLabel(l.pFull); })() : '',
       resolveUp: () => this.resolve('U'), resolveDown: () => this.resolve('D'), resolveFlat: () => this.resolve('F')
     };
   }

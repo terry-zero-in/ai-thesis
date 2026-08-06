@@ -521,6 +521,28 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
     c.state.srows.length, 3);
 }
 
+/* ---- The dial must never display certainty ----
+   The sigmoid is asymptotic: it returns 0.9951, never 1. Rounding that to "100%"
+   claims something the model cannot support, in a tool whose whole premise is
+   calibrated probability. Clamp the DISPLAY only — pFull keeps full precision so
+   Brier and calibration are unaffected. */
+{
+  const c = mk();
+  t('S13 near-certain reads display as 99, not 100', c.callLabel(0.9951) === 'UP 99%',
+    c.callLabel(0.9951), 'UP 99%');
+  t('S13 the mirror case floors at 1', c.callLabel(0.0002) === 'DOWN 99%',
+    c.callLabel(0.0002), 'DOWN 99%');
+  t('S13 ordinary values are untouched', c.callLabel(0.71) === 'UP 71%', c.callLabel(0.71), 'UP 71%');
+  t('S13 a coin flip still reads 50', c.callLabel(0.5) === 'UP 50%', c.callLabel(0.5), 'UP 50%');
+  t('S13 rounding to 99 is left alone', c.callLabel(0.988) === 'UP 99%', c.callLabel(0.988), 'UP 99%');
+  /* the clamp is cosmetic — scoring must still see the real number */
+  const c2 = mk();
+  c2.state.srows = [{ sessionTs: 1, k: 1, pFull: 0.9951, resolved: 'D', v: 2, auto: true }];
+  const b = c2.shadowScore().brier;
+  t('S13 Brier uses full precision, not the clamp',
+    Math.abs(b - 0.9951 ** 2) < 1e-9, b, (0.9951 ** 2).toFixed(6));
+}
+
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log('TEST'.padEnd(w) + '  RESULT  GOT / WANT');
