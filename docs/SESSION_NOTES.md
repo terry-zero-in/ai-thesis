@@ -1371,3 +1371,29 @@ Entirely the BTC Session Edge artifact — **not** the AI Thesis build, which di
 2. For BTC work: read `btc-session-edge-v3/HANDOFF.md` (artifact-specific, has the defect history and held items)
 3. For AI Thesis work: read the S36 handoff — nothing moved this session
 4. First action if BTC: check whether shadow mode's live calibration matches the dial's claims
+
+---
+
+## SESSION 38 — BTC Session Edge: the fifth defect, and why the test for it was blind (2026-08-07)
+
+**Note:** Full record in `docs/handoffs/2026-08-07-S38-btc-session-edge-fifth-defect.md`. This entry is a pointer.
+
+S37 closed by recommending a test: let shadow mode run, then check whether displayed 80% reads hit ~80%. **That test returns a false all-clear.** Three more defects, two of which cancel inside shadow mode specifically.
+
+- **Defect 5 — `B` shipped at 1.77, not 1.49.** `data-props` declared `bConstant` default `1.77`; the DC runtime injects declared defaults as props, so `activeB()`'s `?? 1.49` fallback never fired. #35 changed the fallback and the footer string and never the declared default. **The browser ran the pre-#35 slope for two sessions — defect 4 was never fixed in production.** The footer said so the whole time: `B=1.77 … baked-data refit 1.49`, contradicting itself on one line.
+- **Defect 6 — shadow computed `M` from the traded log.** `mult()` read `this.state.sess`, which shadow never writes: **M pinned at 1** in every unattended run, and a shadow read's probability moved **7.68pp** on identical inputs when an unrelated *traded* session resolved.
+- **Defect 7 — the scorecard and CALIBRATION panel always read the traded log**, in both modes. 40 shadow reads at 85% confidence, all wrong, rendered `n0` in every band. The instrument for the question could not see the data it exists to measure.
+- **Why the test was blind:** `B=1.77` was fitted with `M` pinned at 1, and defect 6 pins `M` at 1 in shadow — so shadow ran exactly the pipeline 1.77 was calibrated for, while the traded dial ran `M` live at 1.77, which is defect 4. Replaying the artifact's own methods over the 2,688-session set: shadow's config → displayed 80% hits **82.9%**; the traded dial's → **76.2%**; after the fix → **80.3%**. The traded-dial row reproduces S37's own defect-4 measurement (81.7% vs 81.2% here), which is what establishes the replay is faithful.
+- **The defect class:** defect 5 passed 145 assertions *because* `behaviour.mjs` builds the component with `props = {}` — the one condition under which the dead fallback fires. Any constant reaching production via a framework-supplied default is invisible to a harness that supplies none. `feeK`, `makerMult`, `macroSigmaMult` arrive the same way and are now covered.
+- **No model constant changed on new evidence.** 1.49 was decided in S37; this makes the artifact apply it. Nothing from review round 3 ships — its one survivor (EWMA-mean M) needs independent replication by their own account.
+- **DB untouched** — no migrations, no writes. `hp1.*` as S36 left it.
+
+**Verification:** `behaviour.mjs` 165 PASS / 0 FAIL (was 145; 20 new, each watched red first) · `selftest.mjs` 14 + 3 layout + 10 grouped-log, 0 FAIL · `bundle.mjs verify` clean · browser render confirms B tile 1.49 and a populated shadow calibration panel · PR #38 CI green on all four checks.
+
+**Terry actions:** (1) **clear the shadow log and restart** — everything in it was scored by an engine that no longer exists; (2) merge #37 and #38; (3) still do not size positions.
+
+**Next session — start here:**
+1. Read `CLAUDE.md`
+2. For BTC work: `btc-session-edge-v3/HANDOFF.md` — the fifth-defect section is at the top
+3. For AI Thesis work: nothing moved in S37 or S38; S36's recommendation stands
+4. First action if BTC: the candle backfill (round 3 ranks it #1 — it carries the `B(14)` artifact, the settle basis and the volume field at once)
