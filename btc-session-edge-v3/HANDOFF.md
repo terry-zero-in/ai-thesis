@@ -1,10 +1,56 @@
 # BTC Session Edge v3 — session handoff
 
-**Date:** 2026-08-06 · **Branch:** `claude/btc-edge-v3-defects-h9m9m1` · **PR:** #35 (open, draft)
+**Date:** 2026-08-07 · **Branch:** `claude/btc-edge-v3-calibration-7wceyz`
 
-Read this before touching anything. It exists because this session found four
-independent defects that all biased the same direction, and the next session
-needs to inherit the suspicion, not just the code.
+Read this before touching anything. It exists because two sessions running have
+found defects that all biased toward false confidence, and the next session needs
+to inherit the suspicion, not just the code.
+
+---
+
+## THE FIFTH DEFECT WAS REAL — and the test for it could not have found it
+
+The previous session's closing recommendation was: *"let shadow mode run several
+days, then check calibration. If displayed 80% reads hit ~80%, the `B` fix
+worked. If not, there is a fifth defect."*
+
+**That test returns a false all-clear.** There were three more defects, and two
+of them cancel each other inside shadow mode specifically:
+
+| # | Defect | Effect |
+|---|---|---|
+| 5 | **`B` shipped at 1.77, not 1.49.** `data-props` declared `bConstant` default `1.77`; the DC runtime passes declared defaults in as props, so `this.props.bConstant` was `1.77` and `activeB()`'s `?? 1.49` fallback never fired. #35 changed the fallback and the footer string, never the declared default. | The traded dial ran the **pre-#35 slope**. Defect 4 was never actually fixed in the browser. |
+| 6 | **Shadow mode computed `M` from the traded log.** `mult()` read `this.state.sess`, which shadow never writes. An unattended shadow run had **M pinned at 1** forever — and a shadow read's probability moved when an unrelated *traded* session resolved. | Shadow ran a different pipeline from the dial it exists to validate. |
+| 7 | **The scorecard and CALIBRATION panel always read the traded log**, in both MY LOG and SHADOW modes. Only the row table switched. | The one instrument that answers "do displayed 80% reads hit 80%" never displayed shadow data. Verified: 40 shadow reads at 85% confidence, all wrong — panel showed `n0` in every band. |
+
+**Why the proposed test was structurally blind.** `B = 1.77` was fitted on a
+basis with `M` pinned at 1. Defect 6 pins `M` at 1 in shadow mode. So shadow
+mode was running *the exact pipeline 1.77 was calibrated for* — while the traded
+dial ran `M` live at `B = 1.77`, which is precisely defect 4. Measured on the
+2,688-session baked set, replaying the real `shadowRead`/`model`/`mult` methods:
+
+| Configuration | displayed 80% → actual | 80–90 band |
+|---|---|---|
+| **What shadow ran** (B 1.77, M pinned 1) | 82.9% | 85.0 → 85.2 (+0.2) |
+| **What the traded dial ran** (B 1.77, M live) | **76.2%** | 85.1 → **81.2** (−3.9) |
+| **After this fix** (B 1.49, M live both sides) | **80.3%** | 85.0 → 84.7 (−0.3) |
+
+The middle row independently reproduces the previous session's own defect-4
+measurement (they measured the 80–90 band at 81.7%; this replay gets 81.2%),
+which is what establishes the replay is faithful.
+
+**The lesson, stated plainly: a paper-trading mode that does not run the same
+pipeline as the live dial validates nothing, and will report success loudest
+exactly when the live dial is broken.** Two bugs cancelling is not calibration.
+
+**Standing implication: assume an eighth.** The suite passed at 145 assertions
+across all three of these. Defect 5 in particular passed *because* `behaviour.mjs`
+constructs the component with `props = {}` — the one condition under which the
+dead fallback fires. **Any constant that reaches production through a
+framework-supplied default is invisible to a test harness that supplies no
+props.** `feeK`, `makerMult` and `macroSigmaMult` reach the dial by the same
+route and are now covered by the same assertion style; anything added later must
+be too.
 
 ---
 
@@ -59,9 +105,23 @@ looking at a rendered number and saying "that seems off," not by the tests.
    89.1%. Now **1.49**.
 
 **If you are about to add a factor or change a constant, assume there is a
-fifth.** The places to look: anywhere σ, `REMVAR`, `k`, or the CT hour index can
-be silently wrong; boundary behaviour at k=1 and k=14; what happens when the tab
-sleeps or a session is missed.
+fifth.** There was — see the top of this file. The places still to look: anywhere
+σ, `REMVAR`, `k`, or the CT hour index can be silently wrong; boundary behaviour
+at k=1 and k=14; what happens when the tab sleeps or a session is missed.
+
+Two the replay surfaced but did **not** fix, both already on the ranked list:
+
+- **`sigmaFromPts` is biased low early in a session.** It returns
+  `sqrt(mean(u²))`, so at k=2 there is exactly one squared difference and the
+  estimator collapses to `|u|`, whose expectation is 0.798σ — σ_cur understated
+  ~20% at k=2, ~11% at k=3, decaying after. σ_unit is a 0.6/0.4 blend so the
+  effect on the dial is ~8% at k=2. A pooled `B` cannot absorb a k-dependent
+  bias. Interacts with the per-k work in review round 3 §3; do not fix in
+  isolation.
+- **`pruneShadow` is O(rows × sessions) inside every 20-second persist** once
+  rows exceed the cap (round 3 §4.4). Not a correctness bug. `shadowSessions()`
+  adds a full `srows` scan per read and per render — trivial at 25k rows, but it
+  is on the same hot path if the cap ever rises.
 
 ---
 
@@ -149,4 +209,13 @@ shrinks error bars ~4× and manufactures significance).
   live trade.
 - Any shadow log recorded before 2026-08-06 20:20 UTC is contaminated by
   defects 2 and 3. Clear it.
+- **Any shadow log recorded before this session is contaminated by defects 5 and
+  6** — it was scored by a dial running `M = 1` at `B = 1.77`. Shadow rows are
+  now tagged `v: 3`; the status line names how many pre-v3 rows are present and
+  tells you to clear. **Clear the shadow log and restart it** — the numbers in it
+  describe an engine that no longer exists.
 - `clear log` clears the traded log. The shadow log is separate (`edge.shadow.v3`).
+  PR #37 makes the button act on whichever log is on screen.
+- Shadow `M` is inert until **4 resolved shadow sessions** (one hour of running).
+  The M tile says `inert — needs 4 sessions (n…)` while that is true, so a pinned
+  M is now visible rather than silent.

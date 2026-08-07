@@ -516,7 +516,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 
     <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:1px; background:rgba(255,255,255,.06)">
       <div style="padding:14px 18px 16px; background:#0F1013">
-        <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:10px">CALIBRATION — PREDICTED VS ACTUAL</div>
+        <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:10px">{{ calibTitle }}</div>
         <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px">
           <sc-for list="{{ calib }}" as="c" hint-placeholder-count="5">
             <div>
@@ -531,7 +531,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         </div>
       </div>
       <div style="padding:14px 18px 16px; background:#0F1013">
-        <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:10px">IS EACH FACTOR STILL PAYING · ΔBrier = Brier(without) − Brier(with) · positive = earning its place</div>
+        <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:10px">{{ ablTitle }}</div>
         <div style="display:grid; grid-template-columns:16px 1fr 74px 132px 1fr; gap:10px; align-items:center; height:24px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.05em; color:#8B94A1; border-bottom:1px solid rgba(255,255,255,.10)">
           <span></span><span>VARIABLE</span><span style="text-align:right">ΔBRIER</span><span style="text-align:right">FLIPS</span><span>VERDICT</span>
         </div>
@@ -606,12 +606,29 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},
 &quot;feeK&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.07,&quot;min&quot;:0.02,&quot;max&quot;:0.12,&quot;step&quot;:0.005,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;},
 &quot;makerMult&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0,&quot;min&quot;:0,&quot;max&quot;:1,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;},
-&quot;bConstant&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.77,&quot;min&quot;:1.2,&quot;max&quot;:2.4,&quot;step&quot;:0.01,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;},
+&quot;bConstant&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.49,&quot;min&quot;:1.2,&quot;max&quot;:2.4,&quot;step&quot;:0.01,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;},
 &quot;macroSigmaMult&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.6,&quot;min&quot;:1,&quot;max&quot;:2.5,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;}}">
 const MONO = "font-family:'JetBrains Mono',ui-monospace,monospace";
 const TAB = 'font-variant-numeric:tabular-nums';
 const DOWS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const LSK = { log:'edge.log.v3', sess:'edge.sessions.v3', calib:'edge.calib.v3', shadow:'edge.shadow.v3' };
+/* The ruled slope, declared once because it previously was not.
+   #35 refit B from 1.77 to 1.49 on the live-M pipeline, but changed it only in
+   activeB()'s `??` fallback. The DC runtime passes every data-props `default`
+   in as a prop, so this.props.bConstant was the DECLARED 1.77 and that fallback
+   never fired: the browser kept running the pre-#35 slope while the footer next
+   to it read "baked-data refit 1.49". behaviour.mjs constructs the component
+   with props={}, which is the one condition under which the fallback DOES fire
+   — so 145 assertions agreed with a number the page never used.
+   Every consumer now reads this binding, and S20 asserts the data-props default
+   above still equals it, so the two cannot drift apart again. */
+const B_RULED = 1.49;
+/* CT hour for a session-start unix second. mult() keys the vol baseline off the
+   hour; shadow rows carry only sessionTs, so derive it rather than store it —
+   that way rows logged before shadow M existed still count toward it. */
+const ctHour = (tsSec) => +new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Chicago', hour12: false, hour: '2-digit'
+}).format(new Date(tsSec * 1000)) % 24;
 /* §5.6 — storage adapter. Four functions, localStorage default. Swap the object
    for a Supabase-backed one with the same signatures and no component changes. */
 const STORE = {
@@ -725,6 +742,10 @@ class Component extends DCLogic {
     t('REMVAR[13] is SHAPE[14]^2/3', near(D.REMVAR[13], D.REMVAR_CLOSE[13] / 3, 1e-6), D.REMVAR[13], D.REMVAR_CLOSE[13] / 3);
     t('mean(SHAPE) normalised to 1', near(D.SHAPE.reduce((a, b) => a + b, 0) / 15, 1, 1e-4), D.SHAPE.reduce((a, b) => a + b, 0) / 15, 1);
 
+    /* The B: 1.77 below is a fixed TEST INPUT that pins model()'s arithmetic to
+       three hand-computed values — it is not the shipped slope, which is
+       B_RULED and comes from activeB(). Changing it here breaks the fixtures
+       without touching the dial. */
     const m1 = this.model({ k: 12, delta: 40, sigmaUnit: 27, net: null, B: 1.77, macro: false, drift: false, settleAvg: true });
     t('model k=12 d=+40 s=27 -> .8754', near(m1.p, 0.8754, 5e-4), m1.p, 0.8754);
     const m2 = this.model({ k: 14, delta: 20, sigmaUnit: 26.8926, net: null, B: 1.77, macro: false, drift: false, settleAvg: true });
@@ -797,9 +818,15 @@ class Component extends DCLogic {
 
 
   /* ---- §3.2 M: median over the last 12 resolved sessions of the realised final
-     move divided by what the hour's baseline vol predicted. Inert below 4. */
-  mult(D) {
-    const s = this.state.sess, keys = Object.keys(s).sort();
+     move divided by what the hour's baseline vol predicted. Inert below 4.
+
+     The session source is a PARAMETER. It used to be hard-wired to
+     this.state.sess — the traded store, which shadow mode never writes — so an
+     unattended shadow run had M pinned at 1 for every read, and a shadow read's
+     probability moved when an unrelated traded session resolved. Two logs that
+     are deliberately walled apart everywhere else were sharing this one. */
+  mult(D, src) {
+    const s = src || this.state.sess, keys = Object.keys(s).sort();
     const r = [];
     for (let i = keys.length - 1; i >= 0 && r.length < 12; i--) {
       const e = s[keys[i]];
@@ -947,7 +974,11 @@ class Component extends DCLogic {
         srows = [...srows, { ts: Date.now(), sessionTs: ts, k, strike: s.strike, price: px,
           delta: r.delta, sigmaUnit: r.sigmaUnit, z: r.z, pFull: r.p, ab: r.ab, macroOn: r.macro,
           driftNet: null, mktCents: null, yesT: r.yesT, noT: r.noT, resolved: null, finalDelta: null,
-          vol: vol == null ? null : vol, auto: true, v: 2 }];
+          /* v3: shadow now runs its own M and the ruled slope is 1.49. Rows below
+             v3 were scored by a dial that ran M=1 at B=1.77, so they are not
+             comparable to these — the status line says so rather than silently
+             pooling two engines into one calibration chart. */
+          vol: vol == null ? null : vol, auto: true, v: 3 }];
         /* One point per minute. The feed is polled ~3x a minute; appending each
            poll leaves the estimator measuring only the seconds that straddle a
            minute boundary while dividing by sqrt(1), understating sigma ~2x and
@@ -960,11 +991,25 @@ class Component extends DCLogic {
     this.persistShadow();
   }
 
+  /* Shadow's own resolved sessions, in the shape mult() reads. Shadow rows are
+     one-per-minute, so collapse them to one entry per session; the hour comes
+     from sessionTs rather than a stored field so rows written before shadow M
+     existed still count. */
+  shadowSessions() {
+    const out = {};
+    for (const r of this.state.srows) {
+      if (r.resolved !== 'U' && r.resolved !== 'D') continue;
+      if (r.finalDelta == null) continue;
+      out[r.sessionTs] = { hr: ctHour(r.sessionTs), resolved: r.resolved, finalDelta: r.finalDelta };
+    }
+    return out;
+  }
+
   /* The live model, run against an explicit strike/price/point-chain. */
   shadowRead(strike, price, k, pts, ct) {
     const D = this.state.data;
     if (!D) return null;
-    const base = D.HOUR_SIGMA[ct.hr], mm = this.mult(D);
+    const base = D.HOUR_SIGMA[ct.hr], mm = this.mult(D, this.shadowSessions());
     const trail = base * mm.M, cur = this.sigmaFromPts(pts);
     const sigmaUnit = cur != null ? 0.6 * trail + 0.4 * cur : trail;
     const macro = this.state.macroOn;
@@ -1082,7 +1127,7 @@ class Component extends DCLogic {
   refitB() {
     const sc = this.scored().filter((r) => r.v === 2 && isFinite(r.z));
     if (sc.length < 150) return null;
-    let B = this.props.bConstant ?? 1.77;
+    let B = this.props.bConstant ?? B_RULED;
     for (let i = 0; i < 200; i++) {
       let g = 0, h = 0;
       for (const r of sc) {
@@ -1102,7 +1147,7 @@ class Component extends DCLogic {
   activeB() {
     const n = this.scored().filter((r) => r.v === 2).length;
     if (!this._bCache || this._bCache.n !== n) this._bCache = { n, B: this.refitB() };
-    return { B: clamp(this._bCache.B ?? (this.props.bConstant ?? 1.49), 1.2, 2.4),
+    return { B: clamp(this._bCache.B ?? (this.props.bConstant ?? B_RULED), 1.2, 2.4),
              fitted: this._bCache.B != null, n };
   }
 
@@ -1358,6 +1403,26 @@ class Component extends DCLogic {
     const hits = sc.filter((x) => (x.pFull >= 0.5) === (x.resolved === 'U')).length;
     const brier = sc.length ? sc.reduce((a, x) => { const y = x.resolved === 'U' ? 1 : 0; return a + (x.pFull - y) * (x.pFull - y); }, 0) / sc.length : null;
 
+    /* The LOG tab's scorecard, calibration panel and ablation aggregate report
+       the log you are LOOKING at. They used to read scored() unconditionally,
+       so on the SHADOW tab they showed the traded log — the one instrument
+       built to answer "do displayed 80% reads hit 80%" never displayed the
+       shadow rows it exists to measure.
+
+       scored() itself stays traded-only on purpose: it feeds refitB(), and a
+       paper run must never be able to move the constant the traded dial runs
+       on. Hence a separate view-scoped set rather than widening scored(). */
+    const mode = S.logMode === 'shadow' ? 'shadow' : 'real';
+    const srcRows = mode === 'shadow' ? S.srows : rows;
+    const logName = mode === 'shadow' ? 'SHADOW' : 'MY LOG';
+    const scV = srcRows.filter((x) => x.resolved === 'U' || x.resolved === 'D');
+    const hitsV = scV.filter((x) => (x.pFull >= 0.5) === (x.resolved === 'U')).length;
+    const brierV = scV.length ? scV.reduce((a, x) => { const y = x.resolved === 'U' ? 1 : 0; return a + (x.pFull - y) * (x.pFull - y); }, 0) / scV.length : null;
+    /* M for the pipeline being VIEWED — shadow's own history on the shadow tab,
+       the traded store on the traded tab. n is shown because whether M is inert
+       (n<4, M pinned at 1) is exactly what this panel exists to reveal. */
+    const mView = D ? this.mult(D, mode === 'shadow' ? this.shadowSessions() : null) : { M: 1, n: 0 };
+
     /* §5.3 — a dot means this variable's absence would have changed the side or
        the trade decision. That is the "would it have mattered" answer at a glance. */
     /* Compacted rows drop the ablation block to save bytes, so every consumer
@@ -1409,8 +1474,6 @@ class Component extends DCLogic {
         ab: rowAb(x) || '—', mkt: x.mktCents == null ? '—' : x.mktCents + '¢',
         badge: b.badge, badgeSt: b.st, rowSt: READ_ROW, kind: 'read', ts: 0, onToggle: null };
     };
-    const mode = S.logMode === 'shadow' ? 'shadow' : 'real';
-    const srcRows = mode === 'shadow' ? S.srows : rows;
     const groups = this.groupSessions(srcRows);
     /* Between adopting a strike and the first read there is a minute where the
        strip says armed and the table shows nothing — which reads as broken. Show
@@ -1446,7 +1509,7 @@ class Component extends DCLogic {
     }
 
     const calib = [[50, 60], [60, 70], [70, 80], [80, 90], [90, 101]].map(([lo, hi]) => {
-      const g = sc.filter((x) => { const c = Math.max(x.pFull, 1 - x.pFull) * 100; return c >= lo && c < hi; });
+      const g = scV.filter((x) => { const c = Math.max(x.pFull, 1 - x.pFull) * 100; return c >= lo && c < hi; });
       const act = g.length ? g.filter((x) => (x.pFull >= 0.5) === (x.resolved === 'U')).length / g.length : null;
       const pred = g.length ? g.reduce((a, x) => a + Math.max(x.pFull, 1 - x.pFull), 0) / g.length : null;
       const bar = (v, col) => 'flex:1; border-radius:2px 2px 0 0; height:' + (v == null ? 0 : Math.max(2, v * 100).toFixed(0)) + '%; background:' + col;
@@ -1455,7 +1518,7 @@ class Component extends DCLogic {
     });
 
     const ablAgg = ablDefs.map(([letter, key, name]) => {
-      const g = sc.filter((x) => x.ab && Math.abs(x.ab[key] - x.pFull) > 0.0005);
+      const g = scV.filter((x) => x.ab && Math.abs(x.ab[key] - x.pFull) > 0.0005);
       let db = null;
       if (g.length) {
         const bw = g.reduce((a, x) => { const y = x.resolved === 'U' ? 1 : 0; return a + (x.pFull - y) ** 2; }, 0) / g.length;
@@ -1487,7 +1550,7 @@ class Component extends DCLogic {
        omission is why 1.74 looked right while the dial ran ~19% too steep:
        M's median on the real basis is 0.677, not 1. Measured end-to-end, the
        shipped slope put the 80-90% band at 81.7% and the 90-95% band at 89.1%. */
-    const bakedB = '1.49';
+    const bakedB = B_RULED.toFixed(2);
 
     return {
       clock: ct.clock, dayName: DOWS[ct.dow], sessionWindow: ct.window, ticks,
@@ -1573,12 +1636,14 @@ class Component extends DCLogic {
       peekSummary: sc.length ? hits + '/' + sc.length + ' called · Brier ' + brier.toFixed(3) + ' · ' + rows.length + ' rows' : rows.length + ' row(s) · nothing resolved yet',
 
       agg: [
-        { label: 'ROWS', val: String(rows.length), note: sc.length + ' scored' },
-        { label: 'HIT RATE', val: sc.length ? Math.round(hits / sc.length * 100) + '%' : '—', note: sc.length ? hits + ' of ' + sc.length : 'resolve a session' },
-        { label: 'BRIER', val: brier == null ? '—' : brier.toFixed(3), note: 'lower is better · .25 = coin flip' },
+        { label: 'ROWS', val: String(srcRows.length), note: scV.length + ' scored · ' + logName },
+        { label: 'HIT RATE', val: scV.length ? Math.round(hitsV / scV.length * 100) + '%' : '—', note: scV.length ? hitsV + ' of ' + scV.length : 'resolve a session' },
+        { label: 'BRIER', val: brierV == null ? '—' : brierV.toFixed(3), note: 'lower is better · .25 = coin flip' },
         { label: 'B', val: this.activeB().B.toFixed(2), note: this.activeB().fitted ? 'fitted from your log' : 'ruled · refits at n≥150' },
-        { label: 'M', val: this.mult(D || { HOUR_SIGMA: [1], SUM_SHAPE2: 1 }).M.toFixed(2), note: 'live vol multiplier' }
+        { label: 'M', val: mView.M.toFixed(2), note: mView.n < 4 ? 'inert — needs 4 sessions (n' + mView.n + ')' : 'vol multiplier · n' + mView.n }
       ].map((a) => Object.assign(a, { valSt: 'font-size:26px; font-weight:600; letter-spacing:-.016em; ' + TAB + '; color:#F2F4F7' })),
+      calibTitle: 'CALIBRATION — PREDICTED VS ACTUAL · ' + logName,
+      ablTitle: 'IS EACH FACTOR STILL PAYING · ' + logName + ' · ΔBrier = Brier(without) − Brier(with) · positive = earning its place',
       calib, ablAgg, full, fullEmpty: !full.length,
       showReal: () => this.setState({ logMode: 'real' }),
       showShadow: () => this.setState({ logMode: 'shadow' }),
@@ -1602,12 +1667,20 @@ class Component extends DCLogic {
         bits.push(sv.hit == null ? 'hit —' : 'hit ' + Math.round(sv.hit * 100) + '%');
         bits.push(sv.brier == null ? 'brier —' : 'brier ' + sv.brier.toFixed(3));
         if (S.sAt) bits.push(hhmm(S.sAt));
+        /* Rows below v3 were scored by a dial running M=1 at B=1.77. Pooling
+           them with v3 rows in one calibration chart averages two different
+           engines and reads as one — say so instead. */
+        const stale = S.srows.filter((r) => (r.v || 0) < 3 && (r.resolved === 'U' || r.resolved === 'D')).length;
+        if (stale) bits.push(stale + ' row' + (stale === 1 ? '' : 's') + ' from a superseded engine — clear shadow for a clean read');
         return bits.join(' · ');
       })(),
       csvLabel: S.csvLabel, clearLabel: S.clearArm ? 'press again to clear' : 'clear log',
       copyCsv: this.copyCsv, clearLog: this.clearLog, toggleShadow: this.toggleShadow,
       copyShadowCsv: this.copyShadowCsv,
-      calibFooter: (() => { const ab = this.activeB(); return 'B=' + ab.B.toFixed(2) + (ab.fitted ? ' fitted from your log (n=' + ab.n + ')' : ' ruled · refits at n≥150 (' + ab.n + ')') + ' · baked-data refit ' + bakedB + ' on the live M pipeline · M=' + (D ? this.mult(D).M.toFixed(2) : '1.00'); })(),
+      /* M here is the VIEWED pipeline's, matching the tile and the panels above
+         it — the footer used to quote the traded M under a shadow calibration
+         chart, which is how two pipelines got read as one. */
+      calibFooter: (() => { const ab = this.activeB(); return 'B=' + ab.B.toFixed(2) + (ab.fitted ? ' fitted from your log (n=' + ab.n + ')' : ' ruled · refits at n≥150 (' + ab.n + ')') + ' · baked-data refit ' + bakedB + ' on the live M pipeline · ' + logName + ' M=' + mView.M.toFixed(2); })(),
       provenance: 'Bitstamp BTCUSD 1-min · Jul 8 – Aug 4 2026 · 2,688 sessions · all times CT. Fees per Kalshi schedule eff. 7 Jul 2026: taker = roundup(M × 0.07 × C × P × (1−P)), M defaults to 1; maker = roundup(M × 0.0175 × C × P × (1−P)), M defaults to 0. The intraday BTC series is not in the non-standard multiplier table, so taker M = 1 and maker is likely free — confirm your series ticker before trusting the maker line. Taker ceiling is rounded up per contract, the 1-lot worst case; on larger orders Kalshi rounds the order total, so the true ceiling is 0–1¢ more generous. Historical frequencies, not predictions.',
 
       pending: !!pending,
