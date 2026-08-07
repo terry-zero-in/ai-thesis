@@ -109,6 +109,15 @@ fifth.** There was — see the top of this file. The places still to look: anywh
 σ, `REMVAR`, `k`, or the CT hour index can be silently wrong; boundary behaviour
 at k=1 and k=14; what happens when the tab sleeps or a session is missed.
 
+**One visible consequence of fixing defect 7.** The ablation aggregate on the
+SHADOW tab now reads `needs 30 more rows` instead of showing numbers. That is
+correct: compaction drops the `ab` block from resolved shadow rows, so the
+shadow log genuinely has no ablation data — it was previously showing the
+*traded* log's ablations under a SHADOW header. Making that panel useful in
+shadow means keeping `ab` through compaction (review round 3 §4.2 calls it
+"your call"; it costs the bytes compaction exists to save). Left as-is: a panel
+that says it has no data beats one that quietly shows a different log's.
+
 Two the replay surfaced but did **not** fix, both already on the ranked list:
 
 - **`sigmaFromPts` is biased low early in a session.** It returns
