@@ -1397,3 +1397,26 @@ S37 closed by recommending a test: let shadow mode run, then check whether displ
 2. For BTC work: `btc-session-edge-v3/HANDOFF.md` — the fifth-defect section is at the top
 3. For AI Thesis work: nothing moved in S37 or S38; S36's recommendation stands
 4. First action if BTC: the candle backfill (round 3 ranks it #1 — it carries the `B(14)` artifact, the settle basis and the volume field at once)
+
+---
+
+## SESSION 39 — BTC Session Edge: live operation against Kalshi (2026-08-07)
+
+**Note:** Sessions S10–S39 are logged in `docs/handoffs/` per-session. This entry is a pointer. Same calendar session as S38, continued after Terry put the tool live next to the real Kalshi book.
+
+Terry ran the tool beside the live market for the first time. That produced one fixed defect, **two open ones**, and a reframing of what the tool is for. AI Thesis proper did not move.
+
+- **Defect 8 — fixed, PR #39.** The stale-feed guard `return`ed *before* the session-roll block, so a repeated trade timestamp straddling a boundary skipped the roll, the resolve and strike adoption — costing the entire 15 minutes, repeatedly, while displaying a message that reads like normal operation. Also added `armFromCandles()` so a late join recovers the true open instead of writing the session off, and fixed `persistShadow()` writing a cursor one poll stale under React.
+- **Defect 9 — OPEN, now the biggest correctness item on the board.** The model's clock only ticks once a minute: it knows it is in minute 14 but not whether 60 seconds remain or 5. Measured error is negligible before minute 10 and reaches **15.8pp at minute 14**, always toward the losing side of cheap contracts. Caught live — tool said 43% where Kalshi said 21%, and **Kalshi was right**. **Operating rule until fixed: no new positions after minute 11.**
+- **Defect 10 — OPEN.** Minute 0 cannot be priced at all (`REMVAR` has no k=0 entry), which is the one moment Kalshi's price is most anchored. The missing value is computable from data already in the file: **15.132842**.
+- **The model agrees with Kalshi.** Measured one point apart at minute 3, against a 1¢ spread. That is not failure — it means the model is sane — but it moves the interesting question from "is the probability right" to "when is the *market* wrong," which nothing currently instruments.
+- **Terry's reframing, recorded:** *"I want to know when it's a true 50/50 based on historicals but Kalshi has the upside at 40 cents."* The product is the **gap**, not the probability. Shadow mode does not log it.
+- **DB untouched** — no migrations, no writes. `hp1.*` as S36 left it.
+
+**Full record:** `docs/handoffs/2026-08-07-S39-btc-edge-live-operation-defects.md`
+
+**Next session — start here:**
+1. Read `CLAUDE.md`
+2. Read the S39 handoff above — the HEADLINE section, then "Verified facts"
+3. First action if BTC: get Terry's decision on the minute-14 settlement treatment, then fix defects 9 and 10 together. Everything else is optimisation on a dial that is materially wrong in the last three minutes.
+4. For AI Thesis proper: nothing moved in S37, S38 or S39 — S36's recommendation stands.
