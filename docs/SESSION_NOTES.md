@@ -1347,3 +1347,27 @@ Built the entire HP-1 Phase 1 data layer on top of S35's standalone DB and merge
 1. Read `CLAUDE.md`, then the S36 handoff above.
 2. If Terry has run the backfill: verify the live run (counts + spot-check ranks vs `hp1_smoke.py`), then THS-110 data foundation is Done.
 3. If `terry-zero-in/hp1` exists: add it to scope and start the frontend fork — Today surface first, per `docs/hp1/2026-06-12-hp1-dashboard-design.md` §5, wired to `hp1.*`.
+
+---
+
+## SESSION S37 (2026-08-06, BTC Session Edge v3 — serve, run live, four overconfidence defects)
+
+**Note:** Sessions S10–S37 are logged in `docs/handoffs/` per-session. This entry is a pointer.
+
+Entirely the BTC Session Edge artifact — **not** the AI Thesis build, which did not move. Shipped #34 (11 review defects) and #35 (serve from Vercel, live shadow mode, three more defects) to `main`; #36 is open with Terry's opening-call change and a crash fix. The through-line: the tool was systematically overconfident in four independent ways, and three were caught by Terry eyeballing a rendered number rather than by the 145-assertion suite.
+
+- **Four overconfidence defects** — σ_cur double-corrected; a cached feed (`max-age=300`) logged as fresh reads; the σ chain sampled per poll not per minute (**understated σ 2.1×**); and `B=1.77` calibrated for a pipeline that doesn't run (**now 1.49** — the 80–90% band was hitting 81.7%). Defects 2 and 3 were independent causes of one symptom.
+- **Shadow mode** — unattended live validation: one read per minute, self-resolving, self-scoring, structurally walled off from the traded log. Records volume for a question the historical data cannot answer.
+- **Held back deliberately** — `K`, the per-k blend schedule, γ interaction, weekend multiplier, EWMA-M. An external review measured the blend schedule at −0.00082 significant; my independent check got **+0.00013 with a CI spanning zero**. Unresolved, and it gates their other numbers.
+- **My own error, recorded** — the round-1 bootstrap RNG produced 16,403 distinct values in 200,000 draws. Every CI I produced before this session is suspect. Standing rule adopted: |ΔBrier| < 0.0002 between near-duplicate models is noise regardless of significance stars.
+- **DB untouched** — no migrations, no writes. `hp1.*` exactly as S36 left it.
+
+**Full record:** `docs/handoffs/2026-08-06-S37-btc-session-edge-calibration-defects.md`
+
+**Recommendation:** stop optimising the BTC model against the same 28 days — let shadow mode accumulate real sessions and check whether displayed 80% actually hits 80%. That single check is worth more than the entire remaining constant-tuning list. AI Thesis proper is unchanged: S36's recommendation stands.
+
+**Next session — start here:**
+1. Read `CLAUDE.md`
+2. For BTC work: read `btc-session-edge-v3/HANDOFF.md` (artifact-specific, has the defect history and held items)
+3. For AI Thesis work: read the S36 handoff — nothing moved this session
+4. First action if BTC: check whether shadow mode's live calibration matches the dial's claims
