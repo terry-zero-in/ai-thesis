@@ -675,7 +675,7 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   t('S19 the ablation aggregate survives compacted rows', threw2 === null, threw2, null);
 }
 
-/* ---- S20: the slope the BROWSER runs ----
+/* ---- S23: the slope the BROWSER runs ----
    Every other assertion in this file builds the component with props={}, which
    is what let defect 5 ship: the DC runtime passes each data-props `default`
    in as a prop, so `this.props.bConstant` is the DECLARED default and the
@@ -699,26 +699,26 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   }
 
   const RULED = 1.49;
-  t('S20 data-props declares the ruled slope, not a stale one',
+  t('S23 data-props declares the ruled slope, not a stale one',
     meta.bConstant.default === RULED, meta.bConstant.default, RULED);
 
   const browser = mk(runtimeProps);
   const ab = browser.activeB();
-  t('S20 activeB under RUNTIME props is the ruled slope',
+  t('S23 activeB under RUNTIME props is the ruled slope',
     Math.abs(ab.B - RULED) < 1e-9, ab.B, RULED);
-  t('S20 activeB under props={} agrees with runtime props',
+  t('S23 activeB under props={} agrees with runtime props',
     Math.abs(mk({}).activeB().B - ab.B) < 1e-9, mk({}).activeB().B, ab.B);
-  t('S20 the rendered B tile shows the ruled slope',
+  t('S23 the rendered B tile shows the ruled slope',
     browser.renderVals().agg[3].val === RULED.toFixed(2), browser.renderVals().agg[3].val, RULED.toFixed(2));
-  t('S20 the footer does not contradict itself',
+  t('S23 the footer does not contradict itself',
     browser.renderVals().calibFooter.startsWith('B=' + RULED.toFixed(2)),
     browser.renderVals().calibFooter.slice(0, 8), 'B=' + RULED.toFixed(2));
   /* the ruled constant must not be reachable only through a fallback */
-  t('S20 refitB seeds from the same ruled constant',
+  t('S23 refitB seeds from the same ruled constant',
     /bConstant \?\? B_RULED/.test(src), /bConstant \?\? (1\.\d+|B_RULED)/.exec(src)[0], 'bConstant ?? B_RULED');
 }
 
-/* ---- S21: shadow mode runs its OWN M ----
+/* ---- S24: shadow mode runs its OWN M ----
    mult() read this.state.sess — the TRADED store, which shadow never writes.
    An unattended shadow run therefore had M pinned at 1 forever, and a shadow
    read's probability moved when an unrelated traded session resolved. Two
@@ -740,12 +740,12 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   for (let i = 0; i < 12; i++) { traded[ts] = { hr: 9, resolved: 'U', finalDelta: 0.677 * denom, pts: [] }; ts += 900; }
   c.state.sess = traded;
   const after = c.shadowRead(strike, price, k, pts, ct);
-  t('S21 the traded log cannot move a shadow read',
+  t('S24 the traded log cannot move a shadow read',
     Math.abs(after.p - before.p) < 1e-12, (after.p - before.p).toFixed(4), 0);
 
   /* and shadow's own resolved sessions DO drive its M */
   const c2 = mk();
-  t('S21 shadow M is inert with no shadow history',
+  t('S24 shadow M is inert with no shadow history',
     c2.mult(D, c2.shadowSessions()).M === 1, c2.mult(D, c2.shadowSessions()).M, 1);
   c2.state.srows = [];
   let sts = 1786000000 - 900 * 12;
@@ -755,16 +755,16 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
     sts += 900;
   }
   const mShadow = c2.mult(D, c2.shadowSessions());
-  t('S21 shadow M comes from shadow sessions', mShadow.n === 12, mShadow.n, 12);
-  t('S21 shadow M lands on the seeded ratio',
+  t('S24 shadow M comes from shadow sessions', mShadow.n === 12, mShadow.n, 12);
+  t('S24 shadow M lands on the seeded ratio',
     Math.abs(mShadow.M - 0.677) < 1e-6, mShadow.M, 0.677);
   /* the traded store is still what the traded dial uses */
   const c3 = mk();
   c3.state.sess = traded;
-  t('S21 traded dial still reads the traded store', Math.abs(c3.mult(D).M - 0.677) < 1e-9, c3.mult(D).M, 0.677);
+  t('S24 traded dial still reads the traded store', Math.abs(c3.mult(D).M - 0.677) < 1e-9, c3.mult(D).M, 0.677);
 }
 
-/* ---- S22: the scorecard follows the log you are LOOKING at ----
+/* ---- S25: the scorecard follows the log you are LOOKING at ----
    ROWS / HIT RATE / BRIER and the CALIBRATION panel read this.scored(), which
    is traded-only by design (a paper run must never move the traded constant).
    But the LOG tab has a SHADOW mode, and in it those panels went on reporting
@@ -780,21 +780,45 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   c.state.logMode = 'shadow';
   const rv = c.renderVals();
   const band = rv.calib.find((x) => x.bucket === '80–90');
-  t('S22 calibration panel reads the shadow log in SHADOW mode', band.detail === 'n40', band.detail, 'n40');
-  t('S22 ROWS tile counts shadow rows in SHADOW mode', rv.agg[0].val === '40', rv.agg[0].val, '40');
-  t('S22 HIT RATE tile reports the shadow hit rate', rv.agg[1].val === '0%', rv.agg[1].val, '0%');
-  t('S22 the panel names which log it is showing', /SHADOW/.test(rv.calibTitle), rv.calibTitle, 'contains SHADOW');
+  t('S25 calibration panel reads the shadow log in SHADOW mode', band.detail === 'n40', band.detail, 'n40');
+  t('S25 ROWS tile counts shadow rows in SHADOW mode', rv.agg[0].val === '40', rv.agg[0].val, '40');
+  t('S25 HIT RATE tile reports the shadow hit rate', rv.agg[1].val === '0%', rv.agg[1].val, '0%');
+  t('S25 the panel names which log it is showing', /SHADOW/.test(rv.calibTitle), rv.calibTitle, 'contains SHADOW');
 
   c.state.logMode = 'real';
   const rv2 = c.renderVals();
-  t('S22 MY LOG mode is unaffected by shadow rows', rv2.agg[0].val === '0', rv2.agg[0].val, '0');
-  t('S22 calibration is empty in MY LOG mode',
+  t('S25 MY LOG mode is unaffected by shadow rows', rv2.agg[0].val === '0', rv2.agg[0].val, '0');
+  t('S25 calibration is empty in MY LOG mode',
     rv2.calib.every((x) => x.detail === 'n0'), rv2.calib.map((x) => x.detail).join(','), 'all n0');
-  t('S22 the panel names MY LOG too', /MY LOG/.test(rv2.calibTitle), rv2.calibTitle, 'contains MY LOG');
+  t('S25 the panel names MY LOG too', /MY LOG/.test(rv2.calibTitle), rv2.calibTitle, 'contains MY LOG');
 
   /* the traded constant must stay untouchable from shadow rows */
-  t('S22 shadow rows never reach scored()', c.scored().length === 0, c.scored().length, 0);
-  t('S22 shadow rows never reach refitB', c.refitB() === null, c.refitB(), null);
+  t('S25 shadow rows never reach scored()', c.scored().length === 0, c.scored().length, 0);
+  t('S25 shadow rows never reach refitB', c.refitB() === null, c.refitB(), null);
+}
+
+/* ---- clear must act on the log you are looking at ---- */
+{
+  const c = mk();
+  c.state.rows = [{ ts: 1, sessionTs: 1, k: 1, pFull: 0.6, resolved: 'U', v: 2 }];
+  c.state.srows = [{ ts: 2, sessionTs: 2, k: 1, pFull: 0.6, resolved: 'U', v: 2, auto: true }];
+  c.state.logMode = 'shadow';
+  c.clearLog(); c.clearLog();                       // arm, then confirm
+  t('S20 clearing on SHADOW clears shadow rows', c.state.srows.length === 0, c.state.srows.length, 0);
+  t('S20 clearing on SHADOW leaves the traded log', c.state.rows.length === 1, c.state.rows.length, 1);
+  t('S20 shadow cursor resets too', c.state.shadow.ts === null, c.state.shadow.ts, null);
+
+  const c2 = mk();
+  c2.state.rows = [{ ts: 1, sessionTs: 1, k: 1, pFull: 0.6, resolved: 'U', v: 2 }];
+  c2.state.srows = [{ ts: 2, sessionTs: 2, k: 1, pFull: 0.6, resolved: 'U', v: 2, auto: true }];
+  c2.state.logMode = 'real';
+  c2.clearLog(); c2.clearLog();
+  t('S20 clearing on MY LOG clears traded rows', c2.state.rows.length === 0, c2.state.rows.length, 0);
+  t('S20 clearing on MY LOG leaves shadow', c2.state.srows.length === 1, c2.state.srows.length, 1);
+
+  const c3 = mk(); c3.state.logMode = 'shadow';
+  t('S20 button label follows the mode', c3.renderVals().clearLabel === 'clear shadow',
+    c3.renderVals().clearLabel, 'clear shadow');
 }
 
 /* ---- report ---- */

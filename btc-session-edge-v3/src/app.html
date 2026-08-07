@@ -1309,8 +1309,17 @@ class Component extends DCLogic {
     const done = () => { this.setState({ csvLabel: 'copied ✓' }); setTimeout(() => this.setState({ csvLabel: 'copy CSV' }), 1600); };
     if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, done); else done();
   };
+  /* Clears whichever log is on screen. The shadow log lives under its own key
+     and had no clear path at all — the button silently cleared the traded log
+     while the operator was looking at shadow rows. */
   clearLog = () => {
     if (!this.state.clearArm) { this.setState({ clearArm: true }); setTimeout(() => this.setState({ clearArm: false }), 3000); return; }
+    if (this.state.logMode === 'shadow') {
+      STORE.del(LSK.shadow);
+      this.setState({ srows: [], shadow: { ts: null, strike: null, pts: [], lastK: -1 },
+        sSrc: null, sErr: null, openSess: {}, clearArm: false });
+      return;
+    }
     this.persist([], {});
     this.setState({ clearArm: false });
   };
@@ -1674,7 +1683,7 @@ class Component extends DCLogic {
         if (stale) bits.push(stale + ' row' + (stale === 1 ? '' : 's') + ' from a superseded engine — clear shadow for a clean read');
         return bits.join(' · ');
       })(),
-      csvLabel: S.csvLabel, clearLabel: S.clearArm ? 'press again to clear' : 'clear log',
+      csvLabel: S.csvLabel, clearLabel: S.clearArm ? 'press again to clear' : (mode === 'shadow' ? 'clear shadow' : 'clear log'),
       copyCsv: this.copyCsv, clearLog: this.clearLog, toggleShadow: this.toggleShadow,
       copyShadowCsv: this.copyShadowCsv,
       /* M here is the VIEWED pipeline's, matching the tile and the panels above
