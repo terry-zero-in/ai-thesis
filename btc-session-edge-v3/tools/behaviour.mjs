@@ -640,6 +640,41 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
     csv.split('\n')[0].slice(0, 60), 'has pFull + resolved');
 }
 
+/* ---- Compacted rows must still RENDER ----
+   Compaction drops the ablation block to save bytes. Every consumer of `ab` then
+   has to tolerate its absence, or expanding an old session throws and takes the
+   whole LOG tab down. The previous round asserted the scorecard survived
+   compaction and never asserted the rows did — which is exactly how this
+   shipped. */
+{
+  const c = mk();
+  const ab = { noMom: 0.52, noDrift: 0.55, noSettle: 0.56, macroFlip: 0.54 };
+  const full = (k, res) => ({ ts: 1786045500000 + k * 60000, sessionTs: 1786045500, k,
+    strike: 64000, price: 64010, delta: 10, sigmaUnit: 22, z: 0.2, pFull: 0.58, ab,
+    macroOn: false, driftNet: null, mktCents: 60, yesT: 57, noT: 38,
+    resolved: res, finalDelta: res ? 10 : null, vol: 4.2, auto: true, v: 2 });
+  const rows = [];
+  for (let k = 1; k <= 14; k++) rows.push(full(k, 'U'));
+  const packed = c.compactShadow(rows);
+  t('S19 compaction really does drop ab', packed[0].ab === undefined, packed[0].ab, undefined);
+
+  c.state.srows = packed;
+  c.state.logMode = 'shadow';
+  c.state.openSess = { ['shadow:1786045500']: true };
+  let rv = null, threw = null;
+  try { rv = c.renderVals(); } catch (e) { threw = String(e.message || e); }
+  t('S19 renderVals survives an expanded compacted session', threw === null, threw, null);
+  t('S19 the expanded reads still render', rv && rv.full.length === 15, rv && rv.full.length, 15);
+  t('S19 ablation cell degrades to a dash', rv && rv.full[1].ab === '—', rv && rv.full[1].ab, '—');
+
+  /* the aggregate panel walks ab too — a compacted traded row must not kill it */
+  const c2 = mk();
+  c2.state.rows = c2.compactShadow(rows.map((r) => Object.assign({}, r, { auto: false })));
+  let threw2 = null;
+  try { c2.renderVals(); } catch (e) { threw2 = String(e.message || e); }
+  t('S19 the ablation aggregate survives compacted rows', threw2 === null, threw2, null);
+}
+
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log('TEST'.padEnd(w) + '  RESULT  GOT / WANT');

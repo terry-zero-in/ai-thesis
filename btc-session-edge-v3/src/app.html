@@ -1333,7 +1333,7 @@ class Component extends DCLogic {
     const flipsSide = (a) => live && (a >= 0.5) !== (r.p >= 0.5);
     const flipsTrade = (a) => live && mktC != null && (mktC <= this.ceilings(a).yesT) !== (mktC <= ce.yesT);
     const ablations = ablDefs.map(([letter, key, name]) => {
-      const a = live ? r.ab[key] : null;
+      const a = live && r.ab ? r.ab[key] : null;
       const pp = live ? (a - r.p) * 100 : null;
       const fs = live && flipsSide(a), ft = live && flipsTrade(a);
       return { letter, name,
@@ -1360,7 +1360,10 @@ class Component extends DCLogic {
 
     /* §5.3 — a dot means this variable's absence would have changed the side or
        the trade decision. That is the "would it have mattered" answer at a glance. */
-    const rowAb = (x) => ablDefs.map(([L, key]) => {
+    /* Compacted rows drop the ablation block to save bytes, so every consumer
+       has to tolerate its absence — otherwise expanding an archived session
+       throws and takes the whole tab down. The cell degrades to a dash. */
+    const rowAb = (x) => !x.ab ? '' : ablDefs.map(([L, key]) => {
       const d = Math.round((x.ab[key] - x.pFull) * 100);
       if (d === 0) return null;
       const fSide = (x.ab[key] >= 0.5) !== (x.pFull >= 0.5);
@@ -1452,7 +1455,7 @@ class Component extends DCLogic {
     });
 
     const ablAgg = ablDefs.map(([letter, key, name]) => {
-      const g = sc.filter((x) => Math.abs(x.ab[key] - x.pFull) > 0.0005);
+      const g = sc.filter((x) => x.ab && Math.abs(x.ab[key] - x.pFull) > 0.0005);
       let db = null;
       if (g.length) {
         const bw = g.reduce((a, x) => { const y = x.resolved === 'U' ? 1 : 0; return a + (x.pFull - y) ** 2; }, 0) / g.length;
