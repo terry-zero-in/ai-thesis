@@ -675,6 +675,30 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   t('S19 the ablation aggregate survives compacted rows', threw2 === null, threw2, null);
 }
 
+/* ---- clear must act on the log you are looking at ---- */
+{
+  const c = mk();
+  c.state.rows = [{ ts: 1, sessionTs: 1, k: 1, pFull: 0.6, resolved: 'U', v: 2 }];
+  c.state.srows = [{ ts: 2, sessionTs: 2, k: 1, pFull: 0.6, resolved: 'U', v: 2, auto: true }];
+  c.state.logMode = 'shadow';
+  c.clearLog(); c.clearLog();                       // arm, then confirm
+  t('S20 clearing on SHADOW clears shadow rows', c.state.srows.length === 0, c.state.srows.length, 0);
+  t('S20 clearing on SHADOW leaves the traded log', c.state.rows.length === 1, c.state.rows.length, 1);
+  t('S20 shadow cursor resets too', c.state.shadow.ts === null, c.state.shadow.ts, null);
+
+  const c2 = mk();
+  c2.state.rows = [{ ts: 1, sessionTs: 1, k: 1, pFull: 0.6, resolved: 'U', v: 2 }];
+  c2.state.srows = [{ ts: 2, sessionTs: 2, k: 1, pFull: 0.6, resolved: 'U', v: 2, auto: true }];
+  c2.state.logMode = 'real';
+  c2.clearLog(); c2.clearLog();
+  t('S20 clearing on MY LOG clears traded rows', c2.state.rows.length === 0, c2.state.rows.length, 0);
+  t('S20 clearing on MY LOG leaves shadow', c2.state.srows.length === 1, c2.state.srows.length, 1);
+
+  const c3 = mk(); c3.state.logMode = 'shadow';
+  t('S20 button label follows the mode', c3.renderVals().clearLabel === 'clear shadow',
+    c3.renderVals().clearLabel, 'clear shadow');
+}
+
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log('TEST'.padEnd(w) + '  RESULT  GOT / WANT');
