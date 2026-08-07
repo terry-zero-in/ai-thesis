@@ -998,7 +998,18 @@ class Component extends DCLogic {
   shadowSessions() {
     const out = {};
     for (const r of this.state.srows) {
-      if (r.resolved !== 'U' && r.resolved !== 'D') continue;
+      /* Match mult()'s own admission rule exactly: any non-null resolution with
+         a finalDelta. That includes 'F' — a session closing exactly on its
+         strike is a real |finalDelta| = 0 vol observation, not a data error, and
+         filtering it here would make shadow and traded disagree about what
+         counts as history. That divergence is the defect class this change
+         exists to close, so the two rules have to be the same rule.
+         (Directional scoring still excludes 'F' — see shadowScore().)
+         Whether mult() should take 'F' at all is a separate, open question:
+         review round 3 §4.6 argues |finalDelta| ≈ 0 drags M down and wants it
+         out of BOTH paths. That is a model change on contested evidence and is
+         deliberately not made here. Align first, relitigate separately. */
+      if (r.resolved == null) continue;
       if (r.finalDelta == null) continue;
       out[r.sessionTs] = { hr: ctHour(r.sessionTs), resolved: r.resolved, finalDelta: r.finalDelta };
     }

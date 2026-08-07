@@ -762,6 +762,30 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   const c3 = mk();
   c3.state.sess = traded;
   t('S24 traded dial still reads the traded store', Math.abs(c3.mult(D).M - 0.677) < 1e-9, c3.mult(D).M, 0.677);
+
+  /* Flat sessions. mult() accepts every non-null resolution, 'F' included — a
+     session that closed exactly on its strike is a real |finalDelta| ≈ 0 vol
+     observation, not a data error. shadowSessions() must agree, or shadow and
+     traded disagree about what counts as history, which is the divergence class
+     this whole change exists to close. Reported by Codex on #38. */
+  const c4 = mk();
+  c4.state.srows = [];
+  let fts = 1786000000 - 900 * 4;
+  for (let i = 0; i < 4; i++) {
+    c4.state.srows.push({ ts: fts * 1000, sessionTs: fts, k: 14,
+      resolved: i === 0 ? 'F' : 'U',
+      finalDelta: i === 0 ? 0 : 0.677 * denomAt(fts), auto: true, v: 3 });
+    fts += 900;
+  }
+  const mFlat = c4.mult(D, c4.shadowSessions());
+  t('S24 a flat shadow session still counts toward M', mFlat.n === 4, mFlat.n, 4);
+  t('S24 flat does not leave M pinned at the inert default', mFlat.M !== 1, mFlat.M, '≠1');
+
+  /* symmetry: the same four sessions through either path give the same M */
+  const c5 = mk();
+  c5.state.sess = Object.fromEntries(Object.entries(c4.shadowSessions()));
+  t('S24 shadow and traded agree on identical history',
+    Math.abs(c5.mult(D).M - mFlat.M) < 1e-12, c5.mult(D).M, mFlat.M);
 }
 
 /* ---- S25: the scorecard follows the log you are LOOKING at ----
