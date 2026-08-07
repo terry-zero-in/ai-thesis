@@ -165,6 +165,41 @@ An initial assertion demanding monotonicity across all 15 minutes **failed at k=
 
 ---
 
+---
+
+## G. There is no edge in the probability at any confidence level
+
+Added after Terry ran 15 live shadow sessions and asked what to do with the 60s — whether to split them at 65. The live log was 209 reads across 15 sessions, which cannot resolve a band split. The baked dataset can: replaying the exact `shadowRead()` pipeline over all 2,688 sessions gives **37,408 reads**.
+
+Reproduce with `node btc-session-edge-v3/analysis/calibration-replay.mjs`.
+
+| band | bets | rate | breakeven after fees | edge |
+|---|---|---|---|---|
+| 50–54% | 3,900 | 54.1% | 54% | +0.2pp |
+| 55–59% | 3,973 | 57.8% | 59% | −1.2pp |
+| **60–64%** | 3,922 | **63.9%** | 64% | **+0.0pp** |
+| **65–69%** | 3,385 | **69.0%** | 69% | **+0.1pp** |
+| 70–74% | 3,000 | 73.0% | 74% | −1.0pp |
+| 75–79% | 2,820 | 78.3% | 79% | −0.6pp |
+| 80–84% | 2,645 | 82.8% | 84% | −1.2pp |
+| 85–89% | 2,668 | 87.0% | 88% | −0.9pp |
+| 90–94% | 2,837 | 91.7% | 93% | −1.4pp |
+| 95–100% | 8,258 | 97.8% | 100% | −1.8pp |
+
+**The model is calibrated to within ~1pp in every band, and after Kalshi's taker fee every band is a slow loss.** Overall: mean stated 76.3% vs actual 77.1%, a gap of +0.7pp.
+
+Consequences, all of them negative results worth recording so they are not re-derived:
+
+- **No split of the 60s.** 60–64 gives +0.0pp, 65–69 gives +0.1pp. There is no structure to divide.
+- **No profitable band, and no profitable filter.** Not 55–85%, not 60–89%, not "confirmed dips" (a 50s read on the same side as an earlier 60%+ read in the same session).
+- **The apparent under-confidence in the live log was luck.** 15 sessions showed 13–17pp of under-confidence in the 60–90 bands and a hypothetical +21% on turnover. Over 37,408 reads that effect is +0.7pp overall. Fifteen sessions is ~15 effective observations — nowhere near enough, since reads inside a session almost all resolve together.
+
+**This is the quantitative form of Terry's own framing from S39** — *"the gap is the product."* A calibrated model betting at its own price loses to fees by construction; that is what calibration means. Only a divergence from Kalshi's actual quoted price can pay, which is exactly what the GAP tab measures and why `mkt ¢` has to be typed on real reads.
+
+**Caveat, load-bearing: the replay is IN-SAMPLE.** `B = 1.49` was fitted on these same 2,688 sessions, so near-perfect calibration is partly what fitting produces, and this does **not** establish out-of-sample calibration. It does remove any basis for claiming an edge — an edge would have to appear here first. The only out-of-sample evidence is the 209 live reads, which are far too few.
+
+---
+
 ## Verification
 
 | check | result |
