@@ -180,6 +180,32 @@ An initial assertion demanding monotonicity across all 15 minutes **failed at k=
 - **minute 2: headline stable at 56%**, σ_rem still ticking $67.1 → $64.4 — the cliff-at-the-end characterisation, confirmed on screen
 - **minute 0: 55%**, no longer "session just opened", and correctly the least confident read of the session
 
+---
+
+## The gap log — shipped
+
+> *"I would want to know when it may be a true 50/50 bet based on historicals but Kalshi has it priced at 40 cents to buy the upside. But I don't see how this tells me that."*
+
+A probability that agrees with Kalshi is a redundant display — you can read Kalshi's own number off their screen. The product is the **disagreement**, and whether it pays.
+
+**New GAP tab.** `ceilings()` already computes the most a contract is worth paying after fees; the gap is that ceiling minus what the book is asking, on whichever side is the better buy. `gapOf()` picks the side, `gapPnl()` books the result, `gapRows()` keeps every resolved read where the tool claimed ≥1¢, `gapAgg()` scores them.
+
+**Nothing new had to be recorded.** Every logged read already carried `mktCents`, `yesT` and `noT`, and `resolved` lands at the session close — so the track record is built **retroactively out of reads taken before the view existed**. Terry's existing log will populate it on first open.
+
+The headline is **claimed edge vs realised**:
+
+| SIGNALS | HIT RATE | CLAIMED EDGE | REALISED |
+|---|---|---|---|
+| 3 | 67% | 18.3¢ | +31.3¢ |
+
+Those two converging is the only evidence the edge is real. Claimed staying high while realised sits near zero means the gap is noise, however many signals it fires. **Losses are rows** — a track record that keeps only its winners is the exact failure this log exists to prevent.
+
+**On the TRADE tab** the edge is now a number in its own bar (`+16¢ · BUY YES ≤ 56¢`) instead of a verdict string in a side panel. Without a market price typed it says so plainly rather than showing nothing.
+
+**Two limits, stated in the UI rather than hidden:**
+- **Shadow reads can never appear here.** Kalshi's API is closed to browsers, so shadow has no market price to disagree with. The footer says this.
+- **Market price is still manual.** Same cause. Nothing in the browser can fetch it.
+
 ## Judgment calls
 
 - **Shipped no change to findings A or D.** Both touch `sigmaUnit`/`logit`; HANDOFF.md rule 2 forbids moving jointly-identified constants on new evidence. Reported, not applied. Defects 9 and 10 are a different case — the whole-minute lookup is wrong *by construction*, not by re-estimation, and `sec=0` continuity means `B` is not re-based.

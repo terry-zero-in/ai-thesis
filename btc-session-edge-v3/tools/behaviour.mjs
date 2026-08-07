@@ -952,6 +952,69 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   t('S40 rail() returns nothing at minute 0', rail0.n === 0, rail0.n, 0);
 }
 
+/* ---- S40 / the gap log ----------------------------------------------------
+   Terry: "I would want to know when it may be a true 50/50 bet based on
+   historicals but Kalshi has it priced at 40 cents to buy the upside. But I
+   don't see how this tells me that." The probability agreeing with the market
+   is a redundant display; the disagreement is the product. Every logged read
+   already carries mktCents / yesT / noT and gets `resolved` at the session
+   close, so the track record is computable from rows already on disk. */
+{
+  const c = mk();
+
+  /* Side selection: whichever side has the bigger edge, not whichever is YES. */
+  const g1 = c.gapOf(40, 55, 40);   /* mkt 40c: YES ceiling 55 -> +15; NO asks 60 vs ceil 40 -> -20 */
+  t('S40G picks the side with the bigger edge', g1.side === 'YES', g1.side, 'YES');
+  t('S40G edge is ceiling minus ask', g1.edge === 15, g1.edge, 15);
+  const g2 = c.gapOf(80, 60, 45);   /* mkt 80c: YES -20; NO asks 20 vs ceil 45 -> +25 */
+  t('S40G flips to NO when NO is the better buy', g2.side === 'NO', g2.side, 'NO');
+  t('S40G NO ask is 100 minus the YES price', g2.ask === 20, g2.ask, 20);
+  t('S40G NO edge is its own ceiling minus its own ask', g2.edge === 25, g2.edge, 25);
+  t('S40G no market price means no gap', c.gapOf(null, 55, 40) === null, c.gapOf(null, 55, 40), null);
+
+  /* P&L is per contract in whole cents, fee charged on entry only. */
+  const won = c.gapPnl({ side: 'YES', ask: 40 }, 'U');
+  const lost = c.gapPnl({ side: 'YES', ask: 40 }, 'D');
+  const fee40 = Math.ceil(0.07 * 0.4 * 0.6 * 100);
+  t('S40G a winning YES pays 100 less ask less fee', won === 100 - 40 - fee40, won, 100 - 40 - fee40);
+  t('S40G a losing YES costs ask plus fee', lost === -(40 + fee40), lost, -(40 + fee40));
+  t('S40G a winning NO reads the DOWN resolution', c.gapPnl({ side: 'NO', ask: 20 }, 'D') > 0,
+    c.gapPnl({ side: 'NO', ask: 20 }, 'D'), '> 0');
+  t('S40G an unresolved row has no P&L', c.gapPnl({ side: 'YES', ask: 40 }, null) === null,
+    c.gapPnl({ side: 'YES', ask: 40 }, null), null);
+
+  /* The signal set. A row with no market price cannot be a signal; a row whose
+     edge is negative is the tool telling you to stand down, not a trade. */
+  c.state.rows = [
+    { ts: 1, sessionTs: 100, k: 5, pFull: 0.62, mktCents: 40, yesT: 55, noT: 40, resolved: 'U', v: 2 },
+    { ts: 2, sessionTs: 200, k: 6, pFull: 0.62, mktCents: 40, yesT: 55, noT: 40, resolved: 'D', v: 2 },
+    { ts: 3, sessionTs: 300, k: 7, pFull: 0.50, mktCents: 50, yesT: 47, noT: 47, resolved: 'U', v: 2 },
+    { ts: 4, sessionTs: 400, k: 8, pFull: 0.62, mktCents: null, yesT: 55, noT: 40, resolved: 'U', v: 2 },
+    { ts: 5, sessionTs: 500, k: 9, pFull: 0.62, mktCents: 40, yesT: 55, noT: 40, resolved: null, v: 2 }
+  ];
+  const sig = c.gapRows();
+  t('S40G only scored rows with a market price and real edge count', sig.length === 2, sig.length, 2);
+  t('S40G the no-edge row is excluded', !sig.some((r) => r.ts === 3), sig.map((r) => r.ts).join(','), 'no 3');
+  t('S40G the no-market row is excluded', !sig.some((r) => r.ts === 4), sig.map((r) => r.ts).join(','), 'no 4');
+  t('S40G the unresolved row is excluded', !sig.some((r) => r.ts === 5), sig.map((r) => r.ts).join(','), 'no 5');
+
+  /* The whole point of a track record is that it shows the losses. A signal
+     that went the wrong way must appear as a loss, not be quietly dropped. */
+  const loser = sig.find((r) => r.ts === 2);
+  t('S40G a signal that lost is kept and marked a loss', loser != null && loser.pnl < 0,
+    loser && loser.pnl, '< 0');
+
+  const agg = c.gapAgg();
+  t('S40G scorecard counts both signals', agg.n === 2, agg.n, 2);
+  t('S40G scorecard hit rate is 1 of 2', agg.hits === 1, agg.hits, 1);
+  t('S40G scorecard claimed edge is the mean of the two', agg.meanEdge === 15, agg.meanEdge, 15);
+  /* +15c of claimed edge twice, one win one loss: 100-40-2 = +58, -(40+2) = -42,
+     net +16 over 2 signals = +8c realised against +15c claimed. The gap between
+     those two numbers is the only honest read on whether the edge is real. */
+  t('S40G scorecard realised is net cents per signal', agg.meanPnl === 8, agg.meanPnl, 8);
+  t('S40G scorecard is empty with no signals', mk().gapAgg().n === 0, mk().gapAgg().n, 0);
+}
+
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log('TEST'.padEnd(w) + '  RESULT  GOT / WANT');

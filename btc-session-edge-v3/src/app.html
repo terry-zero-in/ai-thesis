@@ -310,6 +310,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div style="display:flex; gap:2px; flex:none; padding:2px; background:#131519; border:1px solid rgba(255,255,255,.06); border-radius:6px">
       <button sc-camel-on-click="{{ goTrade }}" style="{{ tabTradeSt }}">TRADE</button>
       <button sc-camel-on-click="{{ goLog }}" style="{{ tabLogSt }}">LOG</button>
+      <button sc-camel-on-click="{{ goGap }}" style="{{ tabGapSt }}">GAP</button>
     </div>
   </div>
 
@@ -422,6 +423,13 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <div style="flex:1; min-width:0"></div>
           <span style="{{ mktVerdictSt }}">{{ mktVerdict }}</span>
         </div>
+      </div>
+
+      <div style="{{ edgeBarSt }}">
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; white-space:nowrap; flex:0 0 auto">EDGE vs KALSHI</span>
+        <span style="{{ edgeBigSt }}">{{ edgeBig }}</span>
+        <span style="{{ edgeSideSt }}">{{ edgeSide }}</span>
+        <span style="font-size:12px; color:#A6AEBB; line-height:1.45; text-wrap:pretty">{{ edgeNote }}</span>
       </div>
 
       <div style="display:flex; align-items:baseline; gap:18px; margin-top:14px; flex-wrap:wrap">
@@ -577,6 +585,52 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <span style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#8B94A1">{{ calibFooter }}</span>
       <div style="flex:1; min-width:0"></div>
       <span style="font-size:11px; color:#8B94A1; text-align:right; max-width:640px; line-height:1.45; text-wrap:pretty">{{ provenance }}</span>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isGap }}" hint-placeholder-val="{{ false }}">
+  <div style="background:#0F1013; overflow:hidden; display:grid; grid-template-rows:auto auto 1fr auto">
+
+    <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; background:rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.10)">
+      <sc-for list="{{ gapAggTiles }}" as="a" hint-placeholder-count="4">
+        <div style="padding:14px 18px 15px; background:#131519">
+          <div style="font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.06em; color:#8B94A1; margin-bottom:6px">{{ a.label }}</div>
+          <div style="{{ a.valSt }}">{{ a.val }}</div>
+          <div style="font-size:11px; color:#A6AEBB; margin-top:3px">{{ a.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="padding:13px 18px 14px; background:#131519; border-bottom:1px solid rgba(255,255,255,.10)">
+      <div style="font-size:12px; color:#A6AEBB; line-height:1.5; text-wrap:pretty; max-width:1000px">{{ gapExplain }}</div>
+    </div>
+
+    <div style="overflow:auto">
+      <div style="display:grid; grid-template-columns:132px 44px 62px 74px 66px 78px 68px 96px 74px; gap:0 12px; align-items:center; height:30px; padding:0 18px; position:sticky; top:0; background:#0B0C0E; border-bottom:1px solid rgba(255,255,255,.10); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:10px; letter-spacing:.04em; color:#8B94A1">
+        <span>SESSION</span><span>MIN</span><span>SIDE</span><span style="text-align:right">MODEL</span><span style="text-align:right">ASK</span><span style="text-align:right">CEILING</span><span style="text-align:right">EDGE</span><span>RESULT</span><span style="text-align:right">P&amp;L</span>
+      </div>
+      <sc-for list="{{ gapList }}" as="r" hint-placeholder-count="12">
+        <div style="display:grid; grid-template-columns:132px 44px 62px 74px 66px 78px 68px 96px 74px; gap:0 12px; align-items:center; height:32px; padding:0 18px; border-bottom:1px solid rgba(255,255,255,.06); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px" style-hover="background:#1E2229">
+          <span style="color:#8B94A1">{{ r.t }}</span>
+          <span style="color:#8B94A1">{{ r.k }}</span>
+          <span style="{{ r.sideSt }}">{{ r.side }}</span>
+          <span style="text-align:right; color:#A6AEBB">{{ r.p }}</span>
+          <span style="text-align:right; color:#A6AEBB">{{ r.ask }}</span>
+          <span style="text-align:right; color:#A6AEBB">{{ r.ceil }}</span>
+          <span style="{{ r.edgeSt }}">{{ r.edge }}</span>
+          <span style="{{ r.badgeSt }}">{{ r.badge }}</span>
+          <span style="{{ r.pnlSt }}">{{ r.pnl }}</span>
+        </div>
+      </sc-for>
+      <sc-if value="{{ gapEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:26px 18px; font-size:12px; color:#8B94A1; line-height:1.55; max-width:820px; text-wrap:pretty">{{ gapEmptyMsg }}</div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:16px; padding:11px 18px; background:#08090A; border-top:1px solid rgba(255,255,255,.10)">
+      <button sc-camel-on-click="{{ copyGapCsv }}" style="flex:0 0 auto; white-space:nowrap; height:26px; padding:0 12px; border-radius:6px; font-size:12px; font-weight:500; color:#06121C; background:#0B84E0" style-hover="background:#1399FD">{{ gapCsvLabel }}</button>
+      <span style="font-size:11px; color:#8B94A1; line-height:1.45; text-wrap:pretty">{{ gapFooter }}</span>
     </div>
   </div>
   </sc-if>
@@ -1328,6 +1382,57 @@ class Component extends DCLogic {
     return { yesT: solve(p, taker), yesM: solve(p, maker), noT: solve(1 - p, taker), noM: solve(1 - p, maker) };
   }
 
+  /* ---- §4.2 the gap. A probability that agrees with the market is a redundant
+     display — you can read Kalshi's own number off the screen. The product is
+     the DISAGREEMENT: ceilings() already says the most a contract is worth
+     paying after fees, so the gap is that ceiling minus what the book is
+     actually asking, on whichever side is the better buy.
+
+     Both sides come off the one number the operator types, which is the YES
+     price: on a binary the NO ask is 100 − yes by construction. */
+  gapOf(mktCents, yesT, noT) {
+    if (mktCents == null || yesT == null || noT == null) return null;
+    const yesEdge = yesT - mktCents, noEdge = noT - (100 - mktCents);
+    const yes = yesEdge >= noEdge;
+    return { side: yes ? 'YES' : 'NO', ask: yes ? mktCents : 100 - mktCents,
+             ceil: yes ? yesT : noT, edge: yes ? yesEdge : noEdge };
+  }
+
+  /* Realised cents on one contract. Kalshi charges the taker fee on entry and
+     nothing at settlement, so a winner returns 100 less what it cost to buy. */
+  gapPnl(g, resolved) {
+    if (!g || (resolved !== 'U' && resolved !== 'D')) return null;
+    const won = (g.side === 'YES') === (resolved === 'U');
+    const fee = Math.ceil(this.feeK() * (g.ask / 100) * (1 - g.ask / 100) * 100);
+    return won ? 100 - g.ask - fee : -(g.ask + fee);
+  }
+
+  /* Resolved reads where the tool actually claimed an edge, newest first. A
+     negative edge is the tool saying stand down — that is not a trade, so it is
+     not a row. Losses ARE rows: a track record that only keeps its winners is
+     the thing this whole log exists to avoid. */
+  gapRows() {
+    const out = [];
+    for (const r of this.scored()) {
+      const g = this.gapOf(r.mktCents, r.yesT, r.noT);
+      if (!g || g.edge < 1) continue;
+      out.push(Object.assign({}, g, { ts: r.ts, sessionTs: r.sessionTs, k: r.k,
+        p: r.pFull, resolved: r.resolved, pnl: this.gapPnl(g, r.resolved) }));
+    }
+    return out.sort((a, b) => b.ts - a.ts);
+  }
+
+  /* Claimed edge vs realised is the only honest read on whether the gap is
+     real. If the tool claims 15c a signal and books 2c, the edge is noise. */
+  gapAgg() {
+    const rows = this.gapRows(), n = rows.length;
+    if (!n) return { n: 0, hits: 0, meanEdge: 0, meanPnl: 0, totalPnl: 0 };
+    return { n, hits: rows.filter((r) => r.pnl > 0).length,
+      meanEdge: rows.reduce((a, r) => a + r.edge, 0) / n,
+      meanPnl: rows.reduce((a, r) => a + r.pnl, 0) / n,
+      totalPnl: rows.reduce((a, r) => a + r.pnl, 0) };
+  }
+
   persist(rows, sess) {
     const next = {};
     if (rows) next.rows = rows;
@@ -1406,6 +1511,19 @@ class Component extends DCLogic {
   copyCsv = () => {
     const t = this.csv();
     const done = () => { this.setState({ csvLabel: 'copied ✓' }); setTimeout(() => this.setState({ csvLabel: 'copy CSV' }), 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, done); else done();
+  };
+  /* The gap track record as CSV — one row per signal, so the claimed-vs-realised
+     question can be re-asked outside this tool by anyone who doubts it. */
+  gapCsv() {
+    const h = ['sessionTs', 'session', 'k', 'side', 'modelP', 'askCents', 'ceilCents', 'edgeCents', 'resolved', 'pnlCents'];
+    const rows = this.gapRows().map((r) => [r.sessionTs, sessLabel(r.sessionTs), r.k, r.side,
+      r.p.toFixed(4), r.ask, r.ceil, r.edge, r.resolved, r.pnl].join(','));
+    return [h.join(','), ...rows].join('\n');
+  }
+  copyGapCsv = () => {
+    const t = this.gapCsv();
+    const done = () => { this.setState({ gapCsvLabel: 'copied ✓' }); setTimeout(() => this.setState({ gapCsvLabel: 'copy CSV' }), 1600); };
     if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, done); else done();
   };
   /* Clears whichever log is on screen. The shadow log lives under its own key
@@ -1665,9 +1783,50 @@ class Component extends DCLogic {
       minLabel: String(ct.mis).padStart(2, '0'),
       countdown: Math.floor(ct.secLeft / 60) + ':' + String(ct.secLeft % 60).padStart(2, '0'),
       countdownSt: 'font-size:17px; font-weight:500; ' + TAB + '; color:' + (ct.secLeft <= 60 ? '#EDBE72' : '#F2F4F7'),
-      isTrade: S.view === 'trade', isLog: S.view === 'log',
+      isTrade: S.view === 'trade', isLog: S.view === 'log', isGap: S.view === 'gap',
       goTrade: () => this.setState({ view: 'trade' }), goLog: () => this.setState({ view: 'log' }),
-      tabTradeSt: tab(S.view === 'trade'), tabLogSt: tab(S.view === 'log'),
+      goGap: () => this.setState({ view: 'gap' }),
+      tabTradeSt: tab(S.view === 'trade'), tabLogSt: tab(S.view === 'log'), tabGapSt: tab(S.view === 'gap'),
+
+      /* ---- §4.2 GAP view. Every number here comes from rows already on disk:
+         mktCents, yesT and noT are logged on every read and `resolved` lands at
+         the session close, so switching to this tab shows a track record built
+         retroactively out of reads that were taken before the view existed. */
+      ...(() => {
+        const gr = this.gapRows(), ga = this.gapAgg();
+        const cents = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '¢';
+        const good = '#5AD79B', bad = '#FF8A8F', mono = MONO + '; font-size:11px; ' + TAB;
+        return {
+          gapList: gr.map((r) => ({
+            t: sessLabel(r.sessionTs), k: r.k, side: r.side,
+            sideSt: mono + '; color:' + (r.side === 'YES' ? '#73BAFF' : '#EDBE72'),
+            p: Math.round(r.p * 100) + '%', ask: r.ask + '¢', ceil: r.ceil + '¢',
+            edge: cents(r.edge), edgeSt: mono + '; text-align:right; color:' + good,
+            badge: r.pnl > 0 ? 'WON' : 'LOST',
+            badgeSt: MONO + '; font-size:10px; letter-spacing:.05em; padding:2px 7px; border-radius:4px; color:' +
+              (r.pnl > 0 ? good : bad) + '; background:' + (r.pnl > 0 ? 'rgba(47,191,126,.12)' : 'rgba(242,86,92,.12)'),
+            pnl: cents(r.pnl), pnlSt: mono + '; text-align:right; color:' + (r.pnl > 0 ? good : bad)
+          })),
+          gapEmpty: gr.length === 0,
+          gapEmptyMsg: 'No signals yet. A signal is a resolved read where you typed Kalshi\'s price into mkt ¢ and the fee-adjusted ceiling came out at least 1¢ above what the book was asking. Reads with no market price cannot be scored here, and reads where the market was fairly priced are not trades. Type the market price on every read and this fills in on its own.',
+          gapExplain: ga.n === 0
+            ? 'The model agreeing with Kalshi is not useful — you can read Kalshi\'s own number off the screen. What is useful is the disagreement, and whether it pays. This tab keeps every read where the tool claimed an edge, and what that trade would actually have returned.'
+            : 'The tool claimed ' + ga.meanEdge.toFixed(1) + '¢ of edge per signal and booked ' + ga.meanPnl.toFixed(1) +
+              '¢. Those two numbers converging is the only evidence the edge is real; claimed staying high while realised sits near zero means the gap is noise, however many signals it fires.',
+          gapAggTiles: [
+            { label: 'SIGNALS', val: String(ga.n), note: ga.n === 0 ? 'needs mkt ¢ on a resolved read' : 'edge ≥ 1¢, resolved' },
+            { label: 'HIT RATE', val: ga.n ? Math.round(ga.hits / ga.n * 100) + '%' : '—', note: ga.n ? ga.hits + ' of ' + ga.n : 'no signals yet' },
+            { label: 'CLAIMED EDGE', val: ga.n ? ga.meanEdge.toFixed(1) + '¢' : '—', note: 'mean, per signal' },
+            { label: 'REALISED', val: ga.n ? cents(+ga.meanPnl.toFixed(1)) : '—',
+              note: ga.n ? cents(ga.totalPnl) + ' over ' + ga.n + ' contracts' : 'after fees' }
+          ].map((a) => Object.assign(a, { valSt: MONO + '; font-size:22px; font-weight:600; ' + TAB + '; color:' +
+            (a.label === 'REALISED' && ga.n ? (ga.totalPnl > 0 ? good : bad) : '#F2F4F7') })),
+          gapFooter: 'One contract per signal, taker fees at FEE_K ' + this.feeK().toFixed(3) +
+            ' charged on entry only. Shadow reads never appear here — Kalshi\'s API is closed to browsers, so shadow has no market price to disagree with.',
+          gapCsvLabel: S.gapCsvLabel || 'copy CSV',
+          copyGapCsv: () => this.copyGapCsv()
+        };
+      })(),
 
       strike: S.strike, priceIn: S.priceIn, px75: S.px75, mkt: S.mkt, finalIn: S.finalIn,
       onStrike: (e) => this.setState({ strike: e.target.value.replace(/[^0-9.]/g, '') }),
@@ -1722,6 +1881,27 @@ class Component extends DCLogic {
       noLine: ce ? ce.noT + '¢ · ' + ce.noM + '¢' : '—',
       yesSt: 'font-size:19px; font-weight:500; ' + TAB + '; color:#F2F4F7',
       noSt: 'font-size:19px; font-weight:500; ' + TAB + '; color:#F2F4F7',
+      /* ---- §4.2 the edge, stated as a number rather than buried in a verdict
+         string. This is the only line on the tab that decides a trade: the
+         probability is expected to agree with Kalshi, so agreement is not news
+         and disagreement is. Reads as a dash until a market price is typed. */
+      ...(() => {
+        const g = ce ? this.gapOf(mktC, ce.yesT, ce.noT) : null;
+        const on = g != null && g.edge >= 1;
+        const col = on ? '#5AD79B' : '#626B78';
+        return {
+          edgeBarSt: 'display:flex; align-items:baseline; gap:12px; margin-top:12px; padding:10px 14px; border-radius:8px; background:' +
+            (on ? 'rgba(47,191,126,.09)' : '#131519') + '; border:1px solid ' + (on ? 'rgba(47,191,126,.30)' : 'rgba(255,255,255,.06)'),
+          edgeBig: g == null ? '—' : (g.edge > 0 ? '+' : g.edge < 0 ? '−' : '') + Math.abs(g.edge) + '¢',
+          edgeBigSt: MONO + '; font-size:26px; font-weight:600; ' + TAB + '; color:' + col,
+          edgeSide: on ? 'BUY ' + g.side + ' ≤ ' + g.ceil + '¢' : '',
+          edgeSideSt: MONO + '; font-size:11px; letter-spacing:.05em; padding:3px 8px; border-radius:4px; color:' + col +
+            '; background:' + (on ? 'rgba(47,191,126,.12)' : 'transparent'),
+          edgeNote: g == null ? 'Type Kalshi\'s YES price into mkt ¢ to see the gap. Without it this tool only tells you what you could already read off their screen.'
+            : on ? 'Historicals say ' + g.side + ' is worth up to ' + g.ceil + '¢ after fees; the book is asking ' + g.ask + '¢.'
+            : 'Best side is ' + g.side + ' at ' + g.ask + '¢ against a ' + g.ceil + '¢ ceiling — the market is inside the fee. No trade.'
+        };
+      })(),
       mktVerdict: !ce || mktC == null ? '' : mktC <= ce.yesT ? 'MARKET ' + mktC + '¢ — YES IS +EV' : (100 - mktC) <= ce.noT ? 'MARKET ' + mktC + '¢ — NO IS +EV' : 'MARKET ' + mktC + '¢ — NO EDGE AFTER FEES',
       mktVerdictSt: MONO + '; font-size:11px; letter-spacing:.05em; padding:3px 8px; border-radius:4px; color:' +
         (!ce || mktC == null ? 'transparent' : (mktC <= ce.yesT || (100 - mktC) <= ce.noT) ? '#5AD79B' : '#FF8A8F') +
