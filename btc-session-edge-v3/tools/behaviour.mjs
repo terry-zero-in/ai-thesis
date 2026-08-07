@@ -434,7 +434,15 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   t('G3 hits counted across the session', g[1].hits === 2, g[1].hits, 2);
   t('G3 scored count is the session size', g[1].scored === 3, g[1].scored, 3);
   t('G3 unresolved session scores nothing', g[0].scored === 0, g[0].scored, 0);
-  t('G4 last call reflects the final read', /UP 71/.test(g[1].lastCall), g[1].lastCall, 'UP 71%');
+  /* The collapsed row must show the OPENING call, not the closing one. By the
+     final minute the outcome is largely determined, so the last call is nearly
+     free information; the first read is the one you could have acted on. */
+  t('G4 opening call comes from the first read', /UP 58/.test(g[1].openCall), g[1].openCall, 'UP 58%');
+  t('G4 opening call is not the closing one', !/UP 71/.test(g[1].openCall), g[1].openCall, 'not UP 71%');
+  t('G4 opening call scored against the outcome', g[1].openHit === true, g[1].openHit, true);
+  /* the 0.44 read at k=5 called DOWN into an UP settle — a miss at the open */
+  const g2 = c.groupSessions([r(TS1, 5, -9, 0.44, 'U'), r(TS1, 9, 31, 0.71, 'U')]);
+  t('G4 a wrong opening call is marked as such', g2[0].openHit === false, g2[0].openHit, false);
 
   /* expansion state is per-list, so opening a shadow session cannot open a traded one */
   const c2 = mk();
@@ -630,6 +638,41 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
     csv.trim().split('\n').length, 15);
   t('S17 CSV carries the scoring fields', /pFull/.test(csv) && /resolved/.test(csv),
     csv.split('\n')[0].slice(0, 60), 'has pFull + resolved');
+}
+
+/* ---- Compacted rows must still RENDER ----
+   Compaction drops the ablation block to save bytes. Every consumer of `ab` then
+   has to tolerate its absence, or expanding an old session throws and takes the
+   whole LOG tab down. The previous round asserted the scorecard survived
+   compaction and never asserted the rows did — which is exactly how this
+   shipped. */
+{
+  const c = mk();
+  const ab = { noMom: 0.52, noDrift: 0.55, noSettle: 0.56, macroFlip: 0.54 };
+  const full = (k, res) => ({ ts: 1786045500000 + k * 60000, sessionTs: 1786045500, k,
+    strike: 64000, price: 64010, delta: 10, sigmaUnit: 22, z: 0.2, pFull: 0.58, ab,
+    macroOn: false, driftNet: null, mktCents: 60, yesT: 57, noT: 38,
+    resolved: res, finalDelta: res ? 10 : null, vol: 4.2, auto: true, v: 2 });
+  const rows = [];
+  for (let k = 1; k <= 14; k++) rows.push(full(k, 'U'));
+  const packed = c.compactShadow(rows);
+  t('S19 compaction really does drop ab', packed[0].ab === undefined, packed[0].ab, undefined);
+
+  c.state.srows = packed;
+  c.state.logMode = 'shadow';
+  c.state.openSess = { ['shadow:1786045500']: true };
+  let rv = null, threw = null;
+  try { rv = c.renderVals(); } catch (e) { threw = String(e.message || e); }
+  t('S19 renderVals survives an expanded compacted session', threw === null, threw, null);
+  t('S19 the expanded reads still render', rv && rv.full.length === 15, rv && rv.full.length, 15);
+  t('S19 ablation cell degrades to a dash', rv && rv.full[1].ab === '—', rv && rv.full[1].ab, '—');
+
+  /* the aggregate panel walks ab too — a compacted traded row must not kill it */
+  const c2 = mk();
+  c2.state.rows = c2.compactShadow(rows.map((r) => Object.assign({}, r, { auto: false })));
+  let threw2 = null;
+  try { c2.renderVals(); } catch (e) { threw2 = String(e.message || e); }
+  t('S19 the ablation aggregate survives compacted rows', threw2 === null, threw2, null);
 }
 
 /* ---- report ---- */
