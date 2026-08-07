@@ -23,6 +23,30 @@ of them cancel each other inside shadow mode specifically:
 | 6 | **Shadow mode computed `M` from the traded log.** `mult()` read `this.state.sess`, which shadow never writes. An unattended shadow run had **M pinned at 1** forever — and a shadow read's probability moved when an unrelated *traded* session resolved. | Shadow ran a different pipeline from the dial it exists to validate. |
 | 7 | **The scorecard and CALIBRATION panel always read the traded log**, in both MY LOG and SHADOW modes. Only the row table switched. | The one instrument that answers "do displayed 80% reads hit 80%" never displayed shadow data. Verified: 40 shadow reads at 85% confidence, all wrong — panel showed `n0` in every band. |
 
+**Defects 9 and 10 — fixed in S40.** Both were "the model's notion of remaining
+time is wrong," fixed together so verification ran once.
+
+| # | Defect | Effect |
+|---|---|---|
+| 9 | **The clock only ticked once a minute.** `model()` looked remaining variance up as `REMVAR[k-1]`, returning the identical number for all 60 seconds of a minute. | Negligible before minute 10, **9.8pp at 13, 15.8pp at 14**, always overstating the longshot — the cheap contract. Caught live: tool 43% where Kalshi said 21%, and Kalshi was right. |
+| 10 | **Minute 0 could not be priced.** `REMVAR` has entries for k=1..14 only, so `read()` refused with "session just opened". | The one moment Kalshi's price is most anchored returned nothing. |
+
+Both are now served by `remVarAt(D, k, sec, settleAvg)`. Minutes 0–13 drain
+linearly within the minute. **Minute 14 does not** — Kalshi settles on the
+average of that minute's 60 prices, so remaining variance shrinks by the cube of
+the fraction left plus a quarter-cube term for the elapsed window the tool never
+observed: `REMVAR[13] × ((1−f)³ + f³/4)`. Terry chose that treatment (option B+)
+over straight-line and over the cube alone. At `f=0` the bracket is 1, so it is
+exactly continuous with the baked tables and no prior fixture re-bases.
+
+**Know this before you read the screen:** the minute-14 factor is **not
+monotonic**. It bottoms at `f=2/3` (40s in) and rises back to 1/4 at the close,
+so the probability visibly re-widens toward 50% over the final 20 seconds. That
+is real — settlement averages 60 prices this tool never sees, so as the minute
+runs out the current price stops being a good proxy for the minute's average.
+The clean fix is to **accumulate the elapsed prices** (the poll already runs
+every 20s), which makes the factor `(1−f)³` and monotonic to zero. Not done.
+
 **Why the proposed test was structurally blind.** `B = 1.77` was fitted on a
 basis with `M` pinned at 1. Defect 6 pins `M` at 1 in shadow mode. So shadow
 mode was running *the exact pipeline 1.77 was calibrated for* — while the traded

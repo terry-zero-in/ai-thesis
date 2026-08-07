@@ -18,7 +18,8 @@ Reproduce everything here with `node btc-session-edge-v3/analysis/trend-signal.m
 | B | "4 up sessions → next is down" is **not** in the data | world-fact, measured | Terry's premise, corrected |
 | C | The **size** of the 5-session net move *is* a real ~5–6pp fade — and `driftNudge` already encodes it | world-fact, measured | confirms shipped design |
 | D | `M` estimates recent volatility from `\|finalDelta\|`, the single worst statistic available; a per-minute-vol estimator scores 0.527 → 0.621 | methodology | **held back — needs replication** |
-| E | Defect 9's error table reproduces exactly; option B (cube shrink) closes ~half the minute-14 gap, not all of it | repo-state, verified | feeds the open minute-14 decision |
+| E | Defect 9's error table reproduces exactly; option B (cube shrink) closes ~half the minute-14 gap, not all of it | repo-state, verified | **defects 9 + 10 fixed, B+ per Terry** |
+| F | The minute-14 factor is **not monotonic** — it re-widens over the final 20 seconds | methodology | **shipped as chosen; surfaced to Terry** |
 
 ---
 
@@ -136,13 +137,53 @@ Two things that matter for the decision:
 
 **Hard limit:** the baked data is 1-**minute** bars. The true within-minute-14 behaviour **cannot be measured from this file** — that needs second-resolution data.
 
-**Open, awaiting Terry: which of A / B / B+ to implement for minute 14.** Minutes 1–13 are straight-line and uncontested.
+### Terry chose B+ — shipped
+
+`remVarAt(D, k, sec, settleAvg)` replaces the whole-minute `REMVAR[k-1]` lookup. Minutes 0–13 drain linearly; minute 14 uses
+
+```
+remVar(14, f) = REMVAR[13] × ( (1−f)³ + f³/4 )
+```
+
+At `f=0` the bracket is 1, so it is **exactly continuous with the baked table** and every prior fixture still holds — asserted for all k on both bases.
+
+**Discovered while implementing, and Terry did not have this when he chose: the minute-14 factor is not monotonic.** It bottoms at `f=2/3` (40 seconds in, factor 1/9) and **rises back to 1/4** at the close:
+
+| into minute 14 | 0s | 10s | 20s | 30s | **40s** | 50s | 60s |
+|---|---|---|---|---|---|---|---|
+| factor | 1.000 | 0.580 | 0.306 | 0.156 | **0.111** | 0.149 | 0.250 |
+
+On screen the probability will converge for the first 40 seconds of the final minute and then **visibly widen back toward 50%** for the last 20.
+
+**This is real, not a bug.** Settlement is the average of 60 prices the tool never observes. As the minute runs out, the *current* price stops being a good proxy for the minute's *average*, so uncertainty about that average stops shrinking. Any model that prices an unobserved average off a single current price has this shape — option B has it too (minimum at f=1/2), and even the "correct" formula conditioned only on the current price never converges at all.
+
+An initial assertion demanding monotonicity across all 15 minutes **failed at k=14 and was wrong** — the assumption was mine, not the model's. Replaced with assertions pinning the exact shape (bracket = 1 at f=0, 1/9 at f=2/3, 1/4 at f=1) so it cannot drift silently.
+
+**The clean fix is to stop guessing at the elapsed average and accumulate it** — the poll already runs every 20s, so the prices are observable. With the elapsed window known the factor becomes `(1−f)³`, which *is* monotonic to zero. Out of scope here; flagged for Terry.
+
+**One asymmetry deliberately left in place.** `read()` now admits minute 0, but the shadow loop keeps its `k >= 1` guard. The traded strike is Kalshi's target, so a minute-0 delta is a real number worth pricing; shadow's synthetic strike **is** the session open, so its minute-0 delta is zero by construction and would log a guaranteed `p=0.5` row every session — no information, but it inflates `n` and drags the calibration curve.
 
 ---
 
+## Verification
+
+| check | result |
+|---|---|
+| `node btc-session-edge-v3/tools/behaviour.mjs` | **192/192 PASS** (18 new S40 assertions) |
+| `node tools/selftest.mjs` (real browser) | **20/20** in-artifact, 3 layout, 10 grouped-log |
+| `node tools/clock.mjs` (real browser, controlled clock) | **9/9 PASS** |
+| `node tools/bundle.mjs verify` | round-trip, src, deployed copy all in sync |
+
+`tools/clock.mjs` is new. Defects 9 and 10 are page-level — the fix is only real if the number on screen moves as the seconds drain, and the Node harness structurally cannot see that (`props={}`, synchronous `setState`). It drives the real page with `Date.now` replaced before any app code runs. Measured in the browser at a $10 gap:
+
+- **minute 13: 69% → 81%** across one minute (previously frozen), σ_rem $18.5 → $10.2
+- **minute 2: headline stable at 56%**, σ_rem still ticking $67.1 → $64.4 — the cliff-at-the-end characterisation, confirmed on screen
+- **minute 0: 55%**, no longer "session just opened", and correctly the least confident read of the session
+
 ## Judgment calls
 
-- **Shipped no model change.** Findings A and D both touch `sigmaUnit`/`logit`; HANDOFF.md rule 2 forbids moving jointly-identified constants on new evidence. Reported, not applied.
+- **Shipped no change to findings A or D.** Both touch `sigmaUnit`/`logit`; HANDOFF.md rule 2 forbids moving jointly-identified constants on new evidence. Reported, not applied. Defects 9 and 10 are a different case — the whole-minute lookup is wrong *by construction*, not by re-estimation, and `sec=0` continuity means `B` is not re-based.
+- **Reverted `trade-tab-1440x900.png`.** Running `selftest.mjs` regenerates it as a side effect; nothing visual changed, so shipping the diff would be noise.
 - **Branch based on `main`, not on PR #39.** #39 is open and edits `src/app.html`; this commit adds only new files, so it carries zero conflict risk and its diff does not replay #39's work. The defect 9/10 code will rebase onto whichever base applies then.
 - **No Linear tickets.** Unchanged from S37–S39 — BTC Session Edge is not on the THS board.
 

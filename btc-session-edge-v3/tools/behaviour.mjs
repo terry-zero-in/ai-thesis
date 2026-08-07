@@ -845,6 +845,113 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
     c3.renderVals().clearLabel, 'clear shadow');
 }
 
+/* ---- S40 / defect 9: the clock must tick inside the minute -----------------
+   The model looked remaining variance up by WHOLE minute, so it returned the
+   same number for all 60 seconds of it. Negligible before minute 10, 9.8pp at
+   13, 15.8pp at 14, always overstating the longshot.
+
+   Minute 14 is not straight-line. Kalshi settles on the AVERAGE of the final
+   minute's 60 prices, so remaining variance shrinks by the cube of the fraction
+   left, plus a quarter-cube term for the elapsed window whose average the tool
+   never observed. Terry chose that treatment (option B+) in S40. */
+{
+  const c = mk();
+  const su = D.HOUR_SIGMA[0], B = 1.49;
+  const p = (k, sec, settleAvg = true) =>
+    c.model({ k, sec, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg }).p;
+
+  /* Continuity: at the top of every minute the new path must reproduce the
+     baked array exactly, or every existing fixture and the whole shadow log
+     silently re-bases. This is the regression guard on the interpolation. */
+  /* Tolerance is 1e-4 dollars, not 0: the baked REMVAR tables are stored to 6
+     decimals while remVarAt() recomputes from SHAPE at full precision, so exact
+     equality would be asserting the rounding, not the continuity. */
+  const contig = (settleAvg, tbl) => {
+    for (let k = 1; k <= 14; k++) {
+      const got = c.model({ k, sec: 0, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg }).sigmaRem;
+      if (Math.abs(got - su * Math.sqrt(tbl[k - 1])) > 1e-4) return 'broke at k=' + k;
+    }
+    return null;
+  };
+  const cS1 = contig(true, D.REMVAR), cC1 = contig(false, D.REMVAR_CLOSE);
+  t('S40 sec=0 reproduces REMVAR at every k (settle)', cS1 == null, cS1 || 'all', 'all');
+  t('S40 sec=0 reproduces REMVAR_CLOSE at every k', cC1 == null, cC1 || 'all', 'all');
+
+  /* Minutes 0-13 drain linearly, so the probability must move away from 50%
+     every single second. This is the assertion the whole-minute lookup failed. */
+  let mono = true, monoAt = null;
+  for (let k = 0; k <= 13 && mono; k++)
+    for (let s = 1; s < 60; s++)
+      if (p(k, s) > p(k, s - 1) + 1e-12) { mono = false; monoAt = 'k=' + k + ' s=' + s; break; }
+  t('S40 minutes 0-13 tick down every second', mono, monoAt || 'monotonic', 'monotonic');
+
+  /* Minute 14 is deliberately NOT monotonic, and an earlier version of this
+     assertion wrongly demanded that it were. The settlement average is taken
+     over prices the tool never observes, so as the minute runs out the current
+     price stops being a good proxy for the minute's average and uncertainty
+     about that average stops shrinking. The B+ factor (1-f)^3 + f^3/4 bottoms
+     at f=2/3 and rises to 1/4 at the close. That is the model Terry chose;
+     pinning the shape here so it cannot drift silently. */
+  const fac = (f) => Math.pow(1 - f, 3) + Math.pow(f, 3) / 4;
+  t('S40 minute 14 factor bottoms at f=2/3', Math.abs(fac(2 / 3) - 1 / 9) < 1e-12, fac(2 / 3).toFixed(6), (1 / 9).toFixed(6));
+  t('S40 minute 14 factor is 1 at the top of the minute', Math.abs(fac(0) - 1) < 1e-12, fac(0), 1);
+  t('S40 minute 14 keeps 1/4 of its variance at the close', Math.abs(fac(1) - 0.25) < 1e-12, fac(1), 0.25);
+  t('S40 minute 14 p re-widens after 40s', p(14, 55) > p(14, 40),
+    (100 * p(14, 40)).toFixed(1) + '% -> ' + (100 * p(14, 55)).toFixed(1) + '%', 'rises');
+
+  t('S40 minute 13 moves within the minute', Math.abs(p(13, 0) - p(13, 50)) > 0.05,
+    (100 * (p(13, 0) - p(13, 50))).toFixed(1) + 'pp', '> 5pp');
+  t('S40 minute 2 barely moves within the minute', Math.abs(p(2, 0) - p(2, 50)) < 0.005,
+    (100 * (p(2, 0) - p(2, 50))).toFixed(1) + 'pp', '< 0.5pp');
+
+  /* Terry's live catch: 36s to close, $2.41 below target, Kalshi 21%.
+     B+ factor at f=24/60 is 0.6^3 + 0.4^3/4 = 0.216 + 0.016 = 0.232. */
+  const f = 24 / 60, want14 = D.REMVAR[13] * (Math.pow(1 - f, 3) + Math.pow(f, 3) / 4);
+  const got14 = c.model({ k: 14, sec: 24, delta: -2.41, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg: true });
+  t('S40 minute 14 uses the settlement-average shrink', Math.abs(got14.sigmaRem - su * Math.sqrt(want14)) < 1e-4,
+    got14.sigmaRem.toFixed(4), (su * Math.sqrt(want14)).toFixed(4));
+  t('S40 minute 14 is NOT straight-line', Math.abs(got14.sigmaRem - su * Math.sqrt(D.REMVAR[13] * (1 - f))) > 1,
+    got14.sigmaRem.toFixed(2), 'differs from straight-line ' + (su * Math.sqrt(D.REMVAR[13] * (1 - f))).toFixed(2));
+
+  /* ---- defect 10: minute 0 must price at all ---- */
+  const r0c = c.model({ k: 0, sec: 0, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg: false });
+  t('S40 k=0 close remVar is SUM_SHAPE2', Math.abs(Math.pow(r0c.sigmaRem / su, 2) - D.SUM_SHAPE2) < 1e-5,
+    Math.pow(r0c.sigmaRem / su, 2).toFixed(6), D.SUM_SHAPE2);
+  const r0s = c.model({ k: 0, sec: 0, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg: true });
+  const want0 = D.SUM_SHAPE2 - D.SHAPE[14] * D.SHAPE[14] * (2 / 3);
+  t('S40 k=0 settle remVar drops 2/3 of the last minute', Math.abs(Math.pow(r0s.sigmaRem / su, 2) - want0) < 1e-5,
+    Math.pow(r0s.sigmaRem / su, 2).toFixed(6), want0.toFixed(6));
+  /* 0.5 is the degenerate answer: sigmaRem NaN makes model() fall back to z=0,
+     which is "finite" and completely uninformative. Exclude it explicitly. */
+  t('S40 k=0 produces a real probability, not the z=0 fallback',
+    isFinite(r0s.p) && r0s.p > 0 && r0s.p < 1 && Math.abs(r0s.p - 0.5) > 1e-6, r0s.p, '0 < p < 1, p ≠ 0.5');
+
+  /* read() must stop refusing minute 0 outright. */
+  const c0 = mk();
+  c0.state.strike = '64500'; c0.state.priceIn = '64490';
+  c0.ct = () => ({ hr: 0, mi: 0, se: 12, dow: 0, mis: 0, secLeft: 888,
+    sessionTs: Math.floor(Date.now() / 1000 / 900) * 900, window: 'x', clock: 'x' });
+  const rd0 = c0.read();
+  t('S40 read() no longer refuses minute 0', rd0 != null && rd0.wait == null, rd0 && rd0.wait, 'no wait');
+  t('S40 read() at minute 0 returns a probability', rd0 != null && isFinite(rd0.p), rd0 && rd0.p, 'finite');
+
+  /* read() must feed the wall-clock seconds through, not zero them. */
+  const cS = mk();
+  cS.state.strike = '64500'; cS.state.priceIn = '64490';
+  const mkCt = (se) => () => ({ hr: 0, mi: 13, se, dow: 0, mis: 13, secLeft: (14 - 13) * 60 + (60 - se),
+    sessionTs: Math.floor(Date.now() / 1000 / 900) * 900, window: 'x', clock: 'x' });
+  cS.ct = mkCt(0); const a0 = cS.read();
+  cS.ct = mkCt(50); const a50 = cS.read();
+  t('S40 read() passes wall-clock seconds to the model', a0.p !== a50.p,
+    a0.p.toFixed(4) + ' vs ' + a50.p.toFixed(4), 'different');
+
+  /* rail() indexes SESS by minute; at k=0 column 0 is the sigma field, not a
+     delta, so it must decline to answer rather than compare against garbage. */
+  const cR = mk();
+  const rail0 = cR.rail({ k: 0, z: -0.5 });
+  t('S40 rail() returns nothing at minute 0', rail0.n === 0, rail0.n, 0);
+}
+
 /* ---- report ---- */
 const w = Math.max(...rows.map((r) => r.name.length));
 console.log('TEST'.padEnd(w) + '  RESULT  GOT / WANT');

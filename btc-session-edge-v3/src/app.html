@@ -658,6 +658,60 @@ const sessLabel = (tsSec) => {
 };
 const hhmm = (ms) => { const d = new Date(ms); const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true }).format(d); return p.replace(' AM', 'a').replace(' PM', 'p').replace(/\s/g, ''); };
 
+/* §3.1 — remaining variance at k minutes AND `sec` seconds into the session.
+   Replaces the whole-minute REMVAR[k-1] lookup (defect 9), which returned the
+   identical number for all 60 seconds of a minute while real time drained away.
+   Measured error was negligible before minute 10, 9.8pp at 13 and 15.8pp at 14,
+   and it always pointed the same way: overstating remaining time overstates
+   uncertainty, drags the probability toward 50/50, and makes the longshot — the
+   cheap contract — look better than it is.
+
+   Three regimes, and the third is the whole difficulty:
+
+   1. The minute you are inside contributes only the slice that is left,
+      (1 - f) * SHAPE[k]^2, because variance accrues linearly in time.
+   2. Whole minutes still ahead contribute SHAPE[j]^2 each.
+   3. The settlement minute (index 14) is NOT the closing price. Kalshi settles
+      on the AVERAGE of that minute's 60 prices, and the variance of an average
+      of a random walk is a third of the variance of its endpoint — which is why
+      the baked REMVAR already carries SHAPE[14]^2/3 there.
+
+      Once you are INSIDE minute 14 the average is partly banked, and it does
+      not drain linearly. Writing f for the fraction elapsed, the settlement
+      value still to be determined splits into the remaining window (variance
+      shrinking as (1-f)^3) and the elapsed window, whose average the tool never
+      observed. The tool does know the price at the top of the minute — it is
+      the last entry in the point chain — so the elapsed part is a Brownian
+      bridge with both ends known, contributing f^3/4. Hence
+
+          remVar(14, f) = REMVAR[13] * ( (1-f)^3 + f^3/4 )
+
+      At f=0 the bracket is 1, so this is exactly continuous with REMVAR[13] and
+      every existing fixture still holds. At f=1 it is 1/4, not 0: at the instant
+      of settlement the average over the minute is fixed but STILL UNOBSERVED by
+      this tool, and pretending otherwise would swap one overconfidence for a
+      worse one. Straight-line interpolation here would be wrong for a knowable
+      reason — it closes about a tenth of the observed gap to Kalshi where this
+      closes about half. Terry chose this treatment in S40 over A and B.
+
+   k = 0 is admitted (defect 10): the session has just opened, nothing is
+   elapsed, and the correct answer is the whole session's variance — SUM_SHAPE2
+   on the close basis, less two thirds of the last minute on the settle basis.
+   That is the moment Kalshi's price is most anchored, and it used to return
+   "session just opened" instead of a number. */
+const remVarAt = (D, k, sec, settleAvg) => {
+  const SH = D.SHAPE;
+  const f = clamp(sec || 0, 0, 60) / 60;
+  const kk = clamp(Math.floor(k), 0, 14);
+  const last = SH[14] * SH[14];
+  if (kk === 14) return settleAvg
+    ? (last / 3) * (Math.pow(1 - f, 3) + Math.pow(f, 3) / 4)
+    : last * (1 - f);
+  let acc = (1 - f) * SH[kk] * SH[kk];
+  for (let j = kk + 1; j < 14; j++) acc += SH[j] * SH[j];
+  return acc + (settleAvg ? last / 3 : last);
+};
+
 /* §3.3 — driftNudge. net = strike − px75; nudge AGAINST the drift sign, decayed
    so live evidence takes over by minute 8. Measured continuation 44.6–48.2%,
    which makes N-session drift a fade and never a trend-following prior. */
@@ -740,6 +794,24 @@ class Component extends DCLogic {
     t('full price passes through', this.resolvePrice('64872', 64850) === 64872, this.resolvePrice('64872', 64850), 64872);
 
     t('REMVAR[13] is SHAPE[14]^2/3', near(D.REMVAR[13], D.REMVAR_CLOSE[13] / 3, 1e-6), D.REMVAR[13], D.REMVAR_CLOSE[13] / 3);
+
+    /* §3.1 remVarAt — defects 9 and 10. sec=0 must reproduce the baked tables
+       exactly (to their 6dp rounding) or every prior fixture silently re-bases.
+       Minute 14 carries the settlement-average shrink, not a straight line. */
+    t('remVarAt sec=0 == REMVAR[k-1]', (() => { for (let k = 1; k <= 14; k++)
+        if (!near(remVarAt(D, k, 0, true), D.REMVAR[k - 1], 1e-5)) return false; return true; })(), 'all k', 'all k');
+    t('remVarAt sec=0 == REMVAR_CLOSE[k-1]', (() => { for (let k = 1; k <= 14; k++)
+        if (!near(remVarAt(D, k, 0, false), D.REMVAR_CLOSE[k - 1], 1e-5)) return false; return true; })(), 'all k', 'all k');
+    t('remVarAt k=0 close is SUM_SHAPE2', near(remVarAt(D, 0, 0, false), D.SUM_SHAPE2, 1e-5), remVarAt(D, 0, 0, false), D.SUM_SHAPE2);
+    t('remVarAt k=0 settle drops 2/3 of last minute',
+      near(remVarAt(D, 0, 0, true), D.SUM_SHAPE2 - D.SHAPE[14] * D.SHAPE[14] * (2 / 3), 1e-5),
+      remVarAt(D, 0, 0, true), D.SUM_SHAPE2 - D.SHAPE[14] * D.SHAPE[14] * (2 / 3));
+    t('remVarAt minute 13 halves within the minute',
+      near(remVarAt(D, 13, 30, true), (D.REMVAR[12] + D.REMVAR[13]) / 2, 1e-3),
+      remVarAt(D, 13, 30, true), (D.REMVAR[12] + D.REMVAR[13]) / 2);
+    t('remVarAt minute 14 uses the cube shrink, not a line',
+      near(remVarAt(D, 14, 24, true), D.REMVAR[13] * (Math.pow(0.6, 3) + Math.pow(0.4, 3) / 4), 1e-5),
+      remVarAt(D, 14, 24, true), D.REMVAR[13] * (Math.pow(0.6, 3) + Math.pow(0.4, 3) / 4));
     t('mean(SHAPE) normalised to 1', near(D.SHAPE.reduce((a, b) => a + b, 0) / 15, 1, 1e-4), D.SHAPE.reduce((a, b) => a + b, 0) / 15, 1);
 
     /* The B: 1.77 below is a fixed TEST INPUT that pins model()'s arithmetic to
@@ -968,6 +1040,12 @@ class Component extends DCLogic {
       s.pts = atOpen ? [{ k, p: px }] : []; s.lastK = k;
     }
 
+    /* `k >= 1` stays here even though read() now admits minute 0 (defect 10).
+       The two paths are not symmetric: the traded strike is Kalshi's target, so
+       at minute 0 the delta is a real number worth pricing, while shadow's
+       synthetic strike IS the session open, so its minute-0 delta is exactly
+       zero by construction. That would log a guaranteed p=0.5 row every session
+       — no information, but it inflates n and drags the calibration curve. */
     if (k >= 1 && k !== s.lastK && s.strike != null && this.state.data) {
       const r = this.shadowRead(s.strike, px, k, s.pts, ct);
       if (r) {
@@ -1024,7 +1102,7 @@ class Component extends DCLogic {
     const trail = base * mm.M, cur = this.sigmaFromPts(pts);
     const sigmaUnit = cur != null ? 0.6 * trail + 0.4 * cur : trail;
     const macro = this.state.macroOn;
-    const arg = { k, delta: price - strike, sigmaUnit, net: null, B: this.activeB().B,
+    const arg = { k, sec: ct.se, delta: price - strike, sigmaUnit, net: null, B: this.activeB().B,
       macro, drift: true, settleAvg: true };
     const full = this.model(arg);
     const ce = this.ceilings(full.p);
@@ -1166,7 +1244,9 @@ class Component extends DCLogic {
   /* ---- the model. One call site, four ablation call sites, same code. */
   model(o) {
     const D = this.state.data;
-    const remVar = (o.settleAvg ? D.REMVAR : D.REMVAR_CLOSE)[o.k - 1];
+    /* `sec` defaults to 0, which reproduces the old whole-minute lookup exactly
+       — every fixture written against REMVAR[k-1] still holds. */
+    const remVar = remVarAt(D, o.k, o.sec, o.settleAvg);
     const sigmaUnit = o.sigmaUnit * (o.macro ? (this.props.macroSigmaMult ?? 1.6) : 1);
     const sigmaRem = sigmaUnit * Math.sqrt(remVar);
     const z = sigmaRem > 0 ? o.delta / sigmaRem : 0;
@@ -1177,8 +1257,10 @@ class Component extends DCLogic {
   read() {
     const D = this.state.data;
     if (!D) return null;
+    /* Minute 0 is priceable now (defect 10) — remVarAt admits k=0, so the only
+       thing missing at the open is sigma_cur, and sigmaUnit already falls back
+       to the trailing estimate when the point chain is too short to measure. */
     const ct = this.ct(), k = ct.mis;
-    if (k < 1) return { ct, k, wait: 'session just opened — a read needs one full minute' };
     const strike = num(this.state.strike);
     if (strike == null) return { ct, k, wait: 'set the strike' };
     const price = this.resolvePrice(this.state.priceIn, strike);
@@ -1195,7 +1277,9 @@ class Component extends DCLogic {
     const B = this.activeB().B;
     const macro = this.state.macroOn;
 
-    const arg = { k, delta, sigmaUnit, net, B, macro, drift: true, settleAvg: true };
+    /* ct.se is the wall-clock second within the current minute. Sessions start
+       on the quarter hour, so seconds-into-the-minute needs no offset. */
+    const arg = { k, sec: ct.se, delta, sigmaUnit, net, B, macro, drift: true, settleAvg: true };
     const full = this.model(arg);
     const ab = {
       noMom: this.model(Object.assign({}, arg, { B: 1.0 })).p,
@@ -1211,8 +1295,12 @@ class Component extends DCLogic {
      within ±0.25 of the live z, each scaled by its OWN realised per-minute vol. */
   rail(r) {
     const D = this.state.data;
-    if (!D || !r || r.z == null) return { n: 0, up: 0, finals: [] };
-    const rv = Math.sqrt(D.REMVAR[r.k - 1]);
+    /* SESS column 0 is the session's sigma, not a minute-0 delta, so at k=0 the
+       rail would compare the live z against a volatility field. It has nothing
+       to say there anyway: every baked session sits exactly at its own open at
+       minute 0, so all of them score z=0 and the ±0.25 band is meaningless. */
+    if (!D || !r || r.z == null || r.k < 1) return { n: 0, up: 0, dn: 0, finals: [] };
+    const rv = Math.sqrt(remVarAt(D, r.k, 0, true));
     const finals = [];
     let up = 0, dn = 0;
     for (let i = 0; i < D.SESS.length; i++) {
