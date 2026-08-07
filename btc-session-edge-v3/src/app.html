@@ -927,11 +927,14 @@ class Component extends DCLogic {
        a repeat as a fresh read makes the session look motionless, drags
        sigma_cur to its floor and inflates z until the dial claims certainty it
        has not earned — a $31 move reading "UP 100%". A read counts only when the
-       source's own clock advanced; otherwise say so and take nothing. */
-    if (srcTime != null && srcTime === this.state.sSrc) {
-      this.setState({ sErr: 'feed stale — cached response, no read taken' });
-      return;
-    }
+       source's own clock advanced.
+       It is ONLY the read that is blocked. This used to `return` outright, which
+       also skipped the session roll, the previous session's resolve and strike
+       adoption — so a stale patch straddling a boundary silently cost the entire
+       15 minutes, and the tool sat there reading "waiting for the next session"
+       while doing nothing, forever. A repeated trade timestamp means there is no
+       new price to record; it says nothing about what time it is. */
+    const fresh = !(srcTime != null && srcTime === this.state.sSrc);
     const ct = this.ct(), ts = ct.sessionTs, k = ct.mis;
     const s = Object.assign({ ts: null, strike: null, pts: [], lastK: -1 }, this.state.shadow);
     let srows = this.state.srows;
@@ -968,7 +971,10 @@ class Component extends DCLogic {
       s.pts = atOpen ? [{ k, p: px }] : []; s.lastK = k;
     }
 
-    if (k >= 1 && k !== s.lastK && s.strike != null && this.state.data) {
+    /* Joined late — recover the open rather than writing the session off. */
+    if (s.strike == null) this.armFromCandles(ts);
+
+    if (fresh && k >= 1 && k !== s.lastK && s.strike != null && this.state.data) {
       const r = this.shadowRead(s.strike, px, k, s.pts, ct);
       if (r) {
         srows = [...srows, { ts: Date.now(), sessionTs: ts, k, strike: s.strike, price: px,
@@ -987,8 +993,59 @@ class Component extends DCLogic {
         s.lastK = k;
       }
     }
-    this.setState({ shadow: s, srows, sAt: Date.now(), sErr: null, sSrc: srcTime == null ? this.state.sSrc : srcTime });
-    this.persistShadow();
+    this.setState({ shadow: s, srows, sAt: Date.now(),
+      sErr: fresh ? null : 'feed repeated its last trade — no read this poll (session still tracked)',
+      sSrc: srcTime == null ? this.state.sSrc : srcTime });
+    /* Persist the state just computed, not this.state — React has not committed
+       the setState above yet, so reading it back here would write a cursor one
+       poll stale and resume from it after a reload. The Node harness applies
+       setState synchronously and cannot see this, which is exactly the
+       harness-is-not-production gap that shipped defect 5. */
+    this.persistShadow(null, s, srows);
+  }
+
+  /* Recover a session we joined late instead of writing it off.
+     The 1-minute candle endpoint is useless live — it declares max-age=300 — but
+     it is authoritative for minutes already past, so the session's true open is
+     retrievable after the fact. Without this, one missed poll at a boundary
+     costs the whole 15 minutes, which for an unattended collector is the
+     difference between a night of data and none: a backgrounded tab has its
+     timers throttled, misses the 75-second window, and then sits out every
+     session in a row while displaying a message that reads like normal
+     operation.
+     Candle row shape is [time, low, high, open, close, volume]. */
+  armFromCandles(ts) {
+    if (this._armTs === ts) return;          /* one attempt in flight per session */
+    this._armTs = ts;
+    const url = 'https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60&start=' + ts + '&end=' + (ts + 900);
+    fetch(url)
+      .then((r) => r.json())
+      .then((rows) => {
+        if (!Array.isArray(rows) || !rows.length) throw new Error('no candles');
+        const cur = this.state.shadow || {};
+        /* rolled on, or armed by a normal poll while this was in flight */
+        if (cur.ts !== ts || cur.strike != null) return;
+        const byMin = new Map(rows.map((r) => [r[0], r]));
+        const open = byMin.get(ts);
+        /* the opening minute has not been published yet — retry on a later poll */
+        if (!open) { this._armTs = null; return; }
+        const strike = open[3];
+        /* Seed the chain from minutes that have CLOSED, so sigma_cur reflects
+           the session that actually happened rather than starting blind. The
+           current minute is excluded — its candle is still forming, and leaving
+           it out is what lets this minute still be read normally. */
+        const nowK = this.ct().mis;
+        const pts = [{ k: 0, p: strike }];
+        for (let m = 1; m < nowK; m++) {
+          const row = byMin.get(ts + m * 60);
+          if (!row) break;
+          pts.push({ k: m, p: row[4] });
+        }
+        const s = Object.assign({}, cur, { strike, pts, lastK: pts[pts.length - 1].k });
+        this.setState({ shadow: s, sErr: null });
+        this.persistShadow(null, s, this.state.srows);
+      })
+      .catch(() => { this._armTs = null; });
   }
 
   /* Shadow's own resolved sessions, in the shape mult() reads. Shadow rows are
@@ -1072,12 +1129,18 @@ class Component extends DCLogic {
   /* Storage failure is the one error that must never be swallowed: it is silent,
      it is total, and at ~1,344 rows a day against a 5MB origin quota it arrives
      in about ten days. Compact first, then say so if the write still fails. */
-  persistShadow(setter) {
+  persistShadow(setter, shadow, srows) {
     const put = setter || ((k, v) => STORE.set(k, v));
-    const packed = this.pruneShadow(this.compactShadow(this.state.srows));
-    const ok = put(LSK.shadow, { shadow: this.state.shadow, srows: packed });
-    if (packed !== this.state.srows) this.setState({ srows: packed });
-    this.setState({ sErr: ok ? null : 'storage full — shadow rows are no longer being saved. Export the CSV and clear the log.' });
+    /* Callers that just computed new state pass it in; reading this.state here
+       would get the pre-setState value under React and persist a stale cursor. */
+    const rows = srows || this.state.srows;
+    const cursor = shadow || this.state.shadow;
+    const packed = this.pruneShadow(this.compactShadow(rows));
+    const ok = put(LSK.shadow, { shadow: cursor, srows: packed });
+    if (packed !== rows) this.setState({ srows: packed });
+    /* Only SET on failure. Clearing on success would stomp the caller's own
+       status message — the stale-feed notice is set in the same tick. */
+    if (!ok) this.setState({ sErr: 'storage full — shadow rows are no longer being saved. Export the CSV and clear the log.' });
     return ok;
   }
 

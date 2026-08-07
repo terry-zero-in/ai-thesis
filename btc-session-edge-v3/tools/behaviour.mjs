@@ -481,7 +481,7 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   c.state.now = at(4, 4);
   c.shadowIngest(64030, 2.0, 1180);              // same feed timestamp — cached
   t('S11 stale feed logs nothing', c.state.srows.length === 1, c.state.srows.length, 1);
-  t('S11 stale feed is surfaced, not hidden', /stale|cached/i.test(String(c.state.sErr || '')),
+  t('S11 stale feed is surfaced, not hidden', /stale|cached|repeated/i.test(String(c.state.sErr || '')),
     c.state.sErr, 'a stale notice');
 
   c.state.now = at(5, 4);
@@ -843,6 +843,110 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   const c3 = mk(); c3.state.logMode = 'shadow';
   t('S20 button label follows the mode', c3.renderVals().clearLabel === 'clear shadow',
     c3.renderVals().clearLabel, 'clear shadow');
+}
+
+/* ---- S26: a stale feed must not cost the whole session ----
+   The stale guard used to `return` before the session-roll block, so a repeated
+   trade timestamp straddling a boundary skipped the roll, the previous
+   session's resolve AND strike adoption. The operator saw "waiting for the next
+   session to open" and 0 reads, indefinitely, with a live feed. Reported from
+   production. */
+{
+  const SESS = Math.floor(1786000800 / 900) * 900;   /* a real 15-min boundary */
+  const at = (sec) => (SESS + sec) * 1000;
+  const c = mk();
+  c.state.shadowOn = true;
+
+  /* mid-session start: sits out, correctly */
+  c.state.now = at(-720);
+  c.shadowIngest(64000, 1, 'trade-A');
+  t('S26 a mid-session start still sits out', c.state.shadow.strike === null, c.state.shadow.strike, null);
+
+  /* the boundary poll returns the SAME trade timestamp as the previous poll */
+  c.state.now = at(5);
+  c.shadowIngest(64100, 1, 'trade-A');
+  t('S26 a stale poll still processes the session roll',
+    c.state.shadow.ts === SESS, c.state.shadow.ts, SESS);
+  t('S26 a stale poll at the open still adopts the strike',
+    c.state.shadow.strike === 64100, c.state.shadow.strike, 64100);
+  t('S26 the stale notice says the session is still tracked',
+    /still tracked/.test(String(c.state.sErr || '')), c.state.sErr, 'a still-tracked notice');
+
+  /* and a stale poll mid-session takes no read, which was the original point */
+  c.state.now = at(180);
+  const before = c.state.srows.length;
+  c.shadowIngest(64200, 1, 'trade-A');
+  t('S26 a stale poll still takes no read', c.state.srows.length === before, c.state.srows.length, before);
+  c.state.now = at(185);
+  c.shadowIngest(64200, 1, 'trade-B');
+  t('S26 a fresh poll does take the read', c.state.srows.length === before + 1, c.state.srows.length, before + 1);
+}
+
+/* ---- S27: joining late recovers the open from the candle feed ----
+   Losing 15 minutes to one missed poll is fatal for an unattended collector —
+   a backgrounded tab has its timers throttled, misses the 75s window, and then
+   sits out every session in a row. The open is retrievable after the fact. */
+{
+  const SESS = Math.floor(1786000800 / 900) * 900;
+  const realFetch = globalThis.fetch;
+  let requested = null;
+  /* [time, low, high, open, close, volume] — minutes 0..3 closed, 4 is current */
+  globalThis.fetch = (url) => {
+    requested = String(url);
+    const rows = [];
+    for (let m = 0; m <= 4; m++) rows.push([SESS + m * 60, 0, 0, 64000 + m * 10, 64005 + m * 10, 1]);
+    return Promise.resolve({ json: () => Promise.resolve(rows.reverse()) });
+  };
+
+  const c = mk();
+  c.state.shadowOn = true;
+  c.state.now = (SESS + 5 * 60 + 2) * 1000;      /* joined at :05 — window long gone */
+  c.shadowIngest(64099, 1, 'trade-A');
+  t('S27 late join leaves the strike unset on the spot', c.state.shadow.strike === null, c.state.shadow.strike, null);
+  t('S27 late join asks the candle feed for that session',
+    requested != null && requested.includes('start=' + SESS) && requested.includes('granularity=60'),
+    requested, 'candles?granularity=60&start=' + SESS);
+
+  await new Promise((r) => setTimeout(r, 0));    /* let the fetch promise settle */
+
+  t('S27 the strike is recovered as the session OPEN', c.state.shadow.strike === 64000, c.state.shadow.strike, 64000);
+  t('S27 the chain is seeded from minutes already closed',
+    c.state.shadow.pts.length === 5, c.state.shadow.pts.length, 5);
+  t('S27 the current minute is left unread so it can still be logged',
+    c.state.shadow.lastK === 4, c.state.shadow.lastK, 4);
+  t('S27 sigma_cur is computable straight away',
+    c.sigmaFromPts(c.state.shadow.pts) != null, c.sigmaFromPts(c.state.shadow.pts), 'a number');
+
+  /* it must not re-arm a session that already has a strike */
+  const armed = c.state.shadow.strike;
+  c.armFromCandles(SESS);
+  await new Promise((r) => setTimeout(r, 0));
+  t('S27 an armed session is never re-armed', c.state.shadow.strike === armed, c.state.shadow.strike, armed);
+
+  globalThis.fetch = realFetch;
+}
+
+/* ---- S28: persistShadow writes the state it was handed ----
+   shadowIngest calls setState then persists. Under React the state is not
+   committed yet, so reading this.state back would save a cursor one poll stale
+   and resume from it after a reload. The harness applies setState synchronously
+   and cannot catch that — so assert the parameter path directly. */
+{
+  const c = mk();
+  let written = null;
+  const freshCursor = { ts: Math.floor(1786000800 / 900) * 900, strike: 64321, pts: [{ k: 0, p: 64321 }], lastK: 0 };
+  c.state.shadow = { ts: null, strike: null, pts: [], lastK: -1 };   /* deliberately stale */
+  c.persistShadow((k, v) => { written = v; return true; }, freshCursor, []);
+  t('S28 the cursor passed in is the cursor written',
+    written && written.shadow.strike === 64321, written && written.shadow.strike, 64321);
+  t('S28 it does not fall back to the uncommitted state',
+    written && written.shadow.ts === Math.floor(1786000800 / 900) * 900, written && written.shadow.ts, Math.floor(1786000800 / 900) * 900);
+  /* no args still means "use current state", for the callers that want that */
+  const c2 = mk();
+  c2.state.shadow = freshCursor;
+  let w2 = null;
+  c2.persistShadow((k, v) => { w2 = v; return true; });
+  t('S28 omitting the args still reads current state', w2 && w2.shadow.strike === 64321, w2 && w2.shadow.strike, 64321);
 }
 
 /* ---- report ---- */
