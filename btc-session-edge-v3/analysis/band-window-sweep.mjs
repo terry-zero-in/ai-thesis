@@ -169,6 +169,33 @@ for (const [label, rs, sd] of [
     ('  [' + ci[0].toFixed(2) + ', ' + ci[1].toFixed(2) + ']').padStart(20));
 }
 
+/* ---------- 2b. the three windows Terry asked to see side by side ----------
+   Note these OVERLAP: k5-7 and k7-9 share minute 7, k7-9 and k9-11 share
+   minute 9. They are therefore not three independent readings, and a session
+   that goes the model's way contributes to more than one of them. The
+   non-overlapping partition (k5-6 / k7-8 / k9-10 / k11-12) is printed under it
+   so the trend can be read without the shared minutes propping it up. */
+console.log('\n=== 2b. k5-7 vs k7-9 vs k9-11, 60-89% band ===\n');
+console.log('  window   bets    rate   model    edge      P&L      ROI     TRAIN    TEST    95% CI on ROI');
+const winRow = (lo, hi, sd) => {
+  const all = inBand.filter((r) => r.k >= lo && r.k <= hi);
+  const g = book(all); if (!g) return;
+  const tr = book(all.filter((r) => r.i < CUT)), te = book(all.filter((r) => r.i >= CUT));
+  const ci = boot(all, sd);
+  console.log('  ' + ('k' + lo + '-' + hi).padEnd(9) + g.n.toLocaleString().padStart(5) +
+    g.rate.toFixed(1).padStart(8) + '%' + g.meanConf.toFixed(1).padStart(8) + '%' +
+    ((g.rate - g.meanConf) >= 0 ? '+' : '−') + Math.abs(g.rate - g.meanConf).toFixed(1).padStart(4) + 'pp' +
+    usd(g.pnl).padStart(10) + (g.roi >= 0 ? '+' : '−') + Math.abs(g.roi).toFixed(2).padStart(5) + '%' +
+    (tr ? ((tr.roi >= 0 ? '+' : '−') + Math.abs(tr.roi).toFixed(2) + '%').padStart(9) : '        —') +
+    (te ? ((te.roi >= 0 ? '+' : '−') + Math.abs(te.roi).toFixed(2) + '%').padStart(9) : '        —') +
+    ('  [' + ci[0].toFixed(2) + ', ' + ci[1].toFixed(2) + ']').padStart(20));
+};
+winRow(5, 7, 701); winRow(7, 9, 702); winRow(9, 11, 703);
+console.log('\n  same cut, NON-overlapping pairs so no minute is double-counted:');
+console.log('  window   bets    rate   model    edge      P&L      ROI     TRAIN    TEST    95% CI on ROI');
+winRow(1, 2, 710); winRow(3, 4, 711); winRow(5, 6, 712); winRow(7, 8, 713);
+winRow(9, 10, 714); winRow(11, 12, 715); winRow(13, 14, 716);
+
 /* ---------- 3. how many minute windows look good by chance? ---------- */
 console.log('\n=== 3. EVERY CONTIGUOUS MINUTE WINDOW, ranked — the selection problem, shown ===\n');
 const wins = [];
