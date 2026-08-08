@@ -350,10 +350,20 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <input value="{{ px75 }}" sc-camel-on-change="{{ onPx75 }}" placeholder="—" sc-camel-input-mode="decimal" style="width:100%; height:30px; padding:0 9px; background:#0B0C0E; border:1px solid rgba(255,255,255,.10); border-radius:6px; font-size:13px; font-variant-numeric:tabular-nums" style-focus="border-color:#1399FD">
         </div>
         <div>
-          <div style="font-size:11px; color:#8B94A1; margin-bottom:5px">mkt ¢ (YES)</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:5px">
+            <span style="font-size:11px; color:#8B94A1">mkt ¢ — side</span>
+            <span style="display:flex; gap:2px; padding:1px; background:#0B0C0E; border:1px solid rgba(255,255,255,.08); border-radius:4px">
+              <button sc-camel-on-click="{{ mktSideYes }}" style="{{ mktYesSt }}">YES</button>
+              <button sc-camel-on-click="{{ mktSideNo }}" style="{{ mktNoSt }}">NO</button>
+            </span>
+          </div>
           <input value="{{ mkt }}" sc-camel-on-change="{{ onMkt }}" placeholder="—" sc-camel-input-mode="numeric" style="width:100%; height:30px; padding:0 9px; background:#0B0C0E; border:1px solid rgba(255,255,255,.10); border-radius:6px; font-size:13px; font-variant-numeric:tabular-nums" style-focus="border-color:#1399FD">
         </div>
       </div>
+
+      <!-- Both sides spelled out from the one number, so a mis-entry is visible
+           on the input rather than three lines later as an inverted trade. -->
+      <div style="{{ mktEchoSt }}">{{ mktEcho }}</div>
 
       <button sc-camel-on-click="{{ toggleMacro }}" style="{{ macroSt }}">
         <span style="{{ macroDotSt }}"></span>
@@ -649,6 +659,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <button sc-camel-on-click="{{ resolveUp }}" style="height:30px; padding:0 16px; border-radius:6px; font-size:13px; font-weight:500; color:#A6AEBB; background:#1A1D23; border:1px solid rgba(255,255,255,.10)" style-hover="color:#F2F4F7; border-color:rgba(255,255,255,.16)">▲ settled up</button>
       <button sc-camel-on-click="{{ resolveDown }}" style="height:30px; padding:0 16px; border-radius:6px; font-size:13px; font-weight:500; color:#A6AEBB; background:#1A1D23; border:1px solid rgba(255,255,255,.10)" style-hover="color:#F2F4F7; border-color:rgba(255,255,255,.16)">▼ settled down</button>
       <button sc-camel-on-click="{{ resolveFlat }}" style="height:30px; padding:0 13px; border-radius:6px; font-size:13px; color:#8B94A1; background:#1A1D23; border:1px solid rgba(255,255,255,.10)" style-hover="color:#A6AEBB">— flat</button>
+      <button sc-camel-on-click="{{ skipPending }}" style="height:30px; padding:0 13px; border-radius:6px; font-size:13px; color:#626B78; background:transparent; border:1px solid rgba(255,255,255,.10)" style-hover="color:#A6AEBB; border-color:rgba(255,255,255,.16)">skip</button>
     </span>
   </div>
   </sc-if>
@@ -664,6 +675,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 &quot;macroSigmaMult&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.6,&quot;min&quot;:1,&quot;max&quot;:2.5,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Model constants&quot;}}">
 const MONO = "font-family:'JetBrains Mono',ui-monospace,monospace";
 const TAB = 'font-variant-numeric:tabular-nums';
+/* YES/NO selector for the market price. Deliberately loud when active — which
+   side the typed number belongs to is the one input that can invert a trade. */
+const sideChip = (on) => MONO + '; font-size:10px; letter-spacing:.06em; height:18px; padding:0 8px; border-radius:3px; border:0; cursor:pointer; color:' +
+  (on ? '#06121C' : '#8B94A1') + '; background:' + (on ? '#1399FD' : 'transparent');
 const DOWS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const LSK = { log:'edge.log.v3', sess:'edge.sessions.v3', calib:'edge.calib.v3', shadow:'edge.shadow.v3' };
 /* The ruled slope, declared once because it previously was not.
@@ -780,7 +795,7 @@ const driftNudge = (net, k) => {
 class Component extends DCLogic {
   state = {
     now: Date.now(), view: 'trade', data: null,
-    strike: '', priceIn: '', px75: '', mkt: '', macroOn: false, finalIn: '',
+    strike: '', priceIn: '', px75: '', mkt: '', mktSide: 'YES', macroOn: false, finalIn: '',
     rows: [], sess: {}, auto: false, autoPx: null, autoAt: null, autoErr: null,
     csvLabel: 'copy CSV', clearArm: false,
     /* shadow mode — its own list and cursor, deliberately not merged with rows/sess */
@@ -1371,6 +1386,35 @@ class Component extends DCLogic {
 
   /* ---- §4. Solve for the highest whole cent that still clears the fee. */
   feeK() { return this.props.feeK ?? 0.07; }
+
+  /* ---- §4.1 the market price, canonicalised to YES cents.
+
+     This field used to be a bare "mkt ¢ (YES)" and the operator typed whichever
+     side the book was quoting — on a DOWN-favoured read that meant typing the
+     DOWN price, which silently inverted the trade. gapOf() derives the opposite
+     side as 100 − whatever it is handed, so a DOWN price of 77 became a YES
+     price of 77 and a NO ask of 23. The named side flipped while the ask stayed
+     23¢: same money, opposite outcome, and the claimed edge overstated by
+     exactly noT − yesT — which widens with the model's own confidence, so the
+     lie was largest precisely where it would be sized up.
+
+     Reading the tool inverted does not fix it either. The side only flips back
+     when the book is decisively one-sided; near even both readings name the same
+     side, and the stored mktCents stays wrong regardless, which is what the GAP
+     track record is built out of. So the side is explicit now, and exactly one
+     convention — YES cents — is stored and read everywhere downstream. */
+  mktYes() {
+    const v = num(this.state.mkt);
+    if (v == null) return null;
+    return this.state.mktSide === 'NO' ? 100 - v : v;
+  }
+
+  /* An edge this large against a liquid book is far more likely a mis-entry
+     than a real disagreement, so it is stated as a question rather than a
+     recommendation. Tuned to 15¢: the S40 replay put the model's honest edge
+     over 37,408 reads at about 1pp, so anything past this is off the scale the
+     model has ever earned. */
+  IMPLAUSIBLE = 15;
   ceilings(p) {
     const K = this.feeK();
     const taker = (x) => Math.ceil(K * x * (1 - x) * 100) / 100;
@@ -1447,10 +1491,11 @@ class Component extends DCLogic {
     const r = this.read();
     if (!r || r.wait) return;
     const ce = this.ceilings(r.p);
-    const mkt = num(this.state.mkt);
+    const mkt = this.mktYes();
     const row = { ts: Date.now(), sessionTs: r.ct.sessionTs, k: r.k, strike: r.strike, price: r.price,
       delta: r.delta, sigmaUnit: r.sigmaUnit, z: r.z, pFull: r.p, ab: r.ab, macroOn: r.macro,
-      driftNet: r.net, mktCents: mkt, yesT: ce.yesT, noT: ce.noT, resolved: null, finalDelta: null, v: 2 };
+      driftNet: r.net, mktCents: mkt, mktSideIn: this.state.mktSide, yesT: ce.yesT, noT: ce.noT,
+      resolved: null, finalDelta: null, v: 2 };
     const rows = [...this.state.rows, row];
     const sess = Object.assign({}, this.state.sess);
     const e = Object.assign({ pts: [], resolved: null, finalDelta: null }, sess[r.ct.sessionTs]);
@@ -1471,6 +1516,28 @@ class Component extends DCLogic {
     this.persist(rows, sess);
     this.setState({ finalIn: '' });
   }
+  /* ---- §5.5 skip. pendingSession() drains oldest-first so nothing can be
+     stranded, but with no way past the head of the queue that guarantee
+     inverted: one session the operator could not settle — a run left open
+     overnight, a strike never traded — blocks every later session behind it.
+     Rows keep piling up unresolved, scored() stays empty, and the GAP tab has
+     nothing to show no matter how many reads carry a market price. That is the
+     LIFO stranding failure again, moved from the tail to the head.
+
+     Skipping marks the session 'S' and leaves finalDelta null. 'S' is not a
+     direction, so scored() and refitB() ignore it exactly as they ignore an
+     unresolved row, and mult() skips it on the null finalDelta. Nothing is
+     invented — the outcome stays unknown, it just stops blocking. */
+  skipPending = () => {
+    const p = this.pendingSession();
+    if (!p) return;
+    const sess = Object.assign({}, this.state.sess);
+    sess[p.ts] = Object.assign({}, sess[p.ts], { resolved: 'S', finalDelta: null });
+    const rows = this.state.rows.map((r) => r.sessionTs === +p.ts ? Object.assign({}, r, { resolved: 'S', finalDelta: null }) : r);
+    this.persist(rows, sess);
+    this.setState({ finalIn: '' });
+  };
+
   pendingSession() {
     const s = this.state.sess, nowTs = Math.floor(this.state.now / 1000 / 900) * 900;
     const keys = Object.keys(s).map(Number).sort((a, b) => a - b);
@@ -1548,7 +1615,7 @@ class Component extends DCLogic {
     const live = r && !r.wait;
     const rail = live ? this.rail(r) : { n: 0, up: 0, finals: [] };
     const ce = live ? this.ceilings(r.p) : null;
-    const mktC = num(S.mkt);
+    const mktC = this.mktYes();
     const pending = this.pendingSession();
     const pct100 = live ? r.p * 100 : null;
     const upSide = live ? r.p >= 0.5 : true;
@@ -1665,6 +1732,7 @@ class Component extends DCLogic {
     const badgeFor = (x) => {
       if (x.resolved == null) return { badge: '—', st: MONO + '; font-size:10px; color:#626B78' };
       if (x.resolved === 'F') return { badge: 'FLAT', st: MONO + '; font-size:10px; letter-spacing:.05em; color:#8B94A1' };
+      if (x.resolved === 'S') return { badge: 'SKIPPED', st: MONO + '; font-size:10px; letter-spacing:.05em; color:#626B78' };
       const ok = (x.pFull >= 0.5) === (x.resolved === 'U');
       return { badge: ok ? 'CORRECT' : 'MISSED',
         st: MONO + '; font-size:10px; letter-spacing:.05em; padding:2px 6px; border-radius:4px; color:' + (ok ? '#5AD79B' : '#FF8A8F') +
@@ -1834,6 +1902,17 @@ class Component extends DCLogic {
       onPriceKey: (e) => { if (e.key === 'Enter') this.logRead(); },
       onPx75: (e) => this.setState({ px75: e.target.value.replace(/[^0-9.]/g, '') }),
       onMkt: (e) => this.setState({ mkt: e.target.value.replace(/[^0-9]/g, '').slice(0, 2) }),
+      mktSideYes: () => this.setState({ mktSide: 'YES' }),
+      mktSideNo: () => this.setState({ mktSide: 'NO' }),
+      mktYesSt: sideChip(S.mktSide === 'YES'),
+      mktNoSt: sideChip(S.mktSide === 'NO'),
+      /* Says the number back in both directions. mktC is already canonical YES,
+         so this is the check that the typed side landed where it was meant to. */
+      mktEcho: mktC == null ? 'Type the price of the side you are looking at, then say which side it is.'
+        : 'YES ' + mktC + '¢  ·  NO ' + (100 - mktC) + '¢' +
+          (S.mktSide === 'NO' ? '   (you typed ' + S.mkt + '¢ as the NO price)' : ''),
+      mktEchoSt: MONO + '; font-size:10.5px; letter-spacing:.04em; ' + TAB + '; color:' +
+        (mktC == null ? '#626B78' : '#8B94A1'),
       onFinal: (e) => this.setState({ finalIn: e.target.value.replace(/[^0-9.\-−]/g, '').replace('−', '-') }),
       strikeFieldSt: field, priceFieldSt: field,
       showGhost: !S.strike && !!S.ghost, ghostStrike: S.ghost,
@@ -1888,17 +1967,25 @@ class Component extends DCLogic {
       ...(() => {
         const g = ce ? this.gapOf(mktC, ce.yesT, ce.noT) : null;
         const on = g != null && g.edge >= 1;
-        const col = on ? '#5AD79B' : '#626B78';
+        /* An edge past IMPLAUSIBLE is reported in amber, not green. The model
+           has never earned a number that size, so the likeliest explanations
+           are a side mis-entry or a stale quote — and both look exactly like
+           this. It is still shown, and still trades if the operator means it;
+           what changes is that it stops being asserted as a recommendation. */
+        const wild = on && g.edge >= this.IMPLAUSIBLE;
+        const col = wild ? '#EDBE72' : on ? '#5AD79B' : '#626B78';
         return {
           edgeBarSt: 'display:flex; align-items:baseline; gap:12px; margin-top:12px; padding:10px 14px; border-radius:8px; background:' +
-            (on ? 'rgba(47,191,126,.09)' : '#131519') + '; border:1px solid ' + (on ? 'rgba(47,191,126,.30)' : 'rgba(255,255,255,.06)'),
+            (wild ? 'rgba(224,165,74,.10)' : on ? 'rgba(47,191,126,.09)' : '#131519') + '; border:1px solid ' +
+            (wild ? 'rgba(224,165,74,.38)' : on ? 'rgba(47,191,126,.30)' : 'rgba(255,255,255,.06)'),
           edgeBig: g == null ? '—' : (g.edge > 0 ? '+' : g.edge < 0 ? '−' : '') + Math.abs(g.edge) + '¢',
           edgeBigSt: MONO + '; font-size:26px; font-weight:600; ' + TAB + '; color:' + col,
-          edgeSide: on ? 'BUY ' + g.side + ' ≤ ' + g.ceil + '¢' : '',
+          edgeSide: wild ? 'CHECK THE SIDE' : on ? 'BUY ' + g.side + ' ≤ ' + g.ceil + '¢' : '',
           edgeSideSt: MONO + '; font-size:11px; letter-spacing:.05em; padding:3px 8px; border-radius:4px; color:' + col +
-            '; background:' + (on ? 'rgba(47,191,126,.12)' : 'transparent'),
-          edgeNote: g == null ? 'Type Kalshi\'s YES price into mkt ¢ to see the gap. Without it this tool only tells you what you could already read off their screen.'
-            : on ? 'Historicals say ' + g.side + ' is worth up to ' + g.ceil + '¢ after fees; the book is asking ' + g.ask + '¢.'
+            '; background:' + (wild ? 'rgba(224,165,74,.14)' : on ? 'rgba(47,191,126,.12)' : 'transparent'),
+          edgeNote: g == null ? 'Type the price of whichever side the book is quoting, then set YES or NO beside it. Without a market price this tool only tells you what you could already read off Kalshi\'s screen.'
+            : wild ? 'This claims ' + g.edge + '\u00a2 on ' + g.side + ' at ' + g.ask + '\u00a2. Over 37,408 replayed reads the model\'s honest edge was about 1pp, so a gap this wide is more likely a mis-typed side or a stale quote than a real one \u2014 confirm the ' + (g.side === 'YES' ? 'NO' : 'YES') + ' price really is ' + (100 - g.ask) + '\u00a2 before acting.'
+            : on ? 'Historicals say ' + g.side + ' is worth up to ' + g.ceil + '\u00a2 after fees; the book is asking ' + g.ask + '\u00a2.'
             : 'Best side is ' + g.side + ' at ' + g.ask + '¢ against a ' + g.ceil + '¢ ceiling — the market is inside the fee. No trade.'
         };
       })(),
@@ -1973,7 +2060,8 @@ class Component extends DCLogic {
 
       pending: !!pending,
       pendingLine: pending ? (pending.e.window || '') + ' — ' + this.state.rows.filter((x) => x.sessionTs === pending.ts).length + ' read(s), last called ' + (() => { const rr = this.state.rows.filter((x) => x.sessionTs === pending.ts); if (!rr.length) return '—'; const l = rr[rr.length - 1]; return this.callLabel(l.pFull); })() : '',
-      resolveUp: () => this.resolve('U'), resolveDown: () => this.resolve('D'), resolveFlat: () => this.resolve('F')
+      resolveUp: () => this.resolve('U'), resolveDown: () => this.resolve('D'), resolveFlat: () => this.resolve('F'),
+      skipPending: this.skipPending
     };
   }
 }

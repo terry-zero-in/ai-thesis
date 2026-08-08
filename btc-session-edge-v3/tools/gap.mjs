@@ -67,17 +67,42 @@ await inputs[0].fill('64500');   /* strike */
 await inputs[1].fill('64520');   /* price  */
 await page.waitForTimeout(700);
 const beforeMkt = await text();
-t('GAP trade tab asks for a market price', /EDGE vs KALSHI/.test(beforeMkt) && /Type Kalshi's YES price/.test(beforeMkt),
+t('GAP trade tab asks for a market price', /EDGE vs KALSHI/.test(beforeMkt) && /Type the price of whichever side/.test(beforeMkt),
   /EDGE vs KALSHI/.test(beforeMkt) ? 'prompt shown' : 'no edge bar', 'prompt shown');
+/* The prompt must name the side control, because the side is the input that
+   can invert the trade. */
+t('GAP trade tab tells you to set the side', /set YES or NO beside it/.test(beforeMkt),
+  /set YES or NO beside it/.test(beforeMkt) ? 'stated' : 'missing', 'stated');
+t('GAP trade tab offers a YES/NO side toggle', await page.evaluate(() => {
+  const b = [...document.querySelectorAll('button')].map((x) => x.textContent.trim());
+  return b.includes('YES') && b.includes('NO');
+}), 'toggle present', 'toggle present');
 
-/* mkt ¢ is the 4th input on the trade tab: strike, price, px75, mkt. */
+/* mkt ¢ is the 4th input on the trade tab: strike, price, px75, mkt. A modest
+   gap must still read as a recommendation — the guard is for outliers only. */
+const yesCeil = +(beforeMkt.match(/YES ≤\s*(\d+)¢/) || [])[1];
+t('GAP trade tab shows a YES ceiling', isFinite(yesCeil) && yesCeil > 0, yesCeil, '> 0');
+await inputs[3].fill(String(Math.max(1, yesCeil - 5)));
+await page.waitForTimeout(700);
+const small = await text();
+t('GAP trade tab states the edge in cents', /EDGE vs KALSHI\s*\n\s*[+−]\d+¢/.test(small),
+  (small.match(/EDGE vs KALSHI\s*\n\s*([+−]\d+¢)/) || [])[1] || 'none', 'n¢');
+t('GAP trade tab names the side to buy', /BUY (YES|NO) ≤ \d+¢/.test(small),
+  (small.match(/BUY (?:YES|NO) ≤ \d+¢/) || [])[0] || 'none', 'BUY <side> ≤ n¢');
+
+/* ---- S41 the implausible-edge guard. An edge the model has never earned is
+   far more likely a mis-typed side than a real gap, so it stops being asserted
+   as a recommendation and asks to be checked instead. ---- */
 await inputs[3].fill('40');
 await page.waitForTimeout(700);
 const withMkt = await text();
-t('GAP trade tab states the edge in cents', /EDGE vs KALSHI\s*\n\s*[+−]\d+¢/.test(withMkt),
-  (withMkt.match(/EDGE vs KALSHI\s*\n\s*([+−]\d+¢)/) || [])[1] || 'none', 'n¢');
-t('GAP trade tab names the side to buy', /BUY (YES|NO) ≤ \d+¢/.test(withMkt),
-  (withMkt.match(/BUY (?:YES|NO) ≤ \d+¢/) || [])[0] || 'none', 'BUY <side> ≤ n¢');
+const bigEdge = +((withMkt.match(/EDGE vs KALSHI\s*\n\s*\+(\d+)¢/) || [])[1]);
+t('GAP a 15¢+ edge trips the guard', bigEdge >= 15 && /CHECK THE SIDE/.test(withMkt),
+  bigEdge + '¢ -> ' + (/CHECK THE SIDE/.test(withMkt) ? 'CHECK THE SIDE' : 'still recommending'), 'CHECK THE SIDE');
+t('GAP the guard names the price to confirm', /confirm the (YES|NO) price really is \d+¢/.test(withMkt),
+  (withMkt.match(/confirm the (?:YES|NO) price really is \d+¢/) || [])[0] || 'none', 'confirm <side> price');
+t('GAP the guard stops asserting a buy', !/BUY (YES|NO) ≤ \d+¢/.test(withMkt),
+  /BUY (?:YES|NO) ≤ \d+¢/.test(withMkt) ? 'still says BUY' : 'no buy asserted', 'no buy asserted');
 
 /* ---- GAP tab ---- */
 await page.evaluate(() => {
