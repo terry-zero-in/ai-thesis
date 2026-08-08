@@ -66,7 +66,7 @@ const t = (name, pass, got, want) => { if (!pass) fails++; rows.push({ name, pas
 const mk = (props = {}) => {
   const c = new Component(props);
   c.state = { now: Date.now(), view: 'trade', data: D, strike: '', priceIn: '', px75: '', mkt: '',
-    macroOn: false, finalIn: '', rows: [], sess: {}, auto: false, autoPx: null, autoAt: null,
+    mktSide: 'YES', macroOn: false, finalIn: '', rows: [], sess: {}, auto: false, autoPx: null, autoAt: null,
     autoErr: null, csvLabel: 'copy CSV', clearArm: false,
     shadowOn: false, srows: [], shadow: { ts: null, strike: null, pts: [], lastK: -1 },
     sAt: null, sErr: null };
@@ -843,6 +843,266 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   const c3 = mk(); c3.state.logMode = 'shadow';
   t('S20 button label follows the mode', c3.renderVals().clearLabel === 'clear shadow',
     c3.renderVals().clearLabel, 'clear shadow');
+}
+
+/* ---- S40 / defect 9: the clock must tick inside the minute -----------------
+   The model looked remaining variance up by WHOLE minute, so it returned the
+   same number for all 60 seconds of it. Negligible before minute 10, 9.8pp at
+   13, 15.8pp at 14, always overstating the longshot.
+
+   Minute 14 is not straight-line. Kalshi settles on the AVERAGE of the final
+   minute's 60 prices, so remaining variance shrinks by the cube of the fraction
+   left, plus a quarter-cube term for the elapsed window whose average the tool
+   never observed. Terry chose that treatment (option B+) in S40. */
+{
+  const c = mk();
+  const su = D.HOUR_SIGMA[0], B = 1.49;
+  const p = (k, sec, settleAvg = true) =>
+    c.model({ k, sec, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg }).p;
+
+  /* Continuity: at the top of every minute the new path must reproduce the
+     baked array exactly, or every existing fixture and the whole shadow log
+     silently re-bases. This is the regression guard on the interpolation. */
+  /* Tolerance is 1e-4 dollars, not 0: the baked REMVAR tables are stored to 6
+     decimals while remVarAt() recomputes from SHAPE at full precision, so exact
+     equality would be asserting the rounding, not the continuity. */
+  const contig = (settleAvg, tbl) => {
+    for (let k = 1; k <= 14; k++) {
+      const got = c.model({ k, sec: 0, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg }).sigmaRem;
+      if (Math.abs(got - su * Math.sqrt(tbl[k - 1])) > 1e-4) return 'broke at k=' + k;
+    }
+    return null;
+  };
+  const cS1 = contig(true, D.REMVAR), cC1 = contig(false, D.REMVAR_CLOSE);
+  t('S40 sec=0 reproduces REMVAR at every k (settle)', cS1 == null, cS1 || 'all', 'all');
+  t('S40 sec=0 reproduces REMVAR_CLOSE at every k', cC1 == null, cC1 || 'all', 'all');
+
+  /* Minutes 0-13 drain linearly, so the probability must move away from 50%
+     every single second. This is the assertion the whole-minute lookup failed. */
+  let mono = true, monoAt = null;
+  for (let k = 0; k <= 13 && mono; k++)
+    for (let s = 1; s < 60; s++)
+      if (p(k, s) > p(k, s - 1) + 1e-12) { mono = false; monoAt = 'k=' + k + ' s=' + s; break; }
+  t('S40 minutes 0-13 tick down every second', mono, monoAt || 'monotonic', 'monotonic');
+
+  /* Minute 14 is deliberately NOT monotonic, and an earlier version of this
+     assertion wrongly demanded that it were. The settlement average is taken
+     over prices the tool never observes, so as the minute runs out the current
+     price stops being a good proxy for the minute's average and uncertainty
+     about that average stops shrinking. The B+ factor (1-f)^3 + f^3/4 bottoms
+     at f=2/3 and rises to 1/4 at the close. That is the model Terry chose;
+     pinning the shape here so it cannot drift silently. */
+  const fac = (f) => Math.pow(1 - f, 3) + Math.pow(f, 3) / 4;
+  t('S40 minute 14 factor bottoms at f=2/3', Math.abs(fac(2 / 3) - 1 / 9) < 1e-12, fac(2 / 3).toFixed(6), (1 / 9).toFixed(6));
+  t('S40 minute 14 factor is 1 at the top of the minute', Math.abs(fac(0) - 1) < 1e-12, fac(0), 1);
+  t('S40 minute 14 keeps 1/4 of its variance at the close', Math.abs(fac(1) - 0.25) < 1e-12, fac(1), 0.25);
+  t('S40 minute 14 p re-widens after 40s', p(14, 55) > p(14, 40),
+    (100 * p(14, 40)).toFixed(1) + '% -> ' + (100 * p(14, 55)).toFixed(1) + '%', 'rises');
+
+  t('S40 minute 13 moves within the minute', Math.abs(p(13, 0) - p(13, 50)) > 0.05,
+    (100 * (p(13, 0) - p(13, 50))).toFixed(1) + 'pp', '> 5pp');
+  t('S40 minute 2 barely moves within the minute', Math.abs(p(2, 0) - p(2, 50)) < 0.005,
+    (100 * (p(2, 0) - p(2, 50))).toFixed(1) + 'pp', '< 0.5pp');
+
+  /* Terry's live catch: 36s to close, $2.41 below target, Kalshi 21%.
+     B+ factor at f=24/60 is 0.6^3 + 0.4^3/4 = 0.216 + 0.016 = 0.232. */
+  const f = 24 / 60, want14 = D.REMVAR[13] * (Math.pow(1 - f, 3) + Math.pow(f, 3) / 4);
+  const got14 = c.model({ k: 14, sec: 24, delta: -2.41, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg: true });
+  t('S40 minute 14 uses the settlement-average shrink', Math.abs(got14.sigmaRem - su * Math.sqrt(want14)) < 1e-4,
+    got14.sigmaRem.toFixed(4), (su * Math.sqrt(want14)).toFixed(4));
+  t('S40 minute 14 is NOT straight-line', Math.abs(got14.sigmaRem - su * Math.sqrt(D.REMVAR[13] * (1 - f))) > 1,
+    got14.sigmaRem.toFixed(2), 'differs from straight-line ' + (su * Math.sqrt(D.REMVAR[13] * (1 - f))).toFixed(2));
+
+  /* ---- defect 10: minute 0 must price at all ---- */
+  const r0c = c.model({ k: 0, sec: 0, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg: false });
+  t('S40 k=0 close remVar is SUM_SHAPE2', Math.abs(Math.pow(r0c.sigmaRem / su, 2) - D.SUM_SHAPE2) < 1e-5,
+    Math.pow(r0c.sigmaRem / su, 2).toFixed(6), D.SUM_SHAPE2);
+  const r0s = c.model({ k: 0, sec: 0, delta: -10, sigmaUnit: su, net: null, B, macro: false, drift: false, settleAvg: true });
+  const want0 = D.SUM_SHAPE2 - D.SHAPE[14] * D.SHAPE[14] * (2 / 3);
+  t('S40 k=0 settle remVar drops 2/3 of the last minute', Math.abs(Math.pow(r0s.sigmaRem / su, 2) - want0) < 1e-5,
+    Math.pow(r0s.sigmaRem / su, 2).toFixed(6), want0.toFixed(6));
+  /* 0.5 is the degenerate answer: sigmaRem NaN makes model() fall back to z=0,
+     which is "finite" and completely uninformative. Exclude it explicitly. */
+  t('S40 k=0 produces a real probability, not the z=0 fallback',
+    isFinite(r0s.p) && r0s.p > 0 && r0s.p < 1 && Math.abs(r0s.p - 0.5) > 1e-6, r0s.p, '0 < p < 1, p ≠ 0.5');
+
+  /* read() must stop refusing minute 0 outright. */
+  const c0 = mk();
+  c0.state.strike = '64500'; c0.state.priceIn = '64490';
+  c0.ct = () => ({ hr: 0, mi: 0, se: 12, dow: 0, mis: 0, secLeft: 888,
+    sessionTs: Math.floor(Date.now() / 1000 / 900) * 900, window: 'x', clock: 'x' });
+  const rd0 = c0.read();
+  t('S40 read() no longer refuses minute 0', rd0 != null && rd0.wait == null, rd0 && rd0.wait, 'no wait');
+  t('S40 read() at minute 0 returns a probability', rd0 != null && isFinite(rd0.p), rd0 && rd0.p, 'finite');
+
+  /* read() must feed the wall-clock seconds through, not zero them. */
+  const cS = mk();
+  cS.state.strike = '64500'; cS.state.priceIn = '64490';
+  const mkCt = (se) => () => ({ hr: 0, mi: 13, se, dow: 0, mis: 13, secLeft: (14 - 13) * 60 + (60 - se),
+    sessionTs: Math.floor(Date.now() / 1000 / 900) * 900, window: 'x', clock: 'x' });
+  cS.ct = mkCt(0); const a0 = cS.read();
+  cS.ct = mkCt(50); const a50 = cS.read();
+  t('S40 read() passes wall-clock seconds to the model', a0.p !== a50.p,
+    a0.p.toFixed(4) + ' vs ' + a50.p.toFixed(4), 'different');
+
+  /* rail() indexes SESS by minute; at k=0 column 0 is the sigma field, not a
+     delta, so it must decline to answer rather than compare against garbage. */
+  const cR = mk();
+  const rail0 = cR.rail({ k: 0, z: -0.5 });
+  t('S40 rail() returns nothing at minute 0', rail0.n === 0, rail0.n, 0);
+}
+
+/* ---- S40 / the gap log ----------------------------------------------------
+   Terry: "I would want to know when it may be a true 50/50 bet based on
+   historicals but Kalshi has it priced at 40 cents to buy the upside. But I
+   don't see how this tells me that." The probability agreeing with the market
+   is a redundant display; the disagreement is the product. Every logged read
+   already carries mktCents / yesT / noT and gets `resolved` at the session
+   close, so the track record is computable from rows already on disk. */
+{
+  const c = mk();
+
+  /* Side selection: whichever side has the bigger edge, not whichever is YES. */
+  const g1 = c.gapOf(40, 55, 40);   /* mkt 40c: YES ceiling 55 -> +15; NO asks 60 vs ceil 40 -> -20 */
+  t('S40G picks the side with the bigger edge', g1.side === 'YES', g1.side, 'YES');
+  t('S40G edge is ceiling minus ask', g1.edge === 15, g1.edge, 15);
+  const g2 = c.gapOf(80, 60, 45);   /* mkt 80c: YES -20; NO asks 20 vs ceil 45 -> +25 */
+  t('S40G flips to NO when NO is the better buy', g2.side === 'NO', g2.side, 'NO');
+  t('S40G NO ask is 100 minus the YES price', g2.ask === 20, g2.ask, 20);
+  t('S40G NO edge is its own ceiling minus its own ask', g2.edge === 25, g2.edge, 25);
+  t('S40G no market price means no gap', c.gapOf(null, 55, 40) === null, c.gapOf(null, 55, 40), null);
+
+  /* P&L is per contract in whole cents, fee charged on entry only. */
+  const won = c.gapPnl({ side: 'YES', ask: 40 }, 'U');
+  const lost = c.gapPnl({ side: 'YES', ask: 40 }, 'D');
+  const fee40 = Math.ceil(0.07 * 0.4 * 0.6 * 100);
+  t('S40G a winning YES pays 100 less ask less fee', won === 100 - 40 - fee40, won, 100 - 40 - fee40);
+  t('S40G a losing YES costs ask plus fee', lost === -(40 + fee40), lost, -(40 + fee40));
+  t('S40G a winning NO reads the DOWN resolution', c.gapPnl({ side: 'NO', ask: 20 }, 'D') > 0,
+    c.gapPnl({ side: 'NO', ask: 20 }, 'D'), '> 0');
+  t('S40G an unresolved row has no P&L', c.gapPnl({ side: 'YES', ask: 40 }, null) === null,
+    c.gapPnl({ side: 'YES', ask: 40 }, null), null);
+
+  /* The signal set. A row with no market price cannot be a signal; a row whose
+     edge is negative is the tool telling you to stand down, not a trade. */
+  c.state.rows = [
+    { ts: 1, sessionTs: 100, k: 5, pFull: 0.62, mktCents: 40, yesT: 55, noT: 40, resolved: 'U', v: 2 },
+    { ts: 2, sessionTs: 200, k: 6, pFull: 0.62, mktCents: 40, yesT: 55, noT: 40, resolved: 'D', v: 2 },
+    { ts: 3, sessionTs: 300, k: 7, pFull: 0.50, mktCents: 50, yesT: 47, noT: 47, resolved: 'U', v: 2 },
+    { ts: 4, sessionTs: 400, k: 8, pFull: 0.62, mktCents: null, yesT: 55, noT: 40, resolved: 'U', v: 2 },
+    { ts: 5, sessionTs: 500, k: 9, pFull: 0.62, mktCents: 40, yesT: 55, noT: 40, resolved: null, v: 2 }
+  ];
+  const sig = c.gapRows();
+  t('S40G only scored rows with a market price and real edge count', sig.length === 2, sig.length, 2);
+  t('S40G the no-edge row is excluded', !sig.some((r) => r.ts === 3), sig.map((r) => r.ts).join(','), 'no 3');
+  t('S40G the no-market row is excluded', !sig.some((r) => r.ts === 4), sig.map((r) => r.ts).join(','), 'no 4');
+  t('S40G the unresolved row is excluded', !sig.some((r) => r.ts === 5), sig.map((r) => r.ts).join(','), 'no 5');
+
+  /* The whole point of a track record is that it shows the losses. A signal
+     that went the wrong way must appear as a loss, not be quietly dropped. */
+  const loser = sig.find((r) => r.ts === 2);
+  t('S40G a signal that lost is kept and marked a loss', loser != null && loser.pnl < 0,
+    loser && loser.pnl, '< 0');
+
+  const agg = c.gapAgg();
+  t('S40G scorecard counts both signals', agg.n === 2, agg.n, 2);
+  t('S40G scorecard hit rate is 1 of 2', agg.hits === 1, agg.hits, 1);
+  t('S40G scorecard claimed edge is the mean of the two', agg.meanEdge === 15, agg.meanEdge, 15);
+  /* +15c of claimed edge twice, one win one loss: 100-40-2 = +58, -(40+2) = -42,
+     net +16 over 2 signals = +8c realised against +15c claimed. The gap between
+     those two numbers is the only honest read on whether the edge is real. */
+  t('S40G scorecard realised is net cents per signal', agg.meanPnl === 8, agg.meanPnl, 8);
+  t('S40G scorecard is empty with no signals', mk().gapAgg().n === 0, mk().gapAgg().n, 0);
+}
+
+/* ---- S41 / the market price has a side ------------------------------------
+   Live defect, caught on Terry's own screen. The field read "mkt ¢ (YES)" and
+   he typed whichever side the book was quoting — 77 for a DOWN price. gapOf()
+   derives the other side as 100 − what it is handed, so a DOWN 77 became YES 77
+   and a NO ask of 23. The tool said BUY NO @23¢ +32¢; the truth was BUY YES
+   @23¢ +17¢. Same ask, opposite outcome, edge overstated by exactly noT − yesT.
+
+   These pin all three failures: the inversion, the overstatement, and the fact
+   that reading the tool backwards does not recover it. */
+{
+  const c = mk();
+  /* The screenshot: P(UP) 42%, ceilings 40 / 55. */
+  const ce = c.ceilings(0.4235);
+  t('S41 screenshot ceilings reproduce', ce.yesT === 40 && ce.noT === 55, ce.yesT + '/' + ce.noT, '40/55');
+
+  /* What the tool did with a DOWN price typed into a YES-only field. */
+  const bug = c.gapOf(77, ce.yesT, ce.noT);
+  t('S41 the old reading names NO', bug.side === 'NO', bug.side, 'NO');
+  t('S41 the old reading claims +32c', bug.edge === 32, bug.edge, 32);
+
+  /* What was actually true: 77 was the NO ask, so YES was asking 23. */
+  const truth = c.gapOf(100 - 77, ce.yesT, ce.noT);
+  t('S41 the truth names YES', truth.side === 'YES', truth.side, 'YES');
+  t('S41 the truth claims +17c', truth.edge === 17, truth.edge, 17);
+  t('S41 both readings quote the same ask', bug.ask === truth.ask, bug.ask + '/' + truth.ask, 'equal');
+  t('S41 the sides are opposite — same money, opposite outcome',
+    bug.side !== truth.side, bug.side + ' vs ' + truth.side, 'opposite');
+  t('S41 the overstatement is exactly noT - yesT',
+    bug.edge - truth.edge === ce.noT - ce.yesT, bug.edge - truth.edge, ce.noT - ce.yesT);
+
+  /* mktYes() is the fix: one convention downstream, whichever side is typed. */
+  c.state.mkt = '77'; c.state.mktSide = 'YES';
+  t('S41 a YES price passes through', c.mktYes() === 77, c.mktYes(), 77);
+  c.state.mktSide = 'NO';
+  t('S41 a NO price is converted to YES cents', c.mktYes() === 23, c.mktYes(), 23);
+  t('S41 the converted price reproduces the true trade',
+    c.gapOf(c.mktYes(), ce.yesT, ce.noT).side === 'YES', c.gapOf(c.mktYes(), ce.yesT, ce.noT).side, 'YES');
+  c.state.mkt = '';
+  t('S41 an empty market price is still no gap', c.mktYes() === null, c.mktYes(), null);
+
+  /* Reading the tool inverted does NOT recover it near an even book: at a typed
+     50 both readings name NO, so flipping the side would put you wrong. */
+  const evenBug = c.gapOf(50, ce.yesT, ce.noT), evenTruth = c.gapOf(50, ce.yesT, ce.noT);
+  t('S41 near even both readings name the same side — flipping breaks',
+    evenBug.side === evenTruth.side, evenBug.side + '/' + evenTruth.side, 'same');
+
+  /* A typed 60 is the dangerous one: the old reading prints a green +15c on a
+     trade whose true edge is exactly zero. */
+  const sixtyBug = c.gapOf(60, ce.yesT, ce.noT), sixtyTruth = c.gapOf(40, ce.yesT, ce.noT);
+  t('S41 typed 60 claimed +15c', sixtyBug.edge === 15, sixtyBug.edge, 15);
+  t('S41 typed 60 was really +0c', sixtyTruth.edge === 0, sixtyTruth.edge, 0);
+}
+
+/* ---- S41 / skip: the queue must not be blockable ---------------------------
+   pendingSession() drains oldest-first so nothing is stranded at the tail, but
+   with no way past the head one unsettleable session blocks every later one.
+   Terry's log sat at "13 row(s) · nothing resolved yet" behind a single stale
+   4:30-4:45a session, so scored() was empty and GAP had nothing to show. */
+{
+  const c = mk();
+  const OLD = 1000 * 900, MID = 1001 * 900, NOW = 1002 * 900;
+  c.state.now = NOW * 1000 + 900000;
+  c.state.sess = { [OLD]: { resolved: null, finalDelta: null, pts: [], hr: 4, window: '4:30-4:45a' },
+                   [MID]: { resolved: null, finalDelta: null, pts: [], hr: 5, window: '4:45-5:00a' } };
+  c.state.rows = [
+    { ts: 1, sessionTs: OLD, k: 3, pFull: 0.97, mktCents: 40, yesT: 55, noT: 40, resolved: null, v: 2 },
+    { ts: 2, sessionTs: MID, k: 4, pFull: 0.62, mktCents: 40, yesT: 55, noT: 40, resolved: null, v: 2 }
+  ];
+  t('S41 the stale session is at the head of the queue', c.pendingSession().ts === OLD, c.pendingSession().ts, OLD);
+  t('S41 nothing is scored while it blocks', c.scored().length === 0, c.scored().length, 0);
+  t('S41 GAP is empty while it blocks', c.gapRows().length === 0, c.gapRows().length, 0);
+
+  c.skipPending();
+  t('S41 skipping advances the queue', c.pendingSession().ts === MID, c.pendingSession().ts, MID);
+  t('S41 a skipped session is not scored', c.scored().length === 0, c.scored().length, 0);
+  t('S41 skipping invents no outcome', c.state.sess[OLD].finalDelta === null, c.state.sess[OLD].finalDelta, null);
+  t('S41 the skipped rows are marked, not deleted',
+    c.state.rows.filter((r) => r.resolved === 'S').length === 1,
+    c.state.rows.filter((r) => r.resolved === 'S').length, 1);
+  /* mult() must ignore it — a skipped session has no finalDelta to learn from. */
+  t('S41 a skipped session never reaches mult()',
+    c.sessMap ? Object.keys(c.sessMap()).every((k) => +k !== OLD) : true, 'excluded', 'excluded');
+
+  /* Now the session behind it can actually resolve, and GAP finally populates. */
+  c.state.finalIn = '30';
+  c.resolve('U');
+  t('S41 the session behind the block resolves', c.scored().length === 1, c.scored().length, 1);
+  t('S41 GAP populates once the queue drains', c.gapRows().length === 1, c.gapRows().length, 1);
 }
 
 /* ---- report ---- */

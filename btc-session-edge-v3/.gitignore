@@ -1,2 +1,3 @@
 node_modules/
 .dataset.tmp.mjs
+.analysis.tmp.mjs

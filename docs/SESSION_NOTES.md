@@ -1397,3 +1397,28 @@ S37 closed by recommending a test: let shadow mode run, then check whether displ
 2. For BTC work: `btc-session-edge-v3/HANDOFF.md` — the fifth-defect section is at the top
 3. For AI Thesis work: nothing moved in S37 or S38; S36's recommendation stands
 4. First action if BTC: the candle backfill (round 3 ranks it #1 — it carries the `B(14)` artifact, the settle basis and the volume field at once)
+
+---
+
+## SESSION S40 — BTC Session Edge: remaining time, the gap log, and the end of the probability thesis (2026-08-07)
+
+**Note:** Sessions S10–S40 are logged in `docs/handoffs/` per-session. This entry is a pointer. **S39 is not in `docs/handoffs/`** — it lives on the unmerged `claude/btc-edge-v3-calibration-7wceyz` branch behind PR #39, so the directory jumps S38 → S40.
+
+Defects 9 and 10 are fixed and the gap log shipped. Then the headline: replaying the model over 37,408 baked reads shows **there is no edge in the probability at any confidence level**, and the day's live results that suggested otherwise were luck. This changes what to build next — the probability is not the product.
+
+- **Defects 9 + 10 fixed.** `remVarAt(D, k, sec, settleAvg)` replaces the whole-minute `REMVAR[k-1]` lookup. Minute 13 now moves **69% → 81%** inside one minute where it was frozen; minute 0 prices at 55% instead of refusing. Minute 14 uses Terry's chosen option **B+**, `REMVAR[13] × ((1−f)³ + f³/4)` — continuous at `f=0`, so `B=1.49` is not re-based. Known and deliberate: that factor is **not monotonic**, so the probability re-widens over the final 20 seconds.
+- **The gap log shipped** — new GAP tab, headline is claimed edge vs realised, losses are rows. Built retroactively from `mktCents`/`yesT`/`noT` already on every logged read. On TRADE the edge is now a number in its own bar, not a buried verdict string.
+- **THE HEADLINE — no edge in the probability.** Over 37,408 replayed reads the model is calibrated to within ~1pp in every band (60–64 → 63.9% vs 64% breakeven; 85–89 → 87.0% vs 88%), and **after Kalshi fees every band is between −1.8pp and +0.2pp of breakeven**. No profitable band, no split of the 60s, no filter. The 13–17pp under-confidence seen across 15 live sessions was a small-sample artifact — 15 sessions is ~15 effective observations. **IN-SAMPLE caveat: `B` was fitted on this data**, so it does not prove out-of-sample calibration; it removes any basis for claiming an edge.
+- **Two new defects found, neither fixed.** **11** — shadow runs with the trend term hard-coded `net: null`, so `B`, the Brier and the hit rate were all measured with it off. **12** — `compactShadow()` strips `ab` when a session resolves, so the shadow ablation panel reads `— · 0/0 · needs 30 more rows` **forever, at any n**.
+- **Production is still the old build.** `main`'s `web/public/btc-session-edge-v3.html` is 481,226 bytes vs 500,482 locally — no GAP tab, minute 0 refuses, minute 14 is 15.8pp wrong. **PR #40 is open, draft, CI 4/4 green, and needs Terry to merge.**
+- **DB untouched** — no migrations, no writes. `hp1.*` as S36 left it. No Linear tickets touched; BTC Session Edge is still off the board (verified by search).
+
+**Verification:** `behaviour.mjs` 212/212 (38 new, each watched red first) · `gap.mjs` 16/16 and `clock.mjs` 9/9 in a real browser with a controlled clock · `selftest.mjs` 20/20 + 3 layout + 10 grouped-log · `bundle.mjs verify` clean · PR #40 CI 4/4.
+
+**Full record:** `docs/handoffs/2026-08-07-S40-btc-edge-remaining-time-gap-log.md`
+
+**Next session — start here:**
+1. Read `CLAUDE.md` (and load the standing skills — S40 loaded none, and said so)
+2. Read the handoff above — the HEADLINE section first
+3. For BTC work: `btc-session-edge-v3/HANDOFF.md` has the defect history including 9, 10 and the minute-14 shape
+4. **First action:** get Terry's decision on the server-side Kalshi proxy. The replay proved the probability alone cannot pay, so a real `mkt ¢` on every read is the only path to a measurable edge. Everything else is polish on an instrument with nowhere to send its readings.
