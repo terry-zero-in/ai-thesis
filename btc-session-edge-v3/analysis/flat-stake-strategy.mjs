@@ -49,7 +49,16 @@ writeFileSync(tmp, zlib.gunzipSync(Buffer.from(man[ext.find((e) => e.id === 'ses
 const D = await import('file://' + tmp);
 rmSync(tmp);
 
-const S = D.SESS, N = S.length, B = 1.49, STAKE = 10;
+/* Stake is overridable so the same study can be re-run at a different bet size
+   without forking the file: `node ... --stake=5`. Default is the $10 the
+   original run used, so every number previously reported still reproduces. */
+const STAKE = (() => {
+  const a = process.argv.find((x) => x.startsWith('--stake='));
+  const v = a ? Number(a.slice(8)) : 10;
+  if (!(v > 0)) throw new Error('--stake must be a positive number');
+  return v;
+})();
+const S = D.SESS, N = S.length, B = 1.49;
 const LO = 60, HI = 89;                        /* inclusive band, as Terry stated it */
 const NIGHT = [22, 23, 0, 1];                  /* 10pm -> 2am CT, 2am exclusive */
 
@@ -218,6 +227,59 @@ for (let h = 0; h < 24; h++) {
     b.wins.toLocaleString().padStart(7) + b.rate.toFixed(1).padStart(7) + '%' +
     (100 * b.meanAsk).toFixed(1).padStart(7) + 'c' + usd(b.pl).padStart(11) +
     (b.pl / b.staked).toFixed(3).padStart(9) + (NIGHT.includes(h) ? '   <- night' : ''));
+}
+
+/* ---- by position in the session ----
+ * The 15 minutes are not interchangeable. remVar drains as the session runs, so
+ * a late read needs a far smaller delta to reach the same confidence, and the
+ * band therefore selects a structurally different bet early vs late. Reads run
+ * k = 1..14, so the last block holds 4 minutes, not 5 — the count is printed
+ * rather than assumed. CIs are bootstrapped over sessions, same as everywhere.  */
+const BLOCKS = [['1st 5 min', 1, 5], ['2nd 5 min', 6, 10], ['3rd 5 min', 11, 14]];
+console.log('\n== BY POSITION IN SESSION, ' + LO + '-' + HI + '% band only ==');
+console.log('  block        bets    won    rate   model    edge     ask     P&L      per $1   95% CI on ROI');
+for (const [label, klo, khi] of BLOCKS) {
+  const g = inBand.filter((r) => r.k >= klo && r.k <= khi);
+  if (!g.length) continue;
+  const b = book(g), ci = bootstrap(g, roiOf);
+  console.log('  ' + label.padEnd(12) + b.n.toLocaleString().padStart(6) +
+    b.wins.toLocaleString().padStart(7) + b.rate.toFixed(1).padStart(7) + '%' +
+    b.meanConf.toFixed(1).padStart(8) + '%' +
+    ((b.rate - b.meanConf) >= 0 ? '+' : '−') + Math.abs(b.rate - b.meanConf).toFixed(1).padStart(4) + 'pp' +
+    (100 * b.meanAsk).toFixed(1).padStart(8) + 'c' + usd(b.pl).padStart(10) +
+    (b.pl / b.staked).toFixed(3).padStart(9) +
+    ('  [' + ci[0].toFixed(2) + '%, ' + ci[1].toFixed(2) + '%]').padStart(20));
+}
+console.log('  ("edge" is realised rate minus what the model claimed — before the fee.');
+console.log('   The fee is already inside "ask", so a positive edge can still lose money.)');
+
+/* Same split, night only — the two cuts Terry asked about, crossed. */
+console.log('\n  night 10pm-2am only:');
+console.log('  block        bets    won    rate   model    edge     ask     P&L      per $1');
+for (const [label, klo, khi] of BLOCKS) {
+  const g = night.filter((r) => r.k >= klo && r.k <= khi);
+  if (!g.length) continue;
+  const b = book(g);
+  console.log('  ' + label.padEnd(12) + b.n.toLocaleString().padStart(6) +
+    b.wins.toLocaleString().padStart(7) + b.rate.toFixed(1).padStart(7) + '%' +
+    b.meanConf.toFixed(1).padStart(8) + '%' +
+    ((b.rate - b.meanConf) >= 0 ? '+' : '−') + Math.abs(b.rate - b.meanConf).toFixed(1).padStart(4) + 'pp' +
+    (100 * b.meanAsk).toFixed(1).padStart(8) + 'c' + usd(b.pl).padStart(10) +
+    (b.pl / b.staked).toFixed(3).padStart(9));
+}
+
+/* Minute by minute, because a 5-minute block can hide a trend inside it. */
+console.log('\n  per single minute:');
+console.log('  k     bets    won    rate   model    edge      P&L      per $1');
+for (let k = 1; k <= 14; k++) {
+  const g = inBand.filter((r) => r.k === k);
+  if (!g.length) continue;
+  const b = book(g);
+  console.log('  ' + String(k).padStart(2) + b.n.toLocaleString().padStart(9) +
+    b.wins.toLocaleString().padStart(7) + b.rate.toFixed(1).padStart(7) + '%' +
+    b.meanConf.toFixed(1).padStart(8) + '%' +
+    ((b.rate - b.meanConf) >= 0 ? '+' : '−') + Math.abs(b.rate - b.meanConf).toFixed(1).padStart(4) + 'pp' +
+    usd(b.pl).padStart(10) + (b.pl / b.staked).toFixed(3).padStart(9));
 }
 
 /* ---- the number that actually matters: what must the book ask? ---- */
