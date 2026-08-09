@@ -589,11 +589,14 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   const before = JSON.stringify(c.state.srows).length;
   const packed = c.compactShadow(c.state.srows);
   const after = JSON.stringify(packed).length;
-  /* Measured, not aspirational: dropping the ablation block and rounding to 3dp
-     gives ~29%. Display fields stay so old sessions still expand — that is why it
-     is not smaller. Compaction alone buys ~40% more runway, NOT indefinite
-     retention; pruning is what actually bounds growth. */
-  t('S15 compaction shrinks a resolved session', after < before * 0.8,
+  /* Measured, not aspirational. This used to demand <80%: dropping the ablation
+     block and rounding to 3dp gave ~29% off. Defect 12's fix KEEPS `ab` — the
+     panel that reads it was dead by construction without it — so the saving is
+     now ~13% and comes from the 3dp rounding and the dropped display fields
+     alone. That is a deliberate trade, priced in pruneShadow's cap (18,000 rows
+     x 269B = 4.62MB, inside the 5MB quota), not a regression.
+     Compaction was never what bounds growth; pruning is. */
+  t('S15 compaction shrinks a resolved session', after < before * 0.92,
     Math.round(after / before * 100) + '%', '< 80%');
   t('S15 unresolved rows are left intact', packed.filter((r) => r.resolved == null).length === 4,
     packed.filter((r) => r.resolved == null).length, 4);
@@ -656,9 +659,15 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   const rows = [];
   for (let k = 1; k <= 14; k++) rows.push(full(k, 'U'));
   const packed = c.compactShadow(rows);
-  t('S19 compaction really does drop ab', packed[0].ab === undefined, packed[0].ab, undefined);
+  t('S19 compaction KEEPS ab (defect 12)', packed[0].ab != null, packed[0].ab, 'an object');
+  t('S19 ab survives at 3dp', packed[0].ab && packed[0].ab.noMom === 0.52,
+    packed[0].ab && packed[0].ab.noMom, 0.52);
 
-  c.state.srows = packed;
+  /* Rows compacted BEFORE the defect-12 fix carry no `ab` at all and are sitting
+     in the operator's localStorage right now. Every consumer still has to
+     tolerate its absence — that is what this half of S19 guards. */
+  const legacy = packed.map((r) => { const x = Object.assign({}, r); delete x.ab; return x; });
+  c.state.srows = legacy;
   c.state.logMode = 'shadow';
   c.state.openSess = { ['shadow:1786045500']: true };
   let rv = null, threw = null;
@@ -667,12 +676,70 @@ function lsGet_rows() { return JSON.parse(globalThis.localStorage.getItem('edge.
   t('S19 the expanded reads still render', rv && rv.full.length === 15, rv && rv.full.length, 15);
   t('S19 ablation cell degrades to a dash', rv && rv.full[1].ab === '—', rv && rv.full[1].ab, '—');
 
-  /* the aggregate panel walks ab too — a compacted traded row must not kill it */
+  /* the aggregate panel walks ab too — a legacy row without it must not kill it */
   const c2 = mk();
-  c2.state.rows = c2.compactShadow(rows.map((r) => Object.assign({}, r, { auto: false })));
+  c2.state.rows = legacy.map((r) => Object.assign({}, r, { auto: false }));
   let threw2 = null;
   try { c2.renderVals(); } catch (e) { threw2 = String(e.message || e); }
-  t('S19 the ablation aggregate survives compacted rows', threw2 === null, threw2, null);
+  t('S19 the ablation aggregate survives ab-less rows', threw2 === null, threw2, null);
+}
+
+/* ---- S42 / defect 12: the shadow ablation panel was dead by construction ----
+   compactShadow() stripped `ab` the moment a session resolved, and ablAgg()
+   filters on `x.ab`. A row is only SCORED once resolved, so the qualifying set
+   was empty at every n — the panel read "needs 30 more rows" forever. Confirmed
+   on the operator's screen at n=54, n=68 and n=96.
+
+   The fix is to keep `ab` at 3dp through compaction. It costs ~60 bytes a row
+   against a 5MB quota that pruneShadow already caps, and it is the difference
+   between an instrument and a placeholder. */
+{
+  const c = mk();
+  const mkAb = (p) => ({ noMom: p - 0.06, noDrift: p, noSettle: p + 0.03, macroFlip: p - 0.02 });
+  const rows = [];
+  for (let s = 0; s < 3; s++) {
+    for (let k = 1; k <= 14; k++) {
+      const p = 0.58 + k * 0.01;
+      rows.push({ ts: 1786045500000 + s * 900000 + k * 60000, sessionTs: 1786045500 + s * 900,
+        k, strike: 64000, price: 64010, delta: 10, sigmaUnit: 22, z: 0.2, pFull: p,
+        ab: mkAb(p), macroOn: false, driftNet: null, mktCents: 60, yesT: 57, noT: 38,
+        resolved: 'U', finalDelta: 10, vol: 4.2, auto: true, v: 3 });
+    }
+  }
+  c.state.srows = c.compactShadow(rows);
+  c.state.logMode = 'shadow';
+
+  const qualifying = c.state.srows.filter((x) => x.ab && Math.abs(x.ab.noMom - x.pFull) > 0.0005);
+  t('S42 resolved shadow rows still carry ab', qualifying.length === 42, qualifying.length, 42);
+
+  const rv = c.renderVals();
+  const M = rv.ablAgg.find((a) => a.letter === 'M');
+  t('S42 the M ablation row exists', !!M, !!M, true);
+  t('S42 it is no longer permanently starved', M && !/needs \d+ more rows/.test(String(M.verdict)),
+    M && String(M.verdict), 'a verdict, not a wait');
+  t('S42 and it reports a real Brier delta', M && M.db !== '—', M && M.db, 'a number');
+
+  /* D is legitimately empty in shadow — defect 11, the trend term is hard off,
+     so noDrift is bit-identical to pFull and correctly fails the filter. */
+  const flat = rows.map((r) => Object.assign({}, r, { ab: Object.assign({}, r.ab, { noDrift: r.pFull }) }));
+  const c2 = mk();
+  c2.state.srows = c2.compactShadow(flat);
+  const dQual = c2.state.srows.filter((x) => x.ab && Math.abs(x.ab.noDrift - x.pFull) > 0.0005);
+  t('S42 D stays empty while defect 11 stands', dQual.length === 0, dQual.length, 0);
+
+  /* Keeping `ab` costs bytes, and the cap is what stops that becoming a dead
+     log instead of a dead panel. Pin the arithmetic: a FULL log at the default
+     cap must still fit the 5MB origin quota. If someone raises the cap or adds
+     a field to the compacted row, this fails here rather than on the operator's
+     screen ten days into a run. */
+  const QUOTA = 5 * 1024 * 1024;
+  const bytesPerRow = JSON.stringify(c.state.srows[0]).length;
+  const capped = c.pruneShadow(Array.from({ length: 40000 }, (_, i) =>
+    Object.assign({}, c.state.srows[0], { sessionTs: 1786045500 + Math.floor(i / 14) * 900 })));
+  t('S42 the default cap is 18,000 rows', capped.length <= 18000 && capped.length > 17000,
+    capped.length, '<=18000');
+  t('S42 a full log still fits the 5MB quota', capped.length * bytesPerRow < QUOTA,
+    (capped.length * bytesPerRow / 1048576).toFixed(2) + 'MB', '<5.00MB');
 }
 
 /* ---- S23: the slope the BROWSER runs ----

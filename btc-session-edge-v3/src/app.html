@@ -1256,6 +1256,13 @@ class Component extends DCLogic {
       return { ts: r.ts, sessionTs: r.sessionTs, k: r.k, strike: r.strike,
         delta: r3(r.delta), z: r3(r.z), pFull: r3(r.pFull), sigmaUnit: r3(r.sigmaUnit),
         resolved: r.resolved, finalDelta: r.finalDelta, vol: r3(r.vol),
+        /* defect 12: `ab` used to be dropped here. ablAgg() filters on it and a
+           row only becomes SCORED once resolved, so the qualifying set was empty
+           by construction and the panel read "needs 30 more rows" at every n.
+           Kept at 3dp — ~60 bytes a row against a quota pruneShadow already
+           caps, which is the price of the panel meaning anything at all. */
+        ab: r.ab ? { noMom: r3(r.ab.noMom), noDrift: r3(r.ab.noDrift),
+                     noSettle: r3(r.ab.noSettle), macroFlip: r3(r.ab.macroFlip) } : r.ab,
         mktCents: r.mktCents, auto: true, v: r.v, packed: 1 };
     });
   }
@@ -1265,7 +1272,13 @@ class Component extends DCLogic {
      count lies. The scorecard then reports a rolling window rather than all
      history, which is the honest trade for never silently dying. */
   pruneShadow(rows, cap) {
-    const lim = cap || 25000;
+    /* 18,000, not 25,000. The old cap was sized against a 197-byte compacted row
+       and landed at 4.70MB — already close to the 5MB origin quota. Defect 12's
+       fix keeps `ab`, which measures +72 bytes (269/row), and 25,000 of those is
+       6.41MB: over quota, i.e. the fix would have traded a dead panel for a dead
+       log. 18,000 x 269B = 4.62MB holds the original headroom, and at 1,344
+       rows/day still buys 13.4 days of rolling history. */
+    const lim = cap || 18000;
     if (rows.length <= lim) return rows;
     const byTs = [...new Set(rows.map((r) => r.sessionTs))].sort((a, b) => b - a);
     const keep = new Set(); let n = 0;

@@ -133,14 +133,27 @@ fifth.** There was — see the top of this file. The places still to look: anywh
 σ, `REMVAR`, `k`, or the CT hour index can be silently wrong; boundary behaviour
 at k=1 and k=14; what happens when the tab sleeps or a session is missed.
 
-**One visible consequence of fixing defect 7.** The ablation aggregate on the
-SHADOW tab now reads `needs 30 more rows` instead of showing numbers. That is
-correct: compaction drops the `ab` block from resolved shadow rows, so the
-shadow log genuinely has no ablation data — it was previously showing the
-*traded* log's ablations under a SHADOW header. Making that panel useful in
-shadow means keeping `ab` through compaction (review round 3 §4.2 calls it
-"your call"; it costs the bytes compaction exists to save). Left as-is: a panel
-that says it has no data beats one that quietly shows a different log's.
+**One visible consequence of fixing defect 7 — now itself fixed (defect 12, S42).**
+The ablation aggregate on the SHADOW tab read `needs 30 more rows` at every n,
+because compaction dropped the `ab` block from resolved rows and `ablAgg()`
+filters on it — a row is only *scored* once resolved, so the qualifying set was
+empty **by construction**. `compactShadow()` now keeps `ab` at 3dp.
+
+**The cost was mis-stated when this was deferred, and the correction matters.**
+S40 called it "~60 bytes/row against a 5MB quota `pruneShadow` already caps."
+Measured: **+72 bytes** (197 → 269 per compacted row), and the cap did *not*
+already absorb it — 25,000 rows was sized against the 197-byte row and landed at
+**4.70MB**, just inside a ~5MB origin quota. At 269 bytes that same cap is
+**6.41MB — over.** Shipping the panel fix alone would have traded a dead panel
+for a dead log, roughly 13 days into a run.
+
+So `pruneShadow`'s default cap moved **25,000 → 18,000** (4.62MB, original
+headroom preserved, 13.4 days of rolling history at 1,344 rows/day). `S42` pins
+the arithmetic — cap × row-size < 5MB — so raising the cap or adding a field to
+the compacted row fails in the suite rather than on the operator's screen.
+
+**`D` stays empty in shadow, legitimately** — that is defect 11, still open: the
+trend term is hard-coded off, so `noDrift` is bit-identical to `pFull`.
 
 Two the replay surfaced but did **not** fix, both already on the ranked list:
 
@@ -153,7 +166,7 @@ Two the replay surfaced but did **not** fix, both already on the ranked list:
   isolation.
 - **`pruneShadow` is O(rows × sessions) inside every 20-second persist** once
   rows exceed the cap (round 3 §4.4). Not a correctness bug. `shadowSessions()`
-  adds a full `srows` scan per read and per render — trivial at 25k rows, but it
+  adds a full `srows` scan per read and per render — trivial at the 18k cap, but it
   is on the same hot path if the cap ever rises.
 
 ---
