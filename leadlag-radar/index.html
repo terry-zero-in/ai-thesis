@@ -1,0 +1,1543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead-Lag Radar</title>
+<!--
+  Lead-Lag Radar — Kalshi 15-min crypto markets (BTC ETH SOL ZEC XRP NEAR HYPE DOGE BNB)
+
+  Single file. Open in a browser. No server, no build, no dependencies.
+  ?sim=1  : run on a deterministic synthetic feed (offline demo / UI test)
+  ?selftest=1 : run in-browser engine assertions, results to console
+
+  Engine (pure math, no DOM) lives in the script block tagged engine-js below
+  and is the single source of truth — tools/behaviour.mjs extracts and tests
+  that exact block from this file. Do not duplicate engine code anywhere else.
+
+  Lessons inherited from btc-session-edge-v3 (see its HANDOFF.md):
+  - never treat polled/cached reads as independent observations → this tool is
+    WebSocket-first and samples σ on per-second closes, consecutive pairs only
+  - the calibration panel must read the same pipeline that produced the number
+    it validates → one signal log, one resolver, no shadow fork
+  - settlement averages the final minute → variance math handles the averaging
+    window explicitly, including a running observed average once inside it
+-->
+<style id="app-css">
+:root{
+  --bg:#08090B; --panel:#0E1014; --panel2:#12151A; --line:#1B1F26; --line2:#242A33;
+  --txt:#E8EAED; --txt2:#9AA3AF; --txt3:#5F6672;
+  --up:#2ECC8F; --down:#FF5C5C; --amber:#FFB224; --amber-dim:#8a6a1f;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font:13px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
+.up{color:var(--up)} .down{color:var(--down)} .amber{color:var(--amber)} .dim{color:var(--txt3)}
+.microcap{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);font-weight:600}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font:12px var(--mono);color:var(--txt);background:var(--bg);border:1px solid var(--line2);border-radius:4px;padding:4px 7px;outline:none;font-variant-numeric:tabular-nums}
+input:focus{border-color:var(--txt3)}
+input::placeholder{color:var(--txt3)}
+#root{display:flex;flex-direction:column;height:100vh;min-width:1080px}
+
+/* ---- top bar ---- */
+#topbar{display:flex;align-items:center;gap:20px;height:48px;padding:0 16px;border-bottom:1px solid var(--line);flex:none}
+.brand{font-size:12px;letter-spacing:.18em;color:var(--txt2);font-weight:600;white-space:nowrap}
+.brand b{color:var(--txt);font-weight:700}
+.sess{display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+#countdown{font-size:18px;font-weight:600}
+#countdown.final{color:var(--amber)}
+#settle-ind{font-size:10px;letter-spacing:.1em;color:var(--amber);border:1px solid var(--amber-dim);border-radius:3px;padding:1px 6px;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.45}}
+#feed-lights{display:flex;gap:14px;margin-left:auto}
+.feedlight{display:flex;align-items:center;gap:5px;font-size:10px;letter-spacing:.08em;color:var(--txt3);cursor:default}
+.feedlight i{width:7px;height:7px;border-radius:50%;background:#3A414D;display:inline-block}
+.feedlight.live i{background:var(--up)} .feedlight.stale i{background:var(--amber)}
+.feedlight.err i{background:var(--down)} .feedlight.off i{background:#3A414D}
+#sim-badge{font-size:10px;letter-spacing:.14em;color:var(--bg);background:var(--amber);border-radius:3px;padding:2px 7px;font-weight:700}
+.iconbtn{color:var(--txt3);font-size:15px;padding:4px 6px;border-radius:4px}
+.iconbtn:hover{color:var(--txt);background:var(--panel2)}
+
+/* ---- layout ---- */
+#layout{display:flex;flex:1;min-height:0}
+#rail{width:236px;flex:none;border-right:1px solid var(--line);overflow-y:auto;padding:6px 0}
+#canvasmain{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto}
+
+/* ---- rail rows ---- */
+.railrow{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:8px;padding:7px 12px 7px 14px;cursor:pointer;border-left:2px solid transparent}
+.railrow:hover{background:var(--panel)}
+.railrow.on{background:var(--panel);border-left-color:var(--txt)}
+.railrow .tk{font-weight:700;font-size:12px;letter-spacing:.04em}
+.railrow .px{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px;text-align:right}
+.railrow .sub{grid-column:1/4;display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);font-family:var(--mono)}
+.railrow .lagbadge{font-size:9px;letter-spacing:.05em;color:var(--txt3)}
+.railrow .lagbadge.sig{color:var(--txt2)}
+.railrow.flash-up{animation:fup .9s} .railrow.flash-down{animation:fdn .9s}
+@keyframes fup{0%{background:rgba(46,204,143,.18)}100%{background:none}}
+@keyframes fdn{0%{background:rgba(255,92,92,.18)}100%{background:none}}
+
+/* ---- tabs ---- */
+#tabs{display:flex;gap:2px;padding:10px 18px 0;border-bottom:1px solid var(--line);flex:none}
+#tabs button{font-size:11px;letter-spacing:.1em;color:var(--txt3);padding:8px 14px;border-bottom:2px solid transparent;font-weight:600}
+#tabs button:hover{color:var(--txt2)}
+#tabs button.on{color:var(--txt);border-bottom-color:var(--txt)}
+section[id^="tab-"]{padding:16px 18px 28px;display:flex;flex-direction:column;gap:14px}
+section[id^="tab-"][hidden]{display:none}
+
+/* ---- focus head ---- */
+#focus-head{display:flex;align-items:flex-start;gap:28px;padding:2px 2px 0}
+.fh-price{font-family:var(--mono);font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.fh-tk{font-size:13px;font-weight:700;letter-spacing:.06em;margin-bottom:2px}
+.fh-block{display:flex;flex-direction:column;gap:2px}
+.fh-stat{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--txt2)}
+.fh-stat b{color:var(--txt);font-weight:600}
+.venuegrid{display:grid;grid-template-columns:auto auto;gap:1px 10px;font-size:10px;font-family:var(--mono);color:var(--txt3)}
+.venuegrid .fresh{color:var(--txt2)}
+
+/* ---- panels ---- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.panel .microcap{margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline}
+canvas.chart{width:100%;display:block}
+
+/* ---- fair ribbon ---- */
+#fair-grid{display:grid;grid-template-columns:auto 1fr auto;gap:10px 16px;align-items:center}
+.meterwrap{position:relative;height:14px;background:var(--bg);border:1px solid var(--line2);border-radius:3px;overflow:hidden}
+.meterfill{position:absolute;top:0;bottom:0;left:0;background:var(--line2)}
+.fr-label{font-size:11px;color:var(--txt2);white-space:nowrap}
+.fr-val{font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;min-width:64px}
+.fr-inputs{display:flex;gap:10px;align-items:center;margin-top:10px}
+.fr-inputs label{font-size:10px;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
+.fr-inputs input{width:110px}
+.edgecall{font-family:var(--mono);font-size:15px;font-weight:700;padding:5px 12px;border-radius:4px;border:1px solid var(--line2)}
+.edgecall.go-yes{color:var(--up);border-color:var(--up)}
+.edgecall.go-no{color:var(--down);border-color:var(--down)}
+.edgecall.none{color:var(--txt3)}
+
+/* ---- impulse strip ---- */
+#impulse-rows{display:flex;flex-direction:column;gap:0}
+.imp-row{display:grid;grid-template-columns:74px 52px 64px 100px 1fr;gap:10px;padding:5px 2px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--txt2);white-space:nowrap}
+.imp-row:first-child{border-top:none}
+.imp-row .t{color:var(--txt3)}
+
+/* ---- matrix ---- */
+table.grid{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+table.grid th{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line2);text-align:right}
+table.grid th:first-child{text-align:left}
+table.grid td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right;color:var(--txt2)}
+table.grid td:first-child{text-align:left;color:var(--txt);font-weight:600}
+table.grid tr:hover td{background:var(--panel2)}
+.cell-sig{color:var(--txt)!important;font-weight:600}
+.cell-dim{color:var(--txt3)!important}
+
+/* ---- log ---- */
+.logactions{display:flex;gap:10px;align-items:center}
+.btn{font-size:11px;letter-spacing:.06em;border:1px solid var(--line2);border-radius:4px;padding:5px 12px;color:var(--txt2)}
+.btn:hover{color:var(--txt);border-color:var(--txt3)}
+.btn.danger:hover{color:var(--down);border-color:var(--down)}
+
+/* ---- truth ---- */
+.truthgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bandbar{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;padding:3px 0}
+.bandbar .bb{height:8px;background:var(--txt3);border-radius:2px}
+.bandbar .exp{height:8px;border-left:1px solid var(--amber);position:absolute}
+
+/* ---- settings ---- */
+#settings{position:fixed;top:0;right:0;bottom:0;width:320px;background:var(--panel);border-left:1px solid var(--line2);padding:18px;z-index:50;overflow-y:auto;box-shadow:-12px 0 40px rgba(0,0,0,.5)}
+#settings h3{font-size:11px;letter-spacing:.14em;color:var(--txt2);margin:16px 0 8px;font-weight:600}
+#settings h3:first-child{margin-top:0}
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;color:var(--txt2)}
+.setrow input[type=number],.setrow input[type=text]{width:90px;text-align:right}
+.set-note{font-size:10.5px;color:var(--txt3);line-height:1.5;margin:4px 0}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line2);border-radius:5px;padding:8px 16px;font-size:12px;color:var(--txt2);z-index:60;transition:opacity .3s;opacity:0;pointer-events:none}
+#toast.show{opacity:1}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div id="root">
+  <header id="topbar">
+    <div class="brand">LEAD-LAG <b>RADAR</b></div>
+    <div class="sess">
+      <span class="microcap" id="sess-label">SESSION</span>
+      <span id="countdown" class="mono">--:--</span>
+      <span id="settle-ind" hidden>SETTLE AVG</span>
+    </div>
+    <div id="feed-lights"></div>
+    <div id="sim-badge" hidden>SIM</div>
+    <button class="iconbtn" id="btn-settings" title="Settings">&#9881;</button>
+  </header>
+  <div id="layout">
+    <aside id="rail"></aside>
+    <main id="canvasmain">
+      <nav id="tabs">
+        <button data-tab="radar" class="on">RADAR</button>
+        <button data-tab="matrix">MATRIX</button>
+        <button data-tab="log">LOG</button>
+        <button data-tab="truth">TRUTH</button>
+      </nav>
+      <section id="tab-radar">
+        <div id="focus-head"></div>
+        <div class="panel" id="ghost-panel">
+          <div class="microcap"><span>LEADER vs <span id="ghost-focus-name">—</span> · LAST 120s · %</span><span id="ghost-legend" class="mono dim"></span></div>
+          <canvas id="ghost" class="chart" height="190"></canvas>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:14px">
+          <div class="panel">
+            <div class="microcap"><span>LEAD-LAG · <span id="xc-pair">—</span></span><span id="xc-read" class="mono dim"></span></div>
+            <canvas id="xcorrbar" class="chart" height="120"></canvas>
+          </div>
+          <div class="panel" id="fair-panel">
+            <div class="microcap"><span>KALSHI FAIR VALUE</span><span id="fair-note" class="mono dim"></span></div>
+            <div id="fair-body"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="microcap"><span>IMPULSES · ALL ASSETS</span><span class="dim" id="imp-count"></span></div>
+          <div id="impulse-rows"></div>
+        </div>
+      </section>
+      <section id="tab-matrix" hidden>
+        <div class="panel">
+          <div class="microcap"><span>WHO LEADS WHOM · per-second returns · trailing 15 min</span><span class="dim">positive lag = leader moves first</span></div>
+          <div id="matrix-body" style="overflow-x:auto"></div>
+        </div>
+        <div class="panel">
+          <div class="microcap"><span>BASKET DRIFT</span><span class="dim">basket 60s return − asset 60s return</span></div>
+          <div id="basket-body"></div>
+        </div>
+      </section>
+      <section id="tab-log" hidden>
+        <div class="logactions">
+          <span class="microcap" id="log-count">0 SIGNALS</span>
+          <span style="flex:1"></span>
+          <button class="btn" id="btn-csv">EXPORT CSV</button>
+          <button class="btn danger" id="btn-clear">CLEAR LOG</button>
+        </div>
+        <div class="panel" style="overflow-x:auto"><div id="log-body"></div></div>
+      </section>
+      <section id="tab-truth" hidden>
+        <div id="truth-body" class="truthgrid"></div>
+      </section>
+    </main>
+  </div>
+  <div id="settings" hidden></div>
+  <div id="toast"></div>
+</div>
+
+<script id="engine-js">
+'use strict';
+/* ============================== ENGINE ==================================
+   Pure functions + small classes. No DOM, no network, no Date.now() calls —
+   every function takes explicit timestamps. Deterministic and Node-testable.
+   ======================================================================== */
+const Engine = (() => {
+
+  /* ---------- normal distribution ---------- */
+  // Abramowitz & Stegun 7.1.26 erf approximation, |err| < 1.5e-7
+  function erf(x) {
+    const s = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * x);
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return s * y;
+  }
+  function normCdf(x) { return 0.5 * (1 + erf(x / Math.SQRT2)); }
+
+  /* ---------- Wilson 95% interval ---------- */
+  function wilson(hits, n, z = 1.96) {
+    if (!n) return { lo: 0, hi: 1 };
+    const p = hits / n, z2 = z * z;
+    const den = 1 + z2 / n;
+    const center = (p + z2 / (2 * n)) / den;
+    const half = (z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) / den;
+    return { lo: Math.max(0, center - half), hi: Math.min(1, center + half) };
+  }
+
+  /* ---------- deterministic PRNG (sim + tests) ---------- */
+  function makeRng(seed) {
+    let s = seed >>> 0;
+    return function rng() { // xorshift32 → [0,1)
+      s ^= s << 13; s >>>= 0;
+      s ^= s >> 17;
+      s ^= s << 5; s >>>= 0;
+      return s / 4294967296;
+    };
+  }
+  function makeGauss(rng) { // Box-Muller, cached pair
+    let spare = null;
+    return function gauss() {
+      if (spare !== null) { const v = spare; spare = null; return v; }
+      let u = 0, v = 0, r = 0;
+      do { u = rng() * 2 - 1; v = rng() * 2 - 1; r = u * u + v * v; } while (r >= 1 || r === 0);
+      const f = Math.sqrt(-2 * Math.log(r) / r);
+      spare = v * f;
+      return u * f;
+    };
+  }
+
+  /* ---------- per-second close series ---------- */
+  // Holds one price per wall-clock second (the last trade/quote seen in that
+  // second). Gaps stay gaps — they are never forward-filled into fake returns.
+  class SecondSeries {
+    constructor(cap = 7200) { this.cap = cap; this.t = []; this.p = []; }
+    push(tsMs, price) {
+      if (!(price > 0) || !isFinite(tsMs)) return;
+      const s = Math.floor(tsMs / 1000);
+      const n = this.t.length;
+      if (n && this.t[n - 1] === s) { this.p[n - 1] = price; return; }
+      if (n && s < this.t[n - 1]) return; // ignore out-of-order seconds
+      this.t.push(s); this.p.push(price);
+      if (this.t.length > this.cap) { this.t.shift(); this.p.shift(); }
+    }
+    size() { return this.t.length; }
+    lastT() { return this.t.length ? this.t[this.t.length - 1] : null; }
+    lastPrice() { return this.p.length ? this.p[this.p.length - 1] : null; }
+    // latest price at or before tSec (binary search); null if series starts after tSec
+    priceAtOrBefore(tSec) {
+      const t = this.t;
+      if (!t.length || tSec < t[0]) return null;
+      let lo = 0, hi = t.length - 1, ans = 0;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (t[mid] <= tSec) { ans = mid; lo = mid + 1; } else hi = mid - 1;
+      }
+      return this.p[ans];
+    }
+    // 1-second log returns from CONSECUTIVE seconds only (dt=1). A gap yields
+    // no return — this is the defect-3 guard from btc-session-edge-v3.
+    returns1s(maxN = Infinity) {
+      const t = this.t, p = this.p, rt = [], rr = [];
+      const start = Math.max(1, t.length - (isFinite(maxN) ? maxN : t.length));
+      for (let i = start; i < t.length; i++) {
+        if (t[i] - t[i - 1] === 1 && p[i - 1] > 0) {
+          rt.push(t[i]); rr.push(Math.log(p[i] / p[i - 1]));
+        }
+      }
+      return { t: rt, r: rr };
+    }
+    // running average of per-second closes over [fromSec, toSec] inclusive;
+    // returns {avg, nSeconds, coverage} — used for the settlement window
+    windowAverage(fromSec, toSec) {
+      const t = this.t, p = this.p;
+      let sum = 0, n = 0;
+      for (let i = t.length - 1; i >= 0; i--) {
+        if (t[i] < fromSec) break;
+        if (t[i] <= toSec) { sum += p[i]; n++; }
+      }
+      const span = Math.max(1, toSec - fromSec + 1);
+      return n ? { avg: sum / n, nSeconds: n, coverage: n / span } : null;
+    }
+  }
+
+  /* ---------- raw tick tape (sub-second impulse detection) ---------- */
+  class TickTape {
+    constructor(capMs = 180000) { this.capMs = capMs; this.t = []; this.p = []; }
+    push(tsMs, price) {
+      if (!(price > 0) || !isFinite(tsMs)) return;
+      const n = this.t.length;
+      if (n && tsMs < this.t[n - 1]) return;
+      this.t.push(tsMs); this.p.push(price);
+      const cutoff = tsMs - this.capMs;
+      let drop = 0;
+      while (drop < this.t.length && this.t[drop] < cutoff) drop++;
+      if (drop) { this.t.splice(0, drop); this.p.splice(0, drop); }
+    }
+    last() { return this.p.length ? this.p[this.p.length - 1] : null; }
+    // fractional move over the trailing ms window; null if the tape doesn't
+    // reach back far enough (never fabricate a move from a short tape)
+    moveOver(ms, nowMs) {
+      const t = this.t, p = this.p;
+      if (t.length < 2) return null;
+      const from = nowMs - ms;
+      if (t[0] > from) return null;
+      let lo = 0, hi = t.length - 1, idx = 0;
+      while (lo <= hi) { // latest tick at or before `from`
+        const mid = (lo + hi) >> 1;
+        if (t[mid] <= from) { idx = mid; lo = mid + 1; } else hi = mid - 1;
+      }
+      const p0 = p[idx], p1 = p[p.length - 1];
+      return p0 > 0 ? (p1 / p0 - 1) : null;
+    }
+  }
+
+  /* ---------- EWMA volatility of 1s returns ---------- */
+  // Winsorized so a single bad print cannot poison σ. sigma1s() returns null
+  // until 30 observations exist — no confident numbers off a cold start.
+  class VolEstimator {
+    constructor(halflifeSec = 300) {
+      this.lambda = Math.exp(-Math.LN2 / halflifeSec);
+      this.v = null; this.n = 0;
+    }
+    update(r) {
+      if (!isFinite(r)) return;
+      let rc = r;
+      if (this.v != null && this.n >= 30) {
+        const cap = 8 * Math.sqrt(this.v);
+        rc = Math.max(-cap, Math.min(cap, r));
+      }
+      this.v = this.v == null ? rc * rc : this.lambda * this.v + (1 - this.lambda) * rc * rc;
+      this.n++;
+    }
+    sigma1s() { return (this.v != null && this.n >= 30) ? Math.sqrt(this.v) : null; }
+  }
+
+  /* ---------- lead-lag cross-correlation ---------- */
+  // corr(leader return at t-lag, follower return at t) for lag in
+  // [-maxLag, +maxLag]. Positive bestLag ⇒ leader LEADS follower by bestLag s.
+  // Negative lags are computed too — if the "follower" actually leads, the
+  // tool must say so rather than flatter the hypothesis.
+  function xcorr(leaderRet, followerRet, maxLag = 30, windowN = 900) {
+    const lm = new Map();
+    const ls = leaderRet.t.length - Math.min(leaderRet.t.length, windowN + maxLag);
+    for (let i = ls; i < leaderRet.t.length; i++) lm.set(leaderRet.t[i], leaderRet.r[i]);
+    const fs = followerRet.t.length - Math.min(followerRet.t.length, windowN);
+    const lags = [], corrs = [];
+    let bestLag = null, bestCorr = 0, nUsed = 0;
+    for (let lag = -maxLag; lag <= maxLag; lag++) {
+      let sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, n = 0;
+      for (let i = fs; i < followerRet.t.length; i++) {
+        const x = lm.get(followerRet.t[i] - lag);
+        if (x === undefined) continue;
+        const y = followerRet.r[i];
+        sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; n++;
+      }
+      let c = 0;
+      if (n >= 60) {
+        const cov = sxy / n - (sx / n) * (sy / n);
+        const vx = sxx / n - (sx / n) ** 2, vy = syy / n - (sy / n) ** 2;
+        c = (vx > 0 && vy > 0) ? cov / Math.sqrt(vx * vy) : 0;
+      }
+      lags.push(lag); corrs.push(c);
+      if (n > nUsed) nUsed = n;
+      if (n >= 60 && Math.abs(c) > Math.abs(bestCorr)) { bestCorr = c; bestLag = lag; }
+    }
+    const sig = nUsed ? 1.96 / Math.sqrt(nUsed) : Infinity;
+    return { lags, corrs, n: nUsed, bestLag, bestCorr, sig, significant: Math.abs(bestCorr) > sig };
+  }
+
+  /* ---------- impulse detection ---------- */
+  // z-scores a trailing move against local σ. Fires only past `threshold`;
+  // the caller debounces via lastFire.
+  function impulseZ(movePct, sigma1s, windowSec) {
+    if (movePct == null || !(sigma1s > 0) || !(windowSec > 0)) return null;
+    return movePct / (sigma1s * Math.sqrt(windowSec));
+  }
+
+  /* ---------- fair probability of settling above strike ---------- */
+  // Driftless Brownian in price space over the remaining seconds.
+  // settleMode 'avg': settlement is the average of per-second prices over the
+  // final `settleWindowSec` seconds (Kalshi crypto rule). Variance to
+  // settlement, standing t seconds before expiry T with window w:
+  //   t outside window (τ > w):  Var = s²·(τ − w) + s²·w/3
+  //   t inside window, running average observed (avgSoFar over elapsed f·w):
+  //     mean = f·avgSoFar + (1−f)·S,  Var = s²·w·(1−f)³/3   → monotonic to 0
+  //   t inside window, average NOT observed:
+  //     mean = S, Var = s²·w·[(1−f)³ + f³]/3  (elapsed unobserved part re-widens)
+  // where s² = (sigma1s·S)², f = elapsed fraction of the window.
+  // This is the "accumulate the elapsed prices" fix btc-session-edge-v3's
+  // HANDOFF describes but never shipped.
+  function fairProb(opts) {
+    const { spot, strike, sigma1s, tRemainSec } = opts;
+    const settleMode = opts.settleMode || 'avg';
+    const w = opts.settleWindowSec != null ? opts.settleWindowSec : 60;
+    const avgSoFar = opts.avgSoFar != null ? opts.avgSoFar : null;
+    if (!(spot > 0) || !(strike > 0) || !(sigma1s > 0) || !isFinite(tRemainSec)) return null;
+    const tau = Math.max(0, tRemainSec);
+    const s2 = (sigma1s * spot) ** 2; // price-variance per second
+    let mean, varAbs;
+    if (settleMode === 'point' || w <= 0) {
+      mean = spot; varAbs = s2 * tau;
+    } else if (tau > w) {
+      mean = spot; varAbs = s2 * ((tau - w) + w / 3);
+    } else {
+      const f = Math.min(1, Math.max(0, 1 - tau / w));
+      if (avgSoFar != null) {
+        mean = f * avgSoFar + (1 - f) * spot;
+        varAbs = s2 * w * Math.pow(1 - f, 3) / 3;
+      } else {
+        mean = spot;
+        varAbs = s2 * w * (Math.pow(1 - f, 3) + Math.pow(f, 3)) / 3;
+      }
+    }
+    if (varAbs <= 0) return { p: mean > strike ? 1 : 0, mean, sd: 0 };
+    const sd = Math.sqrt(varAbs);
+    return { p: normCdf((mean - strike) / sd), mean, sd };
+  }
+
+  /* ---------- Kalshi fee + edge ---------- */
+  // Kalshi taker fee ≈ feeK · price · (1 − price) dollars per contract,
+  // rounded up to the next cent by the exchange. feeK verified 0.07 for these
+  // markets by btc-session-edge-v3 (schedule effective 7 Jul 2026); the UI
+  // exposes it as a setting in case the schedule moves.
+  function feeTaker(price, feeK = 0.07) {
+    if (!(price > 0) || price >= 1) return 0;
+    return Math.ceil(feeK * price * (1 - price) * 100) / 100;
+  }
+  // Expected value per $1 contract of buying the given side at `price` when
+  // the model's probability for THAT side is pSide.
+  function edgeAfterFees(pSide, price, feeK = 0.07) {
+    if (price == null || pSide == null) return null;
+    return pSide - price - feeTaker(price, feeK);
+  }
+
+  /* ---------- signal log / calibration ---------- */
+  // One record shape for every signal kind; one resolver; one scorer.
+  // kinds: 'impulse'  — leader impulse, predicts follower direction over horizon
+  //        'edge'     — fair-vs-market divergence, predicts settlement side
+  //        'basket'   — basket drift vs asset, predicts catch-up over horizon
+  // dir: +1 up / -1 down (the predicted direction for the asset)
+  // p: model probability assigned to the predicted outcome (0.5–1)
+  function makeSignal(o) {
+    return {
+      id: o.id, tMs: o.tMs, asset: o.asset, kind: o.kind, dir: o.dir,
+      p: o.p != null ? o.p : null, horizonSec: o.horizonSec,
+      refPrice: o.refPrice, dueSec: Math.floor(o.tMs / 1000) + o.horizonSec,
+      strike: o.strike != null ? o.strike : null,
+      note: o.note || '', meta: o.meta || null,
+      resolved: false, outcome: null, outPrice: null,
+      flat: false, v: 1,
+    };
+  }
+  // priceAt(asset, tSec) -> price|null. flatEps: |move| below this fraction is
+  // recorded as flat and EXCLUDED from hit rates (it is neither hit nor miss).
+  // settleAt (optional): settlement value for 'edge' signals — the per-second
+  // average over the final window, matching Kalshi's rule — so edge outcomes
+  // are judged against what actually settles, not a point print.
+  function resolveSignals(signals, priceAt, nowSec, flatEps = 0.0001, settleAt = null) {
+    let changed = 0;
+    for (const s of signals) {
+      if (s.resolved || nowSec < s.dueSec) continue;
+      let pOut;
+      if (s.kind === 'edge' && s.strike != null && settleAt) {
+        pOut = settleAt(s.asset, s.dueSec);
+        if (pOut == null) pOut = priceAt(s.asset, s.dueSec);
+      } else {
+        pOut = priceAt(s.asset, s.dueSec);
+      }
+      if (pOut == null) continue;
+      s.outPrice = pOut;
+      if (s.kind === 'edge' && s.strike != null) {
+        s.outcome = ((pOut > s.strike) === (s.dir > 0)) ? 1 : 0;
+      } else {
+        const mv = pOut / s.refPrice - 1;
+        if (Math.abs(mv) < flatEps) { s.flat = true; s.outcome = null; }
+        else s.outcome = ((mv > 0) === (s.dir > 0)) ? 1 : 0;
+      }
+      s.resolved = true; changed++;
+    }
+    return changed;
+  }
+  function calibTable(signals, bandWidth = 0.05) {
+    const rows = [];
+    const resolved = signals.filter(s => s.resolved && !s.flat && s.p != null);
+    for (let lo = 0.5; lo < 0.999; lo += bandWidth) {
+      const hi = lo + bandWidth;
+      const inBand = resolved.filter(s => s.p >= lo && s.p < hi + 1e-9);
+      const hits = inBand.filter(s => s.outcome === 1).length;
+      const w = wilson(hits, inBand.length);
+      rows.push({ lo, hi, n: inBand.length, hits, rate: inBand.length ? hits / inBand.length : null, wLo: w.lo, wHi: w.hi });
+    }
+    return rows;
+  }
+  function brierScore(signals) {
+    const r = signals.filter(s => s.resolved && !s.flat && s.p != null);
+    if (!r.length) return null;
+    return r.reduce((a, s) => a + (s.p - s.outcome) ** 2, 0) / r.length;
+  }
+  function hitStats(signals, filter) {
+    const r = signals.filter(s => s.resolved && !s.flat && (!filter || filter(s)));
+    const hits = r.filter(s => s.outcome === 1).length;
+    const w = wilson(hits, r.length);
+    return { n: r.length, hits, rate: r.length ? hits / r.length : null, wLo: w.lo, wHi: w.hi };
+  }
+  function signalsToCsv(signals) {
+    const head = 'id,time_iso,asset,kind,dir,p,horizon_sec,ref_price,strike,due_sec,resolved,outcome,flat,out_price,note,meta_json';
+    const esc = v => (v == null ? '' : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+    const lines = signals.map(s => [
+      s.id, new Date(s.tMs).toISOString(), s.asset, s.kind, s.dir, s.p, s.horizonSec,
+      s.refPrice, s.strike, s.dueSec, s.resolved ? 1 : 0,
+      s.outcome == null ? '' : s.outcome, s.flat ? 1 : 0, s.outPrice == null ? '' : s.outPrice, esc(s.note),
+      esc(s.meta ? JSON.stringify(s.meta) : ''),
+    ].join(','));
+    return [head, ...lines].join('\n');
+  }
+
+  /* ---------- deterministic correlated sim ---------- */
+  // BTC is the leader random walk; each follower = beta × BTC return delayed
+  // by `lagSec` + idiosyncratic noise. Used by ?sim=1 and by the test loop
+  // (xcorr must recover these built-in lags — end-to-end proof).
+  const SIM_SPEC = {
+    BTC:  { p0: 62950,  vol: 0.00022, beta: 1.0, lag: 0 },
+    ETH:  { p0: 1877,   vol: 0.00028, beta: 1.3, lag: 2 },
+    SOL:  { p0: 75.2,   vol: 0.00032, beta: 1.5, lag: 3 },
+    XRP:  { p0: 1.002,  vol: 0.00030, beta: 1.2, lag: 4 },
+    DOGE: { p0: 0.070,  vol: 0.00035, beta: 1.6, lag: 3 },
+    NEAR: { p0: 1.636,  vol: 0.00038, beta: 1.7, lag: 5 },
+    BNB:  { p0: 610.9,  vol: 0.00024, beta: 0.9, lag: 6 },
+    ZEC:  { p0: 488.8,  vol: 0.00055, beta: 1.1, lag: 8 },
+    HYPE: { p0: 56.02,  vol: 0.00042, beta: 1.2, lag: 4 },
+  };
+  function makeSim(seed = 42) {
+    const rng = makeRng(seed), gauss = makeGauss(rng);
+    const hist = []; // BTC per-second returns history for lags
+    const px = {}; for (const k in SIM_SPEC) px[k] = SIM_SPEC[k].p0;
+    let step = 0;
+    return function tick() { // one simulated second; returns {ASSET: price}
+      const rB = SIM_SPEC.BTC.vol * gauss();
+      hist.push(rB); if (hist.length > 60) hist.shift();
+      const out = {};
+      for (const k in SIM_SPEC) {
+        const c = SIM_SPEC[k];
+        let r;
+        if (k === 'BTC') r = rB;
+        else {
+          const lagged = hist.length > c.lag ? hist[hist.length - 1 - c.lag] : 0;
+          r = c.beta * lagged + c.vol * 0.55 * gauss();
+        }
+        px[k] = px[k] * Math.exp(r);
+        out[k] = px[k];
+      }
+      step++;
+      return out;
+    };
+  }
+
+  return {
+    erf, normCdf, wilson, makeRng, makeGauss,
+    SecondSeries, TickTape, VolEstimator,
+    xcorr, impulseZ, fairProb, feeTaker, edgeAfterFees,
+    makeSignal, resolveSignals, calibTable, brierScore, hitStats, signalsToCsv,
+    SIM_SPEC, makeSim,
+  };
+})();
+if (typeof window !== 'undefined') window.Engine = Engine;
+</script>
+
+<script id="app-js">
+'use strict';
+(() => {
+const E = window.Engine;
+const $ = s => document.querySelector(s);
+const Q = new URLSearchParams(location.search);
+const SIM = Q.get('sim') === '1';
+
+/* =============================== CONFIG =================================
+   Symbol maps + venue roles. Kept in one place so RESEARCH.md and this block
+   can be diffed against each other. null = asset not on that venue.
+   Roles:
+   - settleVenues: venues whose composite proxies the settlement index
+     (Kalshi crypto settles on CF Benchmarks-style real-time indices computed
+     from institutional spot venues — see RESEARCH.md; Coinbase+Kraken are the
+     watchable constituents for most of the nine).
+   - leader: the fast venue whose tape mechanically front-runs the composite
+     (perp-style price discovery). 'hl' is US-reachable without keys.
+   ======================================================================== */
+const ASSETS = ['BTC','ETH','SOL','XRP','DOGE','NEAR','BNB','ZEC','HYPE'];
+const CONFIG = {
+  coinbase: { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XRP:'XRP-USD', DOGE:'DOGE-USD', NEAR:'NEAR-USD', BNB:null, ZEC:'ZEC-USD', HYPE:null },
+  kraken:   { BTC:'BTC/USD', ETH:'ETH/USD', SOL:'SOL/USD', XRP:'XRP/USD', DOGE:'DOGE/USD', NEAR:'NEAR/USD', BNB:null, ZEC:'ZEC/USD', HYPE:'HYPE/USD' },
+  hyperliquid: { BTC:'BTC', ETH:'ETH', SOL:'SOL', XRP:'XRP', DOGE:'DOGE', NEAR:'NEAR', BNB:'BNB', ZEC:'ZEC', HYPE:'HYPE' },
+  binance:  { BTC:'btcusdt', ETH:'ethusdt', SOL:'solusdt', XRP:'xrpusdt', DOGE:'dogeusdt', NEAR:'nearusdt', BNB:'bnbusdt', ZEC:'zecusdt', HYPE:'hypeusdt' },
+  settleVenues: { default:['cb','kr'], BNB:['bn','hl'], HYPE:['hl','kr'] },
+  // extra Hyperliquid coins streamed for basket signals (not tradeable on Kalshi)
+  basketCoins: ['FET','TAO','RENDER','ICP','INJ','VIRTUAL','AVAX','APT','SUI'],
+  baskets: { AI:['FET','TAO','RENDER','ICP','INJ','VIRTUAL'], L1:['SOL','AVAX','APT','SUI'] },
+  basketFor: { NEAR:'AI', SOL:'L1', ETH:'L1' },
+  decimals: { BTC:2, ETH:2, SOL:4, XRP:4, DOGE:6, NEAR:4, BNB:2, ZEC:2, HYPE:4 },
+};
+
+const DEFAULT_SETTINGS = {
+  zFire: 2.5,          // impulse threshold (z of trailing move vs local σ)
+  impulseCooldownSec: 20,
+  edgeMin: 0.04,       // after-fee edge required to log an edge signal
+  basketZ: 2.0,
+  volHalflifeSec: 300,
+  feeK: 0.07,          // Kalshi taker fee coefficient (schedule eff. 7 Jul 2026)
+  flatEpsBps: 1,       // |move| below this = flat, excluded from hit rates
+  kalshiPoll: false,   // auto-poll Kalshi REST for strikes/prices. Kalshi sends
+                       // no CORS headers, so this works via tools/kalshi-proxy.mjs
+  kalshiBase: 'https://api.elections.kalshi.com/trade-api/v2',
+  // 15-minute up/down series tickers (verified against Kalshi's API specs, Aug 2026)
+  kalshiSeries: { BTC:'KXBTC15M', ETH:'KXETH15M', SOL:'KXSOL15M', XRP:'KXXRP15M', DOGE:'KXDOGE15M', NEAR:'KXNEAR15M', BNB:'KXBNB15M', ZEC:'KXZEC15M', HYPE:'KXHYPE15M' },
+  binanceEnabled: true, // attempt Binance WS; auto-marks blocked on failure
+};
+let settings = loadJson('llr.settings.v1', DEFAULT_SETTINGS);
+settings = Object.assign({}, DEFAULT_SETTINGS, settings, { kalshiSeries: Object.assign({}, DEFAULT_SETTINGS.kalshiSeries, (settings||{}).kalshiSeries||{}) });
+
+/* =============================== STATE ================================== */
+const assets = {};
+for (const A of ASSETS) assets[A] = {
+  venues: { hl:null, cb:null, kr:null, bn:null },  // {p, ts}
+  spot: new E.SecondSeries(5400), spotTape: new E.TickTape(180000),
+  leader: new E.SecondSeries(5400), leaderTape: new E.TickTape(180000),
+  vol: new E.VolEstimator(settings.volHalflifeSec),
+  volLeader: new E.VolEstimator(settings.volHalflifeSec),
+  volT: 0, volLeaderT: 0,
+  xcBTC: null, xcETH: null, xcPerp: null,
+  lastImpulseMs: 0,
+  strike: null, yesCents: null, kalshiAuto: false, kalshiTicker: null,
+  lastEdgeMs: 0, lastEdgeSide: 0, lastBasketMs: 0,
+};
+const basketSeries = {};
+for (const c of CONFIG.basketCoins) basketSeries[c] = new E.SecondSeries(1800);
+
+let signals = loadJson('llr.signals.v1', []);
+if (!Array.isArray(signals)) signals = [];
+let focus = localStorage.getItem('llr.focus') || 'NEAR';
+if (!ASSETS.includes(focus)) focus = 'NEAR';
+let sessionEnd = nextBoundary();     // epoch sec of current session settle
+let impulseLog = [];                 // display strip (recent, incl. non-signal)
+let signalsDirty = false, lastPersist = 0;
+const feeds = {};                    // key -> {name, status, lastMsg, note}
+
+/* =============================== UTIL =================================== */
+function loadJson(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch { return fb; } }
+function saveJson(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+function nextBoundary() { return (Math.floor(Date.now() / 1000 / 900) + 1) * 900; }
+function fmtPx(A, p) { return p == null ? '—' : p.toLocaleString('en-US', { minimumFractionDigits: CONFIG.decimals[A], maximumFractionDigits: CONFIG.decimals[A] }); }
+function fmtPct(x, d = 1) { return x == null ? '—' : (x * 100).toFixed(d) + '%'; }
+function fmtBps(x) { return x == null ? '—' : (x * 10000).toFixed(1); }
+function etTime(tsMs) { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true }).format(tsMs); }
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._h); toast._h = setTimeout(() => t.classList.remove('show'), 2600); }
+let idSeq = loadJson('llr.idseq', 1);
+function nextId() { idSeq++; saveJson('llr.idseq', idSeq); return 's' + idSeq.toString(36); }
+
+/* ============================ FEED ADAPTERS ============================= */
+function setFeed(key, name, status, note) {
+  feeds[key] = feeds[key] || { name };
+  feeds[key].status = status;
+  if (note !== undefined) feeds[key].note = note;
+  if (status === 'live') feeds[key].lastMsg = Date.now();
+}
+function feedMsg(key) { if (feeds[key]) feeds[key].lastMsg = Date.now(); }
+
+// One reconnecting WebSocket wrapper. parse() returns array of ticks
+// {asset|coin, venue, price} — receive time is stamped here, once.
+function wsFeed(key, name, url, { onOpen, parse, pingMs, pingPayload }) {
+  if (SIM) return;
+  setFeed(key, name, 'off');
+  let ws, retry = 0, pinger = null, closed = false;
+  function connect() {
+    setFeed(key, name, 'off', 'connecting');
+    try { ws = new WebSocket(url); } catch (e) { setFeed(key, name, 'err', String(e)); return schedule(); }
+    const failTimer = setTimeout(() => { try { ws.close(); } catch {} }, 12000);
+    ws.onopen = () => { clearTimeout(failTimer); retry = 0; try { onOpen(ws); } catch {} if (pingMs) pinger = setInterval(() => { try { ws.send(pingPayload); } catch {} }, pingMs); };
+    ws.onmessage = ev => {
+      const now = Date.now();
+      let ticks = null;
+      try { ticks = parse(ev.data); } catch {}
+      if (!ticks || !ticks.length) { feedMsg(key); return; }
+      setFeed(key, name, 'live');
+      for (const t of ticks) ingest(t.venue, t.asset, t.price, now, t.coin);
+    };
+    ws.onerror = () => {};
+    ws.onclose = () => { clearTimeout(failTimer); if (pinger) clearInterval(pinger); if (!closed) { setFeed(key, name, 'err', 'disconnected'); schedule(); } };
+  }
+  function schedule() { retry++; setTimeout(connect, Math.min(30000, 1000 * Math.pow(2, retry))); }
+  connect();
+  return { stop: () => { closed = true; try { ws.close(); } catch {} } };
+}
+
+const revCB = {}, revKR = {}, revHL = {}, revBN = {};
+for (const A of ASSETS) {
+  if (CONFIG.coinbase[A]) revCB[CONFIG.coinbase[A]] = A;
+  if (CONFIG.kraken[A]) revKR[CONFIG.kraken[A]] = A;
+  if (CONFIG.hyperliquid[A]) revHL[CONFIG.hyperliquid[A]] = A;
+  if (CONFIG.binance[A]) revBN[CONFIG.binance[A].toUpperCase()] = A;
+}
+
+function startFeeds() {
+  // Hyperliquid — allMids: every asset + basket coins in one subscription
+  wsFeed('hl', 'HL', 'wss://api.hyperliquid.xyz/ws', {
+    onOpen: ws => ws.send(JSON.stringify({ method: 'subscribe', subscription: { type: 'allMids' } })),
+    pingMs: 45000, pingPayload: JSON.stringify({ method: 'ping' }),
+    parse: raw => {
+      const m = JSON.parse(raw);
+      if (m.channel !== 'allMids' || !m.data || !m.data.mids) return null;
+      const out = [];
+      const mids = m.data.mids;
+      for (const c in mids) {
+        const p = parseFloat(mids[c]);
+        if (!(p > 0)) continue;
+        if (revHL[c]) out.push({ venue: 'hl', asset: revHL[c], price: p });
+        else if (basketSeries[c]) out.push({ venue: 'basket', coin: c, price: p });
+      }
+      return out;
+    },
+  });
+  // Coinbase exchange market-data feed (public). CF Real-Time Indices are
+  // built from constituent ORDER-BOOK mids (once per second), so the proxy
+  // uses best bid/ask mid when present, falling back to last trade.
+  const cbIds = ASSETS.map(A => CONFIG.coinbase[A]).filter(Boolean);
+  wsFeed('cb', 'CB', 'wss://ws-feed.exchange.coinbase.com', {
+    onOpen: ws => ws.send(JSON.stringify({ type: 'subscribe', product_ids: cbIds, channels: ['ticker'] })),
+    parse: raw => {
+      const m = JSON.parse(raw);
+      if (m.type !== 'ticker' || !revCB[m.product_id]) return null;
+      const bid = parseFloat(m.best_bid), ask = parseFloat(m.best_ask);
+      const p = (bid > 0 && ask > 0) ? (bid + ask) / 2 : parseFloat(m.price);
+      return p > 0 ? [{ venue: 'cb', asset: revCB[m.product_id], price: p }] : null;
+    },
+  });
+  // Kraken v2 (public) — same mid-price treatment
+  const krSyms = ASSETS.map(A => CONFIG.kraken[A]).filter(Boolean);
+  wsFeed('kr', 'KR', 'wss://ws.kraken.com/v2', {
+    onOpen: ws => ws.send(JSON.stringify({ method: 'subscribe', params: { channel: 'ticker', symbol: krSyms } })),
+    parse: raw => {
+      const m = JSON.parse(raw);
+      if (m.channel !== 'ticker' || !Array.isArray(m.data)) return null;
+      const out = [];
+      for (const d of m.data) {
+        const A = revKR[d.symbol];
+        const bid = parseFloat(d.bid), ask = parseFloat(d.ask);
+        const p = (bid > 0 && ask > 0) ? (bid + ask) / 2 : parseFloat(d.last);
+        if (A && p > 0) out.push({ venue: 'kr', asset: A, price: p });
+      }
+      return out.length ? out : null;
+    },
+  });
+  // Binance global (optional; geo-blocked for some US networks — fails soft)
+  if (settings.binanceEnabled) {
+    const streams = ASSETS.map(A => CONFIG.binance[A]).filter(Boolean).map(s => s + '@aggTrade').join('/');
+    wsFeed('bn', 'BN', 'wss://stream.binance.com:9443/stream?streams=' + streams, {
+      onOpen: () => {},
+      parse: raw => {
+        const m = JSON.parse(raw);
+        const d = m.data;
+        if (!d || d.e !== 'aggTrade' || !revBN[d.s]) return null;
+        const p = parseFloat(d.p);
+        return p > 0 ? [{ venue: 'bn', asset: revBN[d.s], price: p }] : null;
+      },
+    });
+  } else setFeed('bn', 'BN', 'off', 'disabled');
+  setFeed('kalshi', 'KALSHI', settings.kalshiPoll ? 'off' : 'off', settings.kalshiPoll ? 'starting' : 'manual entry');
+}
+
+/* --------- tick ingestion: venue tape → roles → series --------- */
+function settleSetFor(A) { return CONFIG.settleVenues[A] || CONFIG.settleVenues.default; }
+function leaderVenueFor(A, nowMs) {
+  const a = assets[A];
+  const t = nowMs != null ? nowMs : Date.now();
+  if (a.venues.hl && t - a.venues.hl.ts < 6000) return 'hl';
+  if (a.venues.bn && t - a.venues.bn.ts < 6000) return 'bn';
+  return null; // fall back to composite itself
+}
+function ingest(venue, A, price, now, coin) {
+  if (venue === 'basket') { basketSeries[coin].push(now, price); return; }
+  const a = assets[A];
+  if (!a) return;
+  a.venues[venue] = { p: price, ts: now };
+  // leader path
+  const lv = leaderVenueFor(A, now);
+  if (venue === lv) { a.leader.push(now, price); a.leaderTape.push(now, price); }
+  // settlement-proxy composite: median of fresh settle venues
+  const set = settleSetFor(A);
+  if (set.includes(venue)) {
+    const fresh = [];
+    for (const v of set) { const q = a.venues[v]; if (q && now - q.ts < 5000) fresh.push(q.p); }
+    if (fresh.length) {
+      fresh.sort((x, y) => x - y);
+      const mid = fresh.length % 2 ? fresh[(fresh.length - 1) / 2] : (fresh[fresh.length / 2 - 1] + fresh[fresh.length / 2]) / 2;
+      a.spot.push(now, mid); a.spotTape.push(now, mid);
+    }
+  }
+}
+
+/* ============================ KALSHI POLLER ============================= */
+let kalshiTimer = null;
+let kalshiRoute = null; // 'direct' | 'proxy' — remembered after first success
+async function kalshiGet(path) {
+  const routes = kalshiRoute === 'proxy'
+    ? ['http://localhost:8787/trade-api/v2']
+    : [settings.kalshiBase, 'http://localhost:8787/trade-api/v2'];
+  let lastErr = null;
+  for (const base of routes) {
+    try {
+      const ctrl = new AbortController();
+      const to = setTimeout(() => ctrl.abort(), 4000);
+      const r = await fetch(base + path, { signal: ctrl.signal });
+      clearTimeout(to);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      kalshiRoute = base.startsWith('http://localhost') ? 'proxy' : 'direct';
+      return await r.json();
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+function startKalshi() {
+  if (kalshiTimer) clearInterval(kalshiTimer);
+  if (!settings.kalshiPoll || SIM) return;
+  const tick = async () => {
+    const A = focus; // poll the focused asset only — stay far from rate limits
+    const series = settings.kalshiSeries[A];
+    if (!series) return;
+    try {
+      const j = await kalshiGet(`/markets?series_ticker=${encodeURIComponent(series)}&status=open&limit=20`);
+      const endIso = new Date(sessionEnd * 1000).toISOString().slice(0, 16);
+      const mkts = (j.markets || []).filter(m => (m.close_time || '').slice(0, 16) === endIso);
+      // choose the market whose strike is nearest spot. floor_strike is
+      // sometimes absent on 15M markets — fall back to parsing the subtitle.
+      const spot = assets[A].spot.lastPrice();
+      let best = null;
+      for (const m of mkts) {
+        let k = m.cap_strike != null ? m.cap_strike : m.floor_strike;
+        if (k == null) {
+          const sub = (m.yes_sub_title || m.subtitle || '');
+          const mm = sub.match(/\$([0-9,]+\.?\d*)/);
+          if (mm) k = parseFloat(mm[1].replace(/,/g, ''));
+        }
+        if (k == null || !(k > 0)) continue;
+        if (!best || (spot != null && Math.abs(k - spot) < Math.abs(best.k - spot))) best = { k, m };
+      }
+      if (best) {
+        const a = assets[A];
+        a.strike = best.k; a.strikeEst = false; a.kalshiAuto = true; a.kalshiTicker = best.m.ticker;
+        const bid = best.m.yes_bid, ask = best.m.yes_ask;
+        if (bid != null && ask != null && ask > 0) a.yesCents = Math.round((bid + ask) / 2);
+        setFeed('kalshi', 'KALSHI', 'live', best.m.ticker + (kalshiRoute === 'proxy' ? ' via proxy' : ''));
+      } else setFeed('kalshi', 'KALSHI', 'stale', 'no market matches session');
+    } catch (e) {
+      setFeed('kalshi', 'KALSHI', 'err', 'unreachable (CORS/network) — manual entry, or run: node tools/kalshi-proxy.mjs');
+    }
+  };
+  tick();
+  kalshiTimer = setInterval(tick, 5000);
+}
+
+/* =============================== SIM ==================================== */
+function startSim() {
+  $('#sim-badge').hidden = false;
+  setFeed('sim', 'SYNTH', 'live', 'deterministic feed, seed 42');
+  const sim = E.makeSim(42);
+  const rng = E.makeRng(777);
+  const bg = E.makeGauss(E.makeRng(888));
+  let simSec = 0;
+  // synthetic basket coins: beta to BTC with a 3s lag, so MATRIX/basket panels
+  // demo end-to-end (real mode streams these from Hyperliquid allMids)
+  const bpx = {}; for (const c of CONFIG.basketCoins) bpx[c] = 10 + Object.keys(bpx).length;
+  let prevBtc = null; const btcRetBuf = [];
+  const feedOnce = (px, now) => {
+    if (prevBtc != null) { btcRetBuf.push(Math.log(px.BTC / prevBtc)); if (btcRetBuf.length > 10) btcRetBuf.shift(); }
+    prevBtc = px.BTC;
+    for (const A of ASSETS) {
+      ingest('hl', A, px[A], now);      // leader = same walk
+      ingest('cb', A, px[A], now);      // settle proxy
+      ingest('kr', A, px[A] * (1 + (rng() - 0.5) * 1e-4), now);
+    }
+    const lagged = btcRetBuf.length > 3 ? btcRetBuf[btcRetBuf.length - 4] : 0;
+    for (const c of CONFIG.basketCoins) {
+      bpx[c] *= Math.exp(1.4 * lagged + 0.00028 * bg());
+      ingest('basket', null, bpx[c], now, c);
+    }
+  };
+  // warp: pre-fill tape so σ / xcorr / charts are warm at boot (&warp=N seconds)
+  const warp = Math.min(3600, Math.max(0, parseInt(Q.get('warp') || '900', 10) || 0));
+  const t0 = Date.now() - warp * 1000;
+  let lastPx = null;
+  for (let i = 0; i < warp; i++) { lastPx = sim(); feedOnce(lastPx, t0 + i * 1000); }
+  if (lastPx) for (const A of ASSETS) {
+    const a = assets[A];
+    a.strike = lastPx[A];
+    a.yesCents = Math.max(3, Math.min(97, Math.round(50 + (rng() - 0.5) * 24)));
+  }
+  setInterval(() => {
+    const now = Date.now();
+    const px = sim(); simSec++;
+    feedOnce(px, now);
+    feedMsg('sim');
+    for (const A of ASSETS) {
+      const a = assets[A];
+      if (a.strike == null && simSec > 5) { a.strike = px[A]; a.kalshiAuto = false; }
+      if (a.yesCents == null && simSec > 45) a.yesCents = Math.max(3, Math.min(97, Math.round(50 + (rng() - 0.5) * 24)));
+    }
+  }, 1000);
+}
+
+/* ========================== SIGNAL PIPELINE ============================= */
+function pushSignal(o) {
+  const s = E.makeSignal(Object.assign({ id: nextId(), tMs: Date.now() }, o));
+  signals.push(s);
+  if (signals.length > 5000) signals = signals.slice(-5000);
+  signalsDirty = true;
+  return s;
+}
+function priceAt(A, tSec) { return assets[A] ? assets[A].spot.priceAtOrBefore(tSec) : null; }
+function settleAt(A, tSec) {
+  const a = assets[A]; if (!a) return null;
+  const w = a.spot.windowAverage(tSec - 59, tSec);
+  return (w && w.coverage >= 0.5) ? w.avg : null;
+}
+
+function housekeep() {
+  const nowMs = Date.now(), nowSec = Math.floor(nowMs / 1000);
+  // session roll. Kalshi chains windows: window N's 60s settlement average is
+  // window N+1's target — so seed each strike from our own settlement
+  // accumulator (proxy-grade estimate; Kalshi poll or manual entry overrides).
+  if (nowSec >= sessionEnd) {
+    const closed = sessionEnd;
+    sessionEnd = nextBoundary();
+    for (const A of ASSETS) {
+      const a = assets[A];
+      const est = settleAt(A, closed);
+      a.strike = est != null ? est : null;
+      a.strikeEst = est != null;
+      a.yesCents = null; a.kalshiAuto = false; a.kalshiTicker = null; a.lastEdgeSide = 0;
+    }
+    toast('Session rolled — strikes seeded from settlement average (est.)');
+  }
+  for (const A of ASSETS) {
+    const a = assets[A];
+    // incremental vol from per-second closes (consecutive pairs only)
+    const r = a.spot.returns1s(180);
+    for (let i = 0; i < r.t.length; i++) if (r.t[i] > a.volT) { a.vol.update(r.r[i]); a.volT = r.t[i]; }
+    const rl = a.leader.returns1s(180);
+    for (let i = 0; i < rl.t.length; i++) if (rl.t[i] > a.volLeaderT) { a.volLeader.update(rl.r[i]); a.volLeaderT = rl.t[i]; }
+    // impulse detection on the leader tape (falls back to spot tape)
+    const tape = a.leaderTape.last() ? a.leaderTape : a.spotTape;
+    const sig = a.volLeader.sigma1s() || a.vol.sigma1s();
+    if (sig && nowMs - a.lastImpulseMs > settings.impulseCooldownSec * 1000) {
+      let fired = null;
+      for (const w of [3, 10]) {
+        const mv = tape.moveOver(w * 1000, nowMs);
+        const z = E.impulseZ(mv, sig, w);
+        if (z != null && Math.abs(z) >= settings.zFire && (!fired || Math.abs(z) > Math.abs(fired.z))) fired = { z, w, mv };
+      }
+      if (fired) {
+        a.lastImpulseMs = nowMs;
+        const dir = fired.z > 0 ? 1 : -1;
+        impulseLog.unshift({ tMs: nowMs, asset: A, z: fired.z, w: fired.w, mv: fired.mv, followers: [] });
+        impulseLog = impulseLog.slice(0, 40);
+        flashRail(A, dir);
+        // predicted follow-through on every asset with a significant lag to this leader
+        if (A === 'BTC' || A === 'ETH') {
+          for (const F of ASSETS) {
+            if (F === A) continue;
+            const xc = A === 'BTC' ? assets[F].xcBTC : assets[F].xcETH;
+            if (xc && xc.significant && xc.bestLag >= 1 && xc.bestCorr > 0) {
+              const horizon = Math.max(8, Math.min(30, xc.bestLag * 2));
+              const ref = assets[F].spot.lastPrice();
+              if (ref) {
+                pushSignal({ asset: F, kind: 'impulse', dir, p: null, horizonSec: horizon, refPrice: ref, meta: { leader: A, z: +fired.z.toFixed(2), w: fired.w, lag: xc.bestLag, corr: +xc.bestCorr.toFixed(2) } });
+                impulseLog[0].followers.push(F);
+              }
+            }
+          }
+        }
+        // self follow-through: does the impulse continue on the impulsed asset
+        const refSelf = a.spot.lastPrice();
+        if (refSelf) pushSignal({ asset: A, kind: 'impulse', dir, p: null, horizonSec: 10, refPrice: refSelf, meta: { leader: 'self', z: +fired.z.toFixed(2), w: fired.w } });
+      }
+    }
+    // fair value vs entered/polled Kalshi market → edge signal
+    const fair = fairFor(A, nowSec);
+    if (fair && a.yesCents != null && nowMs - a.lastEdgeMs > 90 * 1000) {
+      const implied = a.yesCents / 100;
+      const evYes = E.edgeAfterFees(fair.p, implied, settings.feeK);
+      const evNo = E.edgeAfterFees(1 - fair.p, 1 - implied, settings.feeK);
+      let side = 0;
+      if (evYes >= settings.edgeMin) side = 1; else if (evNo >= settings.edgeMin) side = -1;
+      if (side !== 0 && side !== a.lastEdgeSide) {
+        a.lastEdgeMs = nowMs; a.lastEdgeSide = side;
+        pushSignal({ asset: A, kind: 'edge', dir: side, p: side > 0 ? fair.p : 1 - fair.p, horizonSec: Math.max(1, sessionEnd - nowSec), refPrice: a.spot.lastPrice(), strike: a.strike, meta: { implied, ev: +(side > 0 ? evYes : evNo).toFixed(3), sigma1s: +(a.vol.sigma1s() || 0).toExponential(2) } });
+        toast(`${A} edge: model ${Math.round(fair.p * 100)}¢ vs market ${a.yesCents}¢ → ${side > 0 ? 'YES' : 'NO'}`);
+      }
+    }
+    // basket drift
+    const bk = CONFIG.basketFor[A];
+    if (bk && nowMs - a.lastBasketMs > 120 * 1000) {
+      const d = basketDrift(A, nowSec);
+      if (d && Math.abs(d.z) >= settings.basketZ) {
+        a.lastBasketMs = nowMs;
+        const ref = a.spot.lastPrice();
+        if (ref) pushSignal({ asset: A, kind: 'basket', dir: d.z > 0 ? 1 : -1, p: null, horizonSec: 60, refPrice: ref, meta: { basket: bk, z: +d.z.toFixed(2), basketRet: +d.basketRet.toExponential(2), assetRet: +d.assetRet.toExponential(2) } });
+      }
+    }
+  }
+  // resolve + persist
+  const changed = E.resolveSignals(signals, priceAt, nowSec, settings.flatEpsBps / 10000, settleAt);
+  if (changed) signalsDirty = true;
+  if (signalsDirty && nowMs - lastPersist > 5000) { saveJson('llr.signals.v1', signals); lastPersist = nowMs; signalsDirty = false; }
+}
+
+function fairFor(A, nowSec) {
+  const a = assets[A];
+  const spot = a.spot.lastPrice(), sig = a.vol.sigma1s();
+  if (!spot || !sig || a.strike == null) return null;
+  const tRemain = sessionEnd - nowSec;
+  if (tRemain < 0) return null;
+  let avgSoFar = null;
+  if (tRemain < 60) {
+    const w = a.spot.windowAverage(sessionEnd - 60 + 1, nowSec);
+    if (w && w.coverage > 0.3) avgSoFar = w.avg;
+  }
+  return E.fairProb({ spot, strike: a.strike, sigma1s: sig, tRemainSec: tRemain, settleMode: 'avg', settleWindowSec: 60, avgSoFar });
+}
+function ret60(series, nowSec) {
+  const now = series.priceAtOrBefore(nowSec), then = series.priceAtOrBefore(nowSec - 60);
+  return (now && then) ? now / then - 1 : null;
+}
+function basketDrift(A, nowSec) {
+  const bk = CONFIG.baskets[CONFIG.basketFor[A]];
+  if (!bk) return null;
+  const rets = [];
+  for (const c of bk) {
+    const s = ASSETS.includes(c) ? assets[c].spot : basketSeries[c];
+    const r = ret60(s, nowSec);
+    if (r != null) rets.push(r);
+  }
+  if (rets.length < 2) return null;
+  rets.sort((a, b) => a - b);
+  const basketRet = rets.length % 2 ? rets[(rets.length - 1) / 2] : (rets[rets.length / 2 - 1] + rets[rets.length / 2]) / 2;
+  const assetRet = ret60(assets[A].spot, nowSec);
+  const sig = assets[A].vol.sigma1s();
+  if (assetRet == null || !sig) return null;
+  return { z: (basketRet - assetRet) / (sig * Math.sqrt(60)), basketRet, assetRet };
+}
+
+/* xcorr refresh — one asset per second, round-robin */
+let xcIdx = 0;
+function refreshXcorr() {
+  const A = ASSETS[xcIdx % ASSETS.length]; xcIdx++;
+  const a = assets[A];
+  const mine = a.spot.returns1s(1000);
+  if (A !== 'BTC') a.xcBTC = E.xcorr(assets.BTC.spot.returns1s(1000), mine, 30, 900);
+  if (A !== 'ETH') a.xcETH = E.xcorr(assets.ETH.spot.returns1s(1000), mine, 30, 900);
+  const lr = a.leader.returns1s(1000);
+  a.xcPerp = lr.t.length > 120 ? E.xcorr(lr, mine, 15, 900) : null;
+}
+
+/* ================================ UI ==================================== */
+const TABS = ['radar', 'matrix', 'log', 'truth'];
+let tab = 'radar';
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  tab = b.dataset.tab;
+  for (const t of TABS) { $('#tab-' + t).hidden = t !== tab; }
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
+  renderSlow();
+});
+
+function flashRail(A, dir) {
+  const el = document.querySelector(`.railrow[data-a="${A}"]`);
+  if (!el) return;
+  el.classList.remove('flash-up', 'flash-down');
+  void el.offsetWidth;
+  el.classList.add(dir > 0 ? 'flash-up' : 'flash-down');
+}
+
+function buildRail() {
+  $('#rail').innerHTML = ASSETS.map(A => `
+    <div class="railrow${A === focus ? ' on' : ''}" data-a="${A}">
+      <span class="tk">${A}</span><span></span>
+      <span class="px mono" id="rail-px-${A}">—</span>
+      <span class="sub"><span id="rail-r-${A}">—</span><span class="lagbadge" id="rail-lag-${A}"></span></span>
+    </div>`).join('');
+  $('#rail').addEventListener('click', e => {
+    const row = e.target.closest('.railrow'); if (!row) return;
+    focus = row.dataset.a;
+    localStorage.setItem('llr.focus', focus);
+    document.querySelectorAll('.railrow').forEach(x => x.classList.toggle('on', x.dataset.a === focus));
+    renderSlow();
+  });
+}
+
+function renderRail() {
+  const nowSec = Math.floor(Date.now() / 1000);
+  for (const A of ASSETS) {
+    const a = assets[A];
+    const px = a.spot.lastPrice();
+    $('#rail-px-' + A).textContent = fmtPx(A, px);
+    const r = ret60(a.spot, nowSec);
+    const el = $('#rail-r-' + A);
+    el.textContent = r == null ? '—' : (r >= 0 ? '+' : '') + (r * 100).toFixed(2) + '% 1m';
+    el.className = r == null ? '' : r >= 0 ? 'up' : 'down';
+    const lagEl = $('#rail-lag-' + A);
+    const xc = a.xcBTC;
+    if (A === 'BTC') lagEl.textContent = 'leader';
+    else if (xc && xc.significant && xc.bestLag > 0) { lagEl.textContent = `BTC +${xc.bestLag}s`; lagEl.classList.add('sig'); }
+    else if (xc && xc.n >= 60) { lagEl.textContent = 'no lag'; lagEl.classList.remove('sig'); }
+    else lagEl.textContent = 'warming';
+  }
+}
+
+function renderTopbar() {
+  const nowSec = Date.now() / 1000;
+  const rem = Math.max(0, sessionEnd - nowSec);
+  const mm = String(Math.floor(rem / 60)).padStart(2, '0'), ss = String(Math.floor(rem % 60)).padStart(2, '0');
+  const cd = $('#countdown');
+  cd.textContent = `${mm}:${ss}`;
+  cd.classList.toggle('final', rem <= 60);
+  $('#settle-ind').hidden = rem > 60;
+  $('#sess-label').textContent = 'SETTLES ' + etTime(sessionEnd * 1000) + ' ET';
+  // feed lights
+  const now = Date.now();
+  $('#feed-lights').innerHTML = Object.entries(feeds).map(([k, f]) => {
+    let cls = f.status;
+    if (f.status === 'live' && now - f.lastMsg > 6000) cls = 'stale';
+    return `<span class="feedlight ${cls}" title="${f.note || ''}"><i></i>${f.name}</span>`;
+  }).join('');
+}
+
+function renderFocusHead() {
+  const A = focus, a = assets[A], nowSec = Math.floor(Date.now() / 1000);
+  const px = a.spot.lastPrice(), sig = a.vol.sigma1s();
+  const r1 = ret60(a.spot, nowSec);
+  const xc = A === 'BTC' ? a.xcETH : a.xcBTC;
+  const lead = A === 'BTC' ? 'ETH' : 'BTC';
+  const venues = ['hl', 'cb', 'kr', 'bn'].map(v => {
+    const q = a.venues[v];
+    const fresh = q && Date.now() - q.ts < 5000;
+    return `<span class="${fresh ? 'fresh' : ''}">${v.toUpperCase()}</span><span class="${fresh ? 'fresh' : ''}">${q ? fmtPx(A, q.p) : '—'}</span>`;
+  }).join('');
+  $('#focus-head').innerHTML = `
+    <div class="fh-block">
+      <span class="fh-tk">${A}<span class="dim" style="font-weight:400"> / USD · settle proxy</span></span>
+      <span class="fh-price ${r1 == null ? '' : r1 >= 0 ? 'up' : 'down'}">${fmtPx(A, px)}</span>
+    </div>
+    <div class="fh-block" style="padding-top:20px">
+      <span class="fh-stat">σ <b>${sig ? fmtBps(sig) : '—'}</b> bps/√s</span>
+      <span class="fh-stat">1m <b class="${r1 == null ? '' : r1 >= 0 ? 'up' : 'down'}">${r1 == null ? '—' : (r1 >= 0 ? '+' : '') + (r1 * 100).toFixed(2) + '%'}</b></span>
+    </div>
+    <div class="fh-block" style="padding-top:20px">
+      <span class="fh-stat">${lead} lead <b>${xc && xc.significant && xc.bestLag > 0 ? '+' + xc.bestLag + 's' : xc && xc.n >= 60 ? 'none' : '…'}</b></span>
+      <span class="fh-stat">corr <b>${xc && xc.n >= 60 ? xc.bestCorr.toFixed(2) : '—'}</b></span>
+    </div>
+    <div class="fh-block" style="padding-top:14px;margin-left:auto">
+      <span class="microcap" style="margin-bottom:3px">VENUES</span>
+      <div class="venuegrid">${venues}</div>
+    </div>`;
+  $('#ghost-focus-name').textContent = A;
+}
+
+function renderFair() {
+  const A = focus, a = assets[A], nowSec = Math.floor(Date.now() / 1000);
+  const fair = fairFor(A, nowSec);
+  const tRemain = sessionEnd - nowSec;
+  const implied = a.yesCents != null ? a.yesCents / 100 : null;
+  let call = '<span class="edgecall none">ENTER STRIKE + PRICE</span>', evLine = '';
+  if (fair && implied != null) {
+    const evYes = E.edgeAfterFees(fair.p, implied, settings.feeK);
+    const evNo = E.edgeAfterFees(1 - fair.p, 1 - implied, settings.feeK);
+    evLine = `<span class="fr-label mono">EV yes <b class="${evYes >= 0 ? 'up' : 'down'}">${(evYes * 100).toFixed(1)}¢</b> · EV no <b class="${evNo >= 0 ? 'up' : 'down'}">${(evNo * 100).toFixed(1)}¢</b> after fees</span>`;
+    if (evYes >= settings.edgeMin) call = `<span class="edgecall go-yes">BUY YES · +${(evYes * 100).toFixed(1)}¢</span>`;
+    else if (evNo >= settings.edgeMin) call = `<span class="edgecall go-no">BUY NO · +${(evNo * 100).toFixed(1)}¢</span>`;
+    else call = '<span class="edgecall none">NO EDGE</span>';
+  }
+  const meter = (label, val, color) => `
+    <span class="fr-label">${label}</span>
+    <div class="meterwrap"><div class="meterfill" style="width:${val == null ? 0 : (val * 100).toFixed(1)}%;background:${color}"></div></div>
+    <span class="fr-val mono">${val == null ? '—' : Math.round(val * 100) + '¢'}</span>`;
+  let settleLine = '';
+  if (tRemain <= 60 && tRemain > 0) {
+    const w = a.spot.windowAverage(sessionEnd - 60 + 1, nowSec);
+    settleLine = `<div class="fr-label mono amber" style="margin-top:8px">settle avg so far ${w ? fmtPx(A, w.avg) : '—'} · ${w ? Math.round(w.coverage * 100) : 0}% of window observed</div>`;
+  }
+  $('#fair-body').innerHTML = `
+    <div id="fair-grid">
+      ${meter('MODEL', fair ? fair.p : null, 'var(--txt2)')}
+      ${meter('KALSHI', implied, 'var(--amber-dim)')}
+    </div>
+    ${settleLine}
+    <div class="fr-inputs">
+      <label>strike${a.kalshiAuto ? ' · kalshi' : a.strikeEst ? ' · est.' : ''}<input id="in-strike" inputmode="decimal" placeholder="target $" value="${a.strike != null ? (+a.strike).toFixed(CONFIG.decimals[A]) : ''}" title="${a.kalshiAuto ? 'auto from Kalshi' : a.strikeEst ? 'estimated from our settlement accumulator at window open — type the exact Kalshi target to refine' : ''}"></label>
+      <label>kalshi yes ¢<input id="in-yes" inputmode="numeric" placeholder="0–99" value="${a.yesCents != null ? a.yesCents : ''}"></label>
+      <span style="flex:1"></span>
+      ${call}
+    </div>`;
+  $('#fair-note').textContent = fair ? `mean ${fmtPx(A, fair.mean)} · sd ${fair.sd.toPrecision(3)} · t−${tRemain}s` : (a.strike == null ? 'no strike' : 'σ warming up');
+  $('#in-strike').addEventListener('change', e => { const v = parseFloat(e.target.value); a.strike = v > 0 ? v : null; a.kalshiAuto = false; a.strikeEst = false; });
+  $('#in-yes').addEventListener('change', e => { const v = parseInt(e.target.value, 10); a.yesCents = v >= 1 && v <= 99 ? v : null; });
+}
+
+function renderImpulses() {
+  $('#imp-count').textContent = impulseLog.length ? `${impulseLog.length} recent` : '';
+  $('#impulse-rows').innerHTML = impulseLog.length ? impulseLog.slice(0, 10).map(i => `
+    <div class="imp-row">
+      <span class="t">${new Date(i.tMs).toLocaleTimeString('en-US', { hour12: false })}</span>
+      <span style="font-weight:700;color:var(--txt)">${i.asset}</span>
+      <span class="${i.z > 0 ? 'up' : 'down'}">${i.z > 0 ? '▲' : '▼'} ${Math.abs(i.z).toFixed(1)}σ</span>
+      <span>${(i.mv * 100).toFixed(2)}% / ${i.w}s</span>
+      <span class="dim">${i.followers.length ? '→ ' + i.followers.join(' ') : ''}</span>
+    </div>`).join('') : '<div class="dim" style="padding:6px 0;font-size:12px">No impulses yet — fires when a leader tape moves ≥ ' + settings.zFire + 'σ in 3s or 10s.</div>';
+}
+
+/* ---------- charts ---------- */
+function sizeCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = parseInt(cv.getAttribute('height'), 10);
+  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+function seriesWindow(series, fromSec, toSec) {
+  const t = series.t, p = series.p, out = [];
+  for (let i = 0; i < t.length; i++) if (t[i] >= fromSec && t[i] <= toSec) out.push([t[i], p[i]]);
+  return out;
+}
+function drawGhost() {
+  const cv = $('#ghost'); if (!cv || tab !== 'radar') return;
+  const { ctx, w, h } = sizeCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  const A = focus, a = assets[A];
+  const nowSec = Math.floor(Date.now() / 1000);
+  const from = nowSec - 120;
+  const lead = A === 'BTC' ? assets.ETH : assets.BTC;
+  const leadName = A === 'BTC' ? 'ETH' : 'BTC';
+  const sf = seriesWindow(a.spot, from, nowSec);
+  const sl = seriesWindow(lead.spot, from, nowSec);
+  if (sf.length < 10 || sl.length < 10) {
+    ctx.fillStyle = '#5F6672'; ctx.font = '12px ' + getComputedStyle(document.body).getPropertyValue('--sans');
+    ctx.fillText('warming up — feeds need ~2 minutes of tape', 16, h / 2);
+    return;
+  }
+  const f0 = sf[0][1], l0 = sl[0][1];
+  const pf = sf.map(([t, p]) => [t, p / f0 - 1]);
+  const pl = sl.map(([t, p]) => [t, p / l0 - 1]);
+  const xc = A === 'BTC' ? a.xcETH : a.xcBTC;
+  const lag = xc && xc.significant && xc.bestLag > 0 ? xc.bestLag : 0;
+  let maxAbs = 1e-5;
+  for (const [, v] of pf) maxAbs = Math.max(maxAbs, Math.abs(v));
+  for (const [, v] of pl) maxAbs = Math.max(maxAbs, Math.abs(v));
+  let strikeY = null;
+  if (a.strike != null) { const sv = a.strike / f0 - 1 - (1 - sf[0][1] / f0); const rel = a.strike / f0 - 1; if (Math.abs(rel) < maxAbs * 2.2) { maxAbs = Math.max(maxAbs, Math.abs(rel)); strikeY = rel; } }
+  maxAbs *= 1.15;
+  const X = t => ((t - from) / 120) * (w - 58) + 8;
+  const Y = v => h / 2 - (v / maxAbs) * (h / 2 - 14);
+  // grid
+  ctx.strokeStyle = '#14171C'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let g = -1; g <= 1; g += 0.5) { ctx.moveTo(8, Y(g * maxAbs)); ctx.lineTo(w - 50, Y(g * maxAbs)); }
+  ctx.stroke();
+  ctx.strokeStyle = '#1B1F26';
+  ctx.beginPath(); ctx.moveTo(8, Y(0)); ctx.lineTo(w - 50, Y(0)); ctx.stroke();
+  // strike
+  if (strikeY != null) {
+    ctx.strokeStyle = '#8a6a1f'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(8, Y(strikeY)); ctx.lineTo(w - 50, Y(strikeY)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#FFB224'; ctx.font = '10px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+    ctx.fillText('strike', w - 46, Y(strikeY) + 3);
+  }
+  const drawLine = (pts, color, width, dash, shift) => {
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []);
+    ctx.beginPath();
+    let started = false;
+    for (const [t, v] of pts) {
+      const x = X(t + (shift || 0));
+      if (x < 8 || x > w - 50) continue;
+      if (!started) { ctx.moveTo(x, Y(v)); started = true; } else ctx.lineTo(x, Y(v));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  drawLine(pl, '#4A5260', 1.25);                      // leader
+  if (lag > 0) drawLine(pl, 'rgba(255,178,36,.55)', 1.25, [2, 3], lag); // ghost = leader shifted +lag
+  drawLine(pf, A === 'BTC' ? '#E8EAED' : '#E8EAED', 1.6); // focus
+  // labels: series stack top-right, % scale bottom-left/top-left
+  ctx.font = '10px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+  ctx.fillStyle = '#4A5260'; ctx.fillText(leadName, w - 44, 14);
+  ctx.fillStyle = '#E8EAED'; ctx.fillText(A, w - 44, 26);
+  if (lag > 0) { ctx.fillStyle = 'rgba(255,178,36,.8)'; ctx.fillText(`${leadName}+${lag}s`, w - 44, 38); }
+  ctx.fillStyle = '#5F6672';
+  ctx.fillText('+' + (maxAbs * 100).toFixed(2) + '%', 10, 12);
+  ctx.fillText('−' + (maxAbs * 100).toFixed(2) + '%', 10, h - 4);
+  $('#ghost-legend').textContent = lag > 0 ? `ghost = ${leadName} shifted +${lag}s — when it traces ${A}, the lead is live` : 'no significant lead right now';
+}
+function drawXcorr() {
+  const cv = $('#xcorrbar'); if (!cv || tab !== 'radar') return;
+  const { ctx, w, h } = sizeCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  const A = focus, a = assets[A];
+  const xc = A === 'BTC' ? a.xcETH : a.xcBTC;
+  const leadName = A === 'BTC' ? 'ETH' : 'BTC';
+  $('#xc-pair').textContent = `${leadName} → ${A}`;
+  if (!xc || xc.n < 60) { $('#xc-read').textContent = 'warming up'; return; }
+  $('#xc-read').textContent = xc.significant ? `best +${xc.bestLag}s · r ${xc.bestCorr.toFixed(2)} · n ${xc.n}` : `nothing significant · n ${xc.n}`;
+  const lags = xc.lags, corrs = xc.corrs;
+  const iMin = lags.findIndex(l => l >= -10);
+  const shown = lags.slice(iMin).map((l, i) => [l, corrs[iMin + i]]);
+  const bw = (w - 40) / shown.length;
+  const maxC = Math.max(0.15, ...shown.map(([, c]) => Math.abs(c))) * 1.1;
+  const Y = c => h / 2 - (c / maxC) * (h / 2 - 10);
+  ctx.strokeStyle = '#1B1F26'; ctx.beginPath(); ctx.moveTo(4, Y(0)); ctx.lineTo(w - 30, Y(0)); ctx.stroke();
+  // significance band
+  ctx.fillStyle = 'rgba(255,255,255,.04)';
+  ctx.fillRect(4, Y(xc.sig), w - 34, Y(-xc.sig) - Y(xc.sig));
+  shown.forEach(([l, c], i) => {
+    const x = 4 + i * bw;
+    ctx.fillStyle = l === xc.bestLag && xc.significant ? '#FFB224' : l < 0 ? '#3A414D' : Math.abs(c) > xc.sig ? '#8891A0' : '#2A2F38';
+    const y0 = Y(0), y1 = Y(c);
+    ctx.fillRect(x, Math.min(y0, y1), Math.max(1, bw - 2), Math.max(1, Math.abs(y1 - y0)));
+  });
+  ctx.font = '9px ' + getComputedStyle(document.body).getPropertyValue('--mono');
+  ctx.fillStyle = '#5F6672';
+  ctx.fillText('−10s', 4, h - 2); ctx.fillText('0', 4 + 10 * bw, h - 2); ctx.fillText('+30s', w - 52, h - 2);
+}
+
+/* ---------- matrix / log / truth (slow renders) ---------- */
+function renderMatrix() {
+  if (tab !== 'matrix') return;
+  const rows = ASSETS.map(A => {
+    const a = assets[A];
+    const cell = xc => {
+      if (!xc || xc.n < 60) return '<td class="cell-dim">…</td>';
+      if (!xc.significant) return '<td class="cell-dim">—</td>';
+      if (xc.bestLag < 0) return `<td>leads ${-xc.bestLag}s · ${xc.bestCorr.toFixed(2)}</td>`;
+      if (xc.bestLag === 0) return `<td>synced · ${xc.bestCorr.toFixed(2)}</td>`;
+      return `<td class="cell-sig">+${xc.bestLag}s · ${xc.bestCorr.toFixed(2)}</td>`;
+    };
+    const perp = a.xcPerp;
+    const perpCell = !perp || perp.n < 60 ? '<td class="cell-dim">…</td>'
+      : perp.significant && perp.bestLag > 0 ? `<td class="cell-sig">perp +${perp.bestLag}s · ${perp.bestCorr.toFixed(2)}</td>`
+      : perp.significant && perp.bestLag === 0 ? '<td>synced</td>' : '<td class="cell-dim">—</td>';
+    const sig = a.vol.sigma1s();
+    return `<tr><td>${A}</td>${A === 'BTC' ? '<td class="cell-dim">is leader</td>' : cell(a.xcBTC)}${A === 'ETH' ? '<td class="cell-dim">is leader</td>' : cell(a.xcETH)}${perpCell}<td>${sig ? fmtBps(sig) : '…'}</td></tr>`;
+  }).join('');
+  $('#matrix-body').innerHTML = `<table class="grid">
+    <thead><tr><th>asset</th><th>lags BTC by</th><th>lags ETH by</th><th>leader vs settle proxy</th><th style="text-transform:none">σ bps/√s</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <div class="set-note" style="margin-top:8px">Lag column: how many seconds this asset's settle-proxy returns trail the leader's, from live cross-correlation over the trailing 15 min. "—" = no statistically significant relationship right now (bar |r| > 1.96/√n). Positive perp lead = the fast venue front-runs the venues Kalshi settles on.</div>`;
+  // basket panel
+  const nowSec = Math.floor(Date.now() / 1000);
+  const brows = Object.entries(CONFIG.basketFor).map(([A, bk]) => {
+    const d = basketDrift(A, nowSec);
+    if (!d) return `<tr><td>${A}</td><td class="cell-dim" colspan="3">warming</td></tr>`;
+    return `<tr><td>${A}</td><td>${bk}</td><td class="${d.z > 0.5 ? 'up' : d.z < -0.5 ? 'down' : ''}">${d.z.toFixed(2)}σ</td><td>${(d.basketRet * 100).toFixed(2)}% vs ${(d.assetRet * 100).toFixed(2)}%</td></tr>`;
+  }).join('');
+  $('#basket-body').innerHTML = `<table class="grid"><thead><tr><th>asset</th><th>basket</th><th>drift z</th><th>60s basket vs asset</th></tr></thead><tbody>${brows}</tbody></table>`;
+}
+
+function renderLog() {
+  if (tab !== 'log') return;
+  $('#log-count').textContent = `${signals.length} SIGNALS · ${signals.filter(s => s.resolved).length} RESOLVED`;
+  const rows = signals.slice(-200).reverse().map(s => {
+    const res = !s.resolved ? '<span class="dim">open</span>' : s.flat ? '<span class="dim">flat</span>' : s.outcome === 1 ? '<span class="up">HIT</span>' : '<span class="down">MISS</span>';
+    const conf = s.p != null ? Math.round(s.p * 100) + '¢' : s.meta && s.meta.z != null ? s.meta.z + 'σ' : '';
+    const src = s.meta && s.meta.leader ? s.meta.leader + (s.meta.lag != null ? '+' + s.meta.lag + 's' : '') : s.meta && s.meta.basket ? s.meta.basket : '';
+    return `<tr><td>${new Date(s.tMs).toLocaleTimeString('en-US', { hour12: false })}</td><td>${s.asset}</td><td>${s.kind}</td><td class="${s.dir > 0 ? 'up' : 'down'}">${s.dir > 0 ? '▲ up' : '▼ dn'}</td><td>${conf}</td><td>${src}</td><td>${s.horizonSec}s</td><td>${res}</td></tr>`;
+  }).join('');
+  $('#log-body').innerHTML = `<table class="grid"><thead><tr><th>time</th><th>asset</th><th>kind</th><th>call</th><th>conf</th><th>source</th><th>horizon</th><th>result</th></tr></thead><tbody>${rows || '<tr><td colspan="8" class="cell-dim">no signals yet</td></tr>'}</tbody></table>`;
+}
+
+function renderTruth() {
+  if (tab !== 'truth') return;
+  const all = E.hitStats(signals);
+  const brier = E.brierScore(signals.filter(s => s.kind === 'edge'));
+  const kinds = ['impulse', 'edge', 'basket'].map(k => {
+    const st = E.hitStats(signals, s => s.kind === k);
+    return `<div class="bandbar"><span style="width:70px" class="dim">${k}</span><span style="width:110px">${st.n ? `${st.hits}/${st.n} · ${Math.round(st.rate * 100)}%` : 'no data'}</span><span class="dim">${st.n ? `95% [${Math.round(st.wLo * 100)}–${Math.round(st.wHi * 100)}]` : ''}</span></div>`;
+  }).join('');
+  const zbands = [[2.5, 3], [3, 4], [4, 99]].map(([lo, hi]) => {
+    const st = E.hitStats(signals, s => s.kind === 'impulse' && s.meta && Math.abs(s.meta.z) >= lo && Math.abs(s.meta.z) < hi);
+    return `<div class="bandbar"><span style="width:70px" class="dim">${lo}–${hi === 99 ? '∞' : hi}σ</span><span style="width:110px">${st.n ? `${st.hits}/${st.n} · ${Math.round(st.rate * 100)}%` : 'no data'}</span><span class="dim">${st.n ? `95% [${Math.round(st.wLo * 100)}–${Math.round(st.wHi * 100)}]` : ''}</span></div>`;
+  }).join('');
+  const cal = E.calibTable(signals.filter(s => s.kind === 'edge'), 0.05).filter(r => r.n > 0).map(r =>
+    `<div class="bandbar"><span style="width:70px" class="dim">${Math.round(r.lo * 100)}–${Math.round(r.hi * 100)}¢</span><span style="width:110px">${r.hits}/${r.n} · ${Math.round(r.rate * 100)}%</span><span class="dim">95% [${Math.round(r.wLo * 100)}–${Math.round(r.wHi * 100)}] · want ${Math.round((r.lo + r.hi) / 2 * 100)}</span></div>`
+  ).join('') || '<div class="dim" style="font-size:11px">Needs resolved edge signals — enter strikes + Kalshi prices and let sessions settle.</div>';
+  const perAsset = ASSETS.map(A => {
+    const st = E.hitStats(signals, s => s.asset === A);
+    return st.n ? `<div class="bandbar"><span style="width:70px" class="dim">${A}</span><span style="width:110px">${st.hits}/${st.n} · ${Math.round(st.rate * 100)}%</span><span class="dim">95% [${Math.round(st.wLo * 100)}–${Math.round(st.wHi * 100)}]</span></div>` : '';
+  }).join('');
+  $('#truth-body').innerHTML = `
+    <div class="panel"><div class="microcap"><span>OVERALL</span><span class="dim mono">${all.n} resolved${brier != null ? ' · edge Brier ' + brier.toFixed(3) : ''}</span></div>
+      <div class="bandbar"><span style="width:70px" class="dim">all</span><span style="width:110px">${all.n ? `${all.hits}/${all.n} · ${Math.round(all.rate * 100)}%` : 'no data'}</span><span class="dim">${all.n ? `95% [${Math.round(all.wLo * 100)}–${Math.round(all.wHi * 100)}]` : ''}</span></div>${kinds}</div>
+    <div class="panel"><div class="microcap"><span>IMPULSE BY STRENGTH</span></div>${zbands}<div class="set-note" style="margin-top:6px">Follow-through rate of impulse signals by z. If 3–4σ isn't beating ~55%, raise the z threshold in settings — this table is the calibration loop.</div></div>
+    <div class="panel"><div class="microcap"><span>EDGE CALIBRATION — displayed ¢ vs realized</span></div>${cal}<div class="set-note" style="margin-top:6px">Each band: when the model said X¢, did it settle that side X% of the time? Displayed 80 should hit ~80. Systematic misses = adjust σ half-life or trust the model less at that band.</div></div>
+    <div class="panel"><div class="microcap"><span>BY ASSET</span></div>${perAsset || '<div class="dim" style="font-size:11px">no data</div>'}</div>`;
+}
+
+/* ---------- settings drawer ---------- */
+function renderSettings() {
+  const s = settings;
+  $('#settings').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center"><span class="microcap">SETTINGS</span><button class="iconbtn" id="btn-close-settings">✕</button></div>
+    <h3>SIGNALS</h3>
+    <div class="setrow"><span>impulse threshold (σ)</span><input type="number" step="0.1" id="set-zFire" value="${s.zFire}"></div>
+    <div class="setrow"><span>edge min after fees ($)</span><input type="number" step="0.01" id="set-edgeMin" value="${s.edgeMin}"></div>
+    <div class="setrow"><span>basket drift threshold (σ)</span><input type="number" step="0.1" id="set-basketZ" value="${s.basketZ}"></div>
+    <div class="setrow"><span>flat epsilon (bps)</span><input type="number" step="0.5" id="set-flatEps" value="${s.flatEpsBps}"></div>
+    <h3>MODEL</h3>
+    <div class="setrow"><span>σ half-life (s)</span><input type="number" step="30" id="set-hl" value="${s.volHalflifeSec}"></div>
+    <div class="setrow"><span>fee coefficient</span><input type="number" step="0.005" id="set-feeK" value="${s.feeK}"></div>
+    <h3>FEEDS</h3>
+    <div class="setrow"><span>try Binance WS</span><input type="checkbox" id="set-bn" ${s.binanceEnabled ? 'checked' : ''}></div>
+    <div class="setrow"><span>poll Kalshi REST</span><input type="checkbox" id="set-kalshi" ${s.kalshiPoll ? 'checked' : ''}></div>
+    <div class="set-note">Kalshi polling needs the browser to reach ${s.kalshiBase} (CORS). If the KALSHI light goes red, run the bundled proxy: <span class="mono">node tools/kalshi-proxy.mjs</span> and it will be used automatically.</div>
+    <h3>DATA</h3>
+    <div class="setrow"><button class="btn" id="set-csv">EXPORT CSV</button><button class="btn danger" id="set-clear">CLEAR SIGNALS</button></div>
+    <div class="set-note">Signals persist in this browser (localStorage). Export before clearing.</div>
+    <div class="set-note" style="margin-top:14px">Reload applies feed changes.</div>`;
+  $('#btn-close-settings').onclick = () => { $('#settings').hidden = true; };
+  const num = (id, key, post) => { $(id).onchange = e => { const v = parseFloat(e.target.value); if (isFinite(v)) { settings[key] = v; saveJson('llr.settings.v1', settings); if (post) post(v); } }; };
+  num('#set-zFire', 'zFire'); num('#set-edgeMin', 'edgeMin'); num('#set-basketZ', 'basketZ'); num('#set-flatEps', 'flatEpsBps'); num('#set-feeK', 'feeK');
+  num('#set-hl', 'volHalflifeSec');
+  $('#set-bn').onchange = e => { settings.binanceEnabled = e.target.checked; saveJson('llr.settings.v1', settings); };
+  $('#set-kalshi').onchange = e => { settings.kalshiPoll = e.target.checked; saveJson('llr.settings.v1', settings); startKalshi(); };
+  $('#set-csv').onclick = exportCsv;
+  $('#set-clear').onclick = clearSignals;
+}
+function exportCsv() {
+  const blob = new Blob([E.signalsToCsv(signals)], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'leadlag-radar-signals.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function clearSignals() {
+  if (!confirm('Delete all logged signals? Export first if you want the history.')) return;
+  signals = []; saveJson('llr.signals.v1', signals); renderSlow(); toast('Signal log cleared');
+}
+
+/* ---------- render loops ---------- */
+function renderFast() { renderTopbar(); drawGhost(); drawXcorr(); }
+let slowTick = 0;
+function renderSlow() {
+  renderRail();
+  if (tab === 'radar') { renderFocusHead(); renderFair(); renderImpulses(); }
+  if (tab === 'matrix') renderMatrix();
+  if (tab === 'log') renderLog();
+  if (tab === 'truth') renderTruth();
+}
+
+/* ---------- boot ---------- */
+buildRail();
+renderSettings();
+$('#btn-settings').onclick = () => { $('#settings').hidden = !$('#settings').hidden; renderSettings(); };
+$('#btn-csv').onclick = exportCsv;
+$('#btn-clear').onclick = clearSignals;
+if (SIM) startSim(); else { startFeeds(); startKalshi(); }
+setInterval(housekeep, 1000);
+setInterval(refreshXcorr, 1000);
+setInterval(renderSlow, 1000);
+(function raf() { renderFast(); requestAnimationFrame(() => setTimeout(raf, 100)); })();
+
+/* ---------- browser selftest (?selftest=1) ---------- */
+if (Q.get('selftest') === '1') {
+  const rows = [];
+  const t = (name, cond) => rows.push({ test: name, pass: !!cond });
+  t('normCdf(0)=0.5', Math.abs(E.normCdf(0) - 0.5) < 1e-9);
+  t('fairProb pre-window reduces time by 2w/3', (() => {
+    const a = E.fairProb({ spot: 101, strike: 100, sigma1s: 0.001, tRemainSec: 400, settleMode: 'avg', settleWindowSec: 60 });
+    const b = E.fairProb({ spot: 101, strike: 100, sigma1s: 0.001, tRemainSec: 360, settleMode: 'point' });
+    return Math.abs(a.p - b.p) < 1e-9;
+  })());
+  t('xcorr recovers sim lag', (() => {
+    const sim = E.makeSim(1234);
+    const btc = new E.SecondSeries(2000), near = new E.SecondSeries(2000);
+    for (let i = 0; i < 900; i++) { const px = sim(); btc.push(i * 1000, px.BTC); near.push(i * 1000, px.NEAR); }
+    const x = E.xcorr(btc.returns1s(), near.returns1s(), 15, 800);
+    return x.bestLag === E.SIM_SPEC.NEAR.lag;
+  })());
+  t('fee at 50c = 2c', E.feeTaker(0.5) === 0.02);
+  console.table(rows);
+}
+})();
+</script>
+</body>
+</html>
