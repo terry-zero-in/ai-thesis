@@ -1,4 +1,48 @@
-# Session Notes — last updated 2026-05-17 (session 9 — settings + README)
+# Session Notes — last updated 2026-08-15 (Lead-Lag Radar session)
+
+## SESSION 2026-08-15 — Lead-Lag Radar (Kalshi 15-min crypto lead-lag tool)
+
+Direct Terry request (not a THS ticket), branch
+`claude/near-correlation-trading-tool-id2450`: research what leads NEAR and
+the other eight Kalshi 15-minute crypto markets (BTC ETH SOL XRP DOGE BNB ZEC
+HYPE) by seconds-to-minutes, then build a real-time tool to watch it, log
+signals, and calibrate.
+
+**Shipped: `leadlag-radar/`** — single-file browser tool (index.html, no
+build/deps), README, RESEARCH.md, tools/behaviour.mjs (63 Node assertions
+incl. 20k-path Monte Carlo of the settlement-average variance math and
+end-to-end xcorr lag recovery), tools/kalshi-proxy.mjs (CORS bridge — Kalshi
+REST sends no CORS headers). Feeds: Hyperliquid allMids (leader tape, all 9 +
+basket coins), Coinbase+Kraken order-book mids (CF-index constituents, settle
+proxy), optional Binance, optional Kalshi REST poll. Signals: leader impulse
+→ follower (per-asset live xcorr lag), fair-prob vs Kalshi quote after fees,
+basket drift. TRUTH tab grades everything (bands, Wilson CIs, Brier).
+Sim mode `?sim=1&warp=900` for offline demo; screenshot-verified in-container
+via Playwright.
+
+**Research (6-agent workflow, findings in leadlag-radar/RESEARCH.md):**
+settlement = mean of 60 per-second CF Benchmarks RTI prints over the final
+minute, all nine assets; constituents are regulated USD venues only (never
+Binance/perps) → structural seconds-scale lag chain, practitioner estimate
+~10s in fast moves; strike = previous window's settlement average (tool
+auto-seeds strikes from its own accumulator); series tickers KX{ASSET}15M;
+fee ceil(0.07·P·(1−P)); Polymarket precedents ($313→$414K bot, $40M/yr arb
+study, Stanford/SMU settlement-manipulation paper) and Polymarket's
+countermeasures — which Kalshi has not adopted. Ranking for exploitability:
+XRP (dual out-of-index leaders incl. Upbit #1 venue), SOL, BNB (index = two
+young CB/KR books chasing Binance), ZEC (−0.78 BTC corr — impulse lane OFF,
+pure idio), DOGE, ETH, NEAR (solid BTC laggard, mid fill capacity), HYPE
+(nothing external leads Hyperliquid), BTC (contested, settlement-math lane
+only). Research-session caveat: sandbox egress blocked page fetches — most
+external claims are search-snippet grade, labeled [reported] in RESEARCH.md;
+Kalshi API facts were [verified] against vendored OpenAPI/AsyncAPI specs.
+
+**Deliberate scope cuts:** no order execution (market-data + decision support
+only), no Kalshi WS (needs signed headers browsers can't attach), lag
+resolution 1s on the return grid (tick tape handles sub-second impulses).
+
+---
+
 
 ## SESSION 9 — autonomous polish (2026-05-17, post-compact)
 

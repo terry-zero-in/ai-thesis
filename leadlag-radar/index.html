@@ -639,11 +639,13 @@ const SIM = Q.get('sim') === '1';
    ======================================================================== */
 const ASSETS = ['BTC','ETH','SOL','XRP','DOGE','NEAR','BNB','ZEC','HYPE'];
 const CONFIG = {
-  coinbase: { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XRP:'XRP-USD', DOGE:'DOGE-USD', NEAR:'NEAR-USD', BNB:null, ZEC:'ZEC-USD', HYPE:null },
-  kraken:   { BTC:'BTC/USD', ETH:'ETH/USD', SOL:'SOL/USD', XRP:'XRP/USD', DOGE:'DOGE/USD', NEAR:'NEAR/USD', BNB:null, ZEC:'ZEC/USD', HYPE:'HYPE/USD' },
+  // BNB listed on Kraken 22-Apr-2025 and Coinbase ~Nov-2025 — those two young
+  // books are the ONLY constituents of the CF BNB index that settles Kalshi.
+  coinbase: { BTC:'BTC-USD', ETH:'ETH-USD', SOL:'SOL-USD', XRP:'XRP-USD', DOGE:'DOGE-USD', NEAR:'NEAR-USD', BNB:'BNB-USD', ZEC:'ZEC-USD', HYPE:null },
+  kraken:   { BTC:'BTC/USD', ETH:'ETH/USD', SOL:'SOL/USD', XRP:'XRP/USD', DOGE:'DOGE/USD', NEAR:'NEAR/USD', BNB:'BNB/USD', ZEC:'ZEC/USD', HYPE:'HYPE/USD' },
   hyperliquid: { BTC:'BTC', ETH:'ETH', SOL:'SOL', XRP:'XRP', DOGE:'DOGE', NEAR:'NEAR', BNB:'BNB', ZEC:'ZEC', HYPE:'HYPE' },
   binance:  { BTC:'btcusdt', ETH:'ethusdt', SOL:'solusdt', XRP:'xrpusdt', DOGE:'dogeusdt', NEAR:'nearusdt', BNB:'bnbusdt', ZEC:'zecusdt', HYPE:'hypeusdt' },
-  settleVenues: { default:['cb','kr'], BNB:['bn','hl'], HYPE:['hl','kr'] },
+  settleVenues: { default:['cb','kr'], HYPE:['hl','kr'] },
   // extra Hyperliquid coins streamed for basket signals (not tradeable on Kalshi)
   basketCoins: ['FET','TAO','RENDER','ICP','INJ','VIRTUAL','AVAX','APT','SUI'],
   baskets: { AI:['FET','TAO','RENDER','ICP','INJ','VIRTUAL'], L1:['SOL','AVAX','APT','SUI'] },
@@ -720,11 +722,13 @@ function feedMsg(key) { if (feeds[key]) feeds[key].lastMsg = Date.now(); }
 // {asset|coin, venue, price} — receive time is stamped here, once.
 function wsFeed(key, name, url, { onOpen, parse, pingMs, pingPayload }) {
   if (SIM) return;
+  const urls = Array.isArray(url) ? url : [url];
   setFeed(key, name, 'off');
   let ws, retry = 0, pinger = null, closed = false;
   function connect() {
-    setFeed(key, name, 'off', 'connecting');
-    try { ws = new WebSocket(url); } catch (e) { setFeed(key, name, 'err', String(e)); return schedule(); }
+    const u = urls[retry % urls.length]; // rotate hosts across reconnects
+    setFeed(key, name, 'off', 'connecting ' + u.replace(/^wss:\/\//, '').split('/')[0]);
+    try { ws = new WebSocket(u); } catch (e) { setFeed(key, name, 'err', String(e)); return schedule(); }
     const failTimer = setTimeout(() => { try { ws.close(); } catch {} }, 12000);
     ws.onopen = () => { clearTimeout(failTimer); retry = 0; try { onOpen(ws); } catch {} if (pingMs) pinger = setInterval(() => { try { ws.send(pingPayload); } catch {} }, pingMs); };
     ws.onmessage = ev => {
@@ -801,10 +805,15 @@ function startFeeds() {
       return out.length ? out : null;
     },
   });
-  // Binance global (optional; geo-blocked for some US networks — fails soft)
+  // Binance (optional). data-stream.binance.vision is Binance's market-data-
+  // only host with no stated geo policy — tried first; the main host 451s
+  // from US IPs. Fails soft either way; HL covers the leader role without it.
   if (settings.binanceEnabled) {
     const streams = ASSETS.map(A => CONFIG.binance[A]).filter(Boolean).map(s => s + '@aggTrade').join('/');
-    wsFeed('bn', 'BN', 'wss://stream.binance.com:9443/stream?streams=' + streams, {
+    wsFeed('bn', 'BN', [
+      'wss://data-stream.binance.vision/stream?streams=' + streams,
+      'wss://stream.binance.com:9443/stream?streams=' + streams,
+    ], {
       onOpen: () => {},
       parse: raw => {
         const m = JSON.parse(raw);
