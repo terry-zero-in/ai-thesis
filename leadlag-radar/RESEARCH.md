@@ -223,7 +223,90 @@ the ones that don't.
    few bps — fine for direction and ≥4¢ edges, not for 1¢ disputes at the
    strike. When it's that close, the answer is "no trade."
 
-## 7. Sources (principal)
+## 7. What the practitioners say (trader intel)
+
+From open bot code actually read this session [verified] and trader
+write-ups [reported]:
+
+- **The market is no longer sleepy — but the alts still are.** Kalshi 15-min
+  crypto volume grew from $53.8M (Jan 2026) to ~$4.8B (Jul 2026), single-day
+  record $218M (Jul 15). Susquehanna became Kalshi's first dedicated
+  institutional market maker (Apr 2024) and Wintermute quotes two-sided on
+  both Kalshi and Polymarket. On BTC, makers reprice off the same real-time
+  index the contract settles on, ~300ms-stale quotes get sniped, and 3¢
+  cross-venue gaps vanish in under a second [reported]. **The BTC lane is a
+  bot food chain; the alt lanes — your NEAR/ZEC/BNB/HYPE books at <$2K —
+  are where the structural lag persists.**
+- **Fees, precisely** [reported]: taker = ceil(0.07·P·(1−P)), **maker =
+  ceil(0.0175·P·(1−P))** — a quarter of taker, at most ~0.44¢ at 50¢ —
+  plus an open liquidity program paying ~$0.005/contract for resting orders.
+  Resting a limit at your model's price instead of crossing the spread
+  changes the EV math materially; the Radar's fee coefficient is a setting,
+  so run it at 0.0175 when you quote maker-style. (One caveat flagged:
+  crypto series may carry a higher multiplier — verify against the July 2026
+  fee PDF once; the BTC tool in this repo verified 0.07 for taker.)
+- **Execution reality on a live KXBTC15M bot (Jun–Jul 2026)** [verified]:
+  ~9% of attempted windows got no fill at all; mean entry drag +1.12¢
+  (median 0¢) across 163 live windows. Budget both into any edge threshold —
+  the Radar's default 4¢ minimum edge survives 1–2¢ of drag; a 1¢ "edge"
+  does not.
+- **Strategy taxonomy in shared code** [verified — repos read]:
+  late-window "done-deal" scalps (buy the favored side at 93–97¢ with 2–4
+  min left when spot sits far from the strike — positive EV after fees at
+  extreme prices where the fee formula collapses); consensus entries (3+ of:
+  BTC momentum, prior-window result, Kalshi book skew, exchange order-flow
+  imbalance); "Resolution Rider" final-90s settlement momentum;
+  **settlement-endgame average tracking** (one system switches to pure BRTI
+  running-average tracking in the final minute — the exact math the Radar's
+  settle panel computes); and impulse-FADE mean reversion (two independent
+  sources profitably fade binary-quote overreactions to leader impulses —
+  the Radar's TRUTH tab will tell you whether follow or fade wins on your
+  assets at your thresholds; both are the same logged signal, read in
+  opposite directions).
+- **Failure modes in shared code** [verified]: naive both-sides-under-$1 and
+  fast-close bots lost money as shipped; a Rust bot's live-vs-paper
+  divergence measurement is the methodology worth copying — which is exactly
+  what the Radar's signal log does for you.
+- **Tooling worth mining later**: `kapelame/kalshi-crypto-bot` (most complete
+  open framework: Kalshi+Coinbase collector, ATR-based fair value, paper
+  trader), `papabrosio` (settlement tracking), `polyrec` (Polymarket
+  analogue). None do cross-asset lead-lag on the alt roster — that's the
+  Radar's differentiation.
+- **Coverage gap**: Reddit/X were unreachable this session; trader-forum
+  color is search-digest grade only.
+
+## 8. Feed engineering — what was confirmed
+
+From the dedicated feeds agent (docs read via GitHub mirrors of official
+specs; live probes impossible from this sandbox):
+
+- **Hyperliquid** [verified]: `wss://api.hyperliquid.xyz/ws`, subscribe
+  `{"method":"subscribe","subscription":{"type":"allMids"}}`; **all nine
+  assets have Hyperliquid perps** with plain-symbol coin names. The API has
+  no IP restriction (only the app frontend geo-blocks US) and community
+  dashboards call it from browser JS. This is the Radar's always-on leader
+  lane.
+- **Coinbase** [verified]: both `wss://advanced-trade-ws.coinbase.com` and
+  the exchange feed `wss://ws-feed.exchange.coinbase.com` serve public
+  market-data channels with no auth. NEAR-USD and ZEC-USD are listed and
+  trading (ZEC was never delisted).
+- **Kraken** [reported]: `wss://ws.kraken.com/v2` public ticker, no auth;
+  lists all nine for US users (HYPE and BNB included).
+- **Binance** [reported]: the main host 451s US IPs at the WS handshake;
+  `wss://data-stream.binance.vision` is the official market-data-only host
+  with **no stated geo policy** (unverified from US — the Radar tries it
+  first and fails soft). Binance.US mirrors the protocol with all nine
+  listed. Bybit is US-blocked; OKX unresolved — both excluded.
+- **Kalshi** [verified]: REST market data is public (no key);
+  **every WebSocket connection requires RSA-signed headers** — which a
+  browser cannot attach to a WS upgrade — so the REST poll through the
+  bundled proxy is the only browser-viable Kalshi lane. Rate limits
+  (token-bucket, ~20 reads/s basic tier) leave the Radar's 1 poll / 5s far
+  inside the envelope. Browser WS to exchanges is *not* subject to CORS
+  (only Kalshi's REST is), which is why the whole leader/constituent stack
+  can run from a double-clicked HTML file.
+
+## 9. Sources (principal)
 
 - Kalshi API specs (OpenAPI 3.13.0 / AsyncAPI 2.0.0, vendored in
   `texascoding/kalshi-python-sdk`, `reedjacobp/kalshi-trading-bot`) — series
@@ -256,3 +339,9 @@ the ones that don't.
 - NEAR: Cointelegraph AI-rally coverage, Nansen NEAR Q2 2026 report, The
   Defiant (inflation halving), Macroaxis correlation, Coinglass/FXStreet OI,
   CoinDesk (Bithumb suspension). [reported]
+- Trader intel: `kapelame/kalshi-crypto-bot`, `hamad-khawaja`,
+  `reedjacobp/kalshi-trading-bot`, `papabrosio` (settlement tracking),
+  `d589f` (live-vs-paper divergence), `seanrobenalt` (losing both-sides
+  bot), `txbabaxyz/polyrec` — repos read this session [verified];
+  OddsShopper live order probes, Artemis volume data, MM coverage
+  (Susquehanna, Wintermute). [reported]
