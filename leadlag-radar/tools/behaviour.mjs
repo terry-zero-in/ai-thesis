@@ -70,6 +70,54 @@ function approx(a, b, tol, name) {
   approx(partial.coverage, 10 / 60, 1e-9, 'windowAverage partial coverage');
 }
 
+/* ---------- 4b. settlementAverage (carry-forward, the settlement rule) ---------- */
+{
+  const s = new Engine.SecondSeries();
+  // dense window: identical to a plain mean
+  for (let t = 100; t < 160; t++) s.push(t * 1000, 200 + (t - 100));
+  const dense = s.settlementAverage(100, 159);
+  approx(dense.avg, (200 + 259) / 2, 1e-9, 'settlementAverage dense = plain mean');
+  ok(dense.coverage === 1 && dense.observedFrac === 1 && dense.worstCarry === 0, 'dense window fully observed');
+
+  // sparse window: a price that ticks once then goes quiet still fills the window
+  const q = new Engine.SecondSeries();
+  q.push(1000 * 1000, 50);
+  q.push(1010 * 1000, 60);
+  const sparse = q.settlementAverage(1000, 1019);
+  // seconds 1000-1009 carry 50, 1010-1019 carry 60
+  approx(sparse.avg, (50 * 10 + 60 * 10) / 20, 1e-9, 'settlementAverage carries a quiet tape forward');
+  ok(sparse.coverage === 1, 'carry fills every second of the window');
+  approx(sparse.observedFrac, 2 / 20, 1e-9, 'observedFrac reports true tick density');
+  ok(sparse.worstCarry === 9, 'worstCarry reports the longest stale stretch');
+
+  // seed from just before the window (5s stale — within the 30s guard)
+  const seeded = new Engine.SecondSeries();
+  seeded.push(995 * 1000, 7);
+  const sd = seeded.settlementAverage(1000, 1009);
+  approx(sd.avg, 7, 1e-9, 'window seeds from the last price before it opened');
+  ok(sd.observed === 0 && sd.coverage === 1, 'seeded window has zero in-window ticks but full coverage');
+  ok(sd.worstCarry === 14, 'worstCarry counts age from the seed tick');
+
+  // too stale to stand behind: a seed 100s before the window
+  const stale = new Engine.SecondSeries();
+  stale.push(900 * 1000, 7);
+  ok(stale.settlementAverage(1000, 1009, 30) === null, 'carry beyond maxCarrySec returns null');
+  ok(stale.settlementAverage(1000, 1009, 200) !== null, 'generous maxCarrySec allows the same window');
+
+  // no data at all
+  ok(new Engine.SecondSeries().settlementAverage(0, 59) === null, 'empty series → null');
+}
+
+/* ---------- 4c. atOrBefore returns the timestamp too ---------- */
+{
+  const s = new Engine.SecondSeries();
+  s.push(500 * 1000, 10); s.push(520 * 1000, 11);
+  const e = s.atOrBefore(519);
+  ok(e.t === 500 && e.p === 10, 'atOrBefore returns {t,p} of the carrying row');
+  ok(s.atOrBefore(499) === null, 'atOrBefore before series → null');
+  ok(s.priceAtOrBefore(519) === 10, 'priceAtOrBefore still works');
+}
+
 /* ---------- 5. TickTape ---------- */
 {
   const t = new Engine.TickTape(10_000);

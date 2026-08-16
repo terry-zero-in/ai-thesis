@@ -101,6 +101,7 @@ section[id^="tab-"][hidden]{display:none}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
 .panel .microcap{margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline}
 canvas.chart{width:100%;display:block}
+#ghost{height:190px} #xcorrbar{height:120px}
 
 /* ---- fair ribbon ---- */
 #fair-grid{display:grid;grid-template-columns:auto 1fr auto;gap:10px 16px;align-items:center}
@@ -297,8 +298,8 @@ const Engine = (() => {
     size() { return this.t.length; }
     lastT() { return this.t.length ? this.t[this.t.length - 1] : null; }
     lastPrice() { return this.p.length ? this.p[this.p.length - 1] : null; }
-    // latest price at or before tSec (binary search); null if series starts after tSec
-    priceAtOrBefore(tSec) {
+    // latest entry at or before tSec (binary search); null if series starts after tSec
+    atOrBefore(tSec) {
       const t = this.t;
       if (!t.length || tSec < t[0]) return null;
       let lo = 0, hi = t.length - 1, ans = 0;
@@ -306,7 +307,11 @@ const Engine = (() => {
         const mid = (lo + hi) >> 1;
         if (t[mid] <= tSec) { ans = mid; lo = mid + 1; } else hi = mid - 1;
       }
-      return this.p[ans];
+      return { t: t[ans], p: this.p[ans] };
+    }
+    priceAtOrBefore(tSec) {
+      const e = this.atOrBefore(tSec);
+      return e ? e.p : null;
     }
     // 1-second log returns from CONSECUTIVE seconds only (dt=1). A gap yields
     // no return — this is the defect-3 guard from btc-session-edge-v3.
@@ -321,7 +326,7 @@ const Engine = (() => {
       return { t: rt, r: rr };
     }
     // running average of per-second closes over [fromSec, toSec] inclusive;
-    // returns {avg, nSeconds, coverage} — used for the settlement window
+    // returns {avg, nSeconds, coverage} — raw rows only, no carry
     windowAverage(fromSec, toSec) {
       const t = this.t, p = this.p;
       let sum = 0, n = 0;
@@ -331,6 +336,32 @@ const Engine = (() => {
       }
       const span = Math.max(1, toSec - fromSec + 1);
       return n ? { avg: sum / n, nSeconds: n, coverage: n / span } : null;
+    }
+    // Settlement-grade average over [fromSec, toSec]: every second in the
+    // window contributes, gaps carrying the last observed price forward —
+    // which is what the settlement index actually does (it prints once per
+    // second whether or not a trade happened). maxCarrySec bounds how long a
+    // stale price may be carried before the window is declared unusable.
+    settlementAverage(fromSec, toSec, maxCarrySec = 30) {
+      const t = this.t, p = this.p;
+      if (!t.length || toSec < fromSec) return null;
+      const seed = this.atOrBefore(fromSec - 1);
+      let idx = 0;
+      while (idx < t.length && t[idx] < fromSec) idx++;
+      let carry = seed ? seed.p : null;
+      let carriedFrom = seed ? seed.t : null;
+      let sum = 0, n = 0, observed = 0, worstCarry = 0;
+      for (let s = fromSec; s <= toSec; s++) {
+        while (idx < t.length && t[idx] === s) { carry = p[idx]; carriedFrom = s; idx++; observed++; }
+        if (carry == null) continue;               // window opened before any data
+        const age = s - carriedFrom;
+        if (age > maxCarrySec) return null;        // too stale to stand behind
+        if (age > worstCarry) worstCarry = age;
+        sum += carry; n++;
+      }
+      if (!n) return null;
+      const span = toSec - fromSec + 1;
+      return { avg: sum / n, nSeconds: n, observed, coverage: n / span, observedFrac: observed / span, worstCarry };
     }
   }
 
@@ -682,8 +713,9 @@ for (const A of ASSETS) assets[A] = {
   volT: 0, volLeaderT: 0,
   xcBTC: null, xcETH: null, xcPerp: null,
   lastImpulseMs: 0,
-  strike: null, yesCents: null, kalshiAuto: false, kalshiTicker: null,
+  strike: null, strikeEst: false, yesCents: null, kalshiAuto: false, kalshiTicker: null,
   lastEdgeMs: 0, lastEdgeSide: 0, lastBasketMs: 0,
+  compKey: null, compLast: 0, compRatio: 1, compVenues: 0,
 };
 const basketSeries = {};
 for (const c of CONFIG.basketCoins) basketSeries[c] = new E.SecondSeries(1800);
@@ -775,23 +807,26 @@ function startFeeds() {
     },
   });
   // Coinbase exchange market-data feed (public). CF Real-Time Indices are
-  // built from constituent ORDER-BOOK mids (once per second), so the proxy
-  // uses best bid/ask mid when present, falling back to last trade.
+  // built from constituent ORDER-BOOK mids (once per second), so we track the
+  // best bid/ask mid. `ticker_batch` pushes ~1/s per product regardless of
+  // trades; plain `ticker` only fires on a trade, which on a quiet alt tape
+  // leaves the composite stale for minutes and draws staircase artifacts.
   const cbIds = ASSETS.map(A => CONFIG.coinbase[A]).filter(Boolean);
   wsFeed('cb', 'CB', 'wss://ws-feed.exchange.coinbase.com', {
-    onOpen: ws => ws.send(JSON.stringify({ type: 'subscribe', product_ids: cbIds, channels: ['ticker'] })),
+    onOpen: ws => ws.send(JSON.stringify({ type: 'subscribe', product_ids: cbIds, channels: ['ticker_batch', 'ticker'] })),
     parse: raw => {
       const m = JSON.parse(raw);
-      if (m.type !== 'ticker' || !revCB[m.product_id]) return null;
+      if ((m.type !== 'ticker' && m.type !== 'ticker_batch') || !revCB[m.product_id]) return null;
       const bid = parseFloat(m.best_bid), ask = parseFloat(m.best_ask);
       const p = (bid > 0 && ask > 0) ? (bid + ask) / 2 : parseFloat(m.price);
       return p > 0 ? [{ venue: 'cb', asset: revCB[m.product_id], price: p }] : null;
     },
   });
-  // Kraken v2 (public) — same mid-price treatment
+  // Kraken v2 (public). event_trigger 'bbo' fires on every top-of-book change
+  // rather than only on trades — same freshness reasoning as above.
   const krSyms = ASSETS.map(A => CONFIG.kraken[A]).filter(Boolean);
   wsFeed('kr', 'KR', 'wss://ws.kraken.com/v2', {
-    onOpen: ws => ws.send(JSON.stringify({ method: 'subscribe', params: { channel: 'ticker', symbol: krSyms } })),
+    onOpen: ws => ws.send(JSON.stringify({ method: 'subscribe', params: { channel: 'ticker', symbol: krSyms, event_trigger: 'bbo', snapshot: true } })),
     parse: raw => {
       const m = JSON.parse(raw);
       if (m.channel !== 'ticker' || !Array.isArray(m.data)) return null;
@@ -829,11 +864,18 @@ function startFeeds() {
 
 /* --------- tick ingestion: venue tape → roles → series --------- */
 function settleSetFor(A) { return CONFIG.settleVenues[A] || CONFIG.settleVenues.default; }
+// A venue counts as usable for FRESH_MS after its last message. 30s (not 5s)
+// because constituent books on thin alts genuinely go quiet between updates —
+// the quote is still the live top of book, and dropping it mid-window is what
+// made the composite step between venue sets and draw square waves.
+const FRESH_MS = 30000;
+const LEADER_FRESH_MS = 15000;
+
 function leaderVenueFor(A, nowMs) {
   const a = assets[A];
   const t = nowMs != null ? nowMs : Date.now();
-  if (a.venues.hl && t - a.venues.hl.ts < 6000) return 'hl';
-  if (a.venues.bn && t - a.venues.bn.ts < 6000) return 'bn';
+  if (a.venues.hl && t - a.venues.hl.ts < LEADER_FRESH_MS) return 'hl';
+  if (a.venues.bn && t - a.venues.bn.ts < LEADER_FRESH_MS) return 'bn';
   return null; // fall back to composite itself
 }
 function ingest(venue, A, price, now, coin) {
@@ -844,16 +886,31 @@ function ingest(venue, A, price, now, coin) {
   // leader path
   const lv = leaderVenueFor(A, now);
   if (venue === lv) { a.leader.push(now, price); a.leaderTape.push(now, price); }
-  // settlement-proxy composite: median of fresh settle venues
+  // Settlement-proxy composite. Composed only from venues in the asset's
+  // settle set that are currently fresh; when that SET changes (a venue drops
+  // out or rejoins) the level can legitimately shift a few bp, so we re-base
+  // rather than emit a phantom jump: the shift is absorbed into an offset and
+  // the published series stays continuous. Level accuracy is re-anchored the
+  // moment the full set is back.
   const set = settleSetFor(A);
   if (set.includes(venue)) {
-    const fresh = [];
-    for (const v of set) { const q = a.venues[v]; if (q && now - q.ts < 5000) fresh.push(q.p); }
-    if (fresh.length) {
-      fresh.sort((x, y) => x - y);
-      const mid = fresh.length % 2 ? fresh[(fresh.length - 1) / 2] : (fresh[fresh.length / 2 - 1] + fresh[fresh.length / 2]) / 2;
-      a.spot.push(now, mid); a.spotTape.push(now, mid);
+    const fresh = [], key = [];
+    for (const v of set) {
+      const q = a.venues[v];
+      if (q && now - q.ts < FRESH_MS) { fresh.push(q.p); key.push(v); }
     }
+    if (!fresh.length) return;
+    fresh.sort((x, y) => x - y);
+    const mid = fresh.length % 2 ? fresh[(fresh.length - 1) / 2] : (fresh[fresh.length / 2 - 1] + fresh[fresh.length / 2]) / 2;
+    const sig = key.join('+');
+    if (a.compKey !== sig) {
+      if (a.compKey != null && a.compLast > 0 && mid > 0) a.compRatio *= a.compLast / mid;
+      a.compKey = sig;
+    }
+    a.compLast = mid;
+    a.compVenues = key.length;
+    const px = mid * a.compRatio;
+    a.spot.push(now, px); a.spotTape.push(now, px);
   }
 }
 
@@ -978,8 +1035,8 @@ function pushSignal(o) {
 function priceAt(A, tSec) { return assets[A] ? assets[A].spot.priceAtOrBefore(tSec) : null; }
 function settleAt(A, tSec) {
   const a = assets[A]; if (!a) return null;
-  const w = a.spot.windowAverage(tSec - 59, tSec);
-  return (w && w.coverage >= 0.5) ? w.avg : null;
+  const w = a.spot.settlementAverage(tSec - 59, tSec);
+  return w ? w.avg : null;
 }
 
 function housekeep() {
@@ -1006,9 +1063,16 @@ function housekeep() {
     for (let i = 0; i < r.t.length; i++) if (r.t[i] > a.volT) { a.vol.update(r.r[i]); a.volT = r.t[i]; }
     const rl = a.leader.returns1s(180);
     for (let i = 0; i < rl.t.length; i++) if (rl.t[i] > a.volLeaderT) { a.volLeader.update(rl.r[i]); a.volLeaderT = rl.t[i]; }
+    // σ used by the pricer: prefer the leader tape (dense, updates every
+    // second) and fall back to the composite. Both measure the same asset's
+    // volatility; the composite alone can take many minutes to accumulate 30
+    // consecutive-second returns on a quiet alt, which left every panel
+    // reading "warming" indefinitely.
+    a.sigma = a.volLeader.sigma1s() || a.vol.sigma1s();
+    a.sigmaSrc = a.volLeader.sigma1s() ? 'leader' : (a.vol.sigma1s() ? 'settle' : null);
     // impulse detection on the leader tape (falls back to spot tape)
     const tape = a.leaderTape.last() ? a.leaderTape : a.spotTape;
-    const sig = a.volLeader.sigma1s() || a.vol.sigma1s();
+    const sig = a.sigma;
     if (sig && nowMs - a.lastImpulseMs > settings.impulseCooldownSec * 1000) {
       let fired = null;
       for (const w of [3, 10]) {
@@ -1075,16 +1139,18 @@ function housekeep() {
 
 function fairFor(A, nowSec) {
   const a = assets[A];
-  const spot = a.spot.lastPrice(), sig = a.vol.sigma1s();
+  const spot = a.spot.lastPrice(), sig = a.sigma;
   if (!spot || !sig || a.strike == null) return null;
   const tRemain = sessionEnd - nowSec;
   if (tRemain < 0) return null;
-  let avgSoFar = null;
+  let avgSoFar = null, avgInfo = null;
   if (tRemain < 60) {
-    const w = a.spot.windowAverage(sessionEnd - 60 + 1, nowSec);
-    if (w && w.coverage > 0.3) avgSoFar = w.avg;
+    const w = a.spot.settlementAverage(sessionEnd - 60 + 1, nowSec);
+    if (w) { avgSoFar = w.avg; avgInfo = w; }
   }
-  return E.fairProb({ spot, strike: a.strike, sigma1s: sig, tRemainSec: tRemain, settleMode: 'avg', settleWindowSec: 60, avgSoFar });
+  const f = E.fairProb({ spot, strike: a.strike, sigma1s: sig, tRemainSec: tRemain, settleMode: 'avg', settleWindowSec: 60, avgSoFar });
+  if (f) f.avgInfo = avgInfo;
+  return f;
 }
 function ret60(series, nowSec) {
   const now = series.priceAtOrBefore(nowSec), then = series.priceAtOrBefore(nowSec - 60);
@@ -1108,16 +1174,28 @@ function basketDrift(A, nowSec) {
   return { z: (basketRet - assetRet) / (sig * Math.sqrt(60)), basketRet, assetRet };
 }
 
-/* xcorr refresh — one asset per second, round-robin */
+/* xcorr refresh — one asset per second, round-robin.
+   Measured on the LEADER tape when available (dense, ~1 sample/s on every
+   asset) and the settle composite otherwise. Sparse trade-driven composites
+   produce too few consecutive-second pairs for xcorr to clear its n≥60 bar,
+   which is why every lag badge sat at "warming" on a quiet tape. */
 let xcIdx = 0;
+function retSource(A) {
+  const a = assets[A];
+  const lead = a.leader.returns1s(1000);
+  if (lead.t.length >= 120) return { r: lead, src: 'leader' };
+  return { r: a.spot.returns1s(1000), src: 'settle' };
+}
 function refreshXcorr() {
   const A = ASSETS[xcIdx % ASSETS.length]; xcIdx++;
   const a = assets[A];
-  const mine = a.spot.returns1s(1000);
-  if (A !== 'BTC') a.xcBTC = E.xcorr(assets.BTC.spot.returns1s(1000), mine, 30, 900);
-  if (A !== 'ETH') a.xcETH = E.xcorr(assets.ETH.spot.returns1s(1000), mine, 30, 900);
-  const lr = a.leader.returns1s(1000);
-  a.xcPerp = lr.t.length > 120 ? E.xcorr(lr, mine, 15, 900) : null;
+  const mine = retSource(A);
+  a.xcSrc = mine.src;
+  if (A !== 'BTC') a.xcBTC = E.xcorr(retSource('BTC').r, mine.r, 30, 900);
+  if (A !== 'ETH') a.xcETH = E.xcorr(retSource('ETH').r, mine.r, 30, 900);
+  // leader vs settle proxy — only meaningful when they're different series
+  const lr = a.leader.returns1s(1000), sp = a.spot.returns1s(1000);
+  a.xcPerp = (lr.t.length > 120 && sp.t.length > 120) ? E.xcorr(lr, sp, 15, 900) : null;
 }
 
 /* ================================ UI ==================================== */
@@ -1194,14 +1272,18 @@ function renderTopbar() {
 
 function renderFocusHead() {
   const A = focus, a = assets[A], nowSec = Math.floor(Date.now() / 1000);
-  const px = a.spot.lastPrice(), sig = a.vol.sigma1s();
+  const px = a.spot.lastPrice(), sig = a.sigma;
   const r1 = ret60(a.spot, nowSec);
   const xc = A === 'BTC' ? a.xcETH : a.xcBTC;
   const lead = A === 'BTC' ? 'ETH' : 'BTC';
+  const set = settleSetFor(A);
   const venues = ['hl', 'cb', 'kr', 'bn'].map(v => {
     const q = a.venues[v];
-    const fresh = q && Date.now() - q.ts < 5000;
-    return `<span class="${fresh ? 'fresh' : ''}">${v.toUpperCase()}</span><span class="${fresh ? 'fresh' : ''}">${q ? fmtPx(A, q.p) : '—'}</span>`;
+    const age = q ? (Date.now() - q.ts) / 1000 : null;
+    const fresh = age != null && age * 1000 < FRESH_MS;
+    const inSet = set.includes(v);
+    const label = v.toUpperCase() + (inSet ? '·' : '');
+    return `<span class="${fresh ? 'fresh' : ''}" title="${inSet ? 'settlement-index constituent' : 'leader venue'}${age != null ? ' · ' + age.toFixed(0) + 's ago' : ''}">${label}</span><span class="${fresh ? 'fresh' : ''}">${q ? fmtPx(A, q.p) : '—'}</span>`;
   }).join('');
   $('#focus-head').innerHTML = `
     <div class="fh-block">
@@ -1209,7 +1291,7 @@ function renderFocusHead() {
       <span class="fh-price ${r1 == null ? '' : r1 >= 0 ? 'up' : 'down'}">${fmtPx(A, px)}</span>
     </div>
     <div class="fh-block" style="padding-top:20px">
-      <span class="fh-stat">σ <b>${sig ? fmtBps(sig) : '—'}</b> bps/√s</span>
+      <span class="fh-stat" title="${a.sigmaSrc === 'leader' ? 'measured on the leader tape' : a.sigmaSrc === 'settle' ? 'measured on the settlement composite' : 'needs 30 consecutive-second returns'}">σ <b>${sig ? fmtBps(sig) : '—'}</b> bps/√s<span class="dim" style="font-size:10px"> ${a.sigmaSrc || ''}</span></span>
       <span class="fh-stat">1m <b class="${r1 == null ? '' : r1 >= 0 ? 'up' : 'down'}">${r1 == null ? '—' : (r1 >= 0 ? '+' : '') + (r1 * 100).toFixed(2) + '%'}</b></span>
     </div>
     <div class="fh-block" style="padding-top:20px">
@@ -1243,8 +1325,9 @@ function renderFair() {
     <span class="fr-val mono">${val == null ? '—' : Math.round(val * 100) + '¢'}</span>`;
   let settleLine = '';
   if (tRemain <= 60 && tRemain > 0) {
-    const w = a.spot.windowAverage(sessionEnd - 60 + 1, nowSec);
-    settleLine = `<div class="fr-label mono amber" style="margin-top:8px">settle avg so far ${w ? fmtPx(A, w.avg) : '—'} · ${w ? Math.round(w.coverage * 100) : 0}% of window observed</div>`;
+    const w = fair && fair.avgInfo ? fair.avgInfo : a.spot.settlementAverage(sessionEnd - 60 + 1, nowSec);
+    const locked = Math.round(((60 - tRemain) / 60) * 100);
+    settleLine = `<div class="fr-label mono amber" style="margin-top:8px">settle avg so far ${w ? fmtPx(A, w.avg) : '—'} · ${locked}% of the average is locked in${w && w.observedFrac < 0.75 ? ` · ${Math.round(w.observedFrac * 100)}% ticked` : ''}</div>`;
   }
   $('#fair-body').innerHTML = `
     <div id="fair-grid">
@@ -1276,10 +1359,20 @@ function renderImpulses() {
 }
 
 /* ---------- charts ---------- */
+// Size a canvas for the display's pixel ratio.
+// The CSS height is the authority (data-h, set once); the backing store is
+// that times dpr. Reading height back off the element after writing it is the
+// bug that made charts grow without bound on Retina displays — the attribute
+// no longer describes CSS pixels once it has been scaled, so each pass
+// multiplied the previous pass's value. Never read geometry we just wrote.
 function sizeCanvas(cv) {
   const dpr = window.devicePixelRatio || 1;
-  const w = cv.clientWidth, h = parseInt(cv.getAttribute('height'), 10);
-  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  if (!cv.dataset.h) cv.dataset.h = cv.getAttribute('height') || '160';
+  const h = parseInt(cv.dataset.h, 10);
+  const w = Math.max(1, Math.round(cv.clientWidth));
+  cv.style.height = h + 'px';
+  const bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+  if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return { ctx, w, h };
@@ -1310,12 +1403,14 @@ function drawGhost() {
   const pl = sl.map(([t, p]) => [t, p / l0 - 1]);
   const xc = A === 'BTC' ? a.xcETH : a.xcBTC;
   const lag = xc && xc.significant && xc.bestLag > 0 ? xc.bestLag : 0;
-  let maxAbs = 1e-5;
+  // Auto-scale with a floor: without one, a flat tape's few-basis-point noise
+  // gets stretched to full height and reads as violent motion.
+  let maxAbs = 0;
   for (const [, v] of pf) maxAbs = Math.max(maxAbs, Math.abs(v));
   for (const [, v] of pl) maxAbs = Math.max(maxAbs, Math.abs(v));
   let strikeY = null;
-  if (a.strike != null) { const sv = a.strike / f0 - 1 - (1 - sf[0][1] / f0); const rel = a.strike / f0 - 1; if (Math.abs(rel) < maxAbs * 2.2) { maxAbs = Math.max(maxAbs, Math.abs(rel)); strikeY = rel; } }
-  maxAbs *= 1.15;
+  if (a.strike != null) { const rel = a.strike / f0 - 1; if (Math.abs(rel) < Math.max(maxAbs, 0.0005) * 2.2) { maxAbs = Math.max(maxAbs, Math.abs(rel)); strikeY = rel; } }
+  maxAbs = Math.max(maxAbs * 1.15, 0.0005); // floor: ±5 bp
   const X = t => ((t - from) / 120) * (w - 58) + 8;
   const Y = v => h / 2 - (v / maxAbs) * (h / 2 - 14);
   // grid
