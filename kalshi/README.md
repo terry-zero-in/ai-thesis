@@ -51,20 +51,32 @@ designing a live mode, which intentionally does not exist here.
 ## Runbook
 
 ```
+python3 kalshi/serve.py              # LIVE MODE OF THE PAPER SYSTEM: local
+                                     # server at http://127.0.0.1:8765 that
+                                     # runs cycle every 30m + settle every 6h
+                                     # and serves the dashboard (see below)
 python3 -m kalshi_weather discover   # list KXHIGH series; mapped vs unmapped
-python3 -m kalshi_weather cycle      # price + scan + place/refresh paper quotes
+python3 -m kalshi_weather cycle      # one price + scan + quote pass
 python3 -m kalshi_weather settle     # pull actuals + market results; refit bias
 python3 -m kalshi_weather report     # gate status, PnL, review queue
 python3 -m kalshi_weather quotes     # recent paper quotes
 python3 -m kalshi_weather scan       # rules scan only
 ```
 
-Zero third-party dependencies (pure stdlib, Python ≥3.11). Tests:
-`python3 -m unittest discover -s tests` (97 tests).
+**Dashboard** (`serve.py`, or `python3 -m kalshi_weather dashboard` from this
+directory; `--port/--cycle-minutes/--settle-hours` to tune): one process =
+the scheduler plus a read-mostly page showing the gate progress, open paper
+quotes, the last cycle's pricing sheet ranked by model-vs-market divergence,
+the rules-review queue, settlements, and runtime notes. Auto-refreshes every
+60s; "Run cycle/settle now" buttons trigger the same paper passes the CLI
+runs. Bound to 127.0.0.1 only — never reachable off this machine (test-
+enforced). Stopping the process stops the loop; the ledger keeps all state.
 
-Suggested cadence once adopted (not installed by this build): `cycle` hourly
-06:00–12:00 local-ish, `settle` once daily ~09:00 ET. The 30-day gate clock
-starts at the first fill after adoption.
+Zero third-party dependencies (pure stdlib, Python ≥3.11). Tests:
+`python3 -m unittest discover -s tests` (105 tests).
+
+The 30-day gate clock starts at the first fill after adoption — keep the
+dashboard process running (or cron the CLI) from that day.
 
 Optional LLM pass for the rules scanner: `pip install anthropic` and set
 `ANTHROPIC_API_KEY`. Model defaults to `claude-opus-5`

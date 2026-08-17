@@ -114,6 +114,14 @@ def cmd_scan(cfg: Config, _args) -> int:
     return 0
 
 
+def cmd_dashboard(cfg: Config, args) -> int:
+    from . import server
+    server.serve(cfg, port=args.port,
+                 cycle_interval_s=args.cycle_minutes * 60,
+                 settle_interval_s=args.settle_hours * 3600)
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="kalshi_weather",
@@ -125,6 +133,11 @@ def main(argv=None) -> int:
                      ("quotes", cmd_quotes), ("scan", cmd_scan)]:
         p = sub.add_parser(name)
         p.set_defaults(fn=fn)
+    d = sub.add_parser("dashboard", help="live local server: scheduler + dashboard")
+    d.add_argument("--port", type=int, default=8765)
+    d.add_argument("--cycle-minutes", type=float, default=30)
+    d.add_argument("--settle-hours", type=float, default=6)
+    d.set_defaults(fn=cmd_dashboard)
     args = parser.parse_args(argv)
     return args.fn(Config(), args)
 
