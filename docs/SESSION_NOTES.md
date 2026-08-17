@@ -1,4 +1,33 @@
-# Session Notes — last updated 2026-05-17 (session 9 — settings + README)
+# Session Notes — last updated 2026-08-17 (kalshi weather paper system)
+
+## SESSION 2026-08-17 — Kalshi weather paper-trading system (new workstream)
+
+Built `kalshi/` from Terry's scope: three modules, paper-mode only until the
+calibration gate passes. Pure-stdlib Python package, zero deps, 97 unit tests.
+
+- **pricing** — Open-Meteo GEFS(31) + ECMWF(51) ensembles for the 7 mapped
+  KXHIGH stations (NY/CHI/AUS/DEN/LAX/MIA/PHIL, auto-discovery live-verified:
+  46 KXHIGH series on Kalshi), per-station EMOS-lite bias correction vs NWS
+  CLI history (Iowa Mesonet archive), P(bucket) with confidence =
+  GEFS-vs-ECMWF agreement.
+- **rules-scanner** — structural extraction + sha256 change detection +
+  optional LLM pass (anthropic SDK, `claude-opus-5`, queues `pending_llm`
+  without a key); >5pt headline/rule divergence → review queue. Found on day
+  one: Kalshi switched temp settlement from NWS to The Weather Company on
+  2026-08-14 (in `product_metadata.important_info`) — captured in scans.
+- **execution-shadow** — maker-only paper quotes, tail band ≤40c,
+  quarter-Kelly (closed form proven vs brute-force E[log W]), $100/market
+  cap, conservative queue-aware fill sim from the public tape, sqlite ledger,
+  Brier vs market-implied at trade time. Gate: 30d + ≥20 settled + Brier win
+  + positive after-fee PnL; no live path exists (containment-tested).
+
+Live smoke 2026-08-17T05:30Z: 54 markets priced across all 7 stations, 9
+paper quotes placed (all within caps), scans baseline+queued, gate NOT_YET
+(day 0). Known limits in `kalshi/README.md` (maker fee fraction pinned
+unverified, uncalibrated first-week bias, lead-0 noon cutoff, regime export
+pending from leadlag-radar).
+
+---
 
 ## SESSION 9 — autonomous polish (2026-05-17, post-compact)
 
