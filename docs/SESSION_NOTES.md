@@ -1451,3 +1451,32 @@ Defects 9 and 10 are fixed and the gap log shipped. Then the headline: replaying
 2. Read the handoff above — the HEADLINE section first
 3. For BTC work: `btc-session-edge-v3/HANDOFF.md` has the defect history including 9, 10 and the minute-14 shape
 4. **First action:** get Terry's decision on the server-side Kalshi proxy. The replay proved the probability alone cannot pay, so a real `mkt ¢` on every read is the only path to a measurable edge. Everything else is polish on an instrument with nowhere to send its readings.
+
+---
+
+## SESSION S41 — BTC Session Edge: four closed routes, the band nobody checked, and a live phantom diagnosed (2026-08-08)
+
+**Note:** Full record in `docs/handoffs/2026-08-08-S41-btc-edge-closed-routes-band-sweep.md`. This entry is a pointer.
+
+**#40 and #41 merged to `main` by Terry at 07:04Z** — `main` = `8c543bf`, production deploy `dpl_CQqpPb5QrEEqNWWHC7hsrrAjGFL8` at 07:04:48Z. Verified **by content, not ancestry**: both were squash merges, so `git merge-base --is-ancestor` returns false by design and makes a fully-merged branch look stranded. `git diff origin/main <branch>` was empty. **#42 is open, draft, CI 4/4 green** — five commits, three new analysis scripts, no model change.
+
+- **Four routes are now closed.** Probability alone (S40) · prior-session trend alone · maker execution · **conditional/combined filters (new)**. Crossing a streak with the 60–89% band makes it **worse** — −1.8pp at streak ≥ 3, −2.3pp at streak ≥ 4, vs −0.5pp unconditioned. A 5,292-rule back-solve on a 70/30 session-date split produced a winner scoring **+$0.0490/$1 on held-out data** — and **failed its null**: re-running the search 200× on shuffled features, the best-on-train rule scores a **median +$0.1123/$1 on pure noise**, higher than the real search managed. 64/200 noise runs matched or beat it. **p = 0.323.**
+- **THE ACTIONABLE FINDING — the 60–89% band was never derived.** Terry named it; every study inherited it. Sweeping 15 bands: the model's edge **decays monotonically with its own confidence** (+2.0pp at 60–69%, +0.4pp at 80–89%, **−0.7pp at 90–100%**). 60–89% (−0.60%) is beaten by 60–79% (−0.44%) and 60–69% (+0.06%). **80–100%, 90–100% and 95–100% all have CIs that EXCLUDE zero** — confirmed losers, the strongest statistical result this project has produced and it is negative. At 98¢ all-in you risk 98¢ to make 2¢, so 0.8pp of overconfidence is fatal in ROI terms. **Stop betting above 90%.**
+- **The M estimator — gate 1 of 2 FAILED, not shipped.** The vol-forecast gain replicates (Spearman 0.4372 → 0.4704) but does not reach the probability: `dBrier −0.000329`, CI clustered by session **[−0.000978, +0.000317]**, spans zero. **HANDOFF.md rule 2 confirmed empirically** — the naive swap at the shipped `B = 1.49` is worth **nine millionths**; `B` must move 1.4756 → 1.6029 to register at all. The better vol forecast is real and the probability layer structurally cannot convert it.
+- **Selection bias, demonstrated on Terry's own candidates.** k9–11 wins the full sample (+1.29%) and is the **worst of k5-7/k7-9/k9-11 out of sample** (+0.70% vs +2.55%, +2.60%). Of 90 contiguous minute windows the in-sample #1 turns **negative** held out. Two cells hold their sign in both halves: **k9–10** (+2.4pp) and **k13–14** (−1.0pp) — the latter is the only window where the model is *over*-confident and it has a mechanism documented before the test ran (minute-14 factor re-widens over the final 20 seconds).
+- **Live phantom diagnosed.** Terry's tool claimed **+19¢ on NO** while Kalshi said 88% UP. Cause: `σ live — needs 2 reads` and `M 1.00 (n0)`, so σ fell back to the generic hour-3 baseline of $25/min. **The model believed the market was 3.2× more volatile than Kalshi did** — σREM $67.4 vs the ~$21 Kalshi's price implies. Change only σ and the 22-point gap vanishes. **`M = 1.00 (n0)` is not a bug** — `mult()` needs 4 **resolved** sessions and Terry has five logged with zero settled.
+- **Three retractions recorded, not buried.** (1) "The taker fee was the entire binding constraint" — wrong, adverse selection is ~13¢ vs a 1.8¢ fee. (2) The 75-minute lookback peak — artifact, does not reproduce out of sample. (3) **My own band rule**, given to Terry and wrong within the hour — comparing the ask to the bottom of the Wilson band handles hit-rate uncertainty and is blind to input error; it said *take* the 19¢ phantom. The check that must come first: **is the model running on live data at all?**
+- **Defect 13 fixed and the ~15¢ implausible-edge guard shipped** (both in #41, merged) — the guard fired correctly on the 19¢ read. **This closes S40 pending item 3.** Defects 11 and 12 remain open.
+- **DB untouched** — no migrations, no writes. No Linear tickets; BTC Session Edge still off the board. Linear MCP required re-auth late in the session and was unavailable.
+
+**Verification:** `flat-stake-strategy.mjs` self-checks 14/14, and `--stake=10` reproduces every previously published figure to the cent · `bundle.mjs verify` clean · PR #42 CI 4/4 green · all CIs bootstrapped over **whole sessions** with `mulberry32`.
+
+**Standing caveat, unchanged:** every backtest assumes fill at the model's own price + fee. The baked data has **no Kalshi quotes**, so none of this measures a real gap. That is the fifth route and the only one left.
+
+**Next session — start here:**
+1. Read `CLAUDE.md` and load the standing skills (S40 and S41 both loaded none, and both said so)
+2. Read the S41 handoff — HEADLINE and the retractions section first
+3. `btc-session-edge-v3/HANDOFF.md` for defect history
+4. **First action:** get Terry's decision on the server-side Kalshi proxy. Four routes are closed; the gap against a real quoted price is the only one left and it cannot be measured from the baked data. Second: get his logged sessions **resolved** so `M` wakes up — until then the GAP tab will keep producing phantom double-digit edges.
+
+**Do not** propose another probability filter. The question has been asked four ways and answered four times.
